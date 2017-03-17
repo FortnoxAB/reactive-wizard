@@ -1,0 +1,19 @@
+package se.fortnox.reactivewizard.jaxrs.params.annotated;
+
+import se.fortnox.reactivewizard.jaxrs.JaxRsRequest;
+import se.fortnox.reactivewizard.jaxrs.params.deserializing.Deserializer;
+
+import javax.ws.rs.HeaderParam;
+import java.lang.annotation.Annotation;
+
+class HeaderParamResolver<T> extends AnnotatedParamResolver<T> {
+
+    public HeaderParamResolver(Annotation headerParamAnnotation, Deserializer<T> deserializer) {
+        super(deserializer, ((HeaderParam)headerParamAnnotation).value());
+    }
+
+    @Override
+    protected String getValue(JaxRsRequest request) {
+        return request.getHeader(paramName);
+    }
+}
