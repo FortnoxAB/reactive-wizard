@@ -3,6 +3,7 @@ package se.fortnox.reactivewizard.jaxrs;
 import se.fortnox.reactivewizard.util.ReflectionUtil;
 import io.netty.handler.codec.http.HttpMethod;
 
+import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;

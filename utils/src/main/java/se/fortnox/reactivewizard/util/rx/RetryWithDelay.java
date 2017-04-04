@@ -1,0 +1,54 @@
+package se.fortnox.reactivewizard.util.rx;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import rx.Observable;
+import rx.functions.Func1;
+
+import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
+
+public class RetryWithDelay implements
+		Func1<Observable<? extends Throwable>, Observable<?>> {
+
+	private static final Logger					log	= LoggerFactory.getLogger(RetryWithDelay.class);
+
+	private final int                          maxRetries;
+	private final int                          retryDelayMillis;
+	private       int                          retryCount;
+	private final Predicate<? super Throwable> predicate;
+
+	public RetryWithDelay(int maxRetries, int retryDelayMillis,
+			final Class<? extends Throwable> exceptionType) {
+		this(maxRetries,
+			retryDelayMillis,
+			throwable -> exceptionType == null || exceptionType.isAssignableFrom(throwable.getClass()));
+	}
+
+	public RetryWithDelay(int maxRetries, int retryDelayMillis, final Predicate<? super Throwable> predicate) {
+		this.maxRetries = maxRetries;
+		this.retryDelayMillis = retryDelayMillis;
+		this.predicate = predicate;
+		this.retryCount = 0;
+	}
+
+	public RetryWithDelay(int maxRetries, int retryDelayMillis) {
+		this.maxRetries = maxRetries;
+		this.retryDelayMillis = retryDelayMillis;
+		this.predicate = null;
+		this.retryCount = 0;
+	}
+
+	@Override
+	public Observable<?> call(Observable<? extends Throwable> attempts) {
+		return attempts.flatMap(t -> {
+			if (++retryCount <= maxRetries && (predicate == null || predicate.test(t))) {
+				int delay = retryDelayMillis * retryCount;
+				return Observable.timer(delay, TimeUnit.MILLISECONDS);
+			}
+
+			// Max retries hit. Just pass the error along.
+			return Observable.error(t);
+		});
+	}
+}

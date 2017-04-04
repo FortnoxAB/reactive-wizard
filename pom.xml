@@ -9,6 +9,8 @@
     <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <modules>
+        <module>utils</module>
+        <module>json</module>
         <module>jaxrs-api</module>
         <module>jaxrs</module>
     </modules>
@@ -18,6 +20,9 @@
         <rxnetty.version>0.4.18</rxnetty.version>
         <rxjava.version>1.0.17</rxjava.version>
         <jackson.version>2.7.5</jackson.version>
+        <junit.version>4.11</junit.version>
+        <fest.version>1.4</fest.version>
+        <mockito.version>1.10.16</mockito.version>
     </properties>
 
     <build>
