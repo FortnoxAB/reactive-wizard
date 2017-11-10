@@ -13,6 +13,7 @@
         <module>json</module>
         <module>jaxrs-api</module>
         <module>jaxrs</module>
+        <module>examples</module>
     </modules>
 
     <properties>
