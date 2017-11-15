@@ -4,17 +4,15 @@ import se.fortnox.reactivewizard.util.rx.PropertyResolver;
 import rx.Observable;
 import rx.Single;
 
+import javax.inject.Provider;
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
+import java.lang.reflect.*;
 import java.util.*;
+import java.util.stream.Stream;
 
 import static java.util.Arrays.asList;
 
 public class ReflectionUtil {
-
 	public static Type getTypeOfObservable(Method m) {
 		Type t = m.getGenericReturnType();
 		if (!(t instanceof ParameterizedType)) {
@@ -172,7 +170,7 @@ public class ReflectionUtil {
 		return annotations;
 	}
 
-	public static Method getGetter(Class<?> cls, String propertyName) {
+	public static Getter getGetter(Class<?> cls, String propertyName) {
 		String capitalizedPropertyName = propertyName.substring(0, 1).toUpperCase() + propertyName.substring(1);
 
 		Method method = getAccessor(cls, capitalizedPropertyName);
@@ -182,21 +180,39 @@ public class ReflectionUtil {
 		if (method == null) {
 			method = getMethod(cls, propertyName);
 		}
-		return method;
+		if (method == null) {
+			Field field;
+			try {
+				field = cls.getDeclaredField(propertyName);
+			} catch (NoSuchFieldException e) {
+				return null;
+			}
+
+			return new FieldGetter(field);
+		}
+
+		return new MethodGetter(method);
 	}
 
-	public static Method getSetter(Class<?> cls, String propertyName) {
-		propertyName = propertyName.substring(0, 1).toUpperCase() + propertyName.substring(1);
+	public static Setter getSetter(Class<?> cls, String propertyName) {
+		String capitalizedPropertyName = propertyName.substring(0, 1).toUpperCase() + propertyName.substring(1);
 		try {
-			String methodName = "set" + propertyName;
+			String methodName = "set" + capitalizedPropertyName;
 			Optional<Method> first = Arrays.stream(cls.getMethods())
 					.filter(m -> m.getName().equals(methodName) && m.getReturnType().equals(void.class) && m.getParameters().length == 1)
 					.findFirst();
 			if (first.isPresent()) {
-				return first.get();
+				return new MethodSetter(first.get());
 			}
-		} catch (Exception e) {
+		} catch (Exception ignored) {
 		}
+
+		try {
+			Field field = cls.getDeclaredField(propertyName);
+			return new FieldSetter(field);
+		} catch (NoSuchFieldException ignored) {
+		}
+
 		return null;
 	}
 
@@ -217,6 +233,42 @@ public class ReflectionUtil {
 		} catch (NoSuchMethodException e) {
 			return null;
 		}
+	}
+
+	public static <T> T newInstance(Class<T> cls) {
+		try {
+			Constructor<?> constructor = Stream.of(cls.getDeclaredConstructors())
+				.filter(c -> c.getParameterCount() == 0)
+				.findFirst()
+				.orElseThrow(NoSuchMethodException::new);
+			constructor.setAccessible(true);
+			return cls.cast(constructor.newInstance());
+		} catch (NoSuchMethodException | IllegalAccessException | InstantiationException | InvocationTargetException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	/**
+	 * If the method given is part of a proxy (e.g. for validating purposes), and that proxy implements Supplier in
+	 * order to expose it's underlying implementation, then this will return the underlying Method definition, so that
+	 * param factories can search the implementing class for annotations.
+	 * @param method
+	 * @param resourceInstance
+	 * @return
+	 */
+	public static Method getInstanceMethod(Method method, Object resourceInstance) {
+		if (!Proxy.isProxyClass(method.getDeclaringClass())) {
+			return method;
+		}
+
+		InvocationHandler invocationHandler = Proxy.getInvocationHandler(resourceInstance);
+		if (!(invocationHandler instanceof Provider)) {
+			return method;
+		}
+
+		resourceInstance = ((Provider) invocationHandler).get();
+		Optional<Method> methodInClass = ReflectionUtil.findMethodInClass(method, resourceInstance.getClass());
+		return methodInClass.orElse(method);
 	}
 
 	private static Method getAccessor(Class<?> cls, String propertyName) {
