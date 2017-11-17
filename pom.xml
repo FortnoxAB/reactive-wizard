@@ -18,6 +18,8 @@
     </modules>
 
     <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
         <netty.version>4.1.5.Final</netty.version>
         <rxnetty.version>0.5.2</rxnetty.version>
         <rxjava.version>1.2.9</rxjava.version>
