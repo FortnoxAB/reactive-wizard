@@ -6,19 +6,19 @@ import se.fortnox.reactivewizard.jaxrs.response.JaxRsResult;
 import se.fortnox.reactivewizard.jaxrs.response.JaxRsResultFactory;
 import se.fortnox.reactivewizard.jaxrs.response.JaxRsResultFactoryFactory;
 import se.fortnox.reactivewizard.util.ReflectionUtil;
+import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpMethod;
+import io.reactivex.netty.protocol.http.server.HttpServerRequest;
+import io.reactivex.netty.protocol.http.server.HttpServerResponse;
+import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Single;
 
-import javax.inject.Provider;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.core.MediaType;
-import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
@@ -31,8 +31,10 @@ import static rx.Observable.*;
  */
 public class JaxRsResource<T> implements Comparable<JaxRsResource> {
 
+	private static final RequestLogger REQUEST_LOGGER = new RequestLogger(LoggerFactory.getLogger(JaxRsResource.class));
 	private final Pattern pathPattern;
 	private final Method method;
+	private final Method instanceMethod;
 	private final Integer paramCount;
 	private final List<ParamResolver> argumentExtractors;
 	private final JaxRsResultFactory<T> resultFactory;
@@ -48,36 +50,12 @@ public class JaxRsResource<T> implements Comparable<JaxRsResource> {
 		this.meta = meta;
 		this.pathPattern = createPathPattern(meta.getFullPath());
 		this.paramCount = method.getParameterCount();
-		this.argumentExtractors = paramResolverFactories.createParamResolvers(getInstanceMethod(method, resourceInstance), getConsumes());
+
+		instanceMethod = ReflectionUtil.getInstanceMethod(method, resourceInstance);
+
+		this.argumentExtractors = paramResolverFactories.createParamResolvers(instanceMethod, getConsumes());
 		this.resultFactory = jaxRsResultFactoryFactory.createResultFactory(this);
 		this.methodCaller = createMethodCaller(method, resourceInstance, blockingResourceScheduler);
-	}
-
-	/**
-	 * If the method given is part of a proxy (e.g. for validating purposes), and that proxy implements Supplier in
-	 * order to expose it's underlying implementation, then this will return the underlying Method definition, so that
-	 * param factories can search the implementing class for annotations.
-	 * @param method
-	 * @param resourceInstance
-	 * @return
-	 */
-	private Method getInstanceMethod(Method method, Object resourceInstance) {
-		if (!Proxy.isProxyClass(method.getDeclaringClass())) {
-			return method;
-		}
-
-		InvocationHandler invocationHandler = Proxy.getInvocationHandler(resourceInstance);
-		if (!(invocationHandler instanceof Provider)) {
-			return method;
-		}
-
-		resourceInstance = ((Provider) invocationHandler).get();
-		Optional<Method> methodInClass = ReflectionUtil.findMethodInClass(method, resourceInstance.getClass());
-		if (!methodInClass.isPresent()) {
-			return method;
-		}
-
-		return methodInClass.get();
 	}
 
 	private static Pattern createPathPattern(String path) {
@@ -91,26 +69,17 @@ public class JaxRsResource<T> implements Comparable<JaxRsResource> {
 		return Pattern.compile(path);
 	}
 
-	private boolean canHandleRequest(JaxRsRequest request) {
+	public boolean canHandleRequest(JaxRsRequest request) {
 		if (!request.hasMethod(meta.getHttpMethod())) {
 			return false;
 		}
-		if (!request.isMatchingPath()) {
+		if (!request.matchesPath(pathPattern)) {
 			return false;
 		}
 		return true;
 	}
 
-	protected Observable<JaxRsResult<T>> call(JaxRsRequest request)
-			throws IllegalAccessException, IllegalArgumentException,
-			InvocationTargetException {
-
-		request = request.forPath(pathPattern);
-
-		if (!canHandleRequest(request)) {
-			return null;
-		}
-
+	protected Observable<JaxRsResult<T>> call(JaxRsRequest request) {
 		return request.loadBody()
 				.flatMap(this::resolveArgs)
 				.map(this::call)
@@ -195,6 +164,10 @@ public class JaxRsResource<T> implements Comparable<JaxRsResource> {
 		return method;
 	}
 
+	public Method getInstanceMethod() {
+		return instanceMethod;
+	}
+
 	public HttpMethod getHttpMethod() {
 		return meta.getHttpMethod();
 	}
@@ -217,5 +190,13 @@ public class JaxRsResource<T> implements Comparable<JaxRsResource> {
 			}
 		}
 		return new String[]{MediaType.APPLICATION_JSON};
+	}
+
+	public void log(HttpServerRequest<ByteBuf> request, HttpServerResponse<ByteBuf> response, long requestStartTime) {
+		REQUEST_LOGGER.log(request, response, requestStartTime);
+	}
+
+	public String getPath() {
+		return meta.getFullPath();
 	}
 }

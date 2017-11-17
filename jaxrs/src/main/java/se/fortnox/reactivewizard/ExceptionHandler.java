@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import se.fortnox.reactivewizard.jaxrs.WebException;
 import se.fortnox.reactivewizard.json.InvalidJsonException;
 import io.netty.buffer.ByteBuf;
+import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.reactivex.netty.protocol.http.server.HttpServerRequest;
 import io.reactivex.netty.protocol.http.server.HttpServerResponse;
@@ -19,6 +20,9 @@ import javax.ws.rs.core.MediaType;
 import java.nio.channels.ClosedChannelException;
 import java.nio.file.FileSystemException;
 import java.util.List;
+
+import static rx.Observable.empty;
+import static rx.Observable.just;
 
 /**
  * Handles exceptions and writes errors to the response and the log.
@@ -38,7 +42,7 @@ public class ExceptionHandler {
 	}
 
 	public Observable<Void> handleException(HttpServerRequest<ByteBuf> request,
-			HttpServerResponse<ByteBuf> response, Throwable e) {
+											HttpServerResponse<ByteBuf> response, Throwable e) {
 		if (e instanceof OnErrorThrowable) {
 			e = e.getCause();
 		}
@@ -58,7 +62,7 @@ public class ExceptionHandler {
 			we = (WebException) e;
 		} else if (e instanceof ClosedChannelException) {
 			LOG.debug("ClosedChannelException: " + request.getHttpMethod() + " " + request.getUri(), e);
-			return response.close();
+			return Observable.empty();
 		} else {
 			we = new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR, e);
 		}
@@ -72,10 +76,14 @@ public class ExceptionHandler {
 			}
 		}
 
-		response.setStatus(we.getStatus());
-		response.getHeaders().add("Content-Type", MediaType.APPLICATION_JSON);
-		response.writeString(json(we));
-		return response.close();
+		response = response.setStatus(we.getStatus());
+		if (HttpMethod.HEAD.equals(request.getHttpMethod())) {
+			response.addHeader("Content-Length", 0);
+		} else {
+			response = response.addHeader("Content-Type", MediaType.APPLICATION_JSON);
+			return response.writeString(just(json(we)));
+		}
+		return empty();
 	}
 
 	private String json(WebException we) {
@@ -89,7 +97,7 @@ public class ExceptionHandler {
 
 	private String getLogMessage(HttpServerRequest<ByteBuf> request,
 			WebException webException) {
-		return new StringBuilder()
+		final StringBuilder msg = new StringBuilder()
 				.append(webException.getStatus().toString())
 				.append("\n\tCause: ").append(webException.getCause() != null ?
 						webException.getCause().getMessage() :
@@ -98,8 +106,15 @@ public class ExceptionHandler {
 				.append("\n\tRequest: ")
 				.append(request.getHttpMethod())
 				.append(" ").append(request.getUri())
-				.append(" headers: ").append(
-						request.getHeaders() != null ? request.getHeaders().entries() : "[]").toString();
+				.append(" headers: ");
+		request.headerIterator().forEachRemaining(h->
+				msg
+						.append(h.getKey())
+						.append('=')
+						.append(h.getValue())
+						.append(' ')
+		);
+		return msg.toString();
 	}
 
 }

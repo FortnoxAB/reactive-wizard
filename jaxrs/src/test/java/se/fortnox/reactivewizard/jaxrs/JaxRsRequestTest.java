@@ -1,27 +1,26 @@
 package se.fortnox.reactivewizard.jaxrs;
 
-import se.fortnox.reactivewizard.MockHttpServerRequest;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.http.HttpMethod;
-import io.reactivex.netty.protocol.http.UnicastContentSubject;
 import io.reactivex.netty.protocol.http.server.HttpServerRequest;
+import io.reactivex.netty.protocol.http.server.MockHttpServerRequest;
 import org.junit.Test;
+import rx.subjects.UnicastSubject;
 
 import java.nio.charset.Charset;
-import java.util.concurrent.TimeUnit;
 
 import static org.fest.assertions.Assertions.assertThat;
 
 public class JaxRsRequestTest {
     @Test
     public void shouldDecodeMultiChunkBody() {
-        UnicastContentSubject<ByteBuf> content = UnicastContentSubject.create(1000, TimeUnit.MILLISECONDS);
+        UnicastSubject<ByteBuf> content = UnicastSubject.create();
         byte[] b = "ö".getBytes(Charset.defaultCharset());
         content.onNext(Unpooled.wrappedBuffer(new byte[]{b[0]}));
         content.onNext(Unpooled.wrappedBuffer(new byte[]{b[1]}));
         content.onCompleted();
-        HttpServerRequest<ByteBuf> serverReq = new MockHttpServerRequest("/", content);
+        HttpServerRequest<ByteBuf> serverReq = new MockHttpServerRequest("/", HttpMethod.POST, content);
         JaxRsRequest req = new JaxRsRequest(serverReq);
         String body = req.loadBody().toBlocking().single().getBody();
         assertThat(body).isEqualTo("ö");
@@ -29,11 +28,7 @@ public class JaxRsRequestTest {
 
     @Test
     public void shouldDecodeSingleChunkBody() {
-        UnicastContentSubject<ByteBuf> content = UnicastContentSubject.create(1000, TimeUnit.MILLISECONDS);
-        byte[] b = "ö".getBytes(Charset.defaultCharset());
-        content.onNext(Unpooled.wrappedBuffer(b));
-        content.onCompleted();
-        HttpServerRequest<ByteBuf> serverReq = new MockHttpServerRequest("/", content);
+        HttpServerRequest<ByteBuf> serverReq = new MockHttpServerRequest("/", HttpMethod.POST, "ö");
         JaxRsRequest req = new JaxRsRequest(serverReq);
         String body = req.loadBody().toBlocking().single().getBody();
         assertThat(body).isEqualTo("ö");
@@ -41,10 +36,20 @@ public class JaxRsRequestTest {
 
     @Test
     public void shouldDecodeBodyForDeleteRequests() {
-        HttpServerRequest<ByteBuf> serverReq = new MockHttpServerRequest("/",
-                HttpMethod.DELETE, "test");
+        HttpServerRequest<ByteBuf> serverReq = new MockHttpServerRequest("/", HttpMethod.DELETE, "test");
         JaxRsRequest req = new JaxRsRequest(serverReq);
         String body = req.loadBody().toBlocking().single().getBody();
         assertThat(body).isEqualTo("test");
+    }
+
+    @Test
+    public void testParams() throws Exception {
+        MockHttpServerRequest serverReq = new MockHttpServerRequest("/");
+        JaxRsRequest req = new JaxRsRequest(serverReq, null, "");
+        assertThat(req.getPathParam("path")).isNull();
+        assertThat(req.getQueryParam("query")).isNull();
+        assertThat(req.getFormParam("form")).isNull();
+        assertThat(req.getHeader("header")).isNull();
+        assertThat(req.getCookie("cookie")).isNull();
     }
 }

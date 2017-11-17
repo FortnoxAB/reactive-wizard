@@ -9,19 +9,27 @@ import se.fortnox.reactivewizard.jaxrs.params.deserializing.DeserializerExceptio
 import io.netty.handler.codec.http.HttpResponseStatus;
 import rx.Observable;
 
+import javax.ws.rs.DefaultValue;
+
 import static rx.Observable.just;
 
 abstract class AnnotatedParamResolver<T> implements ParamResolver<T> {
 
     private final Deserializer<T> deserializer;
     protected final String paramName;
+    private final String defaultValue;
 
-    public AnnotatedParamResolver(Deserializer<T> deserializer, String paramName) {
+    public AnnotatedParamResolver(Deserializer<T> deserializer, String paramName, DefaultValue defaultValueAnnotation) {
         this.deserializer = deserializer;
         this.paramName = paramName;
+        this.defaultValue = defaultValueAnnotation != null ? defaultValueAnnotation.value() : null;
     }
 
     protected abstract String getValue(JaxRsRequest request);
+
+    protected String getDefaultValue() {
+        return defaultValue;
+    }
 
     @Override
     public Observable<T> resolve(JaxRsRequest request) {

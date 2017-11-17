@@ -36,7 +36,6 @@ public class JaxRsRequestHandler implements RequestHandler<ByteBuf, ByteBuf> {
         this(services, new JaxRsResourceFactory(), new ExceptionHandler(), null);
     }
 
-
     public JaxRsRequestHandler(Object[] services,
                                JaxRsResourceFactory jaxRsResourceFactory,
                                ExceptionHandler exceptionHandler,
@@ -57,24 +56,26 @@ public class JaxRsRequestHandler implements RequestHandler<ByteBuf, ByteBuf> {
      */
     @Override
     public Observable<Void> handle(HttpServerRequest<ByteBuf> request, HttpServerResponse<ByteBuf> response) {
-        Observable<JaxRsResult<?>> resultObservable;
-        try {
-            resultObservable = resources.call(request);
-        } catch (Exception e) {
-            return exceptionHandler.handleException(request, response, e);
-        }
+        JaxRsRequest jaxRsRequest = new JaxRsRequest(request);
+        JaxRsResource<?> resource = resources.findResource(jaxRsRequest);
 
-        if (resultObservable == null) {
+        if (resource == null) {
             return null;
         }
 
-        return resultObservable.singleOrDefault(null).flatMap(result -> {
-            if (result != null) {
-                return result
-                        .write(response)
-                        .flatMap(done -> response.close());
-            }
-            return response.close();
-        });
+        long requestStartTime = System.currentTimeMillis();
+
+        return resource.call(jaxRsRequest)
+                .singleOrDefault(null)
+                .flatMap(result -> writeResult(response, result))
+                .onErrorResumeNext(e -> exceptionHandler.handleException(request, response, e))
+                .doAfterTerminate(()->resource.log(request, response, requestStartTime));
+    }
+
+    private Observable<Void> writeResult(HttpServerResponse<ByteBuf> response, JaxRsResult<?> result) {
+        if (result != null) {
+            return result.write(response);
+        }
+        return Observable.empty();
     }
 }

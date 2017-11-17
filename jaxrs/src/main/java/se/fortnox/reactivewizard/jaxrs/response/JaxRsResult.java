@@ -9,9 +9,12 @@ import rx.functions.Func1;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static se.fortnox.reactivewizard.util.rx.RxUtils.doIfEmpty;
+import static javax.ws.rs.core.HttpHeaders.CONTENT_LENGTH;
 import static rx.Observable.empty;
+import static rx.Observable.just;
 
 /**
  * Represents a result of a call to a JaxRs resource. Contains the output but also some meta data about the call.
@@ -19,10 +22,11 @@ import static rx.Observable.empty;
  */
 public class JaxRsResult<T> {
 
-	private Observable<T>	output;
-	private HttpResponseStatus responseStatus;
-	private final Func1<T,byte[]> serializer;
-	private final Map<String,Object> headers = new HashMap<>();
+	protected Observable<T>	output;
+	protected HttpResponseStatus responseStatus;
+	protected final Func1<T,byte[]> serializer;
+	protected final Map<String,Object> headers = new HashMap<>();
+	protected final byte[] EMPTY_RESPONSE = new byte[0];
 
 	public JaxRsResult(Observable<T> output,
 					   HttpResponseStatus responseStatus,
@@ -49,19 +53,28 @@ public class JaxRsResult<T> {
 		return this;
 	}
 
-	public Observable<Void> write(HttpServerResponse<ByteBuf> response) {
-		return output.map(serializer).defaultIfEmpty(null).flatMap(bytes->{
-			response.setStatus(responseStatus);
-			headers.forEach((key,val)->response.getHeaders().add(key, val));
-			return writeBody(response, bytes);
-		});
+	public JaxRsResult<T> map(Func1<Observable<T>,Observable<T>> mapFn) {
+		output = mapFn.call(output);
+		return this;
 	}
 
-	protected Observable<Void> writeBody(HttpServerResponse<ByteBuf> response, byte[] bytes) {
-		if (bytes != null) {
-			response.getHeaders().add("Content-Length", bytes.length);
-			return response.writeBytesAndFlush(bytes);
-		}
-		return empty();
+	public Observable<Void> write(HttpServerResponse<ByteBuf> response) {
+		AtomicBoolean headersWritten = new AtomicBoolean();
+		return output
+				.map(serializer)
+				.defaultIfEmpty(EMPTY_RESPONSE)
+				.flatMap(bytes->{
+					int contentLength = (bytes != null) ? bytes.length : 0;
+
+					if (headersWritten.compareAndSet(false, true)) {
+						response.setStatus(responseStatus);
+						headers.forEach(response::addHeader);
+						response.addHeader(CONTENT_LENGTH, contentLength);
+					}
+					if (contentLength > 0) {
+						return response.writeBytes(just(bytes));
+					}
+					return empty();
+		});
 	}
 }

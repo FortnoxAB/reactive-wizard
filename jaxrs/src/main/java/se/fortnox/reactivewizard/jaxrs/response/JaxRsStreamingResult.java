@@ -14,7 +14,9 @@ public class JaxRsStreamingResult<T> extends JaxRsResult<T> {
     }
 
     @Override
-    protected Observable<Void> writeBody(HttpServerResponse<ByteBuf> response, byte[] bytes) {
-        return response.writeBytesAndFlush(bytes);
+    public Observable<Void> write(HttpServerResponse<ByteBuf> response) {
+        response.setStatus(responseStatus);
+        headers.forEach(response::addHeader);
+        return response.writeBytesAndFlushOnEach(output.map(serializer));
     }
 }

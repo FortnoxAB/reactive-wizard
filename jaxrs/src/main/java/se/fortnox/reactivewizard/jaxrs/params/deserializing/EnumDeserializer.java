@@ -9,7 +9,7 @@ public class EnumDeserializer<T extends Enum> implements Deserializer<T> {
 
     @Override
     public T deserialize(String value) throws DeserializerException {
-        if (value == null) {
+        if (value == null || value.isEmpty()) {
             return null;
         }
         try {

@@ -1,33 +1,28 @@
 package se.fortnox.reactivewizard.jaxrs;
 
 import se.fortnox.reactivewizard.ExceptionHandler;
-import se.fortnox.reactivewizard.MockHttpServerRequest;
 import se.fortnox.reactivewizard.MockHttpServerResponse;
 import se.fortnox.reactivewizard.jaxrs.params.ParamResolverFactories;
 import se.fortnox.reactivewizard.jaxrs.response.JaxRsResultFactoryFactory;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
-import io.reactivex.netty.RxNetty;
+import io.reactivex.netty.protocol.http.client.HttpClient;
+import io.reactivex.netty.protocol.http.client.HttpClientResponse;
 import io.reactivex.netty.protocol.http.server.HttpServer;
 import io.reactivex.netty.protocol.http.server.HttpServerRequest;
+import io.reactivex.netty.protocol.http.server.MockHttpServerRequest;
 import io.reactivex.netty.protocol.http.server.RequestHandler;
 import rx.Observable;
 
 import java.nio.charset.Charset;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class JaxRsTestUtil {
 
 	public static MockHttpServerResponse get(Object service, String uri) {
-		return get(service, uri, null);
-	}
-
-	public static MockHttpServerResponse get(Object service, String uri, Map<String, List<String>> query) {
-		MockHttpServerRequest request = new MockHttpServerRequest(uri, query);
+		MockHttpServerRequest request = new MockHttpServerRequest(uri);
 		return processRequest(service, request);
 	}
 
@@ -78,8 +73,8 @@ public class JaxRsTestUtil {
 		return processRequestWithHandler(handler, request);
 	}
 
-	private static JaxRsRequestHandler getJaxRsRequestHandler(Object service) {
-		return new JaxRsRequestHandler(new Object[] { service },
+	private static JaxRsRequestHandler getJaxRsRequestHandler(Object ... services) {
+		return new JaxRsRequestHandler(services,
                     new JaxRsResourceFactory(new ParamResolverFactories(), new JaxRsResultFactoryFactory(), new BlockingResourceScheduler()),
                     new ExceptionHandler(),
                     false);
@@ -104,30 +99,26 @@ public class JaxRsTestUtil {
 		return response.getOutp();
 	}
 
-	public static Map<String, List<String>> qp(String key, String val) {
-		Map<String, List<String>> params = new HashMap<>();
-		params.put(key, Arrays.asList(val));
-		return params;
-	}
-
-	public static TestServer testServer(Object service) {
-		return new TestServer(getJaxRsRequestHandler(service));
+	public static TestServer testServer(Object ... services) {
+		return new TestServer(getJaxRsRequestHandler(services));
 	}
 
 	static class TestServer {
 
 		private final HttpServer<ByteBuf, ByteBuf> server;
-		private final String uriPrefix;
 
 		public TestServer(RequestHandler requestHandler) {
-			server = RxNetty.createHttpServer(0, requestHandler);
-			server.start();
-			uriPrefix = "http://localhost:"+server.getServerPort();
+			server = HttpServer.newServer(0).start(requestHandler);
+		}
+
+		public HttpServer<ByteBuf, ByteBuf> getServer() {
+			return server;
 		}
 
 		public String get(String uri) {
-			return RxNetty.createHttpGet(uriPrefix+uri)
-					.flatMap(resp->resp.getContent())
+			return HttpClient.newClient("localhost", server.getServerPort())
+					.createGet(uri)
+					.flatMap(HttpClientResponse::getContent)
 					.map(buf->buf.toString(Charset.defaultCharset()))
 					.toBlocking()
 					.single();
