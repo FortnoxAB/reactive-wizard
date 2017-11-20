@@ -1,0 +1,8 @@
+Manifest-Version: 1.0
+Archiver-Version: Plexus Archiver
+Built-By: ivan.sachkov
+ArtifactId: reactivewizard-utils
+Version: 0.0.1-SNAPSHOT
+Created-By: Apache Maven 3.5.0
+Build-Jdk: 1.8.0_144
+Main-Class: com.fortnox.reactivewizard.Main

@@ -1,10 +1,12 @@
 package se.fortnox.reactivewizard.util.rx;
 
+import se.fortnox.reactivewizard.util.Getter;
 import se.fortnox.reactivewizard.util.ReflectionUtil;
+import se.fortnox.reactivewizard.util.Setter;
 
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.lang.reflect.Type;
+import java.util.Arrays;
 import java.util.Optional;
 
 /**
@@ -76,7 +78,7 @@ public class PropertyResolver {
 				Object next = prop.getValue(obj);
 				if (next == null) {
 					verifySetter(prop);
-					next = prop.getType().newInstance();
+					next = ReflectionUtil.newInstance(prop.getType());
 					prop.setValue(obj, next);
 				}
 				obj = next;
@@ -97,18 +99,17 @@ public class PropertyResolver {
 
 	@Override
 	public String toString() {
-		return properties.toString();
+		return Arrays.toString(properties);
 	}
 
 	private static class Property {
+		private final String   name;
+		private final Class<?> type;
+		private final Type     genericType;
+		private final Getter   getter;
+		private final Setter   setter;
 
-		private final String name;
-		private Class<?> type;
-		private Type genericType;
-		private final Method getter;
-		private final Method setter;
-
-		Property(String name, Class<?> type, Type genericType, Method getter, Method setter) {
+		Property(String name, Class<?> type, Type genericType, Getter getter, Setter setter) {
 			this.name = name;
 			this.type = type;
 			this.genericType = genericType;
@@ -125,13 +126,13 @@ public class PropertyResolver {
 		}
 
 		private static Property from(Class<?> cls, String prop) {
-			final Method getter = ReflectionUtil.getGetter(cls, prop);
-			final Method setter = ReflectionUtil.getSetter(cls, prop);
+			final Getter getter = ReflectionUtil.getGetter(cls, prop);
+			final Setter setter = ReflectionUtil.getSetter(cls, prop);
 
 			if (getter != null) {
 				return new Property(prop, getter.getReturnType(), getter.getGenericReturnType(), getter, setter);
 			} else if (setter != null) {
-				return new Property(prop, setter.getParameterTypes()[0], setter.getGenericParameterTypes()[0], null, setter);
+				return new Property(prop, setter.getParameterType(), setter.getGenericParameterType(), null, setter);
 			}
 
 			return null;

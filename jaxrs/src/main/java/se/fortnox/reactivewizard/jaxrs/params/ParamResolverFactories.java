@@ -11,6 +11,7 @@ import se.fortnox.reactivewizard.util.ReflectionUtil;
 import io.netty.handler.codec.http.HttpResponseStatus;
 
 import javax.inject.Inject;
+import javax.ws.rs.DefaultValue;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
@@ -69,7 +70,7 @@ public class ParamResolverFactories {
             AnnotatedParamResolverFactory paramResolverFactory = annotatedParamResolverFactories.get(a.annotationType());
             if (paramResolverFactory != null) {
                 Deserializer<T> deserializer = getDeserializer(paramType);
-                return paramResolverFactory.create(a, deserializer);
+                return paramResolverFactory.create(a, deserializer, findDefaultValueAnnotation(parameterAnnotations));
             }
         }
         ParamResolverFactory<T> paramResolverFactory = paramResolvers.get((Class<T>)ReflectionUtil.getRawType(paramType.getType()));
@@ -86,6 +87,15 @@ public class ParamResolverFactories {
         }
 
         throw new RuntimeException("Could not find any deserializer for param of type " + paramType);
+    }
+
+    private DefaultValue findDefaultValueAnnotation(List<Annotation> parameterAnnotations) {
+        for (Annotation annotation : parameterAnnotations) {
+            if (DefaultValue.class == annotation.annotationType()) {
+                return (DefaultValue) annotation;
+            }
+        }
+        return null;
     }
 
     private <T> T deserializeBody(Deserializer<T> deserializer, String value) {

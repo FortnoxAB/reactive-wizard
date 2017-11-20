@@ -1,13 +1,8 @@
 package se.fortnox.reactivewizard.jaxrs;
 
-import se.fortnox.reactivewizard.jaxrs.response.JaxRsResult;
-import io.netty.buffer.ByteBuf;
-import io.reactivex.netty.protocol.http.server.HttpServerRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import rx.Observable;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 
 public class JaxRsResources {
@@ -33,22 +28,16 @@ public class JaxRsResources {
 		log.info(sb.toString());
 	}
 
-	protected Observable<JaxRsResult<?>> call(HttpServerRequest<ByteBuf> request)
-			throws IllegalAccessException, IllegalArgumentException,
-			InvocationTargetException {
+	public JaxRsResource<?> findResource(JaxRsRequest request) {
 		if (reloadClasses) {
 			resources = jaxRsResourceFactory.createResources(services);
 		}
 
-		JaxRsRequest jaxRsRequest = new JaxRsRequest(request);
-
-		for (JaxRsResource r : resources) {
-			Observable<JaxRsResult<?>> result = r.call(jaxRsRequest);
-			if (result != null) {
-				return result;
+		for (JaxRsResource<?> r : resources) {
+			if (r.canHandleRequest(request)) {
+				return r;
 			}
 		}
-
 		return null;
 	}
 }

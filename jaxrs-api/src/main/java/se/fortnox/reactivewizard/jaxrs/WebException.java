@@ -12,19 +12,23 @@ import java.util.UUID;
 @JsonIgnoreProperties({ "cause", "stackTrace", "localizedMessage", "suppressed" })
 public class WebException extends RuntimeException {
 
-	private String				id;
-	private String				error;
-	private FieldError[]		fields;
-	private Object[]			errorParams;
-	private HttpResponseStatus	status;
-	private String message;
+	private String             id;
+	private String             error;
+	private FieldError[]       fields;
+	private Object[]           errorParams;
+	private HttpResponseStatus status;
+	private String             message;
 
 	public WebException(HttpResponseStatus httpStatus) {
 		this(httpStatus, (Throwable) null);
 	}
 
 	public WebException(HttpResponseStatus httpStatus, Throwable e) {
-		super(e);
+		this(httpStatus, e, true);
+	}
+
+	public WebException(HttpResponseStatus httpStatus, Throwable e, boolean stacktrace) {
+		super(null, e, false, stacktrace);
 		this.error = errCodeFromStatus(httpStatus);
 		this.status = httpStatus;
 		this.id = UUID.randomUUID().toString();

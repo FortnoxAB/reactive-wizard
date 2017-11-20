@@ -1,5 +1,6 @@
 package se.fortnox.reactivewizard.jaxrs.response;
 
+import se.fortnox.reactivewizard.jaxrs.Headers;
 import se.fortnox.reactivewizard.jaxrs.JaxRsResource;
 import se.fortnox.reactivewizard.jaxrs.SuccessStatus;
 import se.fortnox.reactivewizard.json.JsonSerializerFactory;
@@ -35,6 +36,17 @@ public class JaxRsResultFactory<T> {
         transformers = resultTransformerFactories.createTransformers(resource);
 
         headers.put("Content-Type", resource.getProduces());
+
+        Headers headerAnnotation = resource.getInstanceMethod().getAnnotation(Headers.class);
+
+        if(headerAnnotation != null && headerAnnotation.value().length > 0) {
+			for (String headerString : headerAnnotation.value()) {
+				if(headerString.contains(":")) {
+					final String[] parts = headerString.split(":");
+					headers.put(parts[0].trim(), parts[1].trim());
+				}
+			}
+		}
     }
 
     public JaxRsResult<T> createResult(Observable<T> output, Object [] args) {
@@ -51,9 +63,14 @@ public class JaxRsResultFactory<T> {
         return result;
     }
 
+    private static final Class BYTEARRAY_TYPE = (new byte[0]).getClass();
+
     private Func1<T, byte[]> createSerializer(String type, Class<T> dataCls, JsonSerializerFactory jsonSerializerFactory) {
         if (type.equals(MediaType.APPLICATION_JSON)) {
             return jsonSerializerFactory.createByteSerializer(dataCls)::apply;
+        }
+        if (dataCls.equals(BYTEARRAY_TYPE)) {
+            return data -> (byte[])data;
         }
         return data -> data.toString().getBytes(charset);
     }

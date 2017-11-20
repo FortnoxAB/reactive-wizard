@@ -9,6 +9,7 @@
     <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <modules>
+        <module>test</module>
         <module>utils</module>
         <module>json</module>
         <module>jaxrs-api</module>
@@ -17,13 +18,20 @@
     </modules>
 
     <properties>
-        <netty.version>4.1.4.Final</netty.version>
-        <rxnetty.version>0.4.18</rxnetty.version>
-        <rxjava.version>1.0.17</rxjava.version>
-        <jackson.version>2.7.5</jackson.version>
-        <junit.version>4.11</junit.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <netty.version>4.1.5.Final</netty.version>
+        <rxnetty.version>0.5.2</rxnetty.version>
+        <rxjava.version>1.2.9</rxjava.version>
+        <jackson.version>2.8.8</jackson.version>
+        <slf4j.version>1.7.22</slf4j.version>
+
+        <junit.version>4.12</junit.version>
         <fest.version>1.4</fest.version>
+        <fest-assert.version>1.4</fest-assert.version>
         <mockito.version>1.10.16</mockito.version>
+        <blitz4j.version>1.37.2</blitz4j.version>
+        <servocore.version>0.12.17</servocore.version>
     </properties>
 
     <build>
@@ -35,6 +43,7 @@
                 <configuration>
                     <source>1.8</source>
                     <target>1.8</target>
+                    <compilerArgument>-parameters</compilerArgument>
                 </configuration>
             </plugin>
         </plugins>

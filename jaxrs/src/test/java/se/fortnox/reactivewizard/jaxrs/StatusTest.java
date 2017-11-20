@@ -1,18 +1,19 @@
 package se.fortnox.reactivewizard.jaxrs;
 
 import se.fortnox.reactivewizard.ExceptionHandler;
-import se.fortnox.reactivewizard.MockHttpServerRequest;
 import se.fortnox.reactivewizard.MockHttpServerResponse;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.reactivex.netty.protocol.http.server.HttpServerRequest;
+import io.reactivex.netty.protocol.http.server.MockHttpServerRequest;
 import org.junit.Test;
 import rx.Observable;
 
 import javax.ws.rs.*;
 
 import static org.fest.assertions.Assertions.assertThat;
+import static rx.Observable.just;
 
 public class StatusTest {
 
@@ -44,6 +45,48 @@ public class StatusTest {
 	}
 
 	@Test
+	public void shouldReturnEmptyResponseWith204Status() {
+		HttpServerRequest<ByteBuf> request = new MockHttpServerRequest("/test/delete", HttpMethod.DELETE);
+		MockHttpServerResponse response = new MockHttpServerResponse();
+		Observable<Void> result = handler.handle(request, response);
+		result.onErrorReturn(e -> {
+			exceptionHandler.handleException(request, response, e);
+			return null;
+		}).toBlocking().singleOrDefault(null);
+		assertThat(response.getStatus()).isEqualTo(HttpResponseStatus.NO_CONTENT);
+		assertThat(response.getHeader("Content-Length")).isEqualTo("0"); // Will be removed in pipeline filter
+		assertThat(response.getHeader("Transfer-Encoding")).isNull();
+		assertThat(response.getOutp()).isEmpty();
+	}
+
+	@Test
+	public void shouldReturnContentDispositionHeaderIfPresent() {
+		HttpServerRequest<ByteBuf> request = new MockHttpServerRequest("/test/get-content-disposition", HttpMethod.GET);
+		MockHttpServerResponse response = new MockHttpServerResponse();
+		Observable<Void> result = handler.handle(request, response);
+		result.onErrorReturn(e -> {
+			exceptionHandler.handleException(request, response, e);
+			return null;
+		}).toBlocking().singleOrDefault(null);
+
+		assertThat(response.getHeader("Content-Disposition")).isEqualTo("attachment; filename=\"export.csv\"");
+		assertThat(response.getHeader("test")).isEqualTo("test");
+	}
+
+	@Test
+	public void shouldReturnNoContentDispositionHeaderIfAbsent() {
+		HttpServerRequest<ByteBuf> request = new MockHttpServerRequest("/test/get", HttpMethod.GET);
+		MockHttpServerResponse response = new MockHttpServerResponse();
+		Observable<Void> result = handler.handle(request, response);
+		result.onErrorReturn(e -> {
+			exceptionHandler.handleException(request, response, e);
+			return null;
+		}).toBlocking().singleOrDefault(null);
+
+		assertThat(response.getHeader("Content-Disposition")).isNull();
+	}
+
+	@Test
 	public void returnsGivenStatusWithSuccessStatusAnnotation() {
 		assertStatus("/test/post-custom", HttpMethod.POST, HttpResponseStatus.OK);
 	}
@@ -67,22 +110,22 @@ public class StatusTest {
 
 		@Override
 		public Observable<String> get() {
-			return Observable.just("get");
+			return just("get");
 		}
 
 		@Override
 		public Observable<String> put() {
-			return Observable.just("put");
+			return just("put");
 		}
 
 		@Override
 		public Observable<String> post() {
-			return Observable.just("post");
+			return just("post");
 		}
 
 		@Override
 		public Observable<String> patch() {
-			return Observable.just("patch");
+			return just("patch");
 		}
 
 		@Override
@@ -92,12 +135,18 @@ public class StatusTest {
 
 		@Override
 		public Observable<String> postCustom() {
-			return Observable.just("post-custom");
+			return just("post-custom");
 		}
 
 		@Override
 		public Observable<String> postWithQueryAndBody(Integer validatedInt, ParamEntity param) {
-			return Observable.just("post ok");
+			return just("post ok");
+		}
+
+		@Override
+		@Headers({"Content-Disposition: attachment; filename=\"export.csv\"", "test:test"})
+		public Observable<String> getContentDisposition() {
+			return just("content-disposition-ok");
 		}
 	}
 
@@ -131,5 +180,9 @@ public class StatusTest {
 		@POST
 		@SuccessStatus(200)
 		Observable<String> postCustom();
+
+		@Path("get-content-disposition")
+		@GET
+		Observable<String> getContentDisposition();
 	}
 }

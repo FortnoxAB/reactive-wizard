@@ -3,8 +3,8 @@ package se.fortnox.reactivewizard.util.rx;
 import rx.Observable;
 
 public class IfThenElse<T> {
-	private Observable<Boolean>	ifValue;
-	private Observable<T>		val;
+	private Observable<Boolean> ifValue;
+	private Observable<T>       val;
 
 	IfThenElse(Observable<Boolean> ifValue) {
 		this.ifValue = ifValue;
