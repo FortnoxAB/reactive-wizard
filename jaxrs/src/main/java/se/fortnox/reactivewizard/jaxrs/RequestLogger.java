@@ -37,6 +37,7 @@ public class RequestLogger {
                 .append(request.getHttpMethod())
                 .append(" ")
                 .append(request.getUri())
+                .append(" ")
                 .append(duration);
     }
 
