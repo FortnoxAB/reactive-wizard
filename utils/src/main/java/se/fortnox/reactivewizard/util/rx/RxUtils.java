@@ -15,7 +15,7 @@ import static rx.Observable.error;
 public class RxUtils {
 
 	public static FirstThen first(Observable<?> doFirst) {
-		return new FirstThen(doFirst);
+		return FirstThen.first(doFirst);
 	}
 
 	public static <T> IfThenElse<T> ifTrue(Observable<Boolean> ifValue) {

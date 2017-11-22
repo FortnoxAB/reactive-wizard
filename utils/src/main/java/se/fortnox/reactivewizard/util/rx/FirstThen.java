@@ -3,6 +3,8 @@ package se.fortnox.reactivewizard.util.rx;
 import rx.Observable;
 import rx.functions.Func0;
 
+import static rx.Observable.just;
+
 /**
  * Helper class used to chain sequential work in Rx, or omit foo variables, turning code like this:
  *
@@ -25,30 +27,37 @@ public class FirstThen {
 
 	private Observable<?> doFirst;
 
-	FirstThen(Observable<?> doFirst) {
+	private FirstThen(Observable<?> doFirst) {
 		this.doFirst = doFirst;
 	}
 
+	public static FirstThen first(Observable<?> doFirst) {
+		return new FirstThen(doFirst);
+	}
+
 	public <T> FirstThen then(Observable<T> thenReturn) {
-		return new FirstThen(
-				doFirst.lastOrDefault(null).flatMap(done -> thenReturn).map(done -> null));
+		return new FirstThen(ignoreElements(doFirst).<T>concatWith(thenReturn));
 	}
 
 	public <T> FirstThen then(Func0<Observable<T>> thenFn) {
-		return new FirstThen(
-				doFirst.lastOrDefault(null).flatMap(done -> thenFn.call()).map(done -> null));
+		return new FirstThen(ignoreElements(doFirst).concatWith(Observable.defer(thenFn)));
 	}
 
 	public <T> Observable<T> thenReturn(Func0<Observable<T>> thenFn) {
-		return doFirst.lastOrDefault(null).flatMap(done -> thenFn.call());
+		return thenReturn(Observable.defer(thenFn));
 	}
 
 	public <T> Observable<T> thenReturn(T thenReturn) {
-		return doFirst.lastOrDefault(null).map(done -> thenReturn);
+		return thenReturn(just(thenReturn));
 	}
 
 	public <T> Observable<T> thenReturn(Observable<T> thenReturn) {
-		return doFirst.lastOrDefault(null).flatMap(done -> thenReturn);
+		return FirstThen.<T>ignoreElements(doFirst).concatWith(thenReturn);
+	}
+
+	@SuppressWarnings("unchecked")
+	private static <S> Observable<S> ignoreElements(Observable<?> toConsume) {
+		return (Observable<S>) toConsume.ignoreElements();
 	}
 
     /**
