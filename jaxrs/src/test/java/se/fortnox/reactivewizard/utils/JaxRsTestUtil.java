@@ -1,7 +1,11 @@
-package se.fortnox.reactivewizard.jaxrs;
+package se.fortnox.reactivewizard.utils;
 
 import se.fortnox.reactivewizard.ExceptionHandler;
-import se.fortnox.reactivewizard.MockHttpServerResponse;
+import se.fortnox.reactivewizard.jaxrs.BlockingResourceScheduler;
+import se.fortnox.reactivewizard.jaxrs.JaxRsRequestHandler;
+import se.fortnox.reactivewizard.jaxrs.JaxRsResourceFactory;
+import se.fortnox.reactivewizard.jaxrs.JaxRsResources;
+import se.fortnox.reactivewizard.mocks.MockHttpServerResponse;
 import se.fortnox.reactivewizard.jaxrs.params.ParamResolverFactories;
 import se.fortnox.reactivewizard.jaxrs.response.JaxRsResultFactoryFactory;
 import io.netty.buffer.ByteBuf;
@@ -103,7 +107,7 @@ public class JaxRsTestUtil {
 		return new TestServer(getJaxRsRequestHandler(services));
 	}
 
-	static class TestServer {
+	public static class TestServer {
 
 		private final HttpServer<ByteBuf, ByteBuf> server;
 

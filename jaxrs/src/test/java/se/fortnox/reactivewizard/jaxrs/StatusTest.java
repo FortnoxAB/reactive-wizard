@@ -1,7 +1,7 @@
 package se.fortnox.reactivewizard.jaxrs;
 
 import se.fortnox.reactivewizard.ExceptionHandler;
-import se.fortnox.reactivewizard.MockHttpServerResponse;
+import se.fortnox.reactivewizard.mocks.MockHttpServerResponse;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;

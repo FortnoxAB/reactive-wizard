@@ -14,7 +14,7 @@ import javax.ws.rs.core.MediaType;
 import java.nio.charset.Charset;
 import java.util.List;
 
-import static se.fortnox.reactivewizard.jaxrs.JaxRsTestUtil.*;
+import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.*;
 import static org.fest.assertions.Assertions.assertThat;
 import static rx.Observable.just;
 
