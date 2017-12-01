@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.util.StdDateFormat;
-import se.fortnox.reactivewizard.MockHttpServerResponse;
+import se.fortnox.reactivewizard.mocks.MockHttpServerResponse;
 import se.fortnox.reactivewizard.jaxrs.params.*;
 import se.fortnox.reactivewizard.jaxrs.params.annotated.AnnotatedParamResolverFactories;
 import se.fortnox.reactivewizard.jaxrs.params.deserializing.DeserializerFactory;
@@ -18,6 +18,7 @@ import org.junit.Test;
 import org.mockito.Mockito;
 import rx.Observable;
 import rx.Single;
+import se.fortnox.reactivewizard.utils.JaxRsTestUtil;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
@@ -30,7 +31,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.*;
 
-import static se.fortnox.reactivewizard.jaxrs.JaxRsTestUtil.*;
+import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.*;
 import static java.util.Arrays.asList;
 import static org.fest.assertions.Assertions.assertThat;
 import static org.fest.assertions.Fail.fail;
