@@ -10,8 +10,8 @@ import static rx.Observable.just;
 @Path("/helloworld")
 public class HelloWorldResource {
 
-	@GET
-	public Observable<String> greeting() {
-		return just("Hello world!");
-	}
+    @GET
+    public Observable<String> greeting() {
+        return just("Hello world!");
+    }
 }

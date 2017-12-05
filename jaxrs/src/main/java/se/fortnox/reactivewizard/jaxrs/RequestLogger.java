@@ -15,35 +15,31 @@ public class RequestLogger {
         this.logger = logger;
     }
 
-    public void log(HttpServerRequest<ByteBuf> request, HttpServerResponse<ByteBuf> response, long requestStartTime) {
-        logRequestResponse(request, response, requestStartTime, logger);
-    }
-
     public static void headersToString(HttpServerRequest<ByteBuf> request, StringBuilder logLine) {
-        request.headerIterator().forEachRemaining(e->
-                logLine.append(e.getKey()).append('=').append(e.getValue()).append(' ')
+        request.headerIterator().forEachRemaining(e ->
+            logLine.append(e.getKey()).append('=').append(e.getValue()).append(' ')
         );
     }
 
     public static void headersToString(HttpServerResponse<ByteBuf> response, StringBuilder logLine) {
-        response.getHeaderNames().forEach(key->
-                logLine.append(key).append('=').append(response.getHeader(key)).append(' ')
+        response.getHeaderNames().forEach(key ->
+            logLine.append(key).append('=').append(response.getHeader(key)).append(' ')
         );
     }
 
     public static void logAccess(HttpServerRequest<ByteBuf> request, HttpServerResponse<ByteBuf> response, long duration, StringBuilder logLine) {
         logLine.append(response.getStatus().code())
-                .append(": ")
-                .append(request.getHttpMethod())
-                .append(" ")
-                .append(request.getUri())
-                .append(" ")
-                .append(duration);
+            .append(": ")
+            .append(request.getHttpMethod())
+            .append(" ")
+            .append(request.getUri())
+            .append(" ")
+            .append(duration);
     }
 
     public static void logRequestResponse(HttpServerRequest<ByteBuf> request, HttpServerResponse<ByteBuf> response, long requestStartTime, Logger log) {
-        long duration = System.currentTimeMillis() - requestStartTime;
-        StringBuilder logLine = new StringBuilder();
+        long          duration = System.currentTimeMillis() - requestStartTime;
+        StringBuilder logLine  = new StringBuilder();
         RequestLogger.logAccess(request, response, duration, logLine);
         if (log.isDebugEnabled()) {
             logLine.append(" Headers: ");
@@ -54,5 +50,9 @@ public class RequestLogger {
         } else {
             log.info(logLine.toString());
         }
+    }
+
+    public void log(HttpServerRequest<ByteBuf> request, HttpServerResponse<ByteBuf> response, long requestStartTime) {
+        logRequestResponse(request, response, requestStartTime, logger);
     }
 }

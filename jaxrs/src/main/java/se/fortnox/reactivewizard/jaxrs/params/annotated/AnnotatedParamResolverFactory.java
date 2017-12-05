@@ -8,5 +8,6 @@ import java.lang.annotation.Annotation;
 
 public interface AnnotatedParamResolverFactory {
     <T> ParamResolver<T> create(Annotation annotation, Deserializer<T> deserializer,
-	    DefaultValue defaultValueAnnotation);
+        DefaultValue defaultValueAnnotation
+    );
 }

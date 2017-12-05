@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE suppressions PUBLIC
+	"-//Puppy Crawl//DTD Suppressions 1.1//EN"
+	"http://checkstyle.sourceforge.net/dtds/suppressions_1_1.dtd">
+
+<suppressions>
+	<!-- PATCH has special meaning as a REST-verb -->
+	<suppress checks="AbbreviationAsWordInName" files="PATCH.java"/>
+
+	<!-- UUIDDeserializer wraps around a system class called UUID -->
+	<suppress checks="AbbreviationAsWordInName" files="UUIDDeserializer.java"/>
+
+	<suppress checks="[a-zA-Z0-9]*" files="[\\/]test[\\/]java[\\/].*\.java" />
+</suppressions>

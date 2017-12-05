@@ -10,30 +10,12 @@ import java.util.jar.Manifest;
 
 public class ManifestUtil {
     private static final String META_INF_ARTIFACT_ID = "ArtifactId";
-    private static final String VERSION = "Version";
+    private static final String VERSION              = "Version";
 
     private static ManifestValues manifestValues = loadAppManifestValues();
 
-    public static class ManifestValues {
-        private final String version;
-        private final String artifactId;
-
-        public ManifestValues(String version, String artifactId) {
-            this.version = version;
-            this.artifactId = artifactId;
-        }
-
-        public String getVersion() {
-            return version;
-        }
-
-        public String getArtifactId() {
-            return artifactId;
-        }
-    }
-
     /**
-     * @return version and artifactId values from the application manifest if present. <br>
+     * @return Version and artifactId values from the application manifest if present. <br>
      *         Can be absent when running not in "fat jar" with custom manifest (e.g. during local development)
      */
     public static Optional<ManifestValues> getManifestValues() {
@@ -44,8 +26,8 @@ public class ManifestUtil {
         Manifest manifest = loadAppManifest();
         if (manifest != null) {
             Attributes mainAttributes = manifest.getMainAttributes();
-            String version = mainAttributes.getValue(VERSION);
-            String artifactId = mainAttributes.getValue(META_INF_ARTIFACT_ID);
+            String     version        = mainAttributes.getValue(VERSION);
+            String     artifactId     = mainAttributes.getValue(META_INF_ARTIFACT_ID);
             return new ManifestValues(version, artifactId);
         } else {
             return null;
@@ -64,6 +46,24 @@ public class ManifestUtil {
             return null;
         } catch (IOException e) {
             throw new RuntimeException("Cannot load manifest.", e);
+        }
+    }
+
+    public static class ManifestValues {
+        private final String version;
+        private final String artifactId;
+
+        public ManifestValues(String version, String artifactId) {
+            this.version = version;
+            this.artifactId = artifactId;
+        }
+
+        public String getVersion() {
+            return version;
+        }
+
+        public String getArtifactId() {
+            return artifactId;
         }
     }
 }

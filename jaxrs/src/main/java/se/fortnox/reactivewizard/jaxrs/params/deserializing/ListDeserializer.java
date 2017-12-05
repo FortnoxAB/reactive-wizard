@@ -18,12 +18,12 @@ public class ListDeserializer<T> implements Deserializer<List<T>> {
             return null;
         }
 
-        if(value.isEmpty()){
+        if (value.isEmpty()) {
             return Collections.emptyList();
         }
 
-        String[] rawValues = value.split(",");
-        List<T> deserialized = new ArrayList<>(rawValues.length);
+        String[] rawValues    = value.split(",");
+        List<T>  deserialized = new ArrayList<>(rawValues.length);
         for (String rawValue : rawValues) {
             deserialized.add(inner.deserialize(rawValue));
         }

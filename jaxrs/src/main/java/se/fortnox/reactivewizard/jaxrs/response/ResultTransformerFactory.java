@@ -10,8 +10,8 @@ public interface ResultTransformerFactory extends Comparable<ResultTransformerFa
     }
 
     @Override
-    default int compareTo(ResultTransformerFactory o) {
-        return this.getPrio().compareTo(o.getPrio());
+    default int compareTo(ResultTransformerFactory resultTransformerFactory) {
+        return this.getPrio().compareTo(resultTransformerFactory.getPrio());
     }
 
 }

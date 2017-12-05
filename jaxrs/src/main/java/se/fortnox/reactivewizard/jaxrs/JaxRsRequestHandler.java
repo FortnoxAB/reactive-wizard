@@ -1,13 +1,13 @@
 package se.fortnox.reactivewizard.jaxrs;
 
-import se.fortnox.reactivewizard.ExceptionHandler;
-import se.fortnox.reactivewizard.jaxrs.response.JaxRsResult;
-import se.fortnox.reactivewizard.util.DebugUtil;
 import io.netty.buffer.ByteBuf;
 import io.reactivex.netty.protocol.http.server.HttpServerRequest;
 import io.reactivex.netty.protocol.http.server.HttpServerResponse;
 import io.reactivex.netty.protocol.http.server.RequestHandler;
 import rx.Observable;
+import se.fortnox.reactivewizard.ExceptionHandler;
+import se.fortnox.reactivewizard.jaxrs.response.JaxRsResult;
+import se.fortnox.reactivewizard.util.DebugUtil;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -24,12 +24,13 @@ public class JaxRsRequestHandler implements RequestHandler<ByteBuf, ByteBuf> {
 
     @Inject
     public JaxRsRequestHandler(JaxRsServiceProvider services,
-                               JaxRsResourceFactory jaxRsResourceFactory,
-                               ExceptionHandler exceptionHandler) {
+        JaxRsResourceFactory jaxRsResourceFactory,
+        ExceptionHandler exceptionHandler
+    ) {
         this(services.getServices(),
-                jaxRsResourceFactory,
-                exceptionHandler,
-                null);
+            jaxRsResourceFactory,
+            exceptionHandler,
+            null);
     }
 
     public JaxRsRequestHandler(Object... services) {
@@ -37,9 +38,10 @@ public class JaxRsRequestHandler implements RequestHandler<ByteBuf, ByteBuf> {
     }
 
     public JaxRsRequestHandler(Object[] services,
-                               JaxRsResourceFactory jaxRsResourceFactory,
-                               ExceptionHandler exceptionHandler,
-                               Boolean classReloading) {
+        JaxRsResourceFactory jaxRsResourceFactory,
+        ExceptionHandler exceptionHandler,
+        Boolean classReloading
+    ) {
         this.exceptionHandler = exceptionHandler;
         if (classReloading == null) {
             classReloading = DebugUtil.IS_DEBUG;
@@ -56,8 +58,8 @@ public class JaxRsRequestHandler implements RequestHandler<ByteBuf, ByteBuf> {
      */
     @Override
     public Observable<Void> handle(HttpServerRequest<ByteBuf> request, HttpServerResponse<ByteBuf> response) {
-        JaxRsRequest jaxRsRequest = new JaxRsRequest(request);
-        JaxRsResource<?> resource = resources.findResource(jaxRsRequest);
+        JaxRsRequest     jaxRsRequest = new JaxRsRequest(request);
+        JaxRsResource<?> resource     = resources.findResource(jaxRsRequest);
 
         if (resource == null) {
             return null;
@@ -66,10 +68,10 @@ public class JaxRsRequestHandler implements RequestHandler<ByteBuf, ByteBuf> {
         long requestStartTime = System.currentTimeMillis();
 
         return resource.call(jaxRsRequest)
-                .singleOrDefault(null)
-                .flatMap(result -> writeResult(response, result))
-                .onErrorResumeNext(e -> exceptionHandler.handleException(request, response, e))
-                .doAfterTerminate(()->resource.log(request, response, requestStartTime));
+            .singleOrDefault(null)
+            .flatMap(result -> writeResult(response, result))
+            .onErrorResumeNext(e -> exceptionHandler.handleException(request, response, e))
+            .doAfterTerminate(() -> resource.log(request, response, requestStartTime));
     }
 
     private Observable<Void> writeResult(HttpServerResponse<ByteBuf> response, JaxRsResult<?> result) {

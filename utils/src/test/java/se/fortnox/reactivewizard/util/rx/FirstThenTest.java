@@ -11,14 +11,17 @@ import static org.fest.assertions.Fail.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static rx.Observable.*;
+import static rx.Observable.empty;
+import static rx.Observable.error;
+import static rx.Observable.just;
+import static rx.Observable.range;
 import static se.fortnox.reactivewizard.util.rx.RxUtils.first;
 
 public class FirstThenTest {
 
     @Test
     public void shouldExecuteFirstBeforeThen() {
-        Consumer<Integer> log = mock(Consumer.class);
+        Consumer<Integer>   log    = mock(Consumer.class);
         Observable<Integer> result = first(just(1).doOnNext(log::accept)).thenReturn(just(2));
         verify(log, never()).accept(1);
 
@@ -45,13 +48,13 @@ public class FirstThenTest {
     public void shouldRunObservableInFunction() {
         Consumer<Integer> log = mock(Consumer.class);
         Integer result = first(just(1))
-                .then(() -> Observable.fromCallable(() -> {
-                    log.accept(2);
-                    return "test";
-                }))
-                .thenReturn(just(3))
-                .toBlocking()
-                .single();
+            .then(() -> Observable.fromCallable(() -> {
+                log.accept(2);
+                return "test";
+            }))
+            .thenReturn(just(3))
+            .toBlocking()
+            .single();
 
         assertThat(result).isEqualTo(3);
         verify(log).accept(2);
@@ -60,7 +63,7 @@ public class FirstThenTest {
     @Test
     public void shouldSupportBackpressure() {
         TestSubscriber<Integer> testSubscriber = new TestSubscriber<>(0);
-        first(empty()).thenReturn(range(1,100)).subscribe(testSubscriber);
+        first(empty()).thenReturn(range(1, 100)).subscribe(testSubscriber);
 
         testSubscriber.assertNoValues();
 

@@ -5,50 +5,50 @@ import org.junit.Test;
 import static org.fest.assertions.Assertions.assertThat;
 
 public class PropertyResolverTest {
-	public static class Mutable {
-		private int a;
+    @Test
+    public void shouldGetAndSetPropertiesMutable() throws Exception {
+        PropertyResolver propertyResolver = PropertyResolver.from(Mutable.class, new String[]{"anInt"}).orElse(null);
+        assertThat(propertyResolver).isNotNull();
 
-		public int getA() {
-			return a;
-		}
+        Mutable mutable = new Mutable();
+        mutable.setAnInt(5);
+        assertThat(propertyResolver.getValue(mutable)).isEqualTo(5);
+        propertyResolver.setValue(mutable, 10);
+        assertThat(propertyResolver.getValue(mutable)).isEqualTo(10);
+    }
 
-		public void setA(int a) {
-			this.a = a;
-		}
-	}
+    @Test
+    public void shouldGetAndSetPropertiesImmutable() throws Exception {
+        PropertyResolver propertyResolver = PropertyResolver.from(Immutable.class, new String[]{"anInt"}).orElse(null);
+        assertThat(propertyResolver).isNotNull();
 
-	public static class Immutable {
-		private final int a;
+        Immutable immutable = new Immutable(5);
+        assertThat(propertyResolver.getValue(immutable)).isEqualTo(5);
+        propertyResolver.setValue(immutable, 10);
+        assertThat(propertyResolver.getValue(immutable)).isEqualTo(10);
+    }
 
-		public Immutable(int a) {
-			this.a = a;
-		}
+    public static class Mutable {
+        private int anInt;
 
-		public int getA() {
-			return a;
-		}
-	}
+        public int getAnInt() {
+            return anInt;
+        }
 
-	@Test
-	public void shouldGetAndSetPropertiesMutable() throws Exception {
-		PropertyResolver a = PropertyResolver.from(Mutable.class, new String[] {"a"}).orElse(null);
-		assertThat(a).isNotNull();
+        public void setAnInt(int anInt) {
+            this.anInt = anInt;
+        }
+    }
 
-		Mutable mutable = new Mutable();
-		mutable.setA(5);
-		assertThat(a.getValue(mutable)).isEqualTo(5);
-		a.setValue(mutable, 10);
-		assertThat(a.getValue(mutable)).isEqualTo(10);
-	}
+    public static class Immutable {
+        private final int anInt;
 
-	@Test
-	public void shouldGetAndSetPropertiesImmutable() throws Exception {
-		PropertyResolver a = PropertyResolver.from(Immutable.class, new String[] {"a"}).orElse(null);
-		assertThat(a).isNotNull();
+        public Immutable(int anInt) {
+            this.anInt = anInt;
+        }
 
-		Immutable immutable = new Immutable(5);
-		assertThat(a.getValue(immutable)).isEqualTo(5);
-		a.setValue(immutable, 10);
-		assertThat(a.getValue(immutable)).isEqualTo(10);
-	}
+        public int getAnInt() {
+            return anInt;
+        }
+    }
 }

@@ -21,12 +21,11 @@ import static rx.Observable.just;
  * Represents an incoming request. Helps with extracting different types of data from the request.
  */
 public class JaxRsRequest {
-    private static final Logger LOG = LoggerFactory.getLogger(JaxRsResource.class);
+    private static final Logger           LOG       = LoggerFactory.getLogger(JaxRsResource.class);
     private static final ByteBufCollector collector = new ByteBufCollector(10 * 1024 * 1024); // 10 MB
-
-    private Matcher matcher;
     private final HttpServerRequest<ByteBuf> req;
-    private final String body;
+    private final String                     body;
+    private       Matcher                    matcher;
 
     protected JaxRsRequest(HttpServerRequest<ByteBuf> req, Matcher matcher, String body) {
         this.req = req;
@@ -34,12 +33,12 @@ public class JaxRsRequest {
         this.body = body;
     }
 
-    protected JaxRsRequest create(HttpServerRequest<ByteBuf> req, Matcher matcher, String body) {
-        return new JaxRsRequest(req, matcher, body);
-    }
-
     public JaxRsRequest(HttpServerRequest<ByteBuf> request) {
         this(request, null, null);
+    }
+
+    protected JaxRsRequest create(HttpServerRequest<ByteBuf> req, Matcher matcher, String body) {
+        return new JaxRsRequest(req, matcher, body);
     }
 
     public boolean hasMethod(HttpMethod httpMethod) {
@@ -53,14 +52,14 @@ public class JaxRsRequest {
     public Observable<JaxRsRequest> loadBody() {
         HttpMethod httpMethod = req.getHttpMethod();
         if (HttpMethod.POST.equals(httpMethod) || HttpMethod.PUT.equals(httpMethod) ||
-                HttpMethod.PATCH.equals(httpMethod) || HttpMethod.DELETE.equals(httpMethod)) {
+            HttpMethod.PATCH.equals(httpMethod) || HttpMethod.DELETE.equals(httpMethod)) {
             return collector.collectString(req.getContent()
-                    .doOnError(e -> LOG.error(
-                            "Error reading data for request "
-                                    + httpMethod + " " + req.getUri(),
-                            e)))
-                    .lastOrDefault(null)
-                    .map(body-> create(req, matcher, body));
+                .doOnError(e -> LOG.error(
+                    "Error reading data for request "
+                        + httpMethod + " " + req.getUri(),
+                    e)))
+                .lastOrDefault(null)
+                .map(body -> create(req, matcher, body));
         }
         return just(this);
     }
@@ -105,9 +104,9 @@ public class JaxRsRequest {
     }
 
     private String parseUrlEncodedBody(String body, String key, String defaultValue) {
-        QueryStringDecoder decoder = new QueryStringDecoder(body, false);
+        QueryStringDecoder        decoder    = new QueryStringDecoder(body, false);
         Map<String, List<String>> parameters = decoder.parameters();
-        List<String> list = parameters.get(key);
+        List<String>              list       = parameters.get(key);
         return list == null || list.isEmpty() ? defaultValue : list.get(0);
     }
 

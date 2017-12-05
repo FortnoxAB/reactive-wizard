@@ -8,7 +8,7 @@ public class DateDeserializer implements Deserializer<Date> {
 
     private Provider<DateFormat> dateFormatProvider;
 
-    public DateDeserializer(Provider<DateFormat> dateFormatProvider){
+    public DateDeserializer(Provider<DateFormat> dateFormatProvider) {
         this.dateFormatProvider = dateFormatProvider;
     }
 

@@ -5,5 +5,5 @@ package se.fortnox.reactivewizard.jaxrs.response;
  */
 public interface ResultTransformer<T> {
 
-	JaxRsResult<T> apply(JaxRsResult<T> result, Object[] args);
+    JaxRsResult<T> apply(JaxRsResult<T> result, Object[] args);
 }

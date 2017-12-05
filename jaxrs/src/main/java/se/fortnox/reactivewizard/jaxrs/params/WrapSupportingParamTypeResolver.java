@@ -15,7 +15,7 @@ public class WrapSupportingParamTypeResolver extends ParamTypeResolver {
             Class<?> wrapperType = wrapAnnotation.value();
             if (!instanceParameter.getType().isAssignableFrom(wrapperType)) {
                 throw new RuntimeException("Wrapper for " + instanceParameter.getDeclaringExecutable() + " not correct. "
-                        + wrapperType + " must be subclass of " + instanceParameter.getType());
+                    + wrapperType + " must be subclass of " + instanceParameter.getType());
             }
             return new TypeReference<T>() {
                 @Override

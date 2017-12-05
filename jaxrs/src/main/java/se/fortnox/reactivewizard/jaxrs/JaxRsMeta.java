@@ -1,105 +1,112 @@
 package se.fortnox.reactivewizard.jaxrs;
 
-import se.fortnox.reactivewizard.util.ReflectionUtil;
 import io.netty.handler.codec.http.HttpMethod;
+import se.fortnox.reactivewizard.util.ReflectionUtil;
 
-import javax.ws.rs.*;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.DELETE;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 
 public class JaxRsMeta {
-	private HttpMethod method = null;
-	private Path methodPath = null;
-	private String produces = MediaType.APPLICATION_JSON;
-	private Consumes consumes = null;
-	private String fullPath;
+    private HttpMethod method     = null;
+    private Path       methodPath = null;
+    private String     produces   = MediaType.APPLICATION_JSON;
+    private Consumes   consumes   = null;
+    private String fullPath;
 
-	public JaxRsMeta(Method m) {
-		this(m, null);
-	}
+    public JaxRsMeta(Method method) {
+        this(method, null);
+    }
 
-	public JaxRsMeta(Method m, Path clsPath) {
-		for (Annotation a : ReflectionUtil.getAnnotations(m)) {
-			if (a instanceof GET) {
-				method = HttpMethod.GET;
-			} else if (a instanceof POST) {
-				method = HttpMethod.POST;
-			} else if (a instanceof PUT) {
-				method = HttpMethod.PUT;
-			} else if (a instanceof PATCH) {
-				method = HttpMethod.PATCH;
-			} else if (a instanceof DELETE) {
-				method = HttpMethod.DELETE;
-			} else if (a instanceof Produces) {
-				String[] types = ((Produces) a).value();
-				if (types != null && types.length != 0) {
-					produces = types[0];
-				}
-			} else if (a instanceof Consumes) {
-				consumes = (Consumes)a;
-			} else if (a instanceof Path) {
-				methodPath = (Path) a;
-			}
-		}
-		if (clsPath == null) {
-			clsPath = getPath(m.getDeclaringClass());
-		}
-		fullPath = concatPaths(clsPath, methodPath);
-	}
+    public JaxRsMeta(Method method, Path classPath) {
+        for (Annotation annotation : ReflectionUtil.getAnnotations(method)) {
+            if (annotation instanceof GET) {
+                this.method = HttpMethod.GET;
+            } else if (annotation instanceof POST) {
+                this.method = HttpMethod.POST;
+            } else if (annotation instanceof PUT) {
+                this.method = HttpMethod.PUT;
+            } else if (annotation instanceof PATCH) {
+                this.method = HttpMethod.PATCH;
+            } else if (annotation instanceof DELETE) {
+                this.method = HttpMethod.DELETE;
+            } else if (annotation instanceof Produces) {
+                String[] types = ((Produces)annotation).value();
+                if (types != null && types.length != 0) {
+                    produces = types[0];
+                }
+            } else if (annotation instanceof Consumes) {
+                consumes = (Consumes)annotation;
+            } else if (annotation instanceof Path) {
+                methodPath = (Path)annotation;
+            }
+        }
+        if (classPath == null) {
+            classPath = getPath(method.getDeclaringClass());
+        }
+        fullPath = concatPaths(classPath, methodPath);
+    }
 
-	public HttpMethod getHttpMethod() {
-		return method;
-	}
+    public static Path getPath(Class<? extends Object> cls) {
+        Path path = cls.getAnnotation(Path.class);
+        if (path == null) {
+            for (Class<?> i : cls.getInterfaces()) {
+                path = i.getAnnotation(Path.class);
+                if (path != null) {
+                    return path;
+                }
+            }
+        }
+        return path;
+    }
 
-	public void setMethod(HttpMethod method) {
-		this.method = method;
-	}
+    public static String concatPaths(Path path1, Path path2) {
+        final String        path1String   = path1 == null ? "" : path1.value();
+        final StringBuilder stringBuilder = new StringBuilder();
+        if (!path1String.startsWith("/")) {
+            stringBuilder.append("/");
+        }
+        stringBuilder.append(path1String);
+        if (!path1String.endsWith("/")) {
+            stringBuilder.append("/");
+        }
 
-	public String getProduces() {
-		return produces;
-	}
+        String path2String = path2 == null ? "" : path2.value();
+        if (path2String.startsWith("/")) {
+            path2String = path2String.substring(1);
+        }
+        stringBuilder.append(path2String);
+        if (stringBuilder.charAt(stringBuilder.length() - 1) == '/') {
+            return stringBuilder.substring(0, stringBuilder.length() - 1);
+        }
+        return stringBuilder.toString();
+    }
 
-	public Consumes getConsumes() {
-		return consumes;
-	}
+    public HttpMethod getHttpMethod() {
+        return method;
+    }
 
-	public String getFullPath() {
-		return fullPath;
-	}
+    public void setMethod(HttpMethod method) {
+        this.method = method;
+    }
 
-	public static Path getPath(Class<? extends Object> cls) {
-		Path path = cls.getAnnotation(Path.class);
-		if (path == null) {
-			for (Class<?> i : cls.getInterfaces()) {
-				path = i.getAnnotation(Path.class);
-				if (path != null) {
-					return path;
-				}
-			}
-		}
-		return path;
-	}
+    public String getProduces() {
+        return produces;
+    }
 
-	public static String concatPaths(Path p1, Path p2) {
-		String p1s = p1 == null ? "" : p1.value();
-		String p2s = p2 == null ? "" : p2.value();
-		StringBuilder sb = new StringBuilder();
-		if (!p1s.startsWith("/")) {
-			sb.append("/");
-		}
-		sb.append(p1s);
-		if (!p1s.endsWith("/")) {
-			sb.append("/");
-		}
-		if (p2s.startsWith("/")) {
-			p2s = p2s.substring(1);
-		}
-		sb.append(p2s);
-		if (sb.charAt(sb.length() - 1) == '/') {
-			return sb.substring(0, sb.length() - 1);
-		}
-		return sb.toString();
-	}
+    public Consumes getConsumes() {
+        return consumes;
+    }
+
+    public String getFullPath() {
+        return fullPath;
+    }
 
 }
