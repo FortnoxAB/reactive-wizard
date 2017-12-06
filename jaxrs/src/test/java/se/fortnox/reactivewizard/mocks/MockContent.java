@@ -1,4 +1,4 @@
-package se.fortnox.reactivewizard;
+package se.fortnox.reactivewizard.mocks;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;

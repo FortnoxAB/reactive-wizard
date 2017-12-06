@@ -16,9 +16,9 @@ import java.util.List;
 
 import static org.fest.assertions.Assertions.assertThat;
 import static rx.Observable.just;
-import static se.fortnox.reactivewizard.jaxrs.JaxRsTestUtil.body;
-import static se.fortnox.reactivewizard.jaxrs.JaxRsTestUtil.get;
-import static se.fortnox.reactivewizard.jaxrs.JaxRsTestUtil.testServer;
+import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.body;
+import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.get;
+import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.testServer;
 
 /**
  * Created by jonashall on 2015-12-02.

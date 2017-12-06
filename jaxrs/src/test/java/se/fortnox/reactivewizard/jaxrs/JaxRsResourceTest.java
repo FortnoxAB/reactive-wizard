@@ -56,6 +56,7 @@ import java.util.Set;
 import java.util.TimeZone;
 import java.util.UUID;
 
+import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.*;
 import static java.util.Arrays.asList;
 import static org.fest.assertions.Assertions.assertThat;
 import static org.fest.assertions.Fail.fail;
@@ -75,7 +76,11 @@ interface Foo {
 
 public class JaxRsResourceTest {
 
-    private final TestresourceInterface service = new TestresourceImpl();
+	public enum TestEnum {
+		ONE, TWO, THREE
+	}
+
+	private final TestresourceInterface service = new TestresourceImpl();
 
     @Test
     public void shouldConcatPaths() throws InvocationTargetException, IllegalAccessException {
