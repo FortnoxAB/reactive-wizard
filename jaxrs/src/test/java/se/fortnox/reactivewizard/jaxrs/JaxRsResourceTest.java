@@ -15,7 +15,6 @@ import org.junit.Test;
 import org.mockito.Mockito;
 import rx.Observable;
 import rx.Single;
-import se.fortnox.reactivewizard.MockHttpServerResponse;
 import se.fortnox.reactivewizard.jaxrs.params.ParamResolver;
 import se.fortnox.reactivewizard.jaxrs.params.ParamResolverFactories;
 import se.fortnox.reactivewizard.jaxrs.params.ParamResolverFactory;
@@ -26,6 +25,8 @@ import se.fortnox.reactivewizard.jaxrs.params.deserializing.DeserializerFactory;
 import se.fortnox.reactivewizard.jaxrs.response.JaxRsResult;
 import se.fortnox.reactivewizard.jaxrs.response.JaxRsResultFactoryFactory;
 import se.fortnox.reactivewizard.jaxrs.response.ResultTransformerFactories;
+import se.fortnox.reactivewizard.mocks.MockHttpServerResponse;
+import se.fortnox.reactivewizard.utils.JaxRsTestUtil;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.CookieParam;
@@ -62,17 +63,6 @@ import static org.fest.assertions.Assertions.assertThat;
 import static org.fest.assertions.Fail.fail;
 import static org.mockito.Mockito.when;
 import static rx.Observable.just;
-import static se.fortnox.reactivewizard.jaxrs.JaxRsTestUtil.body;
-import static se.fortnox.reactivewizard.jaxrs.JaxRsTestUtil.delete;
-import static se.fortnox.reactivewizard.jaxrs.JaxRsTestUtil.get;
-import static se.fortnox.reactivewizard.jaxrs.JaxRsTestUtil.getWithHeaders;
-import static se.fortnox.reactivewizard.jaxrs.JaxRsTestUtil.patch;
-import static se.fortnox.reactivewizard.jaxrs.JaxRsTestUtil.post;
-import static se.fortnox.reactivewizard.jaxrs.JaxRsTestUtil.put;
-
-interface Foo {
-    String getStr();
-}
 
 public class JaxRsResourceTest {
 
@@ -403,6 +393,30 @@ public class JaxRsResourceTest {
             .isEqualTo("\"2010-01-01T00:00:00.000+0000\"");
     }
 
+    class CustomDateFormat extends StdDateFormat {
+
+        public CustomDateFormat() {
+            super(TimeZone.getTimeZone("Europe/Stockholm"), Locale.getDefault(), true);
+        }
+
+        @Override
+        public Date parse(String source) throws ParseException {
+            try {
+                return super.parse(source);
+            } catch (ParseException e) {
+                SimpleDateFormat fmt = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                fmt.setTimeZone(TimeZone.getTimeZone("Europe/Stockholm"));
+                return fmt.parse(source);
+            }
+        }
+
+        @Override
+        public StdDateFormat clone() {
+            return new CustomDateFormat();
+        }
+    }
+
+
     @Test
     public void shouldSupportCustomDates() throws Exception {
         Module customDateModule = new AbstractModule() {
@@ -669,8 +683,59 @@ public class JaxRsResourceTest {
         assertThat(get(service, "/test/acceptsQueryListWithEnum?EnumList=ONE,TWO,THREE").getOutp()).isEqualTo("3");
     }
 
-    public enum TestEnum {
-        ONE, TWO, THREE
+
+    @Path("test")
+    class Testresource {
+        @Path("acceptsString")
+        @GET
+        public Observable<String> acceptsString(@QueryParam("myarg") String myarg) {
+            return just("inp: " + myarg);
+        }
+
+        @Path("returnsNull")
+        @GET
+        public Observable<String> returnsNull() {
+            return null;
+        }
+
+        @Path("serverSideAnnotationsOnClassAsResource")
+        @GET
+        @Headers("Content-Disposition: attachment; filename=auditlog.csv")
+        public Observable<String> shouldIgnoreHeaderAnnotation() {
+            return just("");
+        }
+    }
+
+    class LocalDateContainer {
+        private LocalDate localDate;
+
+        public LocalDateContainer(LocalDate localDate) {
+            this.localDate = localDate;
+        }
+
+        public LocalDate getLocalDate() {
+            return localDate;
+        }
+
+        public void setLocalDate(LocalDate localDate) {
+            this.localDate = localDate;
+        }
+    }
+
+    class LocalTimeContainer {
+        private LocalTime localTime;
+
+        LocalTimeContainer(LocalTime localTime) {
+            this.localTime = localTime;
+        }
+
+        public LocalTime getLocalTime() {
+            return localTime;
+        }
+
+        public void setLocalTime(LocalTime localTime) {
+            this.localTime = localTime;
+        }
     }
 
     @Path("test")
@@ -922,84 +987,7 @@ public class JaxRsResourceTest {
         Observable<String> acceptsHeadersOnImplementation();
     }
 
-    class CustomDateFormat extends StdDateFormat {
-
-        public CustomDateFormat() {
-            super(TimeZone.getTimeZone("Europe/Stockholm"), Locale.getDefault(), true);
-        }
-
-        @Override
-        public Date parse(String source) throws ParseException {
-            try {
-                return super.parse(source);
-            } catch (ParseException e) {
-                SimpleDateFormat fmt = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                fmt.setTimeZone(TimeZone.getTimeZone("Europe/Stockholm"));
-                return fmt.parse(source);
-            }
-        }
-
-        @Override
-        public StdDateFormat clone() {
-            return new CustomDateFormat();
-        }
-    }
-
-    @Path("test")
-    class Testresource {
-        @Path("acceptsString")
-        @GET
-        public Observable<String> acceptsString(@QueryParam("myarg") String myarg) {
-            return just("inp: " + myarg);
-        }
-
-        @Path("returnsNull")
-        @GET
-        public Observable<String> returnsNull() {
-            return null;
-        }
-
-        @Path("serverSideAnnotationsOnClassAsResource")
-        @GET
-        @Headers("Content-Disposition: attachment; filename=auditlog.csv")
-        public Observable<String> shouldIgnoreHeaderAnnotation() {
-            return just("");
-        }
-    }
-
-    class LocalDateContainer {
-        private LocalDate localDate;
-
-        public LocalDateContainer(LocalDate localDate) {
-            this.localDate = localDate;
-        }
-
-        public LocalDate getLocalDate() {
-            return localDate;
-        }
-
-        public void setLocalDate(LocalDate localDate) {
-            this.localDate = localDate;
-        }
-    }
-
-    class LocalTimeContainer {
-        private LocalTime localTime;
-
-        LocalTimeContainer(LocalTime localTime) {
-            this.localTime = localTime;
-        }
-
-        public LocalTime getLocalTime() {
-            return localTime;
-        }
-
-        public void setLocalTime(LocalTime localTime) {
-            this.localTime = localTime;
-        }
-    }
-
-    class TestresourceImpl implements TestresourceInterface {
+        class TestresourceImpl implements TestresourceInterface {
 
         @Override
         public Observable<String> acceptsString(String myarg) {
@@ -1358,5 +1346,11 @@ public class JaxRsResourceTest {
             return just("");
         }
     }
+
+}
+
+interface Foo {
+
+	String getStr();
 
 }

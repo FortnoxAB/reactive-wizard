@@ -5,15 +5,16 @@ import org.junit.Test;
 import rx.Scheduler;
 import rx.schedulers.Schedulers;
 import se.fortnox.reactivewizard.ExceptionHandler;
-import se.fortnox.reactivewizard.utils.params.ParamResolverFactories;
-import se.fortnox.reactivewizard.utils.response.JaxRsResultFactoryFactory;
+import se.fortnox.reactivewizard.jaxrs.params.ParamResolverFactories;
+import se.fortnox.reactivewizard.jaxrs.response.JaxRsResultFactoryFactory;
+import se.fortnox.reactivewizard.utils.JaxRsTestUtil;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import java.util.concurrent.Executors;
 
 import static org.fest.assertions.Assertions.assertThat;
-import static se.fortnox.reactivewizard.jaxrs.JaxRsTestUtil.testServer;
+import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.testServer;
 
 public class SynchronousResourcesTest {
 

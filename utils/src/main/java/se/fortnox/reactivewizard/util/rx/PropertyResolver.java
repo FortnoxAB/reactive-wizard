@@ -9,9 +9,6 @@ import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.Optional;
 
-/**
- * Created by jonashall on 2015-12-08.
- */
 public class PropertyResolver {
     private final Type       genericType;
     private final Property[] properties;

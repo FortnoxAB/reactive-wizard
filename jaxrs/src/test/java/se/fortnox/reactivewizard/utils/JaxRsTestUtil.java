@@ -18,10 +18,6 @@ import io.reactivex.netty.protocol.http.server.HttpServerRequest;
 import io.reactivex.netty.protocol.http.server.MockHttpServerRequest;
 import io.reactivex.netty.protocol.http.server.RequestHandler;
 import rx.Observable;
-import se.fortnox.reactivewizard.ExceptionHandler;
-import se.fortnox.reactivewizard.MockHttpServerResponse;
-import se.fortnox.reactivewizard.jaxrs.params.ParamResolverFactories;
-import se.fortnox.reactivewizard.jaxrs.response.JaxRsResultFactoryFactory;
 
 import java.nio.charset.Charset;
 import java.util.List;

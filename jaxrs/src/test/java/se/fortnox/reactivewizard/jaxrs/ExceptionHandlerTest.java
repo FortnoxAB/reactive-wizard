@@ -10,13 +10,12 @@ import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 import org.junit.Test;
 import se.fortnox.reactivewizard.ExceptionHandler;
-import se.fortnox.reactivewizard.MockHttpServerResponse;
+import se.fortnox.reactivewizard.mocks.MockHttpServerResponse;
 
 import java.nio.channels.ClosedChannelException;
 import java.nio.file.FileSystemException;
 import java.nio.file.NoSuchFileException;
 
-import static se.fortnox.reactivewizard.test.TestUtil.matches;
 import static org.fest.assertions.Assertions.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;

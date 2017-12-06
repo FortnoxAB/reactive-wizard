@@ -20,11 +20,7 @@ import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.body;
 import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.get;
 import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.testServer;
 
-/**
- * Created by jonashall on 2015-12-02.
- */
 public class StreamingDataTest {
-
     private StreamingResource   streamingResource   = new StreamingResourceImpl();
     private NoStreamingResource noStreamingResource = new NoStreamingResourceImpl();
 

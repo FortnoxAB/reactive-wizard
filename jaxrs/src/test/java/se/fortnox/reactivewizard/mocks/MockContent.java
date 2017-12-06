@@ -4,9 +4,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import rx.subjects.UnicastSubject;
 
-/**
- * Created by jonashall on 2015-11-26.
- */
 public class MockContent {
     public static UnicastSubject<ByteBuf> noContent() {
         return toContent(new byte[0]);

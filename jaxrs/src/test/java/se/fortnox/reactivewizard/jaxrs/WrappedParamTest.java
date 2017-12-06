@@ -6,8 +6,6 @@ import io.netty.handler.codec.http.HttpMethod;
 import io.reactivex.netty.protocol.http.server.MockHttpServerRequest;
 import org.junit.Test;
 import rx.Observable;
-import se.fortnox.reactivewizard.ExceptionHandler;
-import se.fortnox.reactivewizard.MockHttpServerResponse;
 
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -16,9 +14,6 @@ import static org.fest.assertions.Assertions.assertThat;
 import static org.fest.assertions.Fail.fail;
 import static rx.Observable.just;
 
-/**
- * Created by jonashall on 2015-12-01.
- */
 public class WrappedParamTest {
 
     @Test
@@ -47,7 +42,7 @@ public class WrappedParamTest {
             fail("expected exception");
         } catch (Exception e) {
             String expected = "Wrapper for public rx.Observable se.fortnox.reactivewizard.jaxrs.WrappedParamTest$2.getType" +
-                "(se.fortnox.reactivewizard.jaxrs.Entity) not correct." +
+                "(se.fortnox.reactivewizard.jaxrs.Entity) not correct. " +
                 "class java.lang.String must be subclass of class se.fortnox.reactivewizard.jaxrs.Entity";
             assertThat(e.getMessage()).isEqualTo(expected);
             return;
