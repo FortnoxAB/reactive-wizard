@@ -9,7 +9,7 @@ A natural fit for this type of I/O is Reactive Extensions (Rx). Rx lets you comp
 We think that building non-blocking web applications with the above technologies should be easy. That is why Reactive Wizard support JAX-RS annotations on class methods returning Rx observables. Scroll down a bit more for an example!
 
 #### What are the future plans of the project?
-The Reactive Wizard project currently available on GitHub is a subset of the code we use internally for powering Java web applications. The plan is to move more parts to this repo and eventually open source the entire internal code base. Some features that will be added to this public project include features such as dependency injection (via Guice) and non-blocking database calls.
+The Reactive Wizard project currently available on GitHub is a subset of the code we use internally for powering Java web applications. The plan is to move more parts of the internal code base to this repo. Some features that will be added to this public project include features such as dependency injection (via Guice) and non-blocking database calls.
 
 ### Hello world example
 This small example explains how to get going with a simple hello world resource. The example demonstrate how JAX-RS annotations can be used to fire up a RxNetty powered REST API.
