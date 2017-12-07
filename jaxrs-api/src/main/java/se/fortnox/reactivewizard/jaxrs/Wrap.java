@@ -8,8 +8,6 @@ import java.lang.annotation.Target;
 /**
  * Indicates that the class should be wrapped in a given subclass before
  * injection.
- *
- * @author jonashall
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.PARAMETER)
