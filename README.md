@@ -27,10 +27,10 @@ Create a new Maven project and add Reactive Wizard to the dependencies section o
     </dependencies>
 ```
 #### 2. Add resource class
-Create a new class in your project and name it _HelloWorldResource_ in the package _se.fortnox.reactivewizard.helloworld_. Alter the contents of the file to match the following below:
+Create a new class in your project and name it _HelloWorldResource_ in the package _foo.bar_. Alter the contents of the file to match the following below:
 
 ```java
-package se.fortnox.reactivewizard.helloworld;
+package foo.bar;
 
 import rx.Observable;
 
@@ -54,7 +54,7 @@ public class HelloWorldResource {
 Now that we have a resource we need a way to fire up the application. Create a new class in the same package as before and call it _Main_. Copy and paste the below contents to the newly created file. In the code below, we instruct the main method to fire up a new server on port 8080. We add our HelloWorldResource to JaxRsRequestHandler to register it. We then await shutdown in order to keep our instance running.
 
 ```java
-package se.fortnox.reactivewizard.helloworld;
+package foo.bar;
 
 import io.reactivex.netty.protocol.http.server.HttpServer;
 import se.fortnox.reactivewizard.jaxrs.JaxRsRequestHandler;
@@ -86,7 +86,7 @@ All needed code to run the application is now in place, but we can make things e
                     </descriptorRefs>
                     <archive>
                         <manifest>
-                            <mainClass>se.fortnox.reactivewizard.helloworld.Main</mainClass>
+                            <mainClass>foo.bar.Main</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
