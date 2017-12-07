@@ -13,7 +13,7 @@ public class EnumDeserializer<T extends Enum> implements Deserializer<T> {
             return null;
         }
         try {
-            return (T)Enum.valueOf((Class) paramType, value);
+            return (T)Enum.valueOf((Class)paramType, value);
         } catch (Exception parseException) {
             throw new DeserializerException("invalid.enum");
         }

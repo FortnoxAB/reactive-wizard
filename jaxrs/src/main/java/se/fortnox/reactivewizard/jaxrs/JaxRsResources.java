@@ -6,38 +6,38 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 
 public class JaxRsResources {
-	private static final Logger log = LoggerFactory.getLogger(JaxRsResources.class);
-	private List<JaxRsResource> resources;
-	private final Object[] services;
-	private boolean reloadClasses;
-	private JaxRsResourceFactory jaxRsResourceFactory;
+    private static final Logger log = LoggerFactory.getLogger(JaxRsResources.class);
+    private final Object[]             services;
+    private       List<JaxRsResource>  resources;
+    private       boolean              reloadClasses;
+    private       JaxRsResourceFactory jaxRsResourceFactory;
 
-	public JaxRsResources(Object[] services, JaxRsResourceFactory jaxRsResourceFactory, Boolean classReloading) {
-		this.services = services;
-		this.reloadClasses = classReloading;
-		this.jaxRsResourceFactory = jaxRsResourceFactory;
+    public JaxRsResources(Object[] services, JaxRsResourceFactory jaxRsResourceFactory, Boolean classReloading) {
+        this.services = services;
+        this.reloadClasses = classReloading;
+        this.jaxRsResourceFactory = jaxRsResourceFactory;
 
-		this.resources = jaxRsResourceFactory.createResources(services);
+        this.resources = jaxRsResourceFactory.createResources(services);
 
-		StringBuilder sb = new StringBuilder();
-		for (JaxRsResource r : resources) {
-			sb.append(System.lineSeparator());
-			sb.append('\t');
-			sb.append(r.toString());
-		}
-		log.info(sb.toString());
-	}
+        StringBuilder sb = new StringBuilder();
+        for (JaxRsResource r : resources) {
+            sb.append(System.lineSeparator());
+            sb.append('\t');
+            sb.append(r.toString());
+        }
+        log.info(sb.toString());
+    }
 
-	public JaxRsResource<?> findResource(JaxRsRequest request) {
-		if (reloadClasses) {
-			resources = jaxRsResourceFactory.createResources(services);
-		}
+    public JaxRsResource<?> findResource(JaxRsRequest request) {
+        if (reloadClasses) {
+            resources = jaxRsResourceFactory.createResources(services);
+        }
 
-		for (JaxRsResource<?> r : resources) {
-			if (r.canHandleRequest(request)) {
-				return r;
-			}
-		}
-		return null;
-	}
+        for (JaxRsResource<?> r : resources) {
+            if (r.canHandleRequest(request)) {
+                return r;
+            }
+        }
+        return null;
+    }
 }

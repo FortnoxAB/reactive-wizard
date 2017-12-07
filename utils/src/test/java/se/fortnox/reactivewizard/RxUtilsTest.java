@@ -1,9 +1,8 @@
 package se.fortnox.reactivewizard;
 
-
-import se.fortnox.reactivewizard.util.rx.RxUtils;
 import org.junit.Test;
 import rx.Observable;
+import se.fortnox.reactivewizard.util.rx.RxUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,8 +13,8 @@ import static org.fest.assertions.Assertions.assertThat;
 public class RxUtilsTest {
     @Test
     public void testConsolidate() {
-        Bar bar1;
-        Bar bar2;
+        Bar             bar1;
+        Bar             bar2;
         Observable<Foo> fooObservable = Observable.just(new Foo(), new Foo());
         Observable<Bar> barObservable = Observable.just(bar1 = new Bar(), bar2 = new Bar());
 
@@ -30,21 +29,25 @@ public class RxUtilsTest {
 
     @Test
     public void testAsync() {
-        List<Integer> input = new ArrayList<Integer>() {{
-            add(0);
-            add(4);
-            add(3);
-            add(1);
-            add(2);
-        }};
+        List<Integer> input = new ArrayList<Integer>() {
+            {
+                add(0);
+                add(4);
+                add(3);
+                add(1);
+                add(2);
+            }
+        };
 
-        List<Integer> expectedResult = new ArrayList<Integer>() {{
-            add(0);
-            add(1);
-            add(2);
-            add(3);
-            add(4);
-        }};
+        List<Integer> expectedResult = new ArrayList<Integer>() {
+            {
+                add(0);
+                add(1);
+                add(2);
+                add(3);
+                add(4);
+            }
+        };
 
         List<Integer> actualResult = RxUtils.async(input).flatMap(i -> Observable.just(i).delay(i * 100, TimeUnit.MILLISECONDS)).toList().toBlocking().single();
 
@@ -54,9 +57,9 @@ public class RxUtilsTest {
     @Test(expected = RuntimeException.class)
     public void testException() {
         Observable.empty()
-                .switchIfEmpty(RxUtils.exception(RuntimeException::new))
-                .toBlocking()
-                .first();
+            .switchIfEmpty(RxUtils.exception(RuntimeException::new))
+            .toBlocking()
+            .first();
     }
 
     class Foo {

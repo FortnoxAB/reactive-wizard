@@ -2,8 +2,6 @@ package se.fortnox.reactivewizard;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import se.fortnox.reactivewizard.jaxrs.WebException;
-import se.fortnox.reactivewizard.json.InvalidJsonException;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
@@ -14,6 +12,8 @@ import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.exceptions.CompositeException;
 import rx.exceptions.OnErrorThrowable;
+import se.fortnox.reactivewizard.jaxrs.WebException;
+import se.fortnox.reactivewizard.json.InvalidJsonException;
 
 import javax.inject.Inject;
 import javax.ws.rs.core.MediaType;
@@ -29,92 +29,92 @@ import static rx.Observable.just;
  */
 public class ExceptionHandler {
 
-	private static Logger LOG = LoggerFactory.getLogger(ExceptionHandler.class);
-	private ObjectMapper mapper;
+    private static Logger LOG = LoggerFactory.getLogger(ExceptionHandler.class);
+    private ObjectMapper mapper;
 
-	@Inject
-	public ExceptionHandler(ObjectMapper mapper) {
-		this.mapper = mapper;
-	}
+    @Inject
+    public ExceptionHandler(ObjectMapper mapper) {
+        this.mapper = mapper;
+    }
 
-	public ExceptionHandler() {
-		this(new ObjectMapper());
-	}
+    public ExceptionHandler() {
+        this(new ObjectMapper());
+    }
 
-	public Observable<Void> handleException(HttpServerRequest<ByteBuf> request,
-											HttpServerResponse<ByteBuf> response, Throwable e) {
-		if (e instanceof OnErrorThrowable) {
-			e = e.getCause();
-		}
+    public Observable<Void> handleException(HttpServerRequest<ByteBuf> request, HttpServerResponse<ByteBuf> response, Throwable throwable) {
+        if (throwable instanceof OnErrorThrowable) {
+            throwable = throwable.getCause();
+        }
 
-		if (e instanceof CompositeException) {
-			CompositeException ce = (CompositeException) e;
-			List<Throwable> exceptions = ce.getExceptions();
-			e = exceptions.get(exceptions.size() - 1);
-		}
+        if (throwable instanceof CompositeException) {
+            CompositeException compositeException = (CompositeException)throwable;
+            List<Throwable>    exceptions         = compositeException.getExceptions();
+            throwable = exceptions.get(exceptions.size() - 1);
+        }
 
-		WebException we;
-		if (e instanceof FileSystemException) {
-			we = new WebException(HttpResponseStatus.NOT_FOUND);
-		} else if (e instanceof InvalidJsonException) {
-			we = new WebException(HttpResponseStatus.BAD_REQUEST, "invalidjson", e.getMessage());
-		} else if (e instanceof WebException) {
-			we = (WebException) e;
-		} else if (e instanceof ClosedChannelException) {
-			LOG.debug("ClosedChannelException: " + request.getHttpMethod() + " " + request.getUri(), e);
-			return Observable.empty();
-		} else {
-			we = new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR, e);
-		}
+        WebException webException;
+        if (throwable instanceof FileSystemException) {
+            webException = new WebException(HttpResponseStatus.NOT_FOUND);
+        } else if (throwable instanceof InvalidJsonException) {
+            webException = new WebException(HttpResponseStatus.BAD_REQUEST, "invalidjson", throwable.getMessage());
+        } else if (throwable instanceof WebException) {
+            webException = (WebException)throwable;
+        } else if (throwable instanceof ClosedChannelException) {
+            LOG.debug("ClosedChannelException: " + request.getHttpMethod() + " " + request.getUri(), throwable);
+            return Observable.empty();
+        } else {
+            webException = new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR, throwable);
+        }
 
-		if (we.getStatus().code() >= 500) {
-			LOG.error(getLogMessage(request, we), we);
-		} else {
-			if (we.getStatus() != HttpResponseStatus.NOT_FOUND) {
-				// No log for 404
-				LOG.warn(getLogMessage(request, we), we);
-			}
-		}
+        if (webException.getStatus().code() >= 500) {
+            LOG.error(getLogMessage(request, webException), webException);
+        } else {
+            if (webException.getStatus() != HttpResponseStatus.NOT_FOUND) {
+                // No log for 404
+                LOG.warn(getLogMessage(request, webException), webException);
+            }
+        }
 
-		response = response.setStatus(we.getStatus());
-		if (HttpMethod.HEAD.equals(request.getHttpMethod())) {
-			response.addHeader("Content-Length", 0);
-		} else {
-			response = response.addHeader("Content-Type", MediaType.APPLICATION_JSON);
-			return response.writeString(just(json(we)));
-		}
-		return empty();
-	}
+        response = response.setStatus(webException.getStatus());
+        if (HttpMethod.HEAD.equals(request.getHttpMethod())) {
+            response.addHeader("Content-Length", 0);
+        } else {
+            response = response.addHeader("Content-Type", MediaType.APPLICATION_JSON);
+            return response.writeString(just(json(webException)));
+        }
+        return empty();
+    }
 
-	private String json(WebException we) {
-		try {
-			return mapper.writeValueAsString(we);
-		} catch (JsonProcessingException e) {
-			LOG.error("Error writing json for exception "+we, e);
-			return null;
-		}
-	}
+    private String json(WebException webException) {
+        try {
+            return mapper.writeValueAsString(webException);
+        } catch (JsonProcessingException e) {
+            LOG.error("Error writing json for exception " + webException, e);
+            return null;
+        }
+    }
 
-	private String getLogMessage(HttpServerRequest<ByteBuf> request,
-			WebException webException) {
-		final StringBuilder msg = new StringBuilder()
-				.append(webException.getStatus().toString())
-				.append("\n\tCause: ").append(webException.getCause() != null ?
-						webException.getCause().getMessage() :
-						"-")
-				.append("\n\tResponse: ").append(json(webException))
-				.append("\n\tRequest: ")
-				.append(request.getHttpMethod())
-				.append(" ").append(request.getUri())
-				.append(" headers: ");
-		request.headerIterator().forEachRemaining(h->
-				msg
-						.append(h.getKey())
-						.append('=')
-						.append(h.getValue())
-						.append(' ')
-		);
-		return msg.toString();
-	}
+    private String getLogMessage(HttpServerRequest<ByteBuf> request,
+        WebException webException
+    ) {
+        final StringBuilder msg = new StringBuilder()
+            .append(webException.getStatus().toString())
+            .append("\n\tCause: ").append(webException.getCause() != null ?
+                webException.getCause().getMessage() :
+                "-")
+            .append("\n\tResponse: ").append(json(webException))
+            .append("\n\tRequest: ")
+            .append(request.getHttpMethod())
+            .append(" ").append(request.getUri())
+            .append(" headers: ");
+        request.headerIterator().forEachRemaining(h ->
+            msg
+                .append(h.getKey())
+                .append('=')
+                .append(h.getValue())
+                .append(' ')
+        );
+        return msg.toString();
+    }
 
 }

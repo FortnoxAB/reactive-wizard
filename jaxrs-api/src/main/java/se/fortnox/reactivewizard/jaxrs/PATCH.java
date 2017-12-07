@@ -8,6 +8,7 @@ import java.lang.annotation.Target;
 
 /**
  * Indicates that the annotated method responds to HTTP PATCH requests
+ *
  * @see HttpMethod
  */
 @Target({ElementType.METHOD})

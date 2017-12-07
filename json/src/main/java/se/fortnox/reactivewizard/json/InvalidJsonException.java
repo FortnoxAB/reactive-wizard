@@ -1,8 +1,8 @@
 package se.fortnox.reactivewizard.json;
 
 public class InvalidJsonException extends RuntimeException {
-    public InvalidJsonException(Exception e) {
-        super(e);
+    public InvalidJsonException(Exception exception) {
+        super(exception);
     }
 
     @Override

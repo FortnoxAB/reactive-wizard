@@ -1,6 +1,10 @@
 package se.fortnox.reactivewizard.jaxrs.params.annotated;
 
-import javax.ws.rs.*;
+import javax.ws.rs.CookieParam;
+import javax.ws.rs.FormParam;
+import javax.ws.rs.HeaderParam;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.QueryParam;
 import java.lang.annotation.Annotation;
 import java.util.HashMap;
 import java.util.Map;

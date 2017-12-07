@@ -5,7 +5,7 @@ import java.lang.reflect.Array;
 public class ArrayDeserializer<T> implements Deserializer<T[]> {
 
     private final Deserializer<T> inner;
-    private final Class<T> arrayType;
+    private final Class<T>        arrayType;
 
     public ArrayDeserializer(Deserializer<T> inner, Class<T> arrayType) {
         this.inner = inner;
@@ -19,12 +19,12 @@ public class ArrayDeserializer<T> implements Deserializer<T[]> {
         }
         String[] rawValues = value.split(",");
         try {
-            T[] deserialized = (T[]) Array.newInstance(arrayType, rawValues.length);
+            T[] deserialized = (T[])Array.newInstance(arrayType, rawValues.length);
             for (int i = 0; i < deserialized.length; i++) {
                 deserialized[i] = inner.deserialize(rawValues[i]);
             }
             return deserialized;
-        } catch(DeserializerException e) {
+        } catch (DeserializerException e) {
             throw e;
         } catch (Exception e) {
             throw new DeserializerException("invalid.array");

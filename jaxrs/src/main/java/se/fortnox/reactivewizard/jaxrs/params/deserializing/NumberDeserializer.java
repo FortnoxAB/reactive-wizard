@@ -4,8 +4,8 @@ import java.util.function.Function;
 
 public abstract class NumberDeserializer<T> implements Deserializer<T> {
 
-    private Function<String, T> numberParser;
-    protected String errorCode;
+    protected String              errorCode;
+    private   Function<String, T> numberParser;
 
     public NumberDeserializer(Function<String, T> numberParser, String errorCode) {
         this.numberParser = numberParser;

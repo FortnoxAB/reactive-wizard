@@ -9,7 +9,7 @@ import rx.functions.Func1;
 import java.util.Map;
 
 public class JaxRsStreamingResult<T> extends JaxRsResult<T> {
-    public JaxRsStreamingResult(Observable<T> output, HttpResponseStatus responseStatus, Func1<T, byte[]> serializer, Map<String,Object> headers) {
+    public JaxRsStreamingResult(Observable<T> output, HttpResponseStatus responseStatus, Func1<T, byte[]> serializer, Map<String, Object> headers) {
         super(output, responseStatus, serializer, headers);
     }
 

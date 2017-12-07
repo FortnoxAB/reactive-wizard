@@ -18,6 +18,6 @@ class PathParamResolver<T> extends AnnotatedParamResolver<T> {
 
     @Override
     protected String getValue(JaxRsRequest request) {
-        return request.getPathParam(paramName, getDefaultValue());
+        return request.getPathParam(parameterName, getDefaultValue());
     }
 }

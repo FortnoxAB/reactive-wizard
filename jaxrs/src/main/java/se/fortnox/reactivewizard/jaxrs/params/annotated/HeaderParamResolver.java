@@ -15,6 +15,6 @@ class HeaderParamResolver<T> extends AnnotatedParamResolver<T> {
 
     @Override
     protected String getValue(JaxRsRequest request) {
-        return request.getHeader(paramName, getDefaultValue());
+        return request.getHeader(parameterName, getDefaultValue());
     }
 }

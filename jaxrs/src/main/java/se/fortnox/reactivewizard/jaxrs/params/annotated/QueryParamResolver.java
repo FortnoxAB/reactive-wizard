@@ -15,6 +15,6 @@ class QueryParamResolver<T> extends AnnotatedParamResolver<T> {
 
     @Override
     protected String getValue(JaxRsRequest request) {
-        return request.getQueryParam(paramName, getDefaultValue());
+        return request.getQueryParam(parameterName, getDefaultValue());
     }
 }

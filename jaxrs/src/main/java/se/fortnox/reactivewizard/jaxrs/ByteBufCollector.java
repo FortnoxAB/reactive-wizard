@@ -20,8 +20,8 @@ public class ByteBufCollector {
 
     public Observable<String> collectString(Observable<ByteBuf> input) {
         return input
-                .collect(ByteArrayOutputStream::new, this::collectChunks)
-                .map(this::decodeBody);
+            .collect(ByteArrayOutputStream::new, this::collectChunks)
+            .map(this::decodeBody);
     }
 
     private String decodeBody(ByteArrayOutputStream buf) {
@@ -49,7 +49,7 @@ public class ByteBufCollector {
 
     public Observable<byte[]> collectBytes(ContentSource<ByteBuf> content) {
         return content
-                .collect(ByteArrayOutputStream::new, this::collectChunks)
-                .map(ByteArrayOutputStream::toByteArray);
+            .collect(ByteArrayOutputStream::new, this::collectChunks)
+            .map(ByteArrayOutputStream::toByteArray);
     }
 }

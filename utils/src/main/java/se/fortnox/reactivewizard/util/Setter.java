@@ -4,9 +4,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Type;
 
 public interface Setter {
-	void invoke(Object instance, Object value) throws InvocationTargetException, IllegalAccessException;
+    void invoke(Object instance, Object value) throws InvocationTargetException, IllegalAccessException;
 
-	Class<?> getParameterType();
+    Class<?> getParameterType();
 
-	Type getGenericParameterType();
+    Type getGenericParameterType();
 }

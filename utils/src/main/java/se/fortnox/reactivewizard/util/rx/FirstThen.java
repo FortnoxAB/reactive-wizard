@@ -7,58 +7,56 @@ import static rx.Observable.just;
 
 /**
  * Helper class used to chain sequential work in Rx, or omit foo variables, turning code like this:
- *
+ * <p>
  * <pre>
  * {@code
  * doStuff().flatMap(foo->empty());
  * }
  * </pre>
  * Into this:
- *
+ * <p>
  * <pre>
  * {@code
  * first(doStuff()).thenReturnEmpty();
  * }
  * </pre>
- *
- *
  */
 public class FirstThen {
 
-	private Observable<?> doFirst;
+    private Observable<?> doFirst;
 
-	private FirstThen(Observable<?> doFirst) {
-		this.doFirst = doFirst;
-	}
+    private FirstThen(Observable<?> doFirst) {
+        this.doFirst = doFirst;
+    }
 
-	public static FirstThen first(Observable<?> doFirst) {
-		return new FirstThen(doFirst);
-	}
+    public static FirstThen first(Observable<?> doFirst) {
+        return new FirstThen(doFirst);
+    }
 
-	public <T> FirstThen then(Observable<T> thenReturn) {
-		return new FirstThen(ignoreElements(doFirst).<T>concatWith(thenReturn));
-	}
+    @SuppressWarnings("unchecked")
+    private static <S> Observable<S> ignoreElements(Observable<?> toConsume) {
+        return (Observable<S>)toConsume.ignoreElements();
+    }
 
-	public <T> FirstThen then(Func0<Observable<T>> thenFn) {
-		return new FirstThen(ignoreElements(doFirst).concatWith(Observable.defer(thenFn)));
-	}
+    public <T> FirstThen then(Observable<T> thenReturn) {
+        return new FirstThen(ignoreElements(doFirst).<T>concatWith(thenReturn));
+    }
 
-	public <T> Observable<T> thenReturn(Func0<Observable<T>> thenFn) {
-		return thenReturn(Observable.defer(thenFn));
-	}
+    public <T> FirstThen then(Func0<Observable<T>> thenFn) {
+        return new FirstThen(ignoreElements(doFirst).concatWith(Observable.defer(thenFn)));
+    }
 
-	public <T> Observable<T> thenReturn(T thenReturn) {
-		return thenReturn(just(thenReturn));
-	}
+    public <T> Observable<T> thenReturn(Func0<Observable<T>> thenFn) {
+        return thenReturn(Observable.defer(thenFn));
+    }
 
-	public <T> Observable<T> thenReturn(Observable<T> thenReturn) {
-		return FirstThen.<T>ignoreElements(doFirst).concatWith(thenReturn);
-	}
+    public <T> Observable<T> thenReturn(T thenReturn) {
+        return thenReturn(just(thenReturn));
+    }
 
-	@SuppressWarnings("unchecked")
-	private static <S> Observable<S> ignoreElements(Observable<?> toConsume) {
-		return (Observable<S>) toConsume.ignoreElements();
-	}
+    public <T> Observable<T> thenReturn(Observable<T> thenReturn) {
+        return FirstThen.<T>ignoreElements(doFirst).concatWith(thenReturn);
+    }
 
     /**
      * @param <T>

@@ -1,12 +1,11 @@
 package se.fortnox.reactivewizard.util;
 
 public class DebugUtil {
-    public static final boolean IS_DEBUG = isIDEPresent();
+    public static final boolean IS_DEBUG = isIdePresent();
 
-    private static boolean isIDEPresent() {
+    private static boolean isIdePresent() {
         ClassLoader classLoader = DebugUtil.class.getClassLoader();
-        boolean intellijPresent = classLoader.getResource("com/intellij") != null;
-        return intellijPresent;
+        return classLoader.getResource("com/intellij") != null;
     }
 
 }

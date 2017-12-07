@@ -4,10 +4,10 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Type;
 
 public interface Getter {
-	Object invoke(Object instance) throws InvocationTargetException, IllegalAccessException;
+    Object invoke(Object instance) throws InvocationTargetException, IllegalAccessException;
 
-	Class<?> getReturnType();
+    Class<?> getReturnType();
 
-	Type getGenericReturnType();
+    Type getGenericReturnType();
 }
 

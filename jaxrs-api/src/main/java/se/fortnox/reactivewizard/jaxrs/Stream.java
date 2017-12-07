@@ -8,7 +8,7 @@ import java.lang.annotation.Target;
 /**
  * Means that the resource returns a stream of data, rather than a single data item.
  */
-@Target({ ElementType.METHOD })
+@Target({ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Stream {
 

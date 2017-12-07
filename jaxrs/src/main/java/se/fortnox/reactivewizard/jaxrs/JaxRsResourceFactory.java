@@ -14,7 +14,7 @@ import java.util.List;
 @Singleton
 public class JaxRsResourceFactory {
 
-    protected final ParamResolverFactories paramResolverFactories;
+    protected final ParamResolverFactories    paramResolverFactories;
     protected final JaxRsResultFactoryFactory jaxRsResultFactoryFactory;
     protected final BlockingResourceScheduler blockingResourceScheduler;
 
@@ -23,7 +23,10 @@ public class JaxRsResourceFactory {
     }
 
     @Inject
-    public JaxRsResourceFactory(ParamResolverFactories paramResolverFactories, JaxRsResultFactoryFactory jaxRsResultFactoryFactory, BlockingResourceScheduler blockingResourceScheduler) {
+    public JaxRsResourceFactory(ParamResolverFactories paramResolverFactories,
+        JaxRsResultFactoryFactory jaxRsResultFactoryFactory,
+        BlockingResourceScheduler blockingResourceScheduler
+    ) {
         this.paramResolverFactories = paramResolverFactories;
         this.jaxRsResultFactoryFactory = jaxRsResultFactoryFactory;
         this.blockingResourceScheduler = blockingResourceScheduler;
@@ -38,43 +41,35 @@ public class JaxRsResourceFactory {
         return resources;
     }
 
-    public void createResources(Object service,
-                                       List<JaxRsResource> resources) {
-
-        Class<? extends Object> cls = service.getClass();
-        Path path = JaxRsMeta.getPath(cls);
+    public void createResources(Object service, List<JaxRsResource> resources) {
+        Class<? extends Object> cls  = service.getClass();
+        Path                    path = JaxRsMeta.getPath(cls);
         if (path == null) {
             throw new RuntimeException(
-                    "Service " + cls + " does not have @Path annotation");
+                "Service " + cls + " does not have @Path annotation");
         }
         for (Method m : cls.getMethods()) {
             if (m.getDeclaringClass().equals(Object.class)) {
                 continue;
             }
-            JaxRsResource r = createResource(path, m, service);
-            if (r != null) {
-                resources.add(r);
+            JaxRsResource jaxRsResource = createResource(path, m, service);
+            if (jaxRsResource != null) {
+                resources.add(jaxRsResource);
             }
         }
 
     }
 
-    protected JaxRsResource createResource(Path clsPath, Method m, Object service) {
-
-        JaxRsMeta meta = new JaxRsMeta(m, clsPath);
+    protected JaxRsResource createResource(Path clsPath, Method method, Object service) {
+        JaxRsMeta meta = new JaxRsMeta(method, clsPath);
 
         if (meta.getHttpMethod() != null) {
-            return createResource(m, service, meta);
+            return createResource(method, service, meta);
         }
         return null;
     }
 
-    protected JaxRsResource createResource(Method m, Object service, JaxRsMeta meta) {
-        return new JaxRsResource(m,
-                service,
-                paramResolverFactories,
-                jaxRsResultFactoryFactory,
-                blockingResourceScheduler,
-                meta);
+    protected JaxRsResource createResource(Method method, Object service, JaxRsMeta meta) {
+        return new JaxRsResource(method, service, paramResolverFactories, jaxRsResultFactoryFactory, blockingResourceScheduler, meta);
     }
 }

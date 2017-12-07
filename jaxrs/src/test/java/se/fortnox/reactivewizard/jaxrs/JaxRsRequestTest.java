@@ -15,37 +15,37 @@ import static org.fest.assertions.Assertions.assertThat;
 public class JaxRsRequestTest {
     @Test
     public void shouldDecodeMultiChunkBody() {
-        UnicastSubject<ByteBuf> content = UnicastSubject.create();
-        byte[] b = "ö".getBytes(Charset.defaultCharset());
-        content.onNext(Unpooled.wrappedBuffer(new byte[]{b[0]}));
-        content.onNext(Unpooled.wrappedBuffer(new byte[]{b[1]}));
+        UnicastSubject<ByteBuf> content   = UnicastSubject.create();
+        byte[]                  byteArray = "ö".getBytes(Charset.defaultCharset());
+        content.onNext(Unpooled.wrappedBuffer(new byte[]{byteArray[0]}));
+        content.onNext(Unpooled.wrappedBuffer(new byte[]{byteArray[1]}));
         content.onCompleted();
         HttpServerRequest<ByteBuf> serverReq = new MockHttpServerRequest("/", HttpMethod.POST, content);
-        JaxRsRequest req = new JaxRsRequest(serverReq);
-        String body = req.loadBody().toBlocking().single().getBody();
+        JaxRsRequest               req       = new JaxRsRequest(serverReq);
+        String                     body      = req.loadBody().toBlocking().single().getBody();
         assertThat(body).isEqualTo("ö");
     }
 
     @Test
     public void shouldDecodeSingleChunkBody() {
         HttpServerRequest<ByteBuf> serverReq = new MockHttpServerRequest("/", HttpMethod.POST, "ö");
-        JaxRsRequest req = new JaxRsRequest(serverReq);
-        String body = req.loadBody().toBlocking().single().getBody();
+        JaxRsRequest               req       = new JaxRsRequest(serverReq);
+        String                     body      = req.loadBody().toBlocking().single().getBody();
         assertThat(body).isEqualTo("ö");
     }
 
     @Test
     public void shouldDecodeBodyForDeleteRequests() {
         HttpServerRequest<ByteBuf> serverReq = new MockHttpServerRequest("/", HttpMethod.DELETE, "test");
-        JaxRsRequest req = new JaxRsRequest(serverReq);
-        String body = req.loadBody().toBlocking().single().getBody();
+        JaxRsRequest               req       = new JaxRsRequest(serverReq);
+        String                     body      = req.loadBody().toBlocking().single().getBody();
         assertThat(body).isEqualTo("test");
     }
 
     @Test
     public void testParams() throws Exception {
         MockHttpServerRequest serverReq = new MockHttpServerRequest("/");
-        JaxRsRequest req = new JaxRsRequest(serverReq, null, "");
+        JaxRsRequest          req       = new JaxRsRequest(serverReq, null, "");
         assertThat(req.getPathParam("path")).isNull();
         assertThat(req.getQueryParam("query")).isNull();
         assertThat(req.getFormParam("form")).isNull();

@@ -14,97 +14,95 @@ import javax.ws.rs.core.MediaType;
 import java.nio.charset.Charset;
 import java.util.List;
 
-import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.*;
 import static org.fest.assertions.Assertions.assertThat;
 import static rx.Observable.just;
+import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.body;
+import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.get;
+import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.testServer;
 
-/**
- * Created by jonashall on 2015-12-02.
- */
 public class StreamingDataTest {
+    private StreamingResource   streamingResource   = new StreamingResourceImpl();
+    private NoStreamingResource noStreamingResource = new NoStreamingResourceImpl();
 
-	private StreamingResource streamingResource = new StreamingResourceImpl();
-	private NoStreamingResource noStreamingResource = new NoStreamingResourceImpl();
+    @Test
+    public void testStreamingWithRealServer() {
 
-	/**
-	 * Here the implementing class has annotated its method with stream. That should work
-	 */
-	@Path("stream")
-	interface StreamingResource {
-		@GET
-		@Produces(MediaType.TEXT_PLAIN)
-		Observable<String> streamOfStrings();
+        HttpServer<ByteBuf, ByteBuf> server   = testServer(streamingResource, noStreamingResource).getServer();
+        HttpClient<ByteBuf, ByteBuf> client   = HttpClient.newClient("localhost", server.getServerPort());
+        HttpClientResponse<ByteBuf>  response = client.createGet("/stream").toBlocking().single();
 
-		@GET
-		@Produces(MediaType.TEXT_PLAIN)
-		@Path("shouldNotStream")
-		Observable<String> noStreamOfStrings();
-	}
+        List<String> strings = response.getContent().map(byteBuf -> byteBuf.toString(Charset.defaultCharset()))
+            .toList()
+            .toBlocking()
+            .single();
 
-	public class StreamingResourceImpl implements StreamingResource {
-		@Override
-		@Stream
-		public Observable<String> streamOfStrings() {
-			return just("a", "b");
-		}
+        assertThat(strings).hasSize(2);
+        assertThat(strings.get(0)).isEqualTo("a");
+        assertThat(strings.get(1)).isEqualTo("b");
+        assertThat(response.getHeader("Content-Type")).isEqualTo(MediaType.TEXT_PLAIN);
 
-		@Override
-		public Observable<String> noStreamOfStrings() {
-			return just("a","b");
-		}
-	}
+        //When not streaming the response will finish after first string emission
+        response = client.createGet("/nostream").toBlocking().single();
 
-	/**
-	 * This resource has tried to annotate interface with @Stream, should not work
-	 */
-	@Path("nostream")
-	interface NoStreamingResource {
+        strings = response.getContent().map(byteBuf -> byteBuf.toString(Charset.defaultCharset()))
+            .toList()
+            .toBlocking()
+            .single();
 
-		@GET
-		@Produces(MediaType.TEXT_PLAIN)
-		@Stream
-		Observable<String> noStreamOfStrings();
-	}
+        assertThat(strings).hasSize(1);
+        assertThat(strings.get(0)).isEqualTo("a");
+        assertThat(response.getHeader("Content-Type")).isEqualTo(MediaType.TEXT_PLAIN);
 
-	public class NoStreamingResourceImpl implements NoStreamingResource {
+        //But at the end of the day
+        assertThat(body(get(streamingResource, "/stream"))).isEqualTo("ab");
+        assertThat(body(get(noStreamingResource, "/nostream"))).isEqualTo("ab");
+    }
 
-		@Override
-		public Observable<String> noStreamOfStrings() {
-			return just("a","b");
-		}
-	}
+    /**
+     * Here the implementing class has annotated its method with stream. That should work
+     */
+    @Path("stream")
+    interface StreamingResource {
+        @GET
+        @Produces(MediaType.TEXT_PLAIN)
+        Observable<String> streamOfStrings();
 
-	@Test
-	public void testStreamingWithRealServer() {
+        @GET
+        @Produces(MediaType.TEXT_PLAIN)
+        @Path("shouldNotStream")
+        Observable<String> noStreamOfStrings();
+    }
 
-		HttpServer<ByteBuf, ByteBuf> server = testServer(streamingResource, noStreamingResource).getServer();
-		HttpClient<ByteBuf, ByteBuf> client = HttpClient.newClient("localhost", server.getServerPort());
-		HttpClientResponse<ByteBuf> response = client.createGet("/stream").toBlocking().single();
+    /**
+     * This resource has tried to annotate interface with @Stream, should not work
+     */
+    @Path("nostream")
+    interface NoStreamingResource {
 
-		List<String> strings = response.getContent().map(byteBuf -> byteBuf.toString(Charset.defaultCharset()))
-				.toList()
-				.toBlocking()
-				.single();
+        @GET
+        @Produces(MediaType.TEXT_PLAIN)
+        @Stream
+        Observable<String> noStreamOfStrings();
+    }
 
-		assertThat(strings).hasSize(2);
-		assertThat(strings.get(0)).isEqualTo("a");
-		assertThat(strings.get(1)).isEqualTo("b");
-		assertThat(response.getHeader("Content-Type")).isEqualTo(MediaType.TEXT_PLAIN);
+    public class StreamingResourceImpl implements StreamingResource {
+        @Override
+        @Stream
+        public Observable<String> streamOfStrings() {
+            return just("a", "b");
+        }
 
-		//When not streaming the response will finish after first string emission
-		response = client.createGet("/nostream").toBlocking().single();
+        @Override
+        public Observable<String> noStreamOfStrings() {
+            return just("a", "b");
+        }
+    }
 
-		strings = response.getContent().map(byteBuf -> byteBuf.toString(Charset.defaultCharset()))
-				.toList()
-				.toBlocking()
-				.single();
+    public class NoStreamingResourceImpl implements NoStreamingResource {
 
-		assertThat(strings).hasSize(1);
-		assertThat(strings.get(0)).isEqualTo("a");
-		assertThat(response.getHeader("Content-Type")).isEqualTo(MediaType.TEXT_PLAIN);
-
-		//But at the end of the day
-		assertThat(body(get(streamingResource, "/stream"))).isEqualTo("ab");
-		assertThat(body(get(noStreamingResource, "/nostream"))).isEqualTo("ab");
-	}
+        @Override
+        public Observable<String> noStreamOfStrings() {
+            return just("a", "b");
+        }
+    }
 }

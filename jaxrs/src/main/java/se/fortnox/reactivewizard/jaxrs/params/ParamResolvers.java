@@ -24,44 +24,44 @@ public class ParamResolvers {
     @Inject
     public ParamResolvers(Set<ParamResolver> paramResolvers, Set<ParamResolverFactory> paramResolverFactories) {
         paramResolversMap = new HashMap<>();
-        for (ParamResolver pr : paramResolvers) {
-            paramResolversMap.put(getResolverTargetClass(pr), asFactory(pr));
+        for (ParamResolver paramResolverFactory : paramResolvers) {
+            paramResolversMap.put(getResolverTargetClass(paramResolverFactory), asFactory(paramResolverFactory));
         }
         for (ParamResolverFactory factory : paramResolverFactories) {
             paramResolversMap.put(getResolverTargetClass(factory), factory);
         }
     }
 
-    private ParamResolverFactory asFactory(ParamResolver paramResolver) {
-        return parameter->paramResolver;
+    public ParamResolvers(ParamResolver... paramResolvers) {
+        this(new HashSet<>(asList(paramResolvers)), Collections.emptySet());
     }
 
-    private Class<?> getResolverTargetClass(ParamResolver pr) {
+    public ParamResolvers() {
+        this(Collections.EMPTY_SET, Collections.EMPTY_SET);
+    }
+
+    private ParamResolverFactory asFactory(ParamResolver paramResolver) {
+        return parameter -> paramResolver;
+    }
+
+    private Class<?> getResolverTargetClass(ParamResolver paramResolver) {
         try {
-            Method method = pr.getClass().getMethod("resolve", JaxRsRequest.class);
+            Method method = paramResolver.getClass().getMethod("resolve", JaxRsRequest.class);
             return ReflectionUtil.getRawType(ReflectionUtil.getTypeOfObservable(method));
         } catch (NoSuchMethodException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private Class<?> getResolverTargetClass(ParamResolverFactory pr) {
+    private Class<?> getResolverTargetClass(ParamResolverFactory paramResolverFactory) {
         try {
-            Method method = pr.getClass().getMethod("createParamResolver", Parameter.class);
+            Method method = paramResolverFactory.getClass().getMethod("createParamResolver", Parameter.class);
 
-            ParameterizedType t = (ParameterizedType)method.getGenericReturnType();
-            return ReflectionUtil.getRawType(t.getActualTypeArguments()[0]);
+            ParameterizedType parameterizedType = (ParameterizedType)method.getGenericReturnType();
+            return ReflectionUtil.getRawType(parameterizedType.getActualTypeArguments()[0]);
         } catch (NoSuchMethodException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    public ParamResolvers(ParamResolver ... paramResolvers) {
-        this(new HashSet<>(asList(paramResolvers)), Collections.emptySet());
-    }
-
-    public ParamResolvers() {
-        this(Collections.EMPTY_SET, Collections.EMPTY_SET);
     }
 
     protected <T> ParamResolverFactory<T> get(Class<T> paramType) {

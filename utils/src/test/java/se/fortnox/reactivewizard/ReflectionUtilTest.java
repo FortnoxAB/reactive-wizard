@@ -1,104 +1,105 @@
 package se.fortnox.reactivewizard;
 
+import org.junit.Test;
 import se.fortnox.reactivewizard.util.Getter;
 import se.fortnox.reactivewizard.util.ReflectionUtil;
 import se.fortnox.reactivewizard.util.Setter;
-import org.junit.Test;
 
 import java.util.List;
 
 import static org.fest.assertions.Assertions.assertThat;
 
 public class ReflectionUtilTest {
-	static class Parent {
-		private int i;
+    @Test
+    public void shouldFindDeclaredMethods() {
+        Getter getter = ReflectionUtil.getGetter(Child.class, "j");
+        assertThat(getter).isNotNull();
 
-		public void setI(int i) {
-			this.i = i;
-		}
+        Getter isbool = ReflectionUtil.getGetter(Child.class, "a");
+        assertThat(isbool).isNotNull();
 
-		public int getI() {
-			return i;
-		}
-	}
+        Getter hasbool = ReflectionUtil.getGetter(Child.class, "b");
+        assertThat(hasbool).isNotNull();
 
-	static class Child extends Parent {
-		private int j;
-		private boolean a;
-		private boolean b;
-		private boolean c;
+        Setter setter = ReflectionUtil.getSetter(Child.class, "j");
+        assertThat(setter).isNotNull();
+    }
 
-		public boolean isA() {
-			return a;
-		}
+    @Test
+    public void shouldFindInheritedMethods() {
+        Getter getter = ReflectionUtil.getGetter(Child.class, "i");
+        assertThat(getter).isNotNull();
 
-		public boolean hasB() {
-			return b;
-		}
-		public void setJ(int j) {
-			this.j = j;
-		}
+        Setter setter = ReflectionUtil.getSetter(Child.class, "i");
+        assertThat(setter).isNotNull();
+    }
 
-		public int getJ() {
-			return j;
-		}
-	}
+    @Test
+    public void shouldFindSizeMethod() {
+        Getter size = ReflectionUtil.getGetter(List.class, "size");
+        assertThat(size).isNotNull();
+    }
 
-	static class PrivateDefaultConstructor {
-		private final int a;
+    @Test
+    public void shouldInstantiate() throws Exception {
+        assertThat(ReflectionUtil.newInstance(Parent.class)).isNotNull();
+        assertThat(ReflectionUtil.newInstance(Child.class)).isNotNull();
+        assertThat(ReflectionUtil.newInstance(PrivateDefaultConstructor.class)).isNotNull();
+    }
 
-		private PrivateDefaultConstructor() {
-			a = 0;
-		}
+    @Test
+    public void shouldFindFieldIfNoMethod() {
+        Getter getter = ReflectionUtil.getGetter(Child.class, "c");
+        assertThat(getter).isNotNull();
 
-		public PrivateDefaultConstructor(int a) {
-			this.a = a;
-		}
-	}
+        Setter setter = ReflectionUtil.getSetter(Child.class, "c");
+        assertThat(setter).isNotNull();
+    }
 
-	@Test
-	public void shouldFindDeclaredMethods() {
-		Getter getter = ReflectionUtil.getGetter(Child.class, "j");
-		assertThat(getter).isNotNull();
+    static class Parent {
+        private int i;
 
-		Getter isbool = ReflectionUtil.getGetter(Child.class, "a");
-		assertThat(isbool).isNotNull();
+        public int getI() {
+            return i;
+        }
 
-		Getter hasbool = ReflectionUtil.getGetter(Child.class, "b");
-		assertThat(hasbool).isNotNull();
+        public void setI(int i) {
+            this.i = i;
+        }
+    }
 
-		Setter setter = ReflectionUtil.getSetter(Child.class, "j");
-		assertThat(setter).isNotNull();
-	}
+    static class Child extends Parent {
+        private int     j;
+        private boolean a;
+        private boolean b;
+        private boolean c;
 
-	@Test
-	public void shouldFindInheritedMethods() {
-		Getter getter = ReflectionUtil.getGetter(Child.class, "i");
-		assertThat(getter).isNotNull();
+        public boolean isA() {
+            return a;
+        }
 
-		Setter setter = ReflectionUtil.getSetter(Child.class, "i");
-		assertThat(setter).isNotNull();
-	}
+        public boolean hasB() {
+            return b;
+        }
 
-	@Test
-	public void shouldFindSizeMethod() {
-		Getter size = ReflectionUtil.getGetter(List.class, "size");
-		assertThat(size).isNotNull();
-	}
+        public int getJ() {
+            return j;
+        }
 
-	@Test
-	public void shouldInstantiate() throws Exception {
-		assertThat(ReflectionUtil.newInstance(Parent.class)).isNotNull();
-		assertThat(ReflectionUtil.newInstance(Child.class)).isNotNull();
-		assertThat(ReflectionUtil.newInstance(PrivateDefaultConstructor.class)).isNotNull();
-	}
+        public void setJ(int j) {
+            this.j = j;
+        }
+    }
 
-	@Test
-	public void shouldFindFieldIfNoMethod() {
-		Getter getter = ReflectionUtil.getGetter(Child.class, "c");
-		assertThat(getter).isNotNull();
+    static class PrivateDefaultConstructor {
+        private final int a;
 
-		Setter setter = ReflectionUtil.getSetter(Child.class, "c");
-		assertThat(setter).isNotNull();
-	}
+        private PrivateDefaultConstructor() {
+            a = 0;
+        }
+
+        public PrivateDefaultConstructor(int a) {
+            this.a = a;
+        }
+    }
 }

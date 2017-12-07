@@ -7,43 +7,43 @@ import java.util.Map;
 
 public class FieldError {
 
-	protected static final String	VALIDATION						= "validation.";
-	private final String					field;
-	private final String					error;
-	private final Map<String, Object>		errorParams;
+    protected static final String VALIDATION = "validation.";
+    private final String              field;
+    private final String              error;
+    private final Map<String, Object> errorParams;
 
-	public FieldError(String field, String validationErrorCode) {
-		this(field, validationErrorCode, null);
-	}
+    public FieldError(String field, String validationErrorCode) {
+        this(field, validationErrorCode, null);
+    }
 
-	public FieldError(String field, String validationErrorCode, Map<String, Object> errorParams) {
-		this.field = field;
-		this.errorParams = errorParams;
-		this.error = addPrefix(validationErrorCode);
-	}
+    public FieldError(String field, String validationErrorCode, Map<String, Object> errorParams) {
+        this.field = field;
+        this.errorParams = errorParams;
+        this.error = addPrefix(validationErrorCode);
+    }
 
-	private String addPrefix(String error) {
-		if (!error.startsWith(VALIDATION)) {
-			return VALIDATION + error.toLowerCase();
-		}
-		return error.toLowerCase();
-	}
+    public static FieldError notNull(String field) {
+        return new FieldError(field, "notnull");
+    }
 
-	public String getField() {
-		return field;
-	}
+    private String addPrefix(String error) {
+        if (!error.startsWith(VALIDATION)) {
+            return VALIDATION + error.toLowerCase();
+        }
+        return error.toLowerCase();
+    }
 
-	public String getError() {
-		return error;
-	}
+    public String getField() {
+        return field;
+    }
 
-	@JsonInclude(Include.NON_NULL)
-	public Map<String, Object> getErrorParams() {
-		return errorParams;
-	}
+    public String getError() {
+        return error;
+    }
 
-	public static FieldError notNull(String field) {
-		return new FieldError(field, "notnull");
-	}
+    @JsonInclude(Include.NON_NULL)
+    public Map<String, Object> getErrorParams() {
+        return errorParams;
+    }
 
 }

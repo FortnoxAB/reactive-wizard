@@ -12,9 +12,9 @@ import java.util.TimeZone;
 
 public class LocalDateDeserializer implements Deserializer<LocalDate> {
     private static final TimeZone DEFAULT_TIME_ZONE = TimeZone
-            .getTimeZone("Europe/Stockholm");
-    private static final Logger LOG = LoggerFactory
-            .getLogger(LocalDateDeserializer.class);
+        .getTimeZone("Europe/Stockholm");
+    private static final Logger   LOG               = LoggerFactory
+        .getLogger(LocalDateDeserializer.class);
 
     @Override
     public LocalDate deserialize(String value) throws DeserializerException {
@@ -30,8 +30,8 @@ public class LocalDateDeserializer implements Deserializer<LocalDate> {
 
         try {
             return LocalDateTime.ofInstant(Instant.ofEpochMilli(Long.parseLong(value)),
-                    DEFAULT_TIME_ZONE.toZoneId()).toLocalDate();
-        } catch (NumberFormatException|DateTimeException e) {
+                DEFAULT_TIME_ZONE.toZoneId()).toLocalDate();
+        } catch (NumberFormatException | DateTimeException e) {
             throw new DeserializerException("invalid.localdate");
         }
     }

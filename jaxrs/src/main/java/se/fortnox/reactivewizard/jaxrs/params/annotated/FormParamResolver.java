@@ -15,6 +15,6 @@ class FormParamResolver<T> extends AnnotatedParamResolver<T> {
 
     @Override
     protected String getValue(JaxRsRequest request) {
-        return request.getFormParam(paramName, getDefaultValue());
+        return request.getFormParam(parameterName, getDefaultValue());
     }
 }

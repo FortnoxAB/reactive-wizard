@@ -1,6 +1,7 @@
 package se.fortnox.reactivewizard.jaxrs.params;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import se.fortnox.reactivewizard.jaxrs.WebException;
 import se.fortnox.reactivewizard.jaxrs.params.annotated.AnnotatedParamResolverFactories;
 import se.fortnox.reactivewizard.jaxrs.params.annotated.AnnotatedParamResolverFactory;
@@ -8,7 +9,6 @@ import se.fortnox.reactivewizard.jaxrs.params.deserializing.Deserializer;
 import se.fortnox.reactivewizard.jaxrs.params.deserializing.DeserializerException;
 import se.fortnox.reactivewizard.jaxrs.params.deserializing.DeserializerFactory;
 import se.fortnox.reactivewizard.util.ReflectionUtil;
-import io.netty.handler.codec.http.HttpResponseStatus;
 
 import javax.inject.Inject;
 import javax.ws.rs.DefaultValue;
@@ -25,16 +25,17 @@ import static rx.Observable.just;
  */
 public class ParamResolverFactories {
 
-    private final DeserializerFactory deserializerFactory;
-    private final ParamResolvers paramResolvers;
+    private final DeserializerFactory             deserializerFactory;
+    private final ParamResolvers                  paramResolvers;
     private final AnnotatedParamResolverFactories annotatedParamResolverFactories;
-    private final ParamTypeResolver paramTypeResolver;
+    private final ParamTypeResolver               paramTypeResolver;
 
     @Inject
     public ParamResolverFactories(DeserializerFactory deserializerFactory,
-                                  ParamResolvers paramResolvers,
-                                  AnnotatedParamResolverFactories annotatedParamResolverFactories,
-                                  ParamTypeResolver paramTypeResolver) {
+        ParamResolvers paramResolvers,
+        AnnotatedParamResolverFactories annotatedParamResolverFactories,
+        ParamTypeResolver paramTypeResolver
+    ) {
         this.deserializerFactory = deserializerFactory;
         this.paramResolvers = paramResolvers;
         this.annotatedParamResolverFactories = annotatedParamResolverFactories;
@@ -43,29 +44,31 @@ public class ParamResolverFactories {
 
     public ParamResolverFactories() {
         this(new DeserializerFactory(),
-                new ParamResolvers(),
-                new AnnotatedParamResolverFactories(),
-                new WrapSupportingParamTypeResolver());
+            new ParamResolvers(),
+            new AnnotatedParamResolverFactories(),
+            new WrapSupportingParamTypeResolver());
     }
 
     public List<ParamResolver> createParamResolvers(Method method, String[] consumesAnnotation) {
         List<ParamResolver> paramResolvers = new ArrayList<>();
 
-        Method interfaceMethod = ReflectionUtil.getOverriddenMethod(method);
-        Parameter[] instanceParameters = method.getParameters();
+        Method      interfaceMethod     = ReflectionUtil.getOverriddenMethod(method);
+        Parameter[] instanceParameters  = method.getParameters();
         Parameter[] interfaceParameters = interfaceMethod == null ? instanceParameters : interfaceMethod.getParameters();
 
         for (int i = 0; i < instanceParameters.length; i++) {
-            TypeReference<?> paramType = paramTypeResolver.resolveParamType(instanceParameters[i], interfaceParameters[i]);
-            paramResolvers.add(createParamResolver(instanceParameters[i], paramType, ReflectionUtil.getParameterAnnotations(interfaceParameters[i]), consumesAnnotation));
+            TypeReference<?> paramType            = paramTypeResolver.resolveParamType(instanceParameters[i], interfaceParameters[i]);
+            List<Annotation> parameterAnnotations = ReflectionUtil.getParameterAnnotations(interfaceParameters[i]);
+            paramResolvers.add(createParamResolver(instanceParameters[i], paramType, parameterAnnotations, consumesAnnotation));
         }
         return paramResolvers;
     }
 
     protected <T> ParamResolver<T> createParamResolver(Parameter parameter,
-                                                       TypeReference<T> paramType,
-                                                       List<Annotation> parameterAnnotations,
-                                                       String[] consumesAnnotation) {
+        TypeReference<T> paramType,
+        List<Annotation> parameterAnnotations,
+        String[] consumesAnnotation
+    ) {
         for (Annotation a : parameterAnnotations) {
             AnnotatedParamResolverFactory paramResolverFactory = annotatedParamResolverFactories.get(a.annotationType());
             if (paramResolverFactory != null) {
@@ -92,7 +95,7 @@ public class ParamResolverFactories {
     private DefaultValue findDefaultValueAnnotation(List<Annotation> parameterAnnotations) {
         for (Annotation annotation : parameterAnnotations) {
             if (DefaultValue.class == annotation.annotationType()) {
-                return (DefaultValue) annotation;
+                return (DefaultValue)annotation;
             }
         }
         return null;

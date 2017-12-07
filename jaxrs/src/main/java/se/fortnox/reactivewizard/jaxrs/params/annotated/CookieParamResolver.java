@@ -15,6 +15,6 @@ public class CookieParamResolver<T> extends AnnotatedParamResolver<T> {
 
     @Override
     protected String getValue(JaxRsRequest request) {
-        return request.getCookieValue(paramName, getDefaultValue());
+        return request.getCookieValue(parameterName, getDefaultValue());
     }
 }

@@ -19,9 +19,9 @@ public class JsonSerializerFactory {
 
     public JsonSerializerFactory() {
         this(new ObjectMapper()
-                .findAndRegisterModules()
-                .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
-                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false));
+            .findAndRegisterModules()
+            .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false));
     }
 
     public <T> Function<T, String> createStringSerializer(TypeReference<T> paramType) {
