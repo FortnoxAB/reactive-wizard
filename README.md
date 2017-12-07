@@ -12,7 +12,7 @@ We think that building non-blocking web applications with the above technologies
 The Reactive Wizard project currently available on GitHub is a subset of the code we use internally for powering Java web applications. The plan is to move more parts of the internal code base to this repo. Some features that will be added to this public project include features such as dependency injection (via Guice) and non-blocking database calls.
 
 ### Hello world example
-This small example explains how to get going with a simple hello world resource. The example demonstrate how JAX-RS annotations can be used to fire up a RxNetty powered REST API.
+This small example explains how to get going with a simple hello world resource. The example demonstrate how JAX-RS annotations can be used to fire up an RxNetty powered REST API.
 
 #### 1. Add Reactive Wizard as a dependency
 Create a new Maven project and add Reactive Wizard to the dependencies section of your pom.xml file. Set the version element to match the latest released version to make use of the most up-to-date stable version.
