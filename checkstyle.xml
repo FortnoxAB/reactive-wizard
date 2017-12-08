@@ -17,6 +17,11 @@
 		<property name="eachLine" value="true"/>
 	</module>
 
+	<module name="RegexpSingleline">
+		<property name="format" value="^\s*\*\s*@author"/>
+		<property name="message" value="Remove author from the comment."/>
+	</module>
+
 	<module name="TreeWalker">
 		<module name="OuterTypeFilename" />
 		<module name="IllegalTokenText">
@@ -177,11 +182,7 @@
 			<property name="allowThrowsTagsForSubclasses" value="true" />
 		</module>
 		-->
-		<module name="WriteTag">
-			<property name="tag" value="@author"/>
-			<property name="tagFormat" value="\S"/>
-			<property name="tagSeverity" value="error"/>
-		</module>
+
 		<module name="MethodName">
 			<property name="format" value="^[a-z][a-z0-9][a-zA-Z0-9_]*$" />
 			<message key="name.invalidPattern" value="Method name ''{0}'' must match pattern ''{1}''." />
