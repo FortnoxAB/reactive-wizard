@@ -43,4 +43,26 @@ public class JsonDeserializerFactory {
             }
         };
     }
+
+    public <T> Function<byte[], T> createByteDeserializer(TypeReference<T> typeReference) {
+        return createByteDeserializer(mapper.readerFor(typeReference));
+    }
+
+    public <T> Function<byte[], T> createByteDeserializer(Class<T> paramType) {
+        return createByteDeserializer(mapper.readerFor(paramType));
+    }
+
+    private <T> Function<byte[], T> createByteDeserializer(ObjectReader reader) {
+        return str -> {
+            if (str == null) {
+                return null;
+            }
+            try {
+                return reader.readValue(str);
+            } catch (Exception e) {
+                throw new InvalidJsonException(e);
+            }
+        };
+    }
+
 }

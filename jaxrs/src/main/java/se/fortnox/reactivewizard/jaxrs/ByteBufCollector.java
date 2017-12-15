@@ -47,7 +47,7 @@ public class ByteBufCollector {
         }
     }
 
-    public Observable<byte[]> collectBytes(ContentSource<ByteBuf> content) {
+    public Observable<byte[]> collectBytes(Observable<ByteBuf> content) {
         return content
             .collect(ByteArrayOutputStream::new, this::collectChunks)
             .map(ByteArrayOutputStream::toByteArray);

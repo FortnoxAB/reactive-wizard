@@ -24,10 +24,10 @@ public class JaxRsRequest {
     private static final Logger           LOG       = LoggerFactory.getLogger(JaxRsResource.class);
     private static final ByteBufCollector collector = new ByteBufCollector(10 * 1024 * 1024); // 10 MB
     private final HttpServerRequest<ByteBuf> req;
-    private final String                     body;
+    private final byte[]                     body;
     private       Matcher                    matcher;
 
-    protected JaxRsRequest(HttpServerRequest<ByteBuf> req, Matcher matcher, String body) {
+    protected JaxRsRequest(HttpServerRequest<ByteBuf> req, Matcher matcher, byte[] body) {
         this.req = req;
         this.matcher = matcher;
         this.body = body;
@@ -37,7 +37,7 @@ public class JaxRsRequest {
         this(request, null, null);
     }
 
-    protected JaxRsRequest create(HttpServerRequest<ByteBuf> req, Matcher matcher, String body) {
+    protected JaxRsRequest create(HttpServerRequest<ByteBuf> req, Matcher matcher, byte[] body) {
         return new JaxRsRequest(req, matcher, body);
     }
 
@@ -45,7 +45,7 @@ public class JaxRsRequest {
         return req.getHttpMethod().equals(httpMethod);
     }
 
-    public String getBody() {
+    public byte[] getBody() {
         return body;
     }
 
@@ -53,7 +53,7 @@ public class JaxRsRequest {
         HttpMethod httpMethod = req.getHttpMethod();
         if (HttpMethod.POST.equals(httpMethod) || HttpMethod.PUT.equals(httpMethod) ||
             HttpMethod.PATCH.equals(httpMethod) || HttpMethod.DELETE.equals(httpMethod)) {
-            return collector.collectString(req.getContent()
+            return collector.collectBytes(req.getContent()
                 .doOnError(e -> LOG.error(
                     "Error reading data for request "
                         + httpMethod + " " + req.getUri(),
@@ -103,8 +103,8 @@ public class JaxRsRequest {
         return parseUrlEncodedBody(body, key, defaultValue);
     }
 
-    private String parseUrlEncodedBody(String body, String key, String defaultValue) {
-        QueryStringDecoder        decoder    = new QueryStringDecoder(body, false);
+    private String parseUrlEncodedBody(byte[] body, String key, String defaultValue) {
+        QueryStringDecoder        decoder    = new QueryStringDecoder(new String(body), false);
         Map<String, List<String>> parameters = decoder.parameters();
         List<String>              list       = parameters.get(key);
         return list == null || list.isEmpty() ? defaultValue : list.get(0);

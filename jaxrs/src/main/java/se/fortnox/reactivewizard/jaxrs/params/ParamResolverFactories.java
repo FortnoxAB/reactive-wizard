@@ -5,6 +5,7 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import se.fortnox.reactivewizard.jaxrs.WebException;
 import se.fortnox.reactivewizard.jaxrs.params.annotated.AnnotatedParamResolverFactories;
 import se.fortnox.reactivewizard.jaxrs.params.annotated.AnnotatedParamResolverFactory;
+import se.fortnox.reactivewizard.jaxrs.params.deserializing.BodyDeserializer;
 import se.fortnox.reactivewizard.jaxrs.params.deserializing.Deserializer;
 import se.fortnox.reactivewizard.jaxrs.params.deserializing.DeserializerException;
 import se.fortnox.reactivewizard.jaxrs.params.deserializing.DeserializerFactory;
@@ -84,7 +85,7 @@ public class ParamResolverFactories {
             }
         }
 
-        Deserializer<T> bodyDeserializer = deserializerFactory.getBodyDeserializer(paramType, consumesAnnotation);
+        BodyDeserializer<T> bodyDeserializer = deserializerFactory.getBodyDeserializer(paramType, consumesAnnotation);
         if (bodyDeserializer != null) {
             return request -> just(deserializeBody(bodyDeserializer, request.getBody()));
         }
@@ -101,7 +102,7 @@ public class ParamResolverFactories {
         return null;
     }
 
-    private <T> T deserializeBody(Deserializer<T> deserializer, String value) {
+    private <T> T deserializeBody(BodyDeserializer<T> deserializer, byte[] value) {
         try {
             return deserializer.deserialize(value);
         } catch (DeserializerException deserializerException) {

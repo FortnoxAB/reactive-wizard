@@ -22,7 +22,7 @@ public class JaxRsRequestTest {
         content.onCompleted();
         HttpServerRequest<ByteBuf> serverReq = new MockHttpServerRequest("/", HttpMethod.POST, content);
         JaxRsRequest               req       = new JaxRsRequest(serverReq);
-        String                     body      = req.loadBody().toBlocking().single().getBody();
+        String                     body      = new String(req.loadBody().toBlocking().single().getBody());
         assertThat(body).isEqualTo("ö");
     }
 
@@ -30,7 +30,7 @@ public class JaxRsRequestTest {
     public void shouldDecodeSingleChunkBody() {
         HttpServerRequest<ByteBuf> serverReq = new MockHttpServerRequest("/", HttpMethod.POST, "ö");
         JaxRsRequest               req       = new JaxRsRequest(serverReq);
-        String                     body      = req.loadBody().toBlocking().single().getBody();
+        String                     body      = new String(req.loadBody().toBlocking().single().getBody());
         assertThat(body).isEqualTo("ö");
     }
 
@@ -38,14 +38,14 @@ public class JaxRsRequestTest {
     public void shouldDecodeBodyForDeleteRequests() {
         HttpServerRequest<ByteBuf> serverReq = new MockHttpServerRequest("/", HttpMethod.DELETE, "test");
         JaxRsRequest               req       = new JaxRsRequest(serverReq);
-        String                     body      = req.loadBody().toBlocking().single().getBody();
+        String                     body      = new String(req.loadBody().toBlocking().single().getBody());
         assertThat(body).isEqualTo("test");
     }
 
     @Test
     public void testParams() throws Exception {
         MockHttpServerRequest serverReq = new MockHttpServerRequest("/");
-        JaxRsRequest          req       = new JaxRsRequest(serverReq, null, "");
+        JaxRsRequest          req       = new JaxRsRequest(serverReq, null, new byte[0]);
         assertThat(req.getPathParam("path")).isNull();
         assertThat(req.getQueryParam("query")).isNull();
         assertThat(req.getFormParam("form")).isNull();

@@ -86,15 +86,18 @@ public class DeserializerFactory {
         return null;
     }
 
-    public <T> Deserializer<T> getBodyDeserializer(TypeReference<T> paramType, String[] consumes) {
+    public <T> BodyDeserializer<T> getBodyDeserializer(TypeReference<T> paramType, String[] consumes) {
         // Only support a single consumes for now
         String consume = consumes[0];
 
         if (MediaType.APPLICATION_JSON.equals(consume)) {
-            Function<String, T> jsonDeserializer = jsonDeserializerFactory.createDeserializer(paramType);
+            Function<byte[], T> jsonDeserializer = jsonDeserializerFactory.createByteDeserializer(paramType);
             return jsonDeserializer::apply;
-        } else if (MediaType.TEXT_PLAIN.equals(consume)) {
-            return body -> (T)body;
+        } else if (MediaType.TEXT_PLAIN.equals(consume) || MediaType.APPLICATION_OCTET_STREAM.equals(consume)) {
+            if (paramType.getType().equals(String.class)) {
+                return bytes -> (T)new String(bytes);
+            }
+            return bytes -> (T)bytes;
         }
         return null;
     }
