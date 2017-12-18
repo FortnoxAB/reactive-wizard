@@ -500,6 +500,14 @@ public class JaxRsResourceTest {
     }
 
     @Test
+    public void shouldAcceptByteArrayInput() {
+        String                 text = "my bytes";
+        MockHttpServerResponse resp = post(service, "/test/byteArray", text);
+        assertThat(resp.getStatus()).isEqualTo(HttpResponseStatus.CREATED);
+        assertThat(resp.getOutp()).isEqualTo("\"" + text + "\"");
+    }
+
+    @Test
     public void shouldAcceptNonObservableReturnTypes() {
         assertThat(get(service,
             "/test/returningString").getStatus()).isEqualTo(HttpResponseStatus.OK);
@@ -909,6 +917,11 @@ public class JaxRsResourceTest {
         @Consumes(MediaType.TEXT_PLAIN)
         Observable<String> textPlain(String input);
 
+        @POST
+        @Path("byteArray")
+        @Consumes(MediaType.APPLICATION_OCTET_STREAM)
+        Observable<String> byteArray(byte[] input);
+
         @GET
         @Path("acceptsUuid")
         Observable<String> acceptsUuidQueryParam(@QueryParam("id") UUID id);
@@ -1157,6 +1170,11 @@ public class JaxRsResourceTest {
         @Override
         public Observable<String> textPlain(String input) {
             return just(input);
+        }
+
+        @Override
+        public Observable<String> byteArray(byte[] input) {
+            return just(new String(input));
         }
 
         @Override
