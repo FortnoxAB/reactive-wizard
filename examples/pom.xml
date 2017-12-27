@@ -22,6 +22,11 @@
                 <artifactId>reactivewizard-jaxrs</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <groupId>se.fortnox.reactivewizard</groupId>
+                <artifactId>reactivewizard-config</artifactId>
+                <version>${project.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
