@@ -17,9 +17,7 @@ import java.nio.file.FileSystemException;
 import java.nio.file.NoSuchFileException;
 
 import static org.fest.assertions.Assertions.assertThat;
-import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static se.fortnox.reactivewizard.test.TestUtil.matches;
 
@@ -45,12 +43,15 @@ public class ExceptionHandlerTest {
     }
 
     @Test
-    public void shouldNotLog404Errors() {
-        assertNoLog(new MockHttpServerRequest("/path"),
-            new NoSuchFileException(""));
-        assertNoLog(
-            new MockHttpServerRequest("/path"),
-            new FileSystemException(""));
+    public void shouldLog404AsDebug() {
+        MockHttpServerRequest request = new MockHttpServerRequest("/path");
+        String expectedLog = "404 Not Found\n" +
+            "\tCause: -\n" +
+            "\tResponse: {\"id\":\"*\",\"error\":\"notfound\"}\n" +
+            "\tRequest: GET /path headers: ";
+
+        assertLog(request, new NoSuchFileException(""), Level.DEBUG, expectedLog);
+        assertLog(request, new FileSystemException(""), Level.DEBUG, expectedLog);
     }
 
     @Test
@@ -79,15 +80,4 @@ public class ExceptionHandlerTest {
             assertThat(event.getMessage().toString()).matches(regex);
         }));
     }
-
-    private void assertNoLog(HttpServerRequest<ByteBuf> request, Exception exception) {
-        Appender mockAppender = mock(Appender.class);
-        LogManager.getLogger(ExceptionHandler.class).addAppender(mockAppender);
-
-        HttpServerResponse<ByteBuf> response = new MockHttpServerResponse();
-        new ExceptionHandler().handleException(request, response, exception);
-
-        verify(mockAppender, times(0)).doAppend(any());
-    }
-
 }
