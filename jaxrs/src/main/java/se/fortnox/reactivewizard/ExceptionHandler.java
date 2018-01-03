@@ -28,8 +28,8 @@ import static rx.Observable.just;
  * Handles exceptions and writes errors to the response and the log.
  */
 public class ExceptionHandler {
-
     private static Logger LOG = LoggerFactory.getLogger(ExceptionHandler.class);
+
     private ObjectMapper mapper;
 
     @Inject
@@ -66,14 +66,7 @@ public class ExceptionHandler {
             webException = new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR, throwable);
         }
 
-        if (webException.getStatus().code() >= 500) {
-            LOG.error(getLogMessage(request, webException), webException);
-        } else {
-            if (webException.getStatus() != HttpResponseStatus.NOT_FOUND) {
-                // No log for 404
-                LOG.warn(getLogMessage(request, webException), webException);
-            }
-        }
+        logException(request, webException);
 
         response = response.setStatus(webException.getStatus());
         if (HttpMethod.HEAD.equals(request.getHttpMethod())) {
@@ -94,9 +87,7 @@ public class ExceptionHandler {
         }
     }
 
-    private String getLogMessage(HttpServerRequest<ByteBuf> request,
-        WebException webException
-    ) {
+    private String getLogMessage(HttpServerRequest<ByteBuf> request, WebException webException) {
         final StringBuilder msg = new StringBuilder()
             .append(webException.getStatus().toString())
             .append("\n\tCause: ").append(webException.getCause() != null ?
@@ -107,14 +98,39 @@ public class ExceptionHandler {
             .append(request.getHttpMethod())
             .append(" ").append(request.getUri())
             .append(" headers: ");
-        request.headerIterator().forEachRemaining(h ->
+
+        request.headerIterator().forEachRemaining(header ->
             msg
-                .append(h.getKey())
+                .append(header.getKey())
                 .append('=')
-                .append(h.getValue())
+                .append(header.getValue())
                 .append(' ')
         );
         return msg.toString();
     }
 
+    private void logException(HttpServerRequest<ByteBuf> request, WebException webException) {
+        String logMessage = getLogMessage(request, webException);
+        switch (webException.getLogLevel()) {
+            case WARN:
+                LOG.warn(logMessage, webException);
+                break;
+
+            case INFO:
+                LOG.info(logMessage, webException);
+                break;
+
+            case DEBUG:
+                LOG.debug(logMessage, webException);
+                break;
+
+            case TRACE:
+                LOG.debug(logMessage, webException);
+                break;
+
+            case ERROR:
+            default:
+                LOG.error(logMessage, webException);
+        }
+    }
 }

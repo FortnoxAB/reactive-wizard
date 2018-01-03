@@ -5,11 +5,12 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import org.slf4j.event.Level;
 
 import java.util.UUID;
 
 @SuppressWarnings("serial")
-@JsonIgnoreProperties({"cause", "stackTrace", "localizedMessage", "suppressed"})
+@JsonIgnoreProperties({"cause", "stackTrace", "localizedMessage", "suppressed", "logLevel"})
 public class WebException extends RuntimeException {
 
     private String             id;
@@ -18,6 +19,15 @@ public class WebException extends RuntimeException {
     private Object[]           errorParams;
     private HttpResponseStatus status;
     private String             message;
+    private Level              logLevel = Level.ERROR;
+
+    public WebException(HttpResponseStatus httpStatus, Throwable throwable, boolean stacktrace) {
+        super(null, throwable, false, stacktrace);
+        this.error = errorCodeFromStatus(httpStatus);
+        this.status = httpStatus;
+        this.id = UUID.randomUUID().toString();
+        this.logLevel = logLevelFromStatus(httpStatus);
+    }
 
     public WebException(HttpResponseStatus httpStatus) {
         this(httpStatus, (Throwable)null);
@@ -27,26 +37,20 @@ public class WebException extends RuntimeException {
         this(httpStatus, throwable, true);
     }
 
-    public WebException(HttpResponseStatus httpStatus, Throwable throwable, boolean stacktrace) {
-        super(null, throwable, false, stacktrace);
-        this.error = errCodeFromStatus(httpStatus);
-        this.status = httpStatus;
-        this.id = UUID.randomUUID().toString();
-    }
-
-    public WebException(HttpResponseStatus httpStatus, String errorCode) {
-        this(httpStatus, errorCode, null);
-    }
-
     public WebException(HttpResponseStatus httpStatus, FieldError... fieldErrors) {
         this.status = httpStatus;
         if (fieldErrors != null && fieldErrors.length != 0) {
             this.fields = fieldErrors;
             error = "validation";
         } else {
-            error = errCodeFromStatus(httpStatus);
+            error = errorCodeFromStatus(httpStatus);
         }
         this.id = UUID.randomUUID().toString();
+        this.logLevel = logLevelFromStatus(httpStatus);
+    }
+
+    public WebException(FieldError... fieldErrors) {
+        this(HttpResponseStatus.BAD_REQUEST, fieldErrors);
     }
 
     public WebException(HttpResponseStatus httpStatus, String errorCode, String userMessage) {
@@ -54,13 +58,14 @@ public class WebException extends RuntimeException {
         this.status = httpStatus;
         this.error = errorCode;
         this.id = UUID.randomUUID().toString();
+        this.logLevel = logLevelFromStatus(httpStatus);
     }
 
-    public WebException(FieldError... fieldErrors) {
-        this(HttpResponseStatus.BAD_REQUEST, fieldErrors);
+    public WebException(HttpResponseStatus httpStatus, String errorCode) {
+        this(httpStatus, errorCode, null);
     }
 
-    private static String errCodeFromStatus(HttpResponseStatus status) {
+    private static String errorCodeFromStatus(HttpResponseStatus status) {
         if (status.equals(HttpResponseStatus.INTERNAL_SERVER_ERROR)) {
             return "internal";
         }
@@ -103,5 +108,29 @@ public class WebException extends RuntimeException {
 
     public void setErrorParams(Object[] errorParams) {
         this.errorParams = errorParams;
+    }
+
+    public Level getLogLevel() {
+        return logLevel;
+    }
+
+    public void setLogLevel(Level logLevel) {
+        this.logLevel = logLevel;
+    }
+
+    public WebException withLogLevel(Level logLevel) {
+        setLogLevel(logLevel);
+        return this;
+    }
+
+    private Level logLevelFromStatus(HttpResponseStatus httpStatus) {
+        if (httpStatus.code() >= 500) {
+            return Level.ERROR;
+
+        } else if (httpStatus == HttpResponseStatus.NOT_FOUND) {
+            return Level.DEBUG;
+        }
+
+        return Level.WARN;
     }
 }
