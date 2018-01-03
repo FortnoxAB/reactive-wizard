@@ -14,6 +14,7 @@
 		<module>json</module>
 		<module>jaxrs-api</module>
 		<module>jaxrs</module>
+		<module>config</module>
 		<module>examples</module>
 	</modules>
 
@@ -46,6 +47,7 @@
 					<compilerArgument>-parameters</compilerArgument>
 				</configuration>
 			</plugin>
+
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-enforcer-plugin</artifactId>
@@ -64,6 +66,7 @@
 					</execution>
 				</executions>
 			</plugin>
+
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-checkstyle-plugin</artifactId>
