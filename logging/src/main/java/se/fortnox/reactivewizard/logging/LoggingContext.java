@@ -1,4 +1,4 @@
-package se.fortnox.reactivewizard.config;
+package se.fortnox.reactivewizard.logging;
 
 import org.slf4j.MDC;
 import rx.Observable;

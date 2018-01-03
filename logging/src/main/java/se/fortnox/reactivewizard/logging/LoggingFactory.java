@@ -1,7 +1,8 @@
-package se.fortnox.reactivewizard.config;
+package se.fortnox.reactivewizard.logging;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.netflix.blitz4j.LoggingConfiguration;
+import se.fortnox.reactivewizard.config.Config;
 
 import javax.validation.Valid;
 import java.net.URL;

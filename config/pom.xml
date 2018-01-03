@@ -10,20 +10,6 @@
 	</parent>
 
 	<dependencies>
-
-		<dependency>
-			<groupId>com.fortnox.reactivewizard</groupId>
-			<artifactId>reactivewizard-validation</artifactId>
-			<version>0.0.1-SNAPSHOT</version>
-		</dependency>
-
-		<dependency>
-			<groupId>com.fortnox.reactivewizard</groupId>
-			<artifactId>reactivewizard-test</artifactId>
-			<version>0.0.1-SNAPSHOT</version>
-			<scope>test</scope>
-		</dependency>
-
 		<dependency>
 			<groupId>com.fasterxml.jackson.dataformat</groupId>
 			<artifactId>jackson-dataformat-yaml</artifactId>
@@ -37,55 +23,11 @@
 		</dependency>
 
 		<dependency>
-			<groupId>com.fasterxml.jackson.core</groupId>
-			<artifactId>jackson-annotations</artifactId>
-			<version>${jackson.version}</version>
+			<groupId>se.fortnox.reactivewizard</groupId>
+			<artifactId>reactivewizard-test</artifactId>
+			<version>1.0.0-SNAPSHOT</version>
+			<scope>test</scope>
 		</dependency>
-
-		<dependency>
-			<groupId>com.netflix.blitz4j</groupId>
-			<artifactId>blitz4j</artifactId>
-			<version>${blitz4j.version}</version>
-			<exclusions>
-				<exclusion>
-					<groupId>org.slf4j</groupId>
-					<artifactId>slf4j-api</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>com.netflix.servo</groupId>
-					<artifactId>servo-core</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>
-
-		<dependency>
-			<groupId>com.netflix.archaius</groupId>
-			<artifactId>archaius-core</artifactId>
-			<version>0.7.3</version>
-			<exclusions>
-				<exclusion>
-					<groupId>org.slf4j</groupId>
-					<artifactId>slf4j-api</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>com.google.guava</groupId>
-					<artifactId>guava</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>
-
-		<dependency>
-			<groupId>com.ryantenney.log4j</groupId>
-			<artifactId>redis-appender</artifactId>
-			<version>1.0.2.fnx1</version>
-		</dependency>
-
-		<dependency>
-			<groupId>net.logstash.log4j</groupId>
-			<artifactId>jsonevent-layout</artifactId>
-			<version>1.7</version>
-		</dependency>
-
 	</dependencies>
 
 </project>
