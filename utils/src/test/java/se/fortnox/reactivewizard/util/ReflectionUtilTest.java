@@ -1,9 +1,6 @@
-package se.fortnox.reactivewizard;
+package se.fortnox.reactivewizard.util;
 
 import org.junit.Test;
-import se.fortnox.reactivewizard.util.Getter;
-import se.fortnox.reactivewizard.util.ReflectionUtil;
-import se.fortnox.reactivewizard.util.Setter;
 
 import java.util.List;
 
@@ -47,6 +44,12 @@ public class ReflectionUtilTest {
         assertThat(ReflectionUtil.newInstance(PrivateDefaultConstructor.class)).isNotNull();
     }
 
+
+    @Test
+    public void shouldThrowHelpfulExceptionWhenNoZeroParametersConstructorExists()  {
+        assertThat(ReflectionUtil.newInstance(NoZeroParametersConstructorClass.class)).isNotNull();
+    }
+
     @Test
     public void shouldFindFieldIfNoMethod() {
         Getter getter = ReflectionUtil.getGetter(Child.class, "c");
@@ -65,6 +68,12 @@ public class ReflectionUtilTest {
 
         public void setI(int i) {
             this.i = i;
+        }
+    }
+
+    class NoZeroParametersConstructorClass {
+        NoZeroParametersConstructorClass(String something) {
+
         }
     }
 
