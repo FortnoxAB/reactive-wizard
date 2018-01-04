@@ -5,6 +5,7 @@ import org.junit.Test;
 import java.util.List;
 
 import static org.fest.assertions.Assertions.assertThat;
+import static org.fest.assertions.Fail.fail;
 
 public class ReflectionUtilTest {
     @Test
@@ -47,7 +48,13 @@ public class ReflectionUtilTest {
 
     @Test
     public void shouldThrowHelpfulExceptionWhenNoZeroParametersConstructorExists()  {
-        assertThat(ReflectionUtil.newInstance(NoZeroParametersConstructorClass.class)).isNotNull();
+        try {
+            ReflectionUtil.newInstance(NoZeroParametersConstructorClass.class);
+            fail("Expected RuntimeException, but none was thrown");
+        } catch (RuntimeException exception) {
+            assertThat(exception.getMessage())
+                .isEqualTo("No constructor with zero parameters found on NoZeroParametersConstructorClass");
+        }
     }
 
     @Test
