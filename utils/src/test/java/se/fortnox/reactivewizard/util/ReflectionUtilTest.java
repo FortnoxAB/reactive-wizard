@@ -1,13 +1,11 @@
-package se.fortnox.reactivewizard;
+package se.fortnox.reactivewizard.util;
 
 import org.junit.Test;
-import se.fortnox.reactivewizard.util.Getter;
-import se.fortnox.reactivewizard.util.ReflectionUtil;
-import se.fortnox.reactivewizard.util.Setter;
 
 import java.util.List;
 
 import static org.fest.assertions.Assertions.assertThat;
+import static org.fest.assertions.Fail.fail;
 
 public class ReflectionUtilTest {
     @Test
@@ -47,6 +45,18 @@ public class ReflectionUtilTest {
         assertThat(ReflectionUtil.newInstance(PrivateDefaultConstructor.class)).isNotNull();
     }
 
+
+    @Test
+    public void shouldThrowHelpfulExceptionWhenNoZeroParametersConstructorExists()  {
+        try {
+            ReflectionUtil.newInstance(NoZeroParametersConstructorClass.class);
+            fail("Expected RuntimeException, but none was thrown");
+        } catch (RuntimeException exception) {
+            assertThat(exception.getMessage())
+                .isEqualTo("No constructor with zero parameters found on NoZeroParametersConstructorClass");
+        }
+    }
+
     @Test
     public void shouldFindFieldIfNoMethod() {
         Getter getter = ReflectionUtil.getGetter(Child.class, "c");
@@ -65,6 +75,12 @@ public class ReflectionUtilTest {
 
         public void setI(int i) {
             this.i = i;
+        }
+    }
+
+    class NoZeroParametersConstructorClass {
+        NoZeroParametersConstructorClass(String something) {
+
         }
     }
 

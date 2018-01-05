@@ -252,7 +252,9 @@ public class ReflectionUtil {
                 .orElseThrow(NoSuchMethodException::new);
             constructor.setAccessible(true);
             return cls.cast(constructor.newInstance());
-        } catch (NoSuchMethodException | IllegalAccessException | InstantiationException | InvocationTargetException e) {
+        } catch (NoSuchMethodException e) {
+            throw new RuntimeException("No constructor with zero parameters found on " + cls.getSimpleName(), e);
+        } catch (IllegalAccessException | InstantiationException | InvocationTargetException e) {
             throw new RuntimeException(e);
         }
     }
