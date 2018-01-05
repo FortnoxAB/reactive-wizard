@@ -1,6 +1,10 @@
 package se.fortnox.reactivewizard.config;
 
+import com.google.inject.Guice;
+import com.google.inject.Injector;
+import com.google.inject.name.Names;
 import org.junit.Test;
+import se.fortnox.reactivewizard.binding.AutoBindModules;
 
 import java.lang.reflect.Field;
 import java.util.Collections;
@@ -98,5 +102,16 @@ public class ConfigReaderTest {
 
         testConfig = ConfigReader.fromTree(ConfigReader.readTree("src/test/resources/testconfig.yml"), TestConfig.class);
         assertThat(testConfig.getUrl()).isEqualTo("http://localhost:8080/test");
+    }
+
+    @Test
+    public void shouldBindConfigAutomatically() {
+        Injector injector = Guice.createInjector(new AutoBindModules(binder->{
+            binder.bind(String[].class)
+                    .annotatedWith(Names.named("args"))
+                    .toInstance(new String[]{"src/test/resources/testconfig.yml"});
+        }));
+        TestConfig testConfig = injector.getInstance(TestConfig.class);
+        assertThat(testConfig.getMyKey()).isEqualTo("myValue");
     }
 }
