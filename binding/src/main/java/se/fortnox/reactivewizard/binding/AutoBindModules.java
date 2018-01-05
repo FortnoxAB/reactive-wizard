@@ -22,6 +22,10 @@ import java.util.stream.Collectors;
  */
 public class AutoBindModules implements Module {
 
+    /**
+     * These are packages that are not part of the application code and where there is no point to scan for classes.
+     * We only want to find classes defined by our platform and user code.
+     */
     private static final String[] PACKAGE_BLACKLIST = {
             "-com.google",
             "-liquibase",
@@ -46,9 +50,9 @@ public class AutoBindModules implements Module {
             "-redis",
             "-net.minidev",
             "-org.slf4j",
+            "-com.ryantenney",
+            "-net.logstash",
             "-META-INF",
-            "-com/ryantenney",
-            "-net/logstash",
             "-jar:java-atk-wrapper.jar",
             "-jar:rt.jar",
             "-jar:idea_rt.jar"
