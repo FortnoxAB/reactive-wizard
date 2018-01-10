@@ -17,6 +17,7 @@
 		<module>config</module>
 		<module>logging</module>
 		<module>binding</module>
+		<module>server</module>
 		<module>examples</module>
 	</modules>
 

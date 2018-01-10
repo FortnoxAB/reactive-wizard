@@ -17,6 +17,11 @@ public class ConfigAutoBindModule implements AutoBindModule {
 
     @Inject
     public ConfigAutoBindModule(ConfigClassScanner configClassScanner, @Named("args") String [] args) {
+        if (args.length == 0) {
+            System.out.println("Usage: [command] configfile.yml");
+            System.exit(-1);
+        }
+
         this.configClassScanner = configClassScanner;
         this.configFileName = args[args.length - 1];
     }
