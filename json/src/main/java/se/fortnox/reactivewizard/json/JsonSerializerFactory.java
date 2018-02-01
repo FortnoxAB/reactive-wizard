@@ -28,7 +28,7 @@ public class JsonSerializerFactory {
         return createStringSerializer(mapper.writerFor(paramType));
     }
 
-    public <T> Function<T, String> createStringSerializer(Class<T> paramType) {
+    public <T> Function<T, String> createStringSerializer(Class<?> paramType) {
         return createStringSerializer(mapper.writerFor(paramType));
     }
 
@@ -49,7 +49,7 @@ public class JsonSerializerFactory {
         return createByteSerializer(mapper.writerFor(paramType));
     }
 
-    public <T> Function<T, byte[]> createByteSerializer(Class<T> paramType) {
+    public <T> Function<T, byte[]> createByteSerializer(Class<?> paramType) {
         return createByteSerializer(mapper.writerFor(paramType));
     }
 
