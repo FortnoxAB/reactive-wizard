@@ -27,7 +27,7 @@ public class JsonDeserializerFactory {
         return createDeserializer(mapper.readerFor(typeReference));
     }
 
-    public <T> Function<String, T> createDeserializer(Class<T> paramType) {
+    public <T> Function<String, T> createDeserializer(Class<?> paramType) {
         return createDeserializer(mapper.readerFor(paramType));
     }
 
@@ -48,7 +48,7 @@ public class JsonDeserializerFactory {
         return createByteDeserializer(mapper.readerFor(typeReference));
     }
 
-    public <T> Function<byte[], T> createByteDeserializer(Class<T> paramType) {
+    public <T> Function<byte[], T> createByteDeserializer(Class<?> paramType) {
         return createByteDeserializer(mapper.readerFor(paramType));
     }
 

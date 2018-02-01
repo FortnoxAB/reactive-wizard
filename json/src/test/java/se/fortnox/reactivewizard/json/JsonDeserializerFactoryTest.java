@@ -67,10 +67,48 @@ public class JsonDeserializerFactoryTest {
 		assertThat(result).isEqualTo(jdk8Types);
 	}
 
+	@Test
+	public void shouldSerializeAndDeserializeSubClassAttributes() {
+		Parent p = new Child();
+		assertThat(serializeParent(p)).isEqualTo("{\"a\":\"parent\",\"b\":\"child\"}");
+
+		p = deserializeParent(Child.class, "{\"a\":\"parent\",\"b\":\"child\"}");
+		Child c = (Child) p;
+		assertThat(c.getA()).isEqualTo("parent");
+		assertThat(c.getB()).isEqualTo("child");
+
+		p = deserializeParent(Parent.class, "{\"a\":\"parent\",\"b\":\"child\"}");
+		assertThat(p.getA()).isEqualTo("parent");
+		assertThat(p instanceof Child).isFalse();
+	}
+
+	private <T extends Parent> String serializeParent(T parent) {
+		return serializerFactory.createStringSerializer(parent.getClass()).apply(parent);
+	}
+
+	private <T extends Parent> T deserializeParent(Class<T> clazz, String json) {
+		Function<String, T> deserializer = deserializerFactory.createDeserializer(clazz);
+		return deserializer.apply(json);
+	}
+
 	private MutableEntity mutableEntity(String stringProperty, int intProperty) {
 		MutableEntity entity = new MutableEntity();
 		entity.setStringProperty(stringProperty);
 		entity.setIntProperty(intProperty);
 		return entity;
+	}
+
+	static class Parent {
+		String a = "parent";
+		public String getA() {
+			return a;
+		}
+	}
+
+	static class Child extends Parent {
+		String b = "child";
+		public String getB() {
+			return b;
+		}
 	}
 }
