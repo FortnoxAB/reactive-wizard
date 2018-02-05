@@ -79,14 +79,11 @@ public class ConfigReaderTest {
 
     @Test
     public void shouldReplaceEnvPlaceholderWithEmptyStringIfEnvNotSet() {
-        Map<String, String> env = new HashMap<>(System.getenv());
-        env.remove("CUSTOM_ENV_VAR");
-        setEnv(env);
-        TestConfig testConfig = ConfigReader.fromFile("src/test/resources/testconfig.yml", TestConfig.class);
+        TestConfig testConfig = ConfigReader.fromFile("src/test/resources/testconfig-missing-value.yml", TestConfig.class);
         assertThat(testConfig.getConfigWithEnvPlaceholder()).isNull();
         assertThat(testConfig.getConfigWithEnvPlaceholderInMiddle()).isEqualTo("beforeafter");
 
-        testConfig = ConfigReader.fromTree(ConfigReader.readTree("src/test/resources/testconfig.yml"), TestConfig.class);
+        testConfig = ConfigReader.fromTree(ConfigReader.readTree("src/test/resources/testconfig-missing-value.yml"), TestConfig.class);
         assertThat(testConfig.getConfigWithEnvPlaceholder()).isNull();
         assertThat(testConfig.getConfigWithEnvPlaceholderInMiddle()).isEqualTo("beforeafter");
     }

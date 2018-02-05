@@ -1,0 +1,5 @@
+myTestConfig:
+  myKey: myValue
+  configWithEnvPlaceholder: {{CUSTOM_MISSING_ENV_VAR}}
+  configWithEnvPlaceholderInMiddle: before{{CUSTOM_MISSING_ENV_VAR}}after
+  url: http://{{HOST}}:{{PORT}}/test
