@@ -1,6 +1,7 @@
 package se.fortnox.reactivewizard.util.rx;
 
 import org.junit.Test;
+import org.mockito.InOrder;
 import rx.Observable;
 import rx.observers.TestSubscriber;
 
@@ -8,6 +9,8 @@ import java.util.function.Consumer;
 
 import static org.fest.assertions.Assertions.assertThat;
 import static org.fest.assertions.Fail.fail;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -21,13 +24,54 @@ public class FirstThenTest {
 
     @Test
     public void shouldExecuteFirstBeforeThen() {
-        Consumer<Integer>   log    = mock(Consumer.class);
-        Observable<Integer> result = first(just(1).doOnNext(log::accept)).thenReturn(just(2));
-        verify(log, never()).accept(1);
+        Consumer<Integer> consumer = mock(Consumer.class);
 
-        assertThat(result.toBlocking().single()).isEqualTo(2);
+        Observable<Integer> result = first(just(1).doOnNext(consumer::accept))
+            .then(just(2).doOnNext(consumer::accept))
+            .thenReturn(just(3).doOnNext(consumer::accept));
 
-        verify(log).accept(1);
+        verify(consumer, never()).accept(anyInt());
+
+        assertThat(result.toBlocking().single()).isEqualTo(3);
+
+        InOrder order = inOrder(consumer);
+        order.verify(consumer).accept(1);
+        order.verify(consumer).accept(2);
+        order.verify(consumer).accept(3);
+    }
+
+    @Test
+    public void shouldExecuteFirstBeforeThenForFunc0Arguments() {
+        Consumer<Integer> consumer = mock(Consumer.class);
+
+        first(just(1).doOnNext(consumer::accept))
+            .then(() -> { consumer.accept(2); return empty(); })
+            .thenReturn(() -> { consumer.accept(3); return empty(); })
+            .subscribe();
+
+        InOrder order = inOrder(consumer);
+        order.verify(consumer).accept(1);
+        order.verify(consumer).accept(2);
+        order.verify(consumer).accept(3);
+    }
+
+    @Test
+    public void shouldReturnNonObservables() {
+        String result = first(empty())
+            .thenReturn("test")
+            .toBlocking()
+            .single();
+        assertThat(result).isEqualTo("test");
+    }
+
+    @Test
+    public void shouldReturnEmpty() {
+        Boolean result = first(empty())
+            .thenReturnEmpty()
+            .isEmpty()
+            .toBlocking()
+            .first();
+        assertThat(result).isTrue();
     }
 
     @Test

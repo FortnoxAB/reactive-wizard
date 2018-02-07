@@ -39,6 +39,14 @@ public class RetryWithDelayTest {
     }
 
     @Test
+    public void shouldRetryWithoutPredicate() {
+        Observable<Integer> retryObservable = getRetryObservable();
+
+        Integer returnValue = retryObservable.retryWhen(new RetryWithDelay(1, 1)).toBlocking().first();
+        assertThat(returnValue).isEqualTo(1);
+    }
+
+    @Test
     public void shouldNotRetryWithPredicate() {
         Observable<Integer> retryObservable = getRetryObservable();
 

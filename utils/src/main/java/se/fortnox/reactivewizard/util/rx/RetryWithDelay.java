@@ -17,12 +17,10 @@ public class RetryWithDelay implements Func1<Observable<? extends Throwable>, Ob
     private final Predicate<? super Throwable> predicate;
     private       int                          retryCount;
 
-    public RetryWithDelay(int maxRetries, int retryDelayMillis,
-        final Class<? extends Throwable> exceptionType
-    ) {
-        this(maxRetries,
-            retryDelayMillis,
-            throwable -> exceptionType == null || exceptionType.isAssignableFrom(throwable.getClass()));
+    public RetryWithDelay(int maxRetries, int retryDelayMillis, final Class<? extends Throwable> exceptionType) {
+        this(maxRetries, retryDelayMillis, throwable -> {
+            return exceptionType == null || exceptionType.isAssignableFrom(throwable.getClass());
+        });
     }
 
     public RetryWithDelay(int maxRetries, int retryDelayMillis, final Predicate<? super Throwable> predicate) {
