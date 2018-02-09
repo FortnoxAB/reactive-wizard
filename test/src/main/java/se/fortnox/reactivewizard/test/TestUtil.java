@@ -10,6 +10,9 @@ import java.util.function.Consumer;
 import static org.fest.assertions.Assertions.assertThat;
 import static org.fest.assertions.Fail.fail;
 
+/**
+ * Utility functions for building tests.
+ */
 public final class TestUtil {
 
     private TestUtil() {
@@ -56,6 +59,13 @@ public final class TestUtil {
         });
     }
 
+    /**
+     * Assert the type of an exception.
+     *
+     * @param throwable The exception to apply assertion on
+     * @param type Expected type of exception
+     * @return The assertion for further assertion chaining
+     */
     public static <T extends Throwable> ThrowableAssert assertException(Throwable throwable, Class<T> type) {
         while (!type.isAssignableFrom(throwable.getClass())) {
             Throwable cause = throwable.getCause();

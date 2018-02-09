@@ -22,7 +22,7 @@ import java.util.List;
 import static rx.Observable.just;
 
 /**
- * Creates param resolvers which can resolve method parameters from an incoming request
+ * Creates param resolvers which can resolve method parameters from an incoming request.
  */
 public class ParamResolverFactories {
 

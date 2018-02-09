@@ -11,6 +11,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
 
+/**
+ * Factory for initializing logging configuration and also container of logging configuration from YAML.
+ */
 @Config("logging")
 public class LoggingFactory {
 

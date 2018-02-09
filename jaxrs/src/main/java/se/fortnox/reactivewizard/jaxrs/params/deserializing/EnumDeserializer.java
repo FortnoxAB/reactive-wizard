@@ -1,5 +1,8 @@
 package se.fortnox.reactivewizard.jaxrs.params.deserializing;
 
+/**
+ * Deserializes enums.
+ */
 public class EnumDeserializer<T extends Enum> implements Deserializer<T> {
     private final Class<?> paramType;
 

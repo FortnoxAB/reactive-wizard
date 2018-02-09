@@ -52,8 +52,8 @@ public class JaxRsRequestHandler implements RequestHandler<ByteBuf, ByteBuf> {
     /**
      * Handles incoming request if a matching resource is found.
      *
-     * @param request
-     * @param response
+     * @param request The incoming request
+     * @param response The response that will be sent
      * @return an Observable which will complete the request when subsribed, or null if no resource matches the request.
      */
     @Override

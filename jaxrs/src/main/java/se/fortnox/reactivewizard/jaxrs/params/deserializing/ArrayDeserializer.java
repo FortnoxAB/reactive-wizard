@@ -2,6 +2,9 @@ package se.fortnox.reactivewizard.jaxrs.params.deserializing;
 
 import java.lang.reflect.Array;
 
+/**
+ * Deserializes arrays.
+ */
 public class ArrayDeserializer<T> implements Deserializer<T[]> {
 
     private final Deserializer<T> inner;

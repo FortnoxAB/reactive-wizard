@@ -4,8 +4,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * Deserializes lists of objects.
+ */
 public class ListDeserializer<T> implements Deserializer<List<T>> {
-
     private final Deserializer<T> inner;
 
     public ListDeserializer(Deserializer<T> inner) {

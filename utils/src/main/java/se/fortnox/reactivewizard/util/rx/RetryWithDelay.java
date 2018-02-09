@@ -1,7 +1,5 @@
 package se.fortnox.reactivewizard.util.rx;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.functions.Func1;
 
@@ -10,19 +8,15 @@ import java.util.function.Predicate;
 
 public class RetryWithDelay implements Func1<Observable<? extends Throwable>, Observable<?>> {
 
-    private static final Logger log = LoggerFactory.getLogger(RetryWithDelay.class);
-
     private final int                          maxRetries;
     private final int                          retryDelayMillis;
     private final Predicate<? super Throwable> predicate;
     private       int                          retryCount;
 
-    public RetryWithDelay(int maxRetries, int retryDelayMillis,
-        final Class<? extends Throwable> exceptionType
-    ) {
-        this(maxRetries,
-            retryDelayMillis,
-            throwable -> exceptionType == null || exceptionType.isAssignableFrom(throwable.getClass()));
+    public RetryWithDelay(int maxRetries, int retryDelayMillis, final Class<? extends Throwable> exceptionType) {
+        this(maxRetries, retryDelayMillis, throwable -> {
+            return exceptionType == null || exceptionType.isAssignableFrom(throwable.getClass());
+        });
     }
 
     public RetryWithDelay(int maxRetries, int retryDelayMillis, final Predicate<? super Throwable> predicate) {

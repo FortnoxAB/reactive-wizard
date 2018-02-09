@@ -21,18 +21,18 @@ public class PropertyResolver {
     }
 
     public static Optional<PropertyResolver> from(Type type, String[] propertyNames) {
-        Property[] props = new Property[propertyNames.length];
-        Class<?>   cls   = ReflectionUtil.getRawType(type);
+        Property[] property = new Property[propertyNames.length];
+        Class<?>   cls      = ReflectionUtil.getRawType(type);
         for (int i = 0; i < propertyNames.length; i++) {
-            props[i] = Property.from(cls, propertyNames[i]);
-            if (props[i] == null) {
+            property[i] = Property.from(cls, propertyNames[i]);
+            if (property[i] == null) {
                 // prop not found
                 return Optional.empty();
             }
-            cls = props[i].getType();
+            cls = property[i].getType();
         }
-        Type genericType = propertyNames.length == 0 ? type : props[propertyNames.length - 1].getGenericType();
-        return Optional.of(new PropertyResolver(cls, genericType, props));
+        Type genericType = propertyNames.length == 0 ? type : property[propertyNames.length - 1].getGenericType();
+        return Optional.of(new PropertyResolver(cls, genericType, property));
     }
 
     public Class<?> getPropertyType() {
@@ -43,12 +43,12 @@ public class PropertyResolver {
         return genericType;
     }
 
-    public Object getValue(Object val) {
+    public Object getValue(Object value) {
         try {
             for (Property prop : properties) {
-                val = prop.getValue(val);
+                value = prop.getValue(value);
             }
-            return val;
+            return value;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -57,40 +57,40 @@ public class PropertyResolver {
     public Optional<PropertyResolver> subPath(String[] subPath) {
         Optional<PropertyResolver> propsToAppend = from(getPropertyType(), subPath);
         if (propsToAppend.isPresent()) {
-            PropertyResolver otherPropResolver = propsToAppend.get();
-            Property[]       appendProps       = otherPropResolver.properties;
-            Property[]       newProps          = new Property[this.properties.length + appendProps.length];
-            System.arraycopy(properties, 0, newProps, 0, properties.length);
-            System.arraycopy(appendProps, 0, newProps, properties.length, newProps.length);
+            PropertyResolver otherPropertyResolver = propsToAppend.get();
+            Property[]       propertiesToAppend    = otherPropertyResolver.properties;
+            Property[]       newProperties         = new Property[this.properties.length + propertiesToAppend.length];
+            System.arraycopy(properties, 0, newProperties, 0, properties.length);
+            System.arraycopy(propertiesToAppend, 0, newProperties, properties.length, newProperties.length);
 
-            return Optional.of(new PropertyResolver(otherPropResolver.getPropertyType(), otherPropResolver.getPropertyGenericType(), newProps));
+            return Optional.of(new PropertyResolver(otherPropertyResolver.getPropertyType(), otherPropertyResolver.getPropertyGenericType(), newProperties));
         }
         return Optional.empty();
     }
 
-    public void setValue(Object obj, Object val) {
+    public void setValue(Object object, Object value) {
         try {
             for (int i = 0; i < properties.length - 1; i++) {
-                Property prop = properties[i];
-                Object   next = prop.getValue(obj);
+                Property property = properties[i];
+                Object   next     = property.getValue(object);
                 if (next == null) {
-                    verifySetter(prop);
-                    next = ReflectionUtil.newInstance(prop.getType());
-                    prop.setValue(obj, next);
+                    verifySetter(property);
+                    next = ReflectionUtil.newInstance(property.getType());
+                    property.setValue(object, next);
                 }
-                obj = next;
+                object = next;
             }
-            Property prop = properties[properties.length - 1];
-            verifySetter(prop);
-            prop.setValue(obj, val);
+            Property property = properties[properties.length - 1];
+            verifySetter(property);
+            property.setValue(object, value);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    private void verifySetter(Property prop) {
-        if (!prop.hasSetter()) {
-            throw new RuntimeException("Value from " + prop.getName() + " was null and there is no setter");
+    private void verifySetter(Property property) {
+        if (!property.hasSetter()) {
+            throw new RuntimeException("Value from " + property.getName() + " was null and there is no setter");
         }
     }
 

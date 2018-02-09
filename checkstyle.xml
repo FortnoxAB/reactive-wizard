@@ -153,24 +153,23 @@
 			<property name="tokens" value="VARIABLE_DEF" />
 			<property name="allowSamelineMultipleAnnotations" value="true" />
 		</module>
-		<!-- TODO Javadocs will be resolved separately
 		<module name="NonEmptyAtclauseDescription" />
-		-->
 		<module name="JavadocTagContinuationIndentation" />
-		<!--
 		<module name="SummaryJavadocCheck">
-			<property name="forbiddenSummaryFragments"
-			          value="^@return the *|^This method returns |^A [{]@code [a-zA-Z0-9]+[}]( is a )"/>
+			<property name="severity" value="info"/>
+			<property name="forbiddenSummaryFragments" value="^@return the *|^This method returns |^A [{]@code [a-zA-Z0-9]+[}]( is a )"/>
 		</module>
-		-->
 		<module name="AtclauseOrder">
 			<property name="tagOrder" value="@param, @return, @throws, @deprecated" />
 			<property name="target" value="CLASS_DEF, INTERFACE_DEF, ENUM_DEF, METHOD_DEF, CTOR_DEF, VARIABLE_DEF" />
 		</module>
 		<!--<module name="JavadocParagraph"/>-->
-		<!-- TODO Javadocs will be resolved separately
-		<module name="JavadocType" />
+		<module name="JavadocType">
+			<property name="severity" value="warning"/>
+			<property name="allowMissingParamTags" value="true"/>
+		</module>
 		<module name="JavadocMethod">
+			<property name="severity" value="warning"/>
 			<property name="ignoreMethodNamesRegex" value="set.*" />
 			<property name="tokens" value="METHOD_DEF, ANNOTATION_FIELD_DEF" />
 			<property name="scope" value="public" />
@@ -181,7 +180,6 @@
 			<property name="allowedAnnotations" value="Override, Test" />
 			<property name="allowThrowsTagsForSubclasses" value="true" />
 		</module>
-		-->
 
 		<module name="MethodName">
 			<property name="format" value="^[a-z][a-z0-9][a-zA-Z0-9_]*$" />

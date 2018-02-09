@@ -2,6 +2,9 @@ package se.fortnox.reactivewizard.jaxrs.params.deserializing;
 
 import java.util.UUID;
 
+/**
+ * Deserializes UUIDs.
+ */
 public class UUIDDeserializer implements Deserializer<UUID> {
     @Override
     public UUID deserialize(String value) throws DeserializerException {

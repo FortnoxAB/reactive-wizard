@@ -12,6 +12,9 @@ import java.util.function.Supplier;
 import static rx.Observable.defer;
 import static rx.Observable.error;
 
+/**
+ * Utility class for various rxjava operations.
+ */
 public class RxUtils {
 
     public static FirstThen first(Observable<?> doFirst) {
@@ -22,6 +25,14 @@ public class RxUtils {
         return new IfThenElse<T>(ifValue);
     }
 
+    /**
+     * Consolidate two streams into one using a callback.
+     *
+     * @param observableLeft Input stream.
+     * @param observableRight Second stream that merges into the first.
+     * @param action Action to call on each pair in the streams.
+     * @return The consolidated stream.
+     */
     public static <T1, T2> Observable<T1> consolidate(Observable<T1> observableLeft, Observable<T2> observableRight, Action2<T1, T2> action) {
         return Observable.zip(observableLeft, observableRight, (leftObj, rightObj) -> {
             action.call(leftObj, rightObj);
@@ -78,6 +89,13 @@ public class RxUtils {
         return observable.scan((valueA, valueB) -> valueA + valueB).lastOrDefault(0d);
     }
 
+    /**
+     * Execute an action if the stream is empty.
+     *
+     * @param output Stream to watch for entries.
+     * @param action Action to take if the stream is empty.
+     * @return The stream.
+     */
     public static <T> Observable<T> doIfEmpty(Observable<T> output, Action0 action) {
         return output.doOnEach(new Observer<T>() {
             AtomicBoolean empty = new AtomicBoolean(true);
