@@ -8,6 +8,9 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import javax.inject.Inject;
 import java.util.function.Function;
 
+/**
+ * Creates instances of JSON deserializers.
+ */
 public class JsonDeserializerFactory {
 
     private final ObjectMapper mapper;

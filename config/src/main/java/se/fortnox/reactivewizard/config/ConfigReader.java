@@ -14,11 +14,21 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Handles reading and parsing configuration files in YAML format.
+ */
 public class ConfigReader {
     private static final Charset      UTF_8           = Charset.forName("UTF-8");
     private static final ObjectMapper mapper          = new ObjectMapper(new YAMLFactory()).configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     private static final Pattern      ENV_PLACEHOLDER = Pattern.compile("\\{\\{([a-zA-Z_-]+)\\}\\}");
 
+    /**
+     * Create an instance of a configuration from a file path.
+     *
+     * @param configFile Path to the configuration file
+     * @param cls        The class to instantiate with the file
+     * @return The instance of the class based on configuration
+     */
     public static <T> T fromFile(String configFile, Class<T> cls) {
         try {
             return fromTree(readTree(configFile), cls);
@@ -41,8 +51,8 @@ public class ConfigReader {
         if (!matcher.find()) {
             return config;
         }
-        Map<String, String> env = System.getenv();
-        StringBuffer        stringBuffer  = new StringBuffer();
+        Map<String, String> env          = System.getenv();
+        StringBuffer        stringBuffer = new StringBuffer();
         do {
             String value = env.get(matcher.group(1));
             matcher.appendReplacement(stringBuffer, value == null ? "" : value);

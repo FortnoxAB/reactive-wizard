@@ -68,11 +68,11 @@ public class ReflectionUtil {
     }
 
     /**
-     * Extracts a named property from an object using reflection
+     * Extracts a named property from an object using reflection.
      *
-     * @param object
-     * @param property
-     * @return
+     * @param object Target object
+     * @param property Property name to extract
+     * @return Value of the property
      */
     public static Object getValue(Object object, String property) {
         Class<? extends Object> cls = object.getClass();
@@ -263,10 +263,6 @@ public class ReflectionUtil {
      * If the method given is part of a proxy (e.g. for validating purposes), and that proxy implements Supplier in
      * order to expose it's underlying implementation, then this will return the underlying Method definition, so that
      * param factories can search the implementing class for annotations.
-     *
-     * @param method
-     * @param resourceInstance
-     * @return
      */
     public static Method getInstanceMethod(Method method, Object resourceInstance) {
         if (!Proxy.isProxyClass(method.getDeclaringClass())) {

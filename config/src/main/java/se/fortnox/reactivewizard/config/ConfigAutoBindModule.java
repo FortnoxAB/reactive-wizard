@@ -8,7 +8,7 @@ import javax.inject.Inject;
 import javax.inject.Named;
 
 /**
- * Binds all classes annotated with @{@link Config} to an instance bound to the data read from the config file
+ * Binds all classes annotated with @{@link Config} to an instance bound to the data read from the config file.
  */
 public class ConfigAutoBindModule implements AutoBindModule {
 

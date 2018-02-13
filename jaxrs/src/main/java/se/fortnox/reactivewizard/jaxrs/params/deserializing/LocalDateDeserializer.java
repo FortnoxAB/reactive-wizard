@@ -10,6 +10,9 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.TimeZone;
 
+/**
+ * Deserializes dates as LocalDate.
+ */
 public class LocalDateDeserializer implements Deserializer<LocalDate> {
     private static final TimeZone DEFAULT_TIME_ZONE = TimeZone
         .getTimeZone("Europe/Stockholm");

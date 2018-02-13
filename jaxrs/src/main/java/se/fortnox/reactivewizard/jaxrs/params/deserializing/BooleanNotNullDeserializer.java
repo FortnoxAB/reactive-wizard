@@ -1,5 +1,8 @@
 package se.fortnox.reactivewizard.jaxrs.params.deserializing;
 
+/**
+ * Deserializes booleans, not allowing nulls.
+ */
 public class BooleanNotNullDeserializer implements Deserializer<Boolean> {
     @Override
     public Boolean deserialize(String value) throws DeserializerException {

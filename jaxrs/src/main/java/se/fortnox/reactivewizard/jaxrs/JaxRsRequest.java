@@ -15,6 +15,10 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static io.netty.handler.codec.http.HttpMethod.DELETE;
+import static io.netty.handler.codec.http.HttpMethod.POST;
+import static io.netty.handler.codec.http.HttpMethod.PUT;
+import static io.netty.handler.codec.http.HttpMethod.PATCH;
 import static rx.Observable.just;
 
 /**
@@ -51,13 +55,9 @@ public class JaxRsRequest {
 
     public Observable<JaxRsRequest> loadBody() {
         HttpMethod httpMethod = req.getHttpMethod();
-        if (HttpMethod.POST.equals(httpMethod) || HttpMethod.PUT.equals(httpMethod) ||
-            HttpMethod.PATCH.equals(httpMethod) || HttpMethod.DELETE.equals(httpMethod)) {
+        if (POST.equals(httpMethod) || PUT.equals(httpMethod) || PATCH.equals(httpMethod) || DELETE.equals(httpMethod)) {
             return collector.collectBytes(req.getContent()
-                .doOnError(e -> LOG.error(
-                    "Error reading data for request "
-                        + httpMethod + " " + req.getUri(),
-                    e)))
+                .doOnError(e -> LOG.error("Error reading data for request " + httpMethod + " " + req.getUri(), e)))
                 .lastOrDefault(null)
                 .map(body -> create(req, matcher, body));
         }

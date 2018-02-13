@@ -6,6 +6,9 @@ import org.slf4j.LoggerFactory;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 
+/**
+ * Deserializes times as LocalTime.
+ */
 public class LocalTimeDeserializer implements Deserializer<LocalTime> {
 
     private static final Logger LOG = LoggerFactory

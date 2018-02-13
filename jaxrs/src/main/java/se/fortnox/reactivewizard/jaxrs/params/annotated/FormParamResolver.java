@@ -7,6 +7,9 @@ import javax.ws.rs.DefaultValue;
 import javax.ws.rs.FormParam;
 import java.lang.annotation.Annotation;
 
+/**
+ * Bind a form field to a method parameter.
+ */
 class FormParamResolver<T> extends AnnotatedParamResolver<T> {
 
     public FormParamResolver(Annotation fromParamAnnotation, Deserializer<T> deserializer, DefaultValue defaultValueAnnotation) {

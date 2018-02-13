@@ -7,6 +7,9 @@ import javax.ws.rs.CookieParam;
 import javax.ws.rs.DefaultValue;
 import java.lang.annotation.Annotation;
 
+/**
+ * Bind a cookie to a method parameter.
+ */
 public class CookieParamResolver<T> extends AnnotatedParamResolver<T> {
 
     public CookieParamResolver(Annotation cookieParamAnnotation, Deserializer<T> deserializer, DefaultValue defaultValueAnnotation) {

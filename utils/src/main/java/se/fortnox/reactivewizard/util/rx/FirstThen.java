@@ -6,7 +6,7 @@ import rx.functions.Func0;
 import static rx.Observable.just;
 
 /**
- * Helper class used to chain sequential work in Rx, or omit foo variables, turning code like this:
+ * Helper class used to chain sequential work in Rx, or omit foo variables. Turns code like this:
  * <p>
  * <pre>
  * {@code
@@ -59,8 +59,7 @@ public class FirstThen {
     }
 
     /**
-     * @param <T>
-     * @return an empty observable, signalling success or error.
+     * An empty observable, signalling success or error.
      */
     public <T> Observable<T> thenReturnEmpty() {
         return thenReturn(Observable.empty());
