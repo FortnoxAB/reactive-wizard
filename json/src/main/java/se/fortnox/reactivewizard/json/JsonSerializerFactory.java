@@ -9,6 +9,9 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import javax.inject.Inject;
 import java.util.function.Function;
 
+/**
+ * Creates instances of JSON serializers.
+ */
 public class JsonSerializerFactory {
     private final ObjectMapper mapper;
 

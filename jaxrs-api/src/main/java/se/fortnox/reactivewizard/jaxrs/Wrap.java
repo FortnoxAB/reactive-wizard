@@ -6,12 +6,10 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Indicates that the class should be wrapped in a given subclass before
- * injection.
+ * Indicates that the class should be wrapped in a given subclass before injection.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.PARAMETER)
 public @interface Wrap {
-
     Class<?> value();
 }

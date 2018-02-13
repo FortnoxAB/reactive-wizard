@@ -4,6 +4,9 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Type;
 
+/**
+ * Represents a setter field.
+ */
 public class FieldSetter implements Setter {
     private final Field field;
 

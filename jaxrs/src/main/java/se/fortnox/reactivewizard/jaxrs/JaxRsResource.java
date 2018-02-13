@@ -179,9 +179,9 @@ public class JaxRsResource<T> implements Comparable<JaxRsResource> {
     }
 
     /**
-     * Only supports a single consumes media type for now, because we construct the param extractor at init
+     * Only supports a single consumes media type for now, because we construct the param extractor at init.
      *
-     * @return
+     * @return Annotation value
      */
     private String[] getConsumes() {
         Consumes consumesAnnotation = meta.getConsumes();

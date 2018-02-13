@@ -4,8 +4,10 @@ import javax.inject.Provider;
 import java.text.DateFormat;
 import java.util.Date;
 
+/**
+ * Deserializes dates.
+ */
 public class DateDeserializer implements Deserializer<Date> {
-
     private Provider<DateFormat> dateFormatProvider;
 
     public DateDeserializer(Provider<DateFormat> dateFormatProvider) {

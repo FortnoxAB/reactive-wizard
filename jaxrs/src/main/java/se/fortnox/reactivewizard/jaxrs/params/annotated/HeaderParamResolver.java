@@ -7,6 +7,9 @@ import javax.ws.rs.DefaultValue;
 import javax.ws.rs.HeaderParam;
 import java.lang.annotation.Annotation;
 
+/**
+ * Bind a header to a method parameter.
+ */
 class HeaderParamResolver<T> extends AnnotatedParamResolver<T> {
 
     public HeaderParamResolver(Annotation headerParamAnnotation, Deserializer<T> deserializer, DefaultValue defaultValueAnnotation) {

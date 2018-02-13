@@ -1,6 +1,7 @@
 package se.fortnox.reactivewizard.util.rx;
 
 import org.junit.Test;
+import se.fortnox.reactivewizard.util.rx.PropertyResolver;
 
 import static org.fest.assertions.Assertions.assertThat;
 

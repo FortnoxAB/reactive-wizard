@@ -8,6 +8,9 @@ import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 
+/**
+ * Utilities for extracting information out of the current applications manifest.
+ */
 public class ManifestUtil {
     private static final String META_INF_ARTIFACT_ID = "ArtifactId";
     private static final String VERSION              = "Version";
@@ -15,8 +18,10 @@ public class ManifestUtil {
     private static ManifestValues manifestValues = loadAppManifestValues();
 
     /**
-     * @return Version and artifactId values from the application manifest if present. <br>
-     *         Can be absent when running not in "fat jar" with custom manifest (e.g. during local development)
+     * Extracts values from the application manifest, if present.
+     * Can be absent when running not in "fat jar" with custom manifest (e.g. during local development).
+     *
+     * @return Version and artifactId values.
      */
     public static Optional<ManifestValues> getManifestValues() {
         return Optional.ofNullable(manifestValues);
@@ -49,6 +54,9 @@ public class ManifestUtil {
         }
     }
 
+    /**
+     * Represents values extracted from a Manifest.
+     */
     public static class ManifestValues {
         private final String version;
         private final String artifactId;
