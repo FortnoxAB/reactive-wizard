@@ -584,6 +584,13 @@ public class JaxRsResourceTest {
     }
 
     @Test
+    public void shouldGive400ErrorForBadUuid() {
+        MockHttpServerResponse response = get(service, "/test/acceptsUuid/baduuid");
+        assertThat(response.getStatus()).isEqualTo(HttpResponseStatus.BAD_REQUEST);
+        assertThat(body(response)).contains("\"error\":\"validation\",\"fields\":[{\"field\":\"id\",\"error\":\"validation.invalid.uuid\"}]}");
+    }
+
+    @Test
     public void shouldSupportUuidAsHeader() {
         UUID uuid = UUID.randomUUID();
         assertThat(body(JaxRsTestUtil.getWithHeaders(service,

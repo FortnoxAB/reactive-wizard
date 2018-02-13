@@ -4,6 +4,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 
+/**
+ * Represents a getter method.
+ */
 public class MethodGetter implements Getter {
     private final Method method;
 

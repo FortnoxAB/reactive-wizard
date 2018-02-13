@@ -7,6 +7,9 @@ import javax.ws.rs.DefaultValue;
 import javax.ws.rs.QueryParam;
 import java.lang.annotation.Annotation;
 
+/**
+ * Bind a query parameter to a method parameter.
+ */
 class QueryParamResolver<T> extends AnnotatedParamResolver<T> {
 
     public QueryParamResolver(Annotation queryParamAnnotation, Deserializer<T> deserializer, DefaultValue defaultValueAnnotation) {

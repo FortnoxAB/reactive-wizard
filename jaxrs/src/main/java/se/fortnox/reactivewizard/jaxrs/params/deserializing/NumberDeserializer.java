@@ -2,6 +2,9 @@ package se.fortnox.reactivewizard.jaxrs.params.deserializing;
 
 import java.util.function.Function;
 
+/**
+ * Generic number deserializer.
+ */
 public abstract class NumberDeserializer<T> implements Deserializer<T> {
 
     protected String              errorCode;

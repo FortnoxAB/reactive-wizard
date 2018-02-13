@@ -2,6 +2,9 @@ package se.fortnox.reactivewizard.util.rx;
 
 import rx.Observable;
 
+/**
+ * Utility for creating simple conditional workflows using Observables.
+ */
 public class IfThenElse<T> {
     private Observable<Boolean> ifValue;
     private Observable<T>       thenValue;
@@ -10,11 +13,21 @@ public class IfThenElse<T> {
         this.ifValue = ifValue;
     }
 
+    /**
+     * Executes when the boolean Observable is true.
+     *
+     * @param thenValue The observable to execute
+     */
     public IfThenElse<T> then(Observable<T> thenValue) {
         this.thenValue = thenValue;
         return this;
     }
 
+    /**
+     * Thrown when the boolean Observable is false.
+     *
+     * @param throwable The exception to throw
+     */
     public Observable<T> elseThrow(Throwable throwable) {
         return ifValue.flatMap(exists -> {
             if (exists) {

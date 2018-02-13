@@ -41,6 +41,13 @@ public class ExceptionHandler {
         this(new ObjectMapper());
     }
 
+    /**
+     * Handle exceptions from server requests.
+     *
+     * @param request The current request
+     * @param response The current response
+     * @param throwable The exception that occured
+     */
     public Observable<Void> handleException(HttpServerRequest<ByteBuf> request, HttpServerResponse<ByteBuf> response, Throwable throwable) {
         if (throwable instanceof OnErrorThrowable) {
             throwable = throwable.getCause();

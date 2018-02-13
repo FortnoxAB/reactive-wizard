@@ -4,6 +4,9 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Type;
 
+/**
+ * Represents a getter field.
+ */
 public class FieldGetter implements Getter {
     private final Field field;
 

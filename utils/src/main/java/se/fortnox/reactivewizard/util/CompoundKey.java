@@ -2,6 +2,10 @@ package se.fortnox.reactivewizard.util;
 
 import java.util.Objects;
 
+/**
+ * Utility class for keys that consist of multiple values.
+ * Usable for things like cache keys etc.
+ */
 public class CompoundKey {
     private Object[] keys;
 

@@ -7,6 +7,9 @@ import javax.ws.rs.DefaultValue;
 import javax.ws.rs.PathParam;
 import java.lang.annotation.Annotation;
 
+/**
+ * Bind a path parameter to a method parameter.
+ */
 class PathParamResolver<T> extends AnnotatedParamResolver<T> {
 
     public PathParamResolver(Annotation pathParamAnnotation, Deserializer<T> deserializer, DefaultValue defaultValueAnnotation) {

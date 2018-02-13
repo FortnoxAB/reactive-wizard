@@ -1,7 +1,5 @@
 package se.fortnox.reactivewizard.util.rx;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.functions.Func1;
 
@@ -9,8 +7,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
 public class RetryWithDelay implements Func1<Observable<? extends Throwable>, Observable<?>> {
-
-    private static final Logger log = LoggerFactory.getLogger(RetryWithDelay.class);
 
     private final int                          maxRetries;
     private final int                          retryDelayMillis;

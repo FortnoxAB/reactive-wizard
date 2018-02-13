@@ -4,6 +4,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 
+/**
+ * Represents a setter method.
+ */
 public class MethodSetter implements Setter {
     private final Method method;
 
