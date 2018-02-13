@@ -83,6 +83,13 @@
             <artifactId>rxjava</artifactId>
             <version>${rxjava.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>se.fortnox.reactivewizard</groupId>
+            <artifactId>reactivewizard-test</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
 </project>
