@@ -181,7 +181,7 @@
 				<artifactId>maven-surefire-plugin</artifactId>
 				<version>2.20.1</version>
 				<configuration>
-					<argLine>${argLine} -Xmx96m -XX:+HeapDumpOnOutOfMemoryError</argLine>
+					<argLine>${argLine} -Dfile.encoding=UTF-8 -Xmx96m -XX:+HeapDumpOnOutOfMemoryError</argLine>
 				</configuration>
 			</plugin>
 		</plugins>
