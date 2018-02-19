@@ -1,4 +1,4 @@
-package com.fortnox.reactivewizard.metrics;
+package se.fortnox.reactivewizard.metrics;
 
 import org.junit.Test;
 import rx.Observable;
