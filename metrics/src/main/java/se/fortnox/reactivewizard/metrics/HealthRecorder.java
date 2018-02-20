@@ -1,4 +1,4 @@
-package com.fortnox.reactivewizard.metrics;
+package se.fortnox.reactivewizard.metrics;
 
 import javax.inject.Singleton;
 import java.util.concurrent.ConcurrentHashMap;

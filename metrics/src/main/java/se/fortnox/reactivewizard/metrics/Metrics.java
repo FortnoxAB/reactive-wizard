@@ -1,4 +1,4 @@
-package com.fortnox.reactivewizard.metrics;
+package se.fortnox.reactivewizard.metrics;
 
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
