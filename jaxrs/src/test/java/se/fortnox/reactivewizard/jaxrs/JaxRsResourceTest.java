@@ -423,7 +423,7 @@ public class JaxRsResourceTest {
             @Override
             protected void configure() {
                 bind(DateFormat.class).toProvider(() -> new CustomDateFormat());
-                bind(JaxRsServiceProvider.class).toInstance(() -> new Object[]{service});
+                bind(JaxRsResourcesProvider.class).toInstance(() -> new Object[]{service});
                 bind(new TypeLiteral<Set<ParamResolver>>() {{
                 }}).toInstance(Collections.EMPTY_SET);
                 bind(new TypeLiteral<Set<ParamResolverFactory>>() {{

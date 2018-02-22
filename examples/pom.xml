@@ -24,7 +24,12 @@
             </dependency>
             <dependency>
                 <groupId>se.fortnox.reactivewizard</groupId>
-                <artifactId>reactivewizard-config</artifactId>
+                <artifactId>reactivewizard-bootstrap</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>se.fortnox.reactivewizard</groupId>
+                <artifactId>reactivewizard-server</artifactId>
                 <version>${project.version}</version>
             </dependency>
         </dependencies>
