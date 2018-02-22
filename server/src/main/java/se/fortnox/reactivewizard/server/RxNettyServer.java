@@ -25,6 +25,9 @@ public class RxNettyServer extends Thread {
         }
     }
 
+    /**
+     * Runs the HttpServer.
+     */
     public void run() {
         HttpServer.newServer(config.getPort())
                 .start(compositeRequestHandler)

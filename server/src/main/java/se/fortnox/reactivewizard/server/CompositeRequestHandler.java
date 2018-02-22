@@ -36,16 +36,16 @@ public class CompositeRequestHandler implements RequestHandler<ByteBuf,ByteBuf> 
         final long requestStartTime = System.currentTimeMillis();
         try {
             LoggingContext.reset();
-            for (RequestHandler<ByteBuf, ByteBuf> h : handlers) {
-                Observable<Void> r = h.handle(request, response);
-                if (r != null) {
-                    r = r.onErrorResumeNext(e -> exceptionHandler
-                            .handleException(request, response, e));
-                    return r;
+            for (RequestHandler<ByteBuf, ByteBuf> handler : handlers) {
+                Observable<Void> result = handler.handle(request, response);
+                if (result != null) {
+                    result = result.onErrorResumeNext(exception -> exceptionHandler
+                            .handleException(request, response, exception));
+                    return result;
                 }
             }
-        } catch (Exception e) {
-            return exceptionHandler.handleException(request, response, e);
+        } catch (Exception exception) {
+            return exceptionHandler.handleException(request, response, exception);
         }
         return exceptionHandler.handleException(request,
                 response,

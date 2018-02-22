@@ -35,7 +35,7 @@ public class ServerModule implements AutoBindModule {
     @Override
     public void configure(Binder binder) {
         Multibinder<RequestHandler<ByteBuf, ByteBuf>> requestHandlers = Multibinder.newSetBinder(binder,
-                new TypeLiteral<RequestHandler<ByteBuf, ByteBuf>>(){});
+                new TypeLiteral<RequestHandler<ByteBuf, ByteBuf>>() { });
         requestHandlers.addBinding().to(JaxRsRequestHandler.class);
 
         Multibinder.newSetBinder(binder, TypeLiteral.get(ParamResolverFactory.class));

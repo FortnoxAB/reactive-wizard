@@ -14,6 +14,11 @@ import java.util.Optional;
 public class JaxRsResourceRegistry implements JaxRsResourcesProvider {
     private List<Provider<?>> resources = new LinkedList<>();
 
+    /**
+     *
+     * @param cls is a class that might be a JaxRs resource
+     * @return the JaxRs-annotated class, which might be the sent in class, or an interface implemented by it.
+     */
     public Optional<Class<?>> getJaxRsClass(Class<?> cls) {
         if (!cls.isInterface()) {
             if (cls.getAnnotation(Path.class) != null) {
