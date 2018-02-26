@@ -23,11 +23,11 @@ public class JaxRsRequestHandler implements RequestHandler<ByteBuf, ByteBuf> {
     private ExceptionHandler exceptionHandler;
 
     @Inject
-    public JaxRsRequestHandler(JaxRsServiceProvider services,
+    public JaxRsRequestHandler(JaxRsResourcesProvider services,
         JaxRsResourceFactory jaxRsResourceFactory,
         ExceptionHandler exceptionHandler
     ) {
-        this(services.getServices(),
+        this(services.getResources(),
             jaxRsResourceFactory,
             exceptionHandler,
             null);

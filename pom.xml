@@ -17,6 +17,8 @@
         <module>config</module>
         <module>logging</module>
         <module>binding</module>
+        <module>bootstrap</module>
+        <module>server</module>
         <module>metrics</module>
         <module>examples</module>
     </modules>
