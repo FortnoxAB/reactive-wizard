@@ -1,6 +1,8 @@
 ## Reactive Wizard
 The Reactive Wizard project makes it easy to build performant and scalable web applications that harness the power of RxNetty (i.e., RxJava and Netty).
 
+[![Build Status](https://travis-ci.org/FortnoxAB/reactive-wizard.svg?branch=master)](https://travis-ci.org/FortnoxAB/reactive-wizard)
+
 #### What is its purpose?
 It is safe to say that blocking I/O is not optimal in terms of taking advantage of available processing power. Blocking I/O (often referred to as synchronous I/O) means that a process (or thread) must finish before it can be used again. Processes that use blocking I/O spend lots of time just waiting for input and output operations to complete. On the other hand, non-blocking I/O (or asynchronous I/O) permits processing to continue _before_ I/O operations complete, which translates to less idle system resources and more throughput. Non-blocking I/O is supported out of the box in Reactive Wizard via Netty.
 
