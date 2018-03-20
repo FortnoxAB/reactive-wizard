@@ -3,7 +3,9 @@ package se.fortnox.reactivewizard.binding.scanners;
 import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Extend this class and implement the visit method to scan the classpath at application startup. Your class must be in
@@ -12,7 +14,7 @@ import java.util.List;
  * You can inject your subclass into a AutoBindModule implementation in order to use the classes found for bindings.
  */
 public abstract class AbstractClassScanner {
-    private List<Class<?>> classes = new ArrayList<>();
+    private Set<Class<?>> classes = new HashSet<>();
 
     public abstract void visit(FastClasspathScanner classpathScanner);
 
@@ -20,7 +22,7 @@ public abstract class AbstractClassScanner {
         classes.add(cls);
     }
 
-    public List<Class<?>> getClasses() {
+    public Set<Class<?>> getClasses() {
         return classes;
     }
 }
