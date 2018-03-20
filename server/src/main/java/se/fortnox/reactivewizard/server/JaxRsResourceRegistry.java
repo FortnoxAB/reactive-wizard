@@ -15,7 +15,7 @@ public class JaxRsResourceRegistry implements JaxRsResourcesProvider {
     private List<Provider<?>> resources = new LinkedList<>();
 
     /**
-     *
+     * Finds the JAX-RS class of a class, which may be the same class or an interface that it implements.
      * @param cls is a class that might be a JaxRs resource
      * @return the JaxRs-annotated class, which might be the sent in class, or an interface implemented by it.
      */
