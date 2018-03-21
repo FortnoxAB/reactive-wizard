@@ -9,6 +9,9 @@ import se.fortnox.reactivewizard.config.Config;
 public class ServerConfig {
     private int port = 8080;
     private boolean enabled = true;
+    private int maxHeaderSize = 20 * 1024;
+    private int maxInitialLineLengthDefault = 4096;
+
 
     public int getPort() {
         return port;
@@ -20,6 +23,22 @@ public class ServerConfig {
 
     public boolean isEnabled() {
         return enabled;
+    }
+
+    public int getMaxHeaderSize() {
+        return maxHeaderSize;
+    }
+
+    public void setMaxHeaderSize(int maxHeaderSize) {
+        this.maxHeaderSize = maxHeaderSize;
+    }
+
+    public int getMaxInitialLineLengthDefault() {
+        return maxInitialLineLengthDefault;
+    }
+
+    public void setMaxInitialLineLengthDefault(int maxInitialLineLengthDefault) {
+        this.maxInitialLineLengthDefault = maxInitialLineLengthDefault;
     }
 
     public void setEnabled(boolean enabled) {
