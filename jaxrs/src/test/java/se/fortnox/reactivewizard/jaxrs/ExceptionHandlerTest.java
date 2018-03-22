@@ -65,6 +65,7 @@ public class ExceptionHandlerTest {
     private void assertLog(HttpServerRequest<ByteBuf> request, Exception exception, Level expectedLevel, String expectedLog) {
         Appender mockAppender = mock(Appender.class);
         LogManager.getLogger(ExceptionHandler.class).addAppender(mockAppender);
+        LogManager.getLogger(ExceptionHandler.class).setLevel(Level.DEBUG);
 
         HttpServerResponse<ByteBuf> response = new MockHttpServerResponse();
         new ExceptionHandler().handleException(request, response, exception);
