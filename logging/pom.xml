@@ -61,18 +61,6 @@
         </dependency>
 
         <dependency>
-            <groupId>com.ryantenney.log4j</groupId>
-            <artifactId>redis-appender</artifactId>
-            <version>1.0.2.fnx1</version>
-        </dependency>
-
-        <dependency>
-            <groupId>net.logstash.log4j</groupId>
-            <artifactId>jsonevent-layout</artifactId>
-            <version>1.7</version>
-        </dependency>
-
-        <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <version>${slf4j.version}</version>
