@@ -2,7 +2,8 @@ package se.fortnox.reactivewizard.binding.scanners;
 
 import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner;
 
-import java.util.*;
+import java.util.Set;
+import java.util.TreeSet;
 
 /**
  * Extend this class and implement the visit method to scan the classpath at application startup. Your class must be in
