@@ -44,6 +44,7 @@ public class ServerModule implements AutoBindModule {
         binder.bind(DateFormat.class).toProvider(StdDateFormat::new);
 
         JaxRsResourceRegistry jaxRsResourceRegistry = new JaxRsResourceRegistry();
+        binder.bind(JaxRsResourceRegistry.class).toInstance(jaxRsResourceRegistry);
         binder.bind(JaxRsResourcesProvider.class).toInstance(jaxRsResourceRegistry);
 
         for (Class<?> cls : injectAnnotatedScanner.getClasses()) {
