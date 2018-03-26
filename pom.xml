@@ -60,8 +60,8 @@
         <module>binding</module>
         <module>bootstrap</module>
         <module>server</module>
-        <module>metrics</module>
         <module>examples</module>
+        <module>metrics</module>
     </modules>
 
     <properties>
@@ -127,7 +127,6 @@
                             </execution>
                         </executions>
                     </plugin>
-
                     <plugin>
                         <groupId>org.sonatype.plugins</groupId>
                         <artifactId>nexus-staging-maven-plugin</artifactId>
