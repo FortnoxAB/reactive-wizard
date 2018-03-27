@@ -33,14 +33,10 @@ public class JaxRsResult<T> {
         Func1<T, byte[]> serializer,
         Map<String, Object> headers
     ) {
-        this.output = setStatusForNoContent(output);
+        this.output = output;
         this.responseStatus = responseStatus;
         this.serializer = serializer;
         this.headers.putAll(headers);
-    }
-
-    private Observable<T> setStatusForNoContent(Observable<T> output) {
-        return doIfEmpty(output, () -> responseStatus = HttpResponseStatus.NO_CONTENT);
     }
 
     public JaxRsResult<T> addHeader(String key, Object val) {
