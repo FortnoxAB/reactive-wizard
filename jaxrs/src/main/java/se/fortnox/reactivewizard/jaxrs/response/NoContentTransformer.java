@@ -11,7 +11,7 @@ import static se.fortnox.reactivewizard.util.rx.RxUtils.doIfEmpty;
 public class NoContentTransformer implements ResultTransformerFactory {
     @Override
     public <T> ResultTransformer<T> create(JaxRsResource<T> resource) {
-        return (result, args) ->result.map(output->{
+        return (result, args) -> result.map(output -> {
             return doIfEmpty(output, () -> result.responseStatus = HttpResponseStatus.NO_CONTENT);
         });
     }
