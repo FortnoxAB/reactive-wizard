@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * Allows you to return response headers together with your result.
  */
-public class ResponseHeaders {
+public class ResponseDecorator {
 
     /**
      * Use this to wrap your Observable with some headers. This must be the last decoration before returning from your
@@ -24,7 +24,7 @@ public class ResponseHeaders {
     }
 
     @SuppressWarnings("unchecked")
-    public static <T> Observable<T> apply(Observable<T> output, JaxRsResult<T> result) {
+    protected static <T> Observable<T> apply(Observable<T> output, JaxRsResult<T> result) {
         if (output instanceof ObservableWithHeaders) {
             Map<String,String> headers = ((ObservableWithHeaders) output).getHeaders();
             return output.doOnEach(new SetHeadersOnEmit(headers, result));

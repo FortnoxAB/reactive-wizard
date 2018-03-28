@@ -5,11 +5,11 @@ import se.fortnox.reactivewizard.jaxrs.JaxRsResource;
 /**
  * Adds headers returned from a resource.
  */
-public class ResponseHeadersTransformer implements ResultTransformerFactory {
+public class ResponseDecoratorTransformer implements ResultTransformerFactory {
     @Override
     public <T> ResultTransformer<T> create(JaxRsResource<T> resource) {
         return (result, args) -> result.map(output -> {
-            return ResponseHeaders.apply(output, result);
+            return ResponseDecorator.apply(output, result);
         });
     }
 

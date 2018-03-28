@@ -13,7 +13,7 @@ import se.fortnox.reactivewizard.jaxrs.JaxRsResourcesProvider;
 import se.fortnox.reactivewizard.jaxrs.params.ParamResolver;
 import se.fortnox.reactivewizard.jaxrs.params.ParamResolverFactory;
 import se.fortnox.reactivewizard.jaxrs.response.NoContentTransformer;
-import se.fortnox.reactivewizard.jaxrs.response.ResponseHeadersTransformer;
+import se.fortnox.reactivewizard.jaxrs.response.ResponseDecoratorTransformer;
 import se.fortnox.reactivewizard.jaxrs.response.ResultTransformerFactory;
 
 import javax.inject.Inject;
@@ -44,7 +44,7 @@ public class ServerModule implements AutoBindModule {
         Multibinder<ResultTransformerFactory> resultTransformers = Multibinder.newSetBinder(binder,
                 TypeLiteral.get(ResultTransformerFactory.class));
         resultTransformers.addBinding().to(NoContentTransformer.class);
-        resultTransformers.addBinding().to(ResponseHeadersTransformer.class);
+        resultTransformers.addBinding().to(ResponseDecoratorTransformer.class);
         Multibinder.newSetBinder(binder, TypeLiteral.get(ParamResolver.class));
         binder.bind(DateFormat.class).toProvider(StdDateFormat::new);
 
