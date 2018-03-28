@@ -49,12 +49,12 @@ public class ResponseHeaders {
         }
 
         @Override
-        public void onError(Throwable e) {
+        public void onError(Throwable exception) {
 
         }
 
         @Override
-        public void onNext(T t) {
+        public void onNext(T record) {
             setHeaders();
         }
 
