@@ -12,7 +12,7 @@ public class JaxRsResultFactoryFactory {
     private final JsonSerializerFactory      jsonSerializerFactory;
 
     public JaxRsResultFactoryFactory() {
-        this(new ResultTransformerFactories(), new JsonSerializerFactory());
+        this(new ResultTransformerFactories(new ResponseDecoratorTransformer(), new NoContentTransformer()), new JsonSerializerFactory());
     }
 
     @Inject

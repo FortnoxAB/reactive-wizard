@@ -12,6 +12,8 @@ import se.fortnox.reactivewizard.jaxrs.JaxRsRequestHandler;
 import se.fortnox.reactivewizard.jaxrs.JaxRsResourcesProvider;
 import se.fortnox.reactivewizard.jaxrs.params.ParamResolver;
 import se.fortnox.reactivewizard.jaxrs.params.ParamResolverFactory;
+import se.fortnox.reactivewizard.jaxrs.response.NoContentTransformer;
+import se.fortnox.reactivewizard.jaxrs.response.ResponseDecoratorTransformer;
 import se.fortnox.reactivewizard.jaxrs.response.ResultTransformerFactory;
 
 import javax.inject.Inject;
@@ -39,13 +41,18 @@ public class ServerModule implements AutoBindModule {
         requestHandlers.addBinding().to(JaxRsRequestHandler.class);
 
         Multibinder.newSetBinder(binder, TypeLiteral.get(ParamResolverFactory.class));
-        Multibinder.newSetBinder(binder, TypeLiteral.get(ResultTransformerFactory.class));
+        Multibinder<ResultTransformerFactory> resultTransformers = Multibinder.newSetBinder(binder,
+                TypeLiteral.get(ResultTransformerFactory.class));
+        resultTransformers.addBinding().to(NoContentTransformer.class);
+        resultTransformers.addBinding().to(ResponseDecoratorTransformer.class);
         Multibinder.newSetBinder(binder, TypeLiteral.get(ParamResolver.class));
         binder.bind(DateFormat.class).toProvider(StdDateFormat::new);
 
         JaxRsResourceRegistry jaxRsResourceRegistry = new JaxRsResourceRegistry();
         binder.bind(JaxRsResourceRegistry.class).toInstance(jaxRsResourceRegistry);
         binder.bind(JaxRsResourcesProvider.class).toInstance(jaxRsResourceRegistry);
+
+
 
         for (Class<?> cls : injectAnnotatedScanner.getClasses()) {
             Optional<Class<?>> jaxRsClass = jaxRsResourceRegistry.getJaxRsClass(cls);
