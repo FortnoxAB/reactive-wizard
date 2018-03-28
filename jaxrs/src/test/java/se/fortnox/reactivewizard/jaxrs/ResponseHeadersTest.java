@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.fest.assertions.Assertions.assertThat;
+import static rx.Observable.defer;
 import static rx.Observable.just;
 
 public class ResponseHeadersTest {
@@ -31,6 +32,13 @@ public class ResponseHeadersTest {
         assertThat(response.getOutp()).isEqualTo("\"body\"");
     }
 
+    @Test
+    public void shouldReturnDeferedHeaderFromResource() {
+        MockHttpServerResponse response = JaxRsTestUtil.get(new ResourceWithHeaders(), "/deferred");
+        assertThat(response.getHeader("custom_header")).isEqualTo("deferred");
+        assertThat(response.getOutp()).isEqualTo("\"body\"");
+    }
+
     @Path("/")
     public class ResourceWithHeaders {
         @GET
@@ -38,6 +46,16 @@ public class ResponseHeadersTest {
             Map<String, String> headers = new HashMap<>();
             headers.put("custom_header", "value");
             return ResponseHeaders.withHeaders(just("body"), headers);
+        }
+
+        @GET
+        @Path("deferred")
+        public Observable<String> methodReturningDeferredHeaders() {
+            Map<String, String> headers = new HashMap<>();
+            return ResponseHeaders.withHeaders(defer(()->{
+                headers.put("custom_header", "deferred");
+                return just("body");
+            }), headers);
         }
     }
 }

@@ -1,9 +1,10 @@
 package se.fortnox.reactivewizard.jaxrs.response;
 
 import rx.Observable;
-import se.fortnox.reactivewizard.jaxrs.response.JaxRsResult;
+import rx.Observer;
 
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Allows you to return response headers together with your result.
@@ -22,12 +23,47 @@ public class ResponseHeaders {
         return new ObservableWithHeaders<>(value, headers);
     }
 
+    @SuppressWarnings("unchecked")
     public static <T> Observable<T> apply(Observable<T> output, JaxRsResult<T> result) {
         if (output instanceof ObservableWithHeaders) {
             Map<String,String> headers = ((ObservableWithHeaders) output).getHeaders();
-            headers.forEach(result::addHeader);
+            return output.doOnEach(new SetHeadersOnEmit(headers, result));
         }
         return output;
+    }
+
+    private static class SetHeadersOnEmit<T>  implements Observer<T> {
+
+        private final AtomicBoolean headersSet = new AtomicBoolean();
+        private final Map<String, String> headers;
+        private final JaxRsResult<T> result;
+
+        public SetHeadersOnEmit(Map<String, String> headers, JaxRsResult<T> result) {
+            this.headers = headers;
+            this.result = result;
+        }
+
+        @Override
+        public void onCompleted() {
+            setHeaders();
+        }
+
+        @Override
+        public void onError(Throwable e) {
+
+        }
+
+        @Override
+        public void onNext(T t) {
+            setHeaders();
+        }
+
+        private void setHeaders() {
+            if (headersSet.compareAndSet(false, true)) {
+                headers.forEach(result::addHeader);
+            }
+
+        }
     }
 
     private static class ObservableWithHeaders<T> extends Observable<T> {
