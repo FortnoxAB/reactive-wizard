@@ -1,7 +1,6 @@
 package se.fortnox.reactivewizard.json;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.type.SimpleType;
 import org.junit.Before;
 import org.junit.Test;
 
