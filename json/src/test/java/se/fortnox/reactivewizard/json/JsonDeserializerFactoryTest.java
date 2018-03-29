@@ -70,7 +70,7 @@ public class JsonDeserializerFactoryTest {
 
 
     @Test
-    public void shouldshouldSerializeAndDeserializeImmutableObjectsByTypeReference() {
+    public void shouldSerializeAndDeserializeImmutableObjectsByTypeReference() {
         Function<ImmutableEntity, byte[]> serializer = serializerFactory.createByteSerializer(immutableEntityTypeReference);
         byte[] json = serializer.apply(immutableEntity);
 
@@ -82,7 +82,7 @@ public class JsonDeserializerFactoryTest {
 
 
 	@Test
-	public void shouldshouldSerializeAndDeserializeImmutableObjectsByTypeReferenceToAndFromByteArrays() {
+	public void shouldSerializeAndDeserializeImmutableObjectsByTypeReferenceToAndFromByteArrays() {
 		Function<ImmutableEntity, String> serializer = serializerFactory.createStringSerializer(immutableEntityTypeReference);
 		String json = serializer.apply(immutableEntity);
 
