@@ -180,6 +180,10 @@ public class ReflectionUtil {
     }
 
     public static Getter getGetter(Class<?> cls, String propertyName) {
+        return getGetter(cls, cls, propertyName);
+    }
+
+    private static Getter getGetter(Class<?> original, Class<?> cls, String propertyName) {
         String capitalizedPropertyName = propertyName.substring(0, 1).toUpperCase() + propertyName.substring(1);
 
         Method method = getAccessor(cls, capitalizedPropertyName);
@@ -195,18 +199,22 @@ public class ReflectionUtil {
                 field = cls.getDeclaredField(propertyName);
             } catch (NoSuchFieldException e) {
                 if (cls.getSuperclass() != null) {
-                    return getGetter(cls.getSuperclass(), propertyName);
+                    return getGetter(original, cls.getSuperclass(), propertyName);
                 }
                 return null;
             }
 
-            return new FieldGetter(field);
+            return FieldGetter.create(original, field);
         }
 
-        return new MethodGetter(method);
+        return MethodGetter.create(original, method);
     }
 
     public static Setter getSetter(Class<?> cls, String propertyName) {
+        return getSetter(cls, cls, propertyName);
+    }
+
+    private static Setter getSetter(Class<?> originalClass, Class<?> cls, String propertyName) {
         String capitalizedPropertyName = propertyName.substring(0, 1).toUpperCase() + propertyName.substring(1);
         try {
             String methodName = "set" + capitalizedPropertyName;
@@ -214,17 +222,17 @@ public class ReflectionUtil {
                 .filter(m -> m.getName().equals(methodName) && m.getReturnType().equals(void.class) && m.getParameters().length == 1)
                 .findFirst();
             if (first.isPresent()) {
-                return new MethodSetter(first.get());
+                return MethodSetter.create(originalClass, first.get());
             }
         } catch (Exception ignored) {
         }
 
         try {
             Field field = cls.getDeclaredField(propertyName);
-            return new FieldSetter(field);
+            return FieldSetter.create(originalClass, field);
         } catch (NoSuchFieldException ignored) {
             if (cls.getSuperclass() != null) {
-                return getSetter(cls.getSuperclass(), propertyName);
+                return getSetter(originalClass, cls.getSuperclass(), propertyName);
             }
         }
 
