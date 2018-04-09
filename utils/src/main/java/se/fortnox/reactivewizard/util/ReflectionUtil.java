@@ -194,6 +194,9 @@ public class ReflectionUtil {
             try {
                 field = cls.getDeclaredField(propertyName);
             } catch (NoSuchFieldException e) {
+                if (cls.getSuperclass() != null) {
+                    return getGetter(cls.getSuperclass(), propertyName);
+                }
                 return null;
             }
 
@@ -220,6 +223,9 @@ public class ReflectionUtil {
             Field field = cls.getDeclaredField(propertyName);
             return new FieldSetter(field);
         } catch (NoSuchFieldException ignored) {
+            if (cls.getSuperclass() != null) {
+                return getSetter(cls.getSuperclass(), propertyName);
+            }
         }
 
         return null;
@@ -293,8 +299,11 @@ public class ReflectionUtil {
 
     private static Method getMethod(Class<?> cls, String propertyName) {
         try {
-            return cls.getMethod(propertyName, new Class[0]);
+            return cls.getDeclaredMethod(propertyName);
         } catch (NoSuchMethodException e) {
+            if (cls.getSuperclass() != null) {
+                return getMethod(cls.getSuperclass(), propertyName);
+            }
             return null;
         }
     }
