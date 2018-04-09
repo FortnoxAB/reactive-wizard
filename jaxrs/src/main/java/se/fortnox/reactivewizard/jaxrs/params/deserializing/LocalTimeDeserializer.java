@@ -11,8 +11,7 @@ import java.time.format.DateTimeParseException;
  */
 public class LocalTimeDeserializer implements Deserializer<LocalTime> {
 
-    private static final Logger LOG = LoggerFactory
-        .getLogger(LocalTimeDeserializer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(LocalTimeDeserializer.class);
 
     @Override
     public LocalTime deserialize(String value) throws DeserializerException {
