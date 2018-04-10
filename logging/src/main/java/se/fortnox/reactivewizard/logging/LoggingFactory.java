@@ -5,7 +5,10 @@ import com.netflix.blitz4j.LoggingConfiguration;
 import se.fortnox.reactivewizard.config.Config;
 
 import javax.validation.Valid;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -35,14 +38,12 @@ public class LoggingFactory {
 
     public void init() {
         if (appenders == null) {
-            appenders = new HashMap<String, Map<String, String>>();
-            appenders.put("stdout", new HashMap<String, String>());
+            appenders = new HashMap<>();
+            appenders.put("stdout", new HashMap<>());
         }
 
-        URL log4jfile = LoggingFactory.class.getResource("/log4j.properties");
-        System.setProperty("log4j.configuration", log4jfile.toString());
-
         Properties props = new Properties();
+        loadConfigurationsFromFiles(props);
         props.setProperty("log4j.rootLogger", level + "," + getAppenderNames());
 
         addAppenderSettings(props);
@@ -55,6 +56,21 @@ public class LoggingFactory {
         LoggingConfiguration.getInstance().configure(props);
     }
 
+    private void loadConfigurationsFromFiles(Properties props) {
+        try {
+            Enumeration<URL> resources = LoggingFactory.class.getClassLoader().getResources("log4j.properties");
+            while (resources.hasMoreElements()) {
+                URL log4jFile = resources.nextElement();
+                System.setProperty("log4j.configuration", log4jFile.toString());
+                try (InputStream stream = log4jFile.openStream()) {
+                    props.load(stream);
+                }
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     private void addAdditivity(Properties props) {
         if (additivity == null) {
             return;
@@ -65,7 +81,13 @@ public class LoggingFactory {
     private void addAppenderSettings(Properties props) {
         for (Entry<String, Map<String, String>> appenderConfig : appenders.entrySet()) {
             for (Entry<String, String> setting : appenderConfig.getValue().entrySet()) {
-                props.put("log4j.appender." + appenderConfig.getKey() + "." + setting.getKey(), setting.getValue());
+                StringBuilder key = new StringBuilder();
+                key.append("log4j.appender.").append(appenderConfig.getKey());
+                if (!"class".equals(setting.getKey())) {
+                    key.append(".").append(setting.getKey());
+                }
+
+                props.put(key.toString(), setting.getValue());
             }
         }
     }
