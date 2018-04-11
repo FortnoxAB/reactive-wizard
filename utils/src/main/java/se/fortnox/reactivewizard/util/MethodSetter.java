@@ -10,7 +10,7 @@ import java.util.Map;
  */
 public class MethodSetter implements Setter {
     public static Setter create(Class<?> cls, Method method) {
-        Map<String, Class<?>> genericTypenameToType = Getter.typesByGenericName(cls, method);
+        Map<String, Class<?>> genericTypenameToType = AccessorUtil.typesByGenericName(cls, method);
         Class<?> returnType = method.getDeclaringClass().equals(cls) ?
             method.getParameterTypes()[0] :
             genericTypenameToType.get(method.getGenericParameterTypes()[0].getTypeName());

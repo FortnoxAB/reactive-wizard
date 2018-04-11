@@ -10,7 +10,7 @@ import java.util.Map;
  */
 public class MethodGetter implements Getter {
     public static Getter create(Class<?> cls, Method method) {
-        Map<String, Class<?>> genericTypenameToType = Getter.typesByGenericName(cls, method);
+        Map<String, Class<?>> genericTypenameToType = AccessorUtil.typesByGenericName(cls, method);
         Class<?> returnType = method.getDeclaringClass().equals(cls) ?
             method.getReturnType() :
             genericTypenameToType.get(method.getGenericReturnType().getTypeName());

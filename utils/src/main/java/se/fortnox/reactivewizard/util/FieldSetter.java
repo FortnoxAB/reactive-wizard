@@ -9,7 +9,7 @@ import java.util.Map;
  */
 public class FieldSetter implements Setter {
     public static Setter create(Class<?> cls, Field field) {
-        Map<String, Class<?>> genericTypenameToType = Getter.typesByGenericName(cls, field);
+        Map<String, Class<?>> genericTypenameToType = AccessorUtil.typesByGenericName(cls, field);
         Class<?> returnType = field.getDeclaringClass().equals(cls) ?
             field.getType() :
             genericTypenameToType.get(field.getGenericType().getTypeName());
