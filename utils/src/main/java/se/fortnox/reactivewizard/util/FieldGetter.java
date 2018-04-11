@@ -1,32 +1,47 @@
 package se.fortnox.reactivewizard.util;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Type;
+import java.util.Map;
 
 /**
  * Represents a getter field.
  */
 public class FieldGetter implements Getter {
-    private final Field field;
+    public static Getter create(Class<?> cls, Field field) {
+        Map<String, Class<?>> genericTypenameToType = AccessorUtil.typesByGenericName(cls, field);
+        Class<?> returnType = field.getDeclaringClass().equals(cls) ?
+            field.getType() :
+            genericTypenameToType.get(field.getGenericType().getTypeName());
+        Type genericReturnType = field.getDeclaringClass().equals(cls) ?
+            field.getGenericType() :
+            genericTypenameToType.get(field.getGenericType().getTypeName());
+        return new FieldGetter(field, returnType, genericReturnType);
+    }
 
-    public FieldGetter(Field field) {
+    private final Field    field;
+    private final Class<?> returnType;
+    private final Type     genericReturnType;
+
+    private FieldGetter(Field field, Class<?> returnType, Type genericReturnType) {
         this.field = field;
+        this.returnType = returnType;
+        this.genericReturnType = genericReturnType;
         field.setAccessible(true);
     }
 
     @Override
-    public Object invoke(Object instance) throws InvocationTargetException, IllegalAccessException {
+    public Object invoke(Object instance) throws IllegalAccessException {
         return field.get(instance);
     }
 
     @Override
     public Class<?> getReturnType() {
-        return field.getType();
+        return returnType;
     }
 
     @Override
     public Type getGenericReturnType() {
-        return field.getGenericType();
+        return genericReturnType;
     }
 }

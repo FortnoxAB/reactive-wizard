@@ -24,12 +24,29 @@ public class ReflectionUtilTest {
     }
 
     @Test
-    public void shouldFindInheritedMethods() {
+    public void shouldFindSuperclassMethods() {
         Getter getter = ReflectionUtil.getGetter(Child.class, "i");
         assertThat(getter).isNotNull();
+        assertThat(getter).isInstanceOf(MethodGetter.class);
+
+        getter = ReflectionUtil.getGetter(Child.class, "k");
+        assertThat(getter).isNotNull();
+        assertThat(getter).isInstanceOf(MethodGetter.class);
 
         Setter setter = ReflectionUtil.getSetter(Child.class, "i");
         assertThat(setter).isNotNull();
+        assertThat(setter).isInstanceOf(MethodSetter.class);
+    }
+
+    @Test
+    public void shouldFindSuperclassFields() {
+        Getter getter = ReflectionUtil.getGetter(Child.class, "l");
+        assertThat(getter).isNotNull();
+        assertThat(getter).isInstanceOf(FieldGetter.class);
+
+        Setter setter = ReflectionUtil.getSetter(Child.class, "l");
+        assertThat(setter).isNotNull();
+        assertThat(setter).isInstanceOf(FieldSetter.class);
     }
 
     @Test
@@ -39,7 +56,7 @@ public class ReflectionUtilTest {
     }
 
     @Test
-    public void shouldInstantiate() throws Exception {
+    public void shouldInstantiate() {
         assertThat(ReflectionUtil.newInstance(Parent.class)).isNotNull();
         assertThat(ReflectionUtil.newInstance(Child.class)).isNotNull();
         assertThat(ReflectionUtil.newInstance(PrivateDefaultConstructor.class)).isNotNull();
@@ -68,6 +85,8 @@ public class ReflectionUtilTest {
 
     static class Parent {
         private int i;
+        private int k;
+        private int l;
 
         public int getI() {
             return i;
@@ -75,6 +94,10 @@ public class ReflectionUtilTest {
 
         public void setI(int i) {
             this.i = i;
+        }
+
+        protected int getK() {
+            return k;
         }
     }
 
