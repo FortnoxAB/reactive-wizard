@@ -14,10 +14,8 @@ import java.util.TimeZone;
  * Deserializes dates as LocalDate.
  */
 public class LocalDateDeserializer implements Deserializer<LocalDate> {
-    private static final TimeZone DEFAULT_TIME_ZONE = TimeZone
-        .getTimeZone("Europe/Stockholm");
-    private static final Logger   LOG               = LoggerFactory
-        .getLogger(LocalDateDeserializer.class);
+    private static final TimeZone DEFAULT_TIME_ZONE = TimeZone.getTimeZone("Europe/Stockholm");
+    private static final Logger   LOG               = LoggerFactory.getLogger(LocalDateDeserializer.class);
 
     @Override
     public LocalDate deserialize(String value) throws DeserializerException {
