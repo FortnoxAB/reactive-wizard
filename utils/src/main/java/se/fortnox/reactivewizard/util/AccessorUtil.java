@@ -40,12 +40,8 @@ class AccessorUtil {
             returnType = field.getType();
             genericReturnType = field.getGenericType();
         } else {
-            returnType = field.getDeclaringClass().equals(cls) ?
-                field.getType() :
-                genericType;
-            genericReturnType = field.getDeclaringClass().equals(cls) ?
-                field.getGenericType() :
-                genericType;
+            returnType = genericType;
+            genericReturnType = genericType;
         }
 
         return new MemberTypeInfo(returnType, genericReturnType);
@@ -61,12 +57,8 @@ class AccessorUtil {
             returnType = method.getReturnType();
             genericReturnType = method.getGenericReturnType();
         } else {
-            returnType = method.getDeclaringClass().equals(cls) ?
-                method.getReturnType() :
-                genericType;
-            genericReturnType = method.getDeclaringClass().equals(cls) ?
-                method.getGenericReturnType() :
-                genericType;
+            returnType = genericType;
+            genericReturnType = genericType;
         }
 
         return new MemberTypeInfo(returnType, genericReturnType);
@@ -82,12 +74,8 @@ class AccessorUtil {
             returnType = method.getParameterTypes()[0];
             genericReturnType = method.getGenericParameterTypes()[0];
         } else {
-            returnType = method.getDeclaringClass().equals(cls) ?
-                method.getParameterTypes()[0] :
-                genericType;
-            genericReturnType = method.getDeclaringClass().equals(cls) ?
-                method.getGenericParameterTypes()[0] :
-                genericType;
+            returnType = genericType;
+            genericReturnType = genericType;
         }
 
         return new MemberTypeInfo(returnType, genericReturnType);

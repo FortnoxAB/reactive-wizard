@@ -30,6 +30,16 @@ abstract class AccessorTest {
         public void setLongObservable(Observable<Long> longObservable) {
             this.longObservable = longObservable;
         }
+
+        @Override
+        public String getSuperKey() {
+            return super.getSuperKey();
+        }
+
+        @Override
+        public void setSuperKey(String superKey) {
+            super.setSuperKey(superKey);
+        }
     }
 
     protected class GenericMethodSuper<K, V> {
