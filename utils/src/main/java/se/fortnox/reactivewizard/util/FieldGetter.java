@@ -2,21 +2,14 @@ package se.fortnox.reactivewizard.util;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
-import java.util.Map;
 
 /**
  * Represents a getter field.
  */
 public class FieldGetter implements Getter {
     public static Getter create(Class<?> cls, Field field) {
-        Map<String, Class<?>> genericTypenameToType = AccessorUtil.typesByGenericName(cls, field);
-        Class<?> returnType = field.getDeclaringClass().equals(cls) ?
-            field.getType() :
-            genericTypenameToType.get(field.getGenericType().getTypeName());
-        Type genericReturnType = field.getDeclaringClass().equals(cls) ?
-            field.getGenericType() :
-            genericTypenameToType.get(field.getGenericType().getTypeName());
-        return new FieldGetter(field, returnType, genericReturnType);
+        AccessorUtil.MemberTypeInfo memberTypeInfo = AccessorUtil.fieldTypeInfo(cls, field);
+        return new FieldGetter(field, memberTypeInfo.getReturnType(), memberTypeInfo.getGenericReturnType());
     }
 
     private final Field    field;
