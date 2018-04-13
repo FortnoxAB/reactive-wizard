@@ -253,7 +253,7 @@ public class ReflectionUtil {
         try {
             String methodName = "set" + capitalizedPropertyName;
             Optional<Method> first = Arrays.stream(declaringClass.getMethods())
-                .filter(m -> m.getName().equals(methodName) && m.getReturnType().equals(void.class) && m.getParameters().length == 1)
+                .filter(m -> !m.isSynthetic() && m.getName().equals(methodName) && m.getReturnType().equals(void.class) && m.getParameterCount() == 1)
                 .findFirst();
             if (first.isPresent()) {
                 return MethodSetter.create(original, first.get());

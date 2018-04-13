@@ -3,21 +3,14 @@ package se.fortnox.reactivewizard.util;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
-import java.util.Map;
 
 /**
  * Represents a getter method.
  */
 public class MethodGetter implements Getter {
     public static Getter create(Class<?> cls, Method method) {
-        Map<String, Class<?>> genericTypenameToType = AccessorUtil.typesByGenericName(cls, method);
-        Class<?> returnType = method.getDeclaringClass().equals(cls) ?
-            method.getReturnType() :
-            genericTypenameToType.get(method.getGenericReturnType().getTypeName());
-        Type genericReturnType = method.getDeclaringClass().equals(cls) ?
-            method.getGenericReturnType() :
-            genericTypenameToType.get(method.getGenericReturnType().getTypeName());
-        return new MethodGetter(method, returnType, genericReturnType);
+        AccessorUtil.MemberTypeInfo memberTypeInfo = AccessorUtil.getterTypeInfo(cls, method);
+        return new MethodGetter(method, memberTypeInfo.getReturnType(), memberTypeInfo.getGenericReturnType());
     }
 
     private final Method   method;

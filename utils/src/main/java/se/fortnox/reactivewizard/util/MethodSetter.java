@@ -3,21 +3,14 @@ package se.fortnox.reactivewizard.util;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
-import java.util.Map;
 
 /**
  * Represents a setter method.
  */
 public class MethodSetter implements Setter {
     public static Setter create(Class<?> cls, Method method) {
-        Map<String, Class<?>> genericTypenameToType = AccessorUtil.typesByGenericName(cls, method);
-        Class<?> returnType = method.getDeclaringClass().equals(cls) ?
-            method.getParameterTypes()[0] :
-            genericTypenameToType.get(method.getGenericParameterTypes()[0].getTypeName());
-        Type genericReturnType = method.getDeclaringClass().equals(cls) ?
-            method.getGenericParameterTypes()[0] :
-            genericTypenameToType.get(method.getGenericParameterTypes()[0].getTypeName());
-        return new MethodSetter(method, returnType, genericReturnType);
+        AccessorUtil.MemberTypeInfo memberTypeInfo = AccessorUtil.setterTypeInfo(cls, method);
+        return new MethodSetter(method, memberTypeInfo.getReturnType(), memberTypeInfo.getGenericReturnType());
     }
 
     private final Method   method;
