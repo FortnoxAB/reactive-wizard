@@ -8,12 +8,12 @@ import java.util.Date;
 import java.util.Locale;
 
 /**
- * Extending the jackson impl with the format yyyy-MM-dd HH:mm:ss.
+ * Extends the Jackson implementation with the format yyyy-MM-dd HH:mm:ss.
  */
 @SuppressWarnings("serial")
-public class DateFormat extends StdDateFormat {
+public class DefaultDateFormat extends StdDateFormat {
 
-    public DateFormat() {
+    public DefaultDateFormat() {
         super(Dates.DEFAULT_TIME_ZONE, Locale.getDefault(), true);
     }
 
@@ -30,6 +30,6 @@ public class DateFormat extends StdDateFormat {
 
     @Override
     public StdDateFormat clone() {
-        return new DateFormat();
+        return new DefaultDateFormat();
     }
 }
