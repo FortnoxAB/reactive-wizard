@@ -69,7 +69,6 @@ interface DbProxyTestDao extends Dao {
 }
 
 /**
- * Created by jonashall on 2015-12-03.
  */
 public class DbProxyTest {
 

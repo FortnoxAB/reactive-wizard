@@ -14,7 +14,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 /**
- * Created by jonashall on 2015-12-03.
  */
 public class CollectionOptionsTest {
     MockDb               mockDb               = new MockDb();

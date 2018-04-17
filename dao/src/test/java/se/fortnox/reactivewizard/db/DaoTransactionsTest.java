@@ -31,7 +31,6 @@ import static org.mockito.Mockito.when;
 import static se.fortnox.reactivewizard.test.TestUtil.assertException;
 
 /**
- * Created by jonashall on 2015-12-10.
  */
 public class DaoTransactionsTest {
     MockDb             db                 = new MockDb();
