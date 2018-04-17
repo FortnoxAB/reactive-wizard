@@ -2,6 +2,8 @@ package se.fortnox.reactivewizard.db;
 
 import org.fest.assertions.Assertions;
 import org.fest.assertions.ObjectAssert;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import se.fortnox.reactivewizard.db.deserializing.DbResultSetDeserializer;
 
@@ -14,6 +16,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Date;
+import java.util.TimeZone;
 import java.util.UUID;
 
 import static org.fest.assertions.Assertions.assertThat;
@@ -22,9 +25,21 @@ import static org.mockito.Mockito.when;
 
 public class DbResultSetDeserializerTest {
 
-    ResultSet         rs        = mock(ResultSet.class);
-    ResultSetMetaData meta      = mock(ResultSetMetaData.class);
-    Array             jdbcArray = mock(Array.class);
+    private ResultSet         rs        = mock(ResultSet.class);
+    private ResultSetMetaData meta      = mock(ResultSetMetaData.class);
+    private Array             jdbcArray = mock(Array.class);
+    private TimeZone          previousTimeZone;
+
+    @Before
+    public void setup() {
+        previousTimeZone = TimeZone.getDefault();
+        TimeZone.setDefault(TimeZone.getTimeZone("GMT+2:00"));
+    }
+
+    @After
+    public void reset() {
+        TimeZone.setDefault(previousTimeZone);
+    }
 
     @Test
     public void shouldDeserializeString() throws SQLException {
