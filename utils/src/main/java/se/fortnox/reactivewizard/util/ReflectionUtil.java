@@ -179,47 +179,95 @@ public class ReflectionUtil {
         throw new RuntimeException("Unexpected type: " + type);
     }
 
+    /**
+     * Locate a getter (method or field) for a property.
+     * <p>
+     * The class hierarchy will be traversed to find any inherited getter for the given property.
+     *
+     * @param cls          The class inspected.
+     * @param propertyName The property to locate a getter for.
+     * @return a Getter instance for either a method or a field
+     */
     public static Getter getGetter(Class<?> cls, String propertyName) {
+        return getGetter(cls, cls, propertyName);
+    }
+
+    /**
+     * Recurse through the class hierarchy to find a getter for a property.
+     *
+     * @param original       The original class inspected for a getter.
+     * @param declaringClass The current class in the hierarchy being inspected.
+     * @param propertyName   The property to locate a getter for.
+     * @return a Getter instance for either a method or a field
+     */
+    private static Getter getGetter(Class<?> original, Class<?> declaringClass, String propertyName) {
         String capitalizedPropertyName = propertyName.substring(0, 1).toUpperCase() + propertyName.substring(1);
 
-        Method method = getAccessor(cls, capitalizedPropertyName);
+        Method method = getAccessor(declaringClass, capitalizedPropertyName);
         if (method == null) {
-            method = getBooleanAccessor(cls, capitalizedPropertyName);
+            method = getBooleanAccessor(declaringClass, capitalizedPropertyName);
         }
         if (method == null) {
-            method = getMethod(cls, propertyName);
+            method = getMethod(declaringClass, propertyName);
         }
         if (method == null) {
             Field field;
             try {
-                field = cls.getDeclaredField(propertyName);
+                field = declaringClass.getDeclaredField(propertyName);
             } catch (NoSuchFieldException e) {
+                if (declaringClass.getSuperclass() != null) {
+                    return getGetter(original, declaringClass.getSuperclass(), propertyName);
+                }
                 return null;
             }
 
-            return new FieldGetter(field);
+            return FieldGetter.create(original, field);
         }
 
-        return new MethodGetter(method);
+        return MethodGetter.create(original, method);
     }
 
+    /**
+     * Locate a setter (method or field) for a property.
+     * <p>
+     * The class hierarchy will be traversed to find any inherited setter for the given property.
+     *
+     * @param cls          The class inspected.
+     * @param propertyName The property to locate a setter for.
+     * @return a Setter instance for either a method or a field
+     */
     public static Setter getSetter(Class<?> cls, String propertyName) {
+        return getSetter(cls, cls, propertyName);
+    }
+
+    /**
+     * Recurse through the class hierarchy to find a setter for a property.
+     *
+     * @param original       The original class inspected for a setter.
+     * @param declaringClass The current class in the hierarchy being inspected.
+     * @param propertyName   The property to locate a setter for.
+     * @return a Setter instance for either a method or a field
+     */
+    private static Setter getSetter(Class<?> original, Class<?> declaringClass, String propertyName) {
         String capitalizedPropertyName = propertyName.substring(0, 1).toUpperCase() + propertyName.substring(1);
         try {
             String methodName = "set" + capitalizedPropertyName;
-            Optional<Method> first = Arrays.stream(cls.getMethods())
-                .filter(m -> m.getName().equals(methodName) && m.getReturnType().equals(void.class) && m.getParameters().length == 1)
+            Optional<Method> first = Arrays.stream(declaringClass.getMethods())
+                .filter(m -> !m.isSynthetic() && m.getName().equals(methodName) && m.getReturnType().equals(void.class) && m.getParameterCount() == 1)
                 .findFirst();
             if (first.isPresent()) {
-                return new MethodSetter(first.get());
+                return MethodSetter.create(original, first.get());
             }
         } catch (Exception ignored) {
         }
 
         try {
-            Field field = cls.getDeclaredField(propertyName);
-            return new FieldSetter(field);
+            Field field = declaringClass.getDeclaredField(propertyName);
+            return FieldSetter.create(original, field);
         } catch (NoSuchFieldException ignored) {
+            if (declaringClass.getSuperclass() != null) {
+                return getSetter(original, declaringClass.getSuperclass(), propertyName);
+            }
         }
 
         return null;
@@ -293,8 +341,11 @@ public class ReflectionUtil {
 
     private static Method getMethod(Class<?> cls, String propertyName) {
         try {
-            return cls.getMethod(propertyName, new Class[0]);
+            return cls.getDeclaredMethod(propertyName);
         } catch (NoSuchMethodException e) {
+            if (cls.getSuperclass() != null) {
+                return getMethod(cls.getSuperclass(), propertyName);
+            }
             return null;
         }
     }

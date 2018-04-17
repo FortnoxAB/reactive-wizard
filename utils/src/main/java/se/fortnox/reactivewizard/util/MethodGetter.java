@@ -8,10 +8,19 @@ import java.lang.reflect.Type;
  * Represents a getter method.
  */
 public class MethodGetter implements Getter {
-    private final Method method;
+    public static Getter create(Class<?> cls, Method method) {
+        AccessorUtil.MemberTypeInfo memberTypeInfo = AccessorUtil.getterTypeInfo(cls, method);
+        return new MethodGetter(method, memberTypeInfo.getReturnType(), memberTypeInfo.getGenericReturnType());
+    }
 
-    public MethodGetter(Method method) {
+    private final Method   method;
+    private final Class<?> returnType;
+    private final Type     genericReturnType;
+
+    private MethodGetter(Method method, Class<?> returnType, Type genericReturnType) {
+        this.returnType = returnType;
         this.method = method;
+        this.genericReturnType = genericReturnType;
     }
 
     @Override
@@ -21,11 +30,11 @@ public class MethodGetter implements Getter {
 
     @Override
     public Class<?> getReturnType() {
-        return method.getReturnType();
+        return returnType;
     }
 
     @Override
     public Type getGenericReturnType() {
-        return method.getGenericReturnType();
+        return genericReturnType;
     }
 }

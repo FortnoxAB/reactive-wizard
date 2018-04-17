@@ -8,10 +8,19 @@ import java.lang.reflect.Type;
  * Represents a setter method.
  */
 public class MethodSetter implements Setter {
-    private final Method method;
+    public static Setter create(Class<?> cls, Method method) {
+        AccessorUtil.MemberTypeInfo memberTypeInfo = AccessorUtil.setterTypeInfo(cls, method);
+        return new MethodSetter(method, memberTypeInfo.getReturnType(), memberTypeInfo.getGenericReturnType());
+    }
 
-    public MethodSetter(Method method) {
+    private final Method   method;
+    private final Class<?> parameterType;
+    private final Type     genericParameterType;
+
+    private MethodSetter(Method method, Class<?> parameterType, Type genericParameterType) {
         this.method = method;
+        this.parameterType = parameterType;
+        this.genericParameterType = genericParameterType;
     }
 
     @Override
@@ -21,11 +30,11 @@ public class MethodSetter implements Setter {
 
     @Override
     public Class<?> getParameterType() {
-        return method.getParameterTypes()[0];
+        return parameterType;
     }
 
     @Override
     public Type getGenericParameterType() {
-        return method.getGenericParameterTypes()[0];
+        return genericParameterType;
     }
 }
