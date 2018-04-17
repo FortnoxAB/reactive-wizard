@@ -21,10 +21,15 @@ class AccessorUtil {
         Map<String, Class<?>> typeByName = new HashMap<>();
         for (int i = 0; i < member.getDeclaringClass().getTypeParameters().length; i++) {
             String typeName = member.getDeclaringClass().getTypeParameters()[i].getTypeName();
+            Class<?> superclass = subClass.getSuperclass();
             Type genericSuperclass = subClass.getGenericSuperclass();
-            if (genericSuperclass != null) {
-                Class<?> type = (Class<?>) ((ParameterizedTypeImpl) genericSuperclass).getActualTypeArguments()[i];
-                typeByName.put(typeName, type);
+            while (superclass != null && superclass != Object.class) {
+                if (genericSuperclass instanceof ParameterizedTypeImpl) {
+                    Class<?> type = (Class<?>) ((ParameterizedTypeImpl) genericSuperclass).getActualTypeArguments()[i];
+                    typeByName.put(typeName, type);
+                }
+                genericSuperclass = superclass.getGenericSuperclass();
+                superclass = superclass.getSuperclass();
             }
         }
         return typeByName;
