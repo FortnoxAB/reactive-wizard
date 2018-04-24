@@ -3,6 +3,7 @@ package se.fortnox.reactivewizard.db;
 import org.junit.Test;
 import rx.Observable;
 import se.fortnox.reactivewizard.CollectionOptions;
+import se.fortnox.reactivewizard.CollectionOptions.SortOrder;
 import se.fortnox.reactivewizard.db.paging.CollectionOptionsWithResult;
 
 import java.sql.SQLException;
@@ -147,7 +148,7 @@ public class CollectionOptionsTest {
         mockDb.verifySelect("select * from table order by name ASC, id LIMIT 101");
     }
 
-    interface CollectionOptionsDao extends Dao {
+    interface CollectionOptionsDao {
         @Query("select * from table")
         Observable<String> selectWithPaging(CollectionOptions collectionOptions);
 

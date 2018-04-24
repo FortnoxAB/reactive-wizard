@@ -63,8 +63,8 @@ public class LoggingTest {
         }));
     }
 
-    public interface LoggingDao extends Dao {
+    public interface LoggingDao {
         @Query("select * from table where name=:name")
-        Observable<Integer> doSomething(@Named("name") String name);
+        Observable<Integer> doSomething(String name);
     }
 }

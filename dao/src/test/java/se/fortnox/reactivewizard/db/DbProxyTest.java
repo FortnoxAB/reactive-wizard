@@ -30,30 +30,30 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-interface DbProxyTestDao extends Dao {
+interface DbProxyTestDao {
     @Update("update table set val=:val where key=:key")
-    Observable<Integer> update(@Named("key") String key, @Named("val") String val);
+    Observable<Integer> update(String key, String val);
 
     @Update(value = "update table set val=:val where key=:key", minimumAffected = 0)
-    Observable<Integer> updateAllowingZeroAffectedRows(@Named("key") String key, @Named("val") String val);
+    Observable<Integer> updateAllowingZeroAffectedRows(String key, String val);
 
     @Query("select * from table where key=:key")
-    Observable<DbTestObj> select(@Named("key") String key);
+    Observable<DbTestObj> select(String key);
 
     @Update("insert into table")
     Observable<GeneratedKey<Long>> insert();
 
     @Update("insert into table (date) values (:date)")
-    Observable<GeneratedKey<Long>> insertDate(@Named("date") Date date);
+    Observable<GeneratedKey<Long>> insertDate(Date date);
 
     @Update("insert into table (date) values (:date)")
-    Observable<Integer> insertLocalDate(@Named("date") LocalDate date);
+    Observable<Integer> insertLocalDate(LocalDate date);
 
     @Update("insert into table (time) values (:time)")
-    Observable<Integer> insertLocalTime(@Named("time") LocalTime time);
+    Observable<Integer> insertLocalTime(LocalTime time);
 
     @Update("insert into table (datetime) values (:datetime)")
-    Observable<Integer> insertLocalDateTime(@Named("datetime") LocalDateTime now);
+    Observable<Integer> insertLocalDateTime(LocalDateTime datetime);
 
     @Update("insert into table")
     Observable<String> insertBadreturnType();
@@ -405,7 +405,7 @@ public class DbProxyTest {
     }
 
     @Test
-    public void shouldReturnErrorOnFullBuffer() throws SQLException, InterruptedException {
+    public void shouldReturnErrorOnFullBuffer() throws SQLException {
         mockDb.setRowCount(-1);
         mockDb.addRowColumn(-1, 1, "name", String.class, "row2");
         TestSubscriber<DbTestObj> testSubscriber = new TestSubscriber<>(0);

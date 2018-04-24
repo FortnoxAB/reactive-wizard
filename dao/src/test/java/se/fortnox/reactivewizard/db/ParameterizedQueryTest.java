@@ -194,12 +194,12 @@ public class ParameterizedQueryTest {
         T1, T2, T3
     }
 
-    interface TestDao extends Dao {
+    interface TestDao {
         @Query("SELECT * FROM foo WHERE id=:id AND name=:name")
-        Observable<String> namedParameters(@Named("id") String id, @Named("name") String name);
+        Observable<String> namedParameters(String id, String name);
 
         @Query("SELECT * FROM foo WHERE id=:id AND name=:test.name")
-        Observable<String> nestedParameters(@Named("id") String id, @Named("test") MyTestParam test);
+        Observable<String> nestedParameters(String id, MyTestParam test);
 
         @Query("SELECT * FROM foo WHERE id=? AND name=?")
         Observable<String> unnamedParameters(String id, String name);
@@ -210,32 +210,32 @@ public class ParameterizedQueryTest {
         @Query("SELECT * FROM foo WHERE id=:id AND name=:name")
         Observable<String> missingParamNames(String id, String name);
 
-        @Query("INSERT INTO a VALUES (:myobj.myEnum)")
-        Observable<String> enumParameter(@Named("myobj") TestObject testObject);
+        @Query("INSERT INTO a VALUES (:testObject.myEnum)")
+        Observable<String> enumParameter(TestObject testObject);
 
-        @Query("INSERT INTO a VALUES (:myobj.finished)")
-        Observable<String> booleanWithIsPrefixAsParameter(@Named("myobj") TestObject testObject);
+        @Query("INSERT INTO a VALUES (:testObject.finished)")
+        Observable<String> booleanWithIsPrefixAsParameter(TestObject testObject);
 
-        @Query("INSERT INTO a (a, b, c) VALUES (:myobj.map::json, :myobj.finished, \"a\")")
-        Observable<String> mapParam(@Named("myobj") TestObject testObject);
+        @Query("INSERT INTO a (a, b, c) VALUES (:testObject.map::json, :testObject.finished, \"a\")")
+        Observable<String> mapParam(TestObject testObject);
 
-        @Query("INSERT INTO a (a, b, c) VALUES (:myobj.finished, \"a\", :myobj.map::json)")
-        Observable<String> mapParamLast(@Named("myobj") TestObject testObject);
+        @Query("INSERT INTO a (a, b, c) VALUES (:testObject.finished, \"a\", :testObject.map::json)")
+        Observable<String> mapParamLast(TestObject testObject);
 
-        @Query("INSERT INTO a (a, b, c) VALUES ( :myobj.finished, :myobj.map::json, \"a\")")
-        Observable<String> mapParamMiddle(@Named("myobj") TestObject testObject);
+        @Query("INSERT INTO a (a, b, c) VALUES ( :testObject.finished, :testObject.map::json, \"a\")")
+        Observable<String> mapParamMiddle(TestObject testObject);
 
         @Query("SELECT a FROM b WHERE c NOT IN (:param)")
-        Observable<String> notInClauseBigint(@Named("param") List<Long> param);
+        Observable<String> notInClauseBigint(List<Long> param);
 
         @Query("SELECT x FROM y WHERE z IN (:param)")
-        Observable<String> inClauseVarchar(@Named("param") List<String> param);
+        Observable<String> inClauseVarchar(List<String> param);
 
         @Query("SELECT x FROM y WHERE z IN(:param)")
-        Observable<String> inClauseVarcharNoSpace(@Named("param") List<String> param);
+        Observable<String> inClauseVarcharNoSpace(List<String> param);
 
         @Query("SELECT x FROM y WHERE z IN (:param)")
-        Observable<String> unsupportedArrayType(@Named("param") List<Boolean> param);
+        Observable<String> unsupportedArrayType(List<Boolean> param);
     }
 
     public class TestObject {

@@ -263,7 +263,7 @@ public class DaoTransactionsTest {
         verify(conn, never()).rollback();
         verify(conn, never()).close();
     }
-    interface TestDao extends Dao {
+    interface TestDao {
         @Query("select * from test")
         Observable<String> find();
 

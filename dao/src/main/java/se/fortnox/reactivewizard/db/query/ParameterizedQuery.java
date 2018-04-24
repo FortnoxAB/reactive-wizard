@@ -1,15 +1,11 @@
 package se.fortnox.reactivewizard.db.query;
 
-import se.fortnox.reactivewizard.db.Named;
-import se.fortnox.reactivewizard.db.Schema;
 import se.fortnox.reactivewizard.db.query.parts.CollectionOptionsQueryPart;
 import se.fortnox.reactivewizard.db.query.parts.DynamicQueryPart;
 import se.fortnox.reactivewizard.db.query.parts.ParamQueryPart;
 import se.fortnox.reactivewizard.db.query.parts.QueryPart;
-import se.fortnox.reactivewizard.db.query.parts.SchemaParamQueryPart;
 import se.fortnox.reactivewizard.db.query.parts.StaticQueryPart;
 
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.Type;
@@ -68,25 +64,8 @@ public class ParameterizedQuery {
         Parameter[]                   parameters     = method.getParameters();
         Map<String, DynamicQueryPart> queryArguments = new LinkedHashMap<>();
         for (int i = 0; i < parameters.length; i++) {
-            boolean      paramAdded       = false;
-            Annotation[] paramAnnotations = parameters[i].getAnnotations();
-            for (Annotation annotation : paramAnnotations) {
-                if (annotation instanceof Named) {
-                    String name = ((Named)annotation).value();
-                    queryArguments.put(name, createParamQueryPart(i, parameterTypes[i]));
-                    paramAdded = true;
-                    break;
-                } else if (annotation instanceof Schema) {
-                    String schema = ((Schema)annotation).value();
-                    queryArguments.put(schema, new SchemaParamQueryPart(schema, i, parameterTypes[i]));
-                    paramAdded = true;
-                    break;
-                }
-            }
-            if (!paramAdded) {
-                String name = parameters[i].isNamePresent() ? parameters[i].getName() : "param" + i;
-                queryArguments.put(name, createParamQueryPart(i, parameterTypes[i]));
-            }
+            String name = parameters[i].isNamePresent() ? parameters[i].getName() : "param" + i;
+            queryArguments.put(name, createParamQueryPart(i, parameterTypes[i]));
         }
         return queryArguments;
     }
