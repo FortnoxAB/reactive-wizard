@@ -16,14 +16,14 @@ public class DbConnectionTest {
 
         DbProxy dbProxy = new DbProxy(mockDb.getConnectionProvider());
         TestDao daoMock = dbProxy.create(TestDao.class);
-        daoMock.list("foo").map(s -> daoMock.list("bar")).toBlocking().single();
+        daoMock.list().map(s -> daoMock.list()).toBlocking().single();
 
         mockDb.verifyConnectionsUsed(1);
         verify(mockDb.getPreparedStatement()).close();
     }
 
-    interface TestDao extends Dao {
-        @Query("SELECT * FROM :systemId.table")
-        Observable<String> list(@Schema("systemId") String systemId);
+    interface TestDao {
+        @Query("SELECT * FROM table")
+        Observable<String> list();
     }
 }
