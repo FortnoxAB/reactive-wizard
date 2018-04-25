@@ -2,7 +2,7 @@ package se.fortnox.reactivewizard.db.query.parts;
 
 import se.fortnox.reactivewizard.dates.Dates;
 import se.fortnox.reactivewizard.db.query.PreparedStatementParameters;
-import se.fortnox.reactivewizard.util.JsonUtil;
+import se.fortnox.reactivewizard.json.JsonSerializerFactory;
 import se.fortnox.reactivewizard.util.ReflectionUtil;
 import se.fortnox.reactivewizard.util.rx.PropertyResolver;
 
@@ -15,8 +15,10 @@ import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 
 public class ParamQueryPart implements DynamicQueryPart {
+    private static final JsonSerializerFactory JSON_SERIALIZER_FACTORY = new JsonSerializerFactory();
 
     protected final PropertyResolver             argResolver;
     protected final int                          argIndex;
@@ -103,7 +105,9 @@ public class ParamQueryPart implements DynamicQueryPart {
             };
         } else if (Map.class.isAssignableFrom(rawType)) {
             return (parameters, value) -> {
-                parameters.addObject(JsonUtil.json(value));
+                Function<Map, String> jsonSerializer = JSON_SERIALIZER_FACTORY.createStringSerializer(Map.class);
+
+                parameters.addObject(jsonSerializer.apply((Map)value));
             };
         } else {
             return (parameters, value) -> {

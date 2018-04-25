@@ -1,14 +1,12 @@
 package se.fortnox.reactivewizard.db.deserializing;
 
-import com.fasterxml.jackson.databind.ObjectReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import se.fortnox.reactivewizard.json.JsonDeserializerFactory;
 import se.fortnox.reactivewizard.util.CamelSnakeConverter;
-import se.fortnox.reactivewizard.util.JsonUtil;
 import se.fortnox.reactivewizard.util.ReflectionUtil;
 import se.fortnox.reactivewizard.util.rx.PropertyResolver;
 
-import java.lang.reflect.Type;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.Collections;
@@ -18,7 +16,8 @@ import java.util.Optional;
 import java.util.function.BiFunction;
 
 class DeserializerUtil {
-    private static final Logger LOG = LoggerFactory.getLogger(DeserializerUtil.class);
+    private static final Logger                  LOG                       = LoggerFactory.getLogger(DeserializerUtil.class);
+    private static final JsonDeserializerFactory JSON_DESERIALIZER_FACTORY = new JsonDeserializerFactory();
 
     static <T> Map<String[], T> createPropertyDeserializers(Class<?> cls, ResultSetMetaData metaData,
         BiFunction<PropertyResolver, Deserializer, T> deserializerFactory
@@ -50,19 +49,22 @@ class DeserializerUtil {
 
         Deserializer simpleProp = ColumnDeserializerFactory.getColumnDeserializer(type, columnType, columnIndex);
         if (simpleProp == null) {
-            return jsonPropertyDeserializer(propertyResolver, columnIndex, deserializerFactory);
+            return jsonPropertyDeserializer(propertyResolver, columnIndex, deserializerFactory, type);
         }
 
         return deserializerFactory.apply(propertyResolver, simpleProp);
     }
 
-    private static <T> T jsonPropertyDeserializer(PropertyResolver propertyResolver, int columnIndex,
-        BiFunction<PropertyResolver, Deserializer, T> deserializerFactory
+    private static <T> T jsonPropertyDeserializer(PropertyResolver propertyResolver,
+        int columnIndex,
+        BiFunction<PropertyResolver, Deserializer, T> deserializerFactory,
+        Class<?> type
     ) {
-        Type         genericType = propertyResolver.getPropertyGenericType();
-        ObjectReader reader      = JsonUtil.reader(genericType);
-        return deserializerFactory.apply(propertyResolver,
-            (rs) -> Optional.ofNullable(JsonUtil.deserialize(reader, rs.getString(columnIndex))));
+        return deserializerFactory.apply(propertyResolver, (rs) -> {
+            String columnValue = rs.getString(columnIndex);
+            Object value       = JSON_DESERIALIZER_FACTORY.createDeserializer(type).apply(columnValue);
+            return Optional.ofNullable(value);
+        });
     }
 
     private static String[] extractColumnLabels(ResultSetMetaData metaData) throws SQLException {

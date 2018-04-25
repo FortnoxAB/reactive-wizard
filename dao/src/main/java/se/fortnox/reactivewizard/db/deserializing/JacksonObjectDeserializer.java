@@ -1,6 +1,8 @@
 package se.fortnox.reactivewizard.db.deserializing;
 
-import se.fortnox.reactivewizard.util.JsonUtil;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.util.StdDateFormat;
 
 import java.lang.reflect.InvocationTargetException;
 import java.sql.ResultSet;
@@ -17,6 +19,11 @@ import java.util.Optional;
  * the POJO.
  */
 public class JacksonObjectDeserializer implements Deserializer {
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
+        .findAndRegisterModules()
+        .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+        .setDateFormat(new StdDateFormat());
+
     private final Class<?>                    targetClass;
     private final Map<String[], Deserializer> propertyDeserializers;
 
@@ -35,7 +42,7 @@ public class JacksonObjectDeserializer implements Deserializer {
         throws SQLException, InvocationTargetException, IllegalAccessException, InstantiationException {
 
         Map<String, Object> propertyMap = createPropertyMap(rs);
-        return Optional.ofNullable(JsonUtil.convertValue(propertyMap, targetClass));
+        return Optional.ofNullable(OBJECT_MAPPER.convertValue(propertyMap, targetClass));
     }
 
     @SuppressWarnings("unchecked")
