@@ -21,13 +21,6 @@
             <artifactId>reactivewizard-json</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <!--
-        <dependency>
-            <groupId>se.fortnox.reactivewizard</groupId>
-            <artifactId>reactivewizard-dates</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        -->
         <dependency>
             <groupId>se.fortnox.reactivewizard</groupId>
             <artifactId>reactivewizard-config</artifactId>
