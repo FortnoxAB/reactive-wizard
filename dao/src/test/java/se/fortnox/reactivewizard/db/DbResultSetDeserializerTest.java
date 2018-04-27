@@ -15,7 +15,6 @@ import java.sql.Types;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.Date;
 import java.util.TimeZone;
 import java.util.UUID;
 
@@ -121,19 +120,6 @@ public class DbResultSetDeserializerTest {
         when(rs.wasNull()).thenReturn(true);
         thenDeserialized(Boolean.class).isNull();
         thenDeserialized(boolean.class).isEqualTo(Boolean.FALSE);
-    }
-
-    @Test
-    public void shouldDeserializeDate() throws SQLException {
-        when(rs.getTimestamp(1)).thenReturn(new java.sql.Timestamp(1431439338));
-        thenDeserialized(Date.class).isEqualTo(new Date(1431439338));
-    }
-
-    @Test
-    public void shouldDeserializeNullDate() throws SQLException {
-        when(rs.getDate(1)).thenReturn(null);
-        when(rs.wasNull()).thenReturn(true);
-        thenDeserialized(Date.class).isNull();
     }
 
     @Test

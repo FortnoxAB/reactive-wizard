@@ -61,7 +61,6 @@
         <module>binding</module>
         <module>bootstrap</module>
         <module>server</module>
-        <module>dates</module>
         <module>dao</module>
         <module>examples</module>
         <module>metrics</module>

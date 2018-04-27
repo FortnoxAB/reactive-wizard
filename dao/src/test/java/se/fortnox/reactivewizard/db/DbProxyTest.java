@@ -17,7 +17,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
 import static org.fest.assertions.Assertions.assertThat;
@@ -44,7 +43,7 @@ interface DbProxyTestDao {
     Observable<GeneratedKey<Long>> insert();
 
     @Update("insert into table (date) values (:date)")
-    Observable<GeneratedKey<Long>> insertDate(Date date);
+    Observable<GeneratedKey<Long>> insertWithGeneratedKey(LocalDate date);
 
     @Update("insert into table (date) values (:date)")
     Observable<Integer> insertLocalDate(LocalDate date);
@@ -108,16 +107,6 @@ public class DbProxyTest {
     }
 
     @Test
-    public void shouldSetDateAsSqlTimestamp() throws SQLException {
-        mockDb.addUpdatedRowId(1L);
-        Date date = new Date();
-        assertThat(dbProxyTestDao.insertDate(date).toBlocking().single().getKey()).isEqualTo(1L);
-        Calendar cal = Calendar.getInstance();
-        cal.setTime(date);
-        verify(mockDb.getPreparedStatement()).setTimestamp(1, new Timestamp(date.getTime()), cal);
-    }
-
-    @Test
     public void shouldSetLocalDateAsSqlDate() throws SQLException {
         mockDb.setUpdatedRows(1);
         LocalDate date = LocalDate.now();
@@ -144,7 +133,7 @@ public class DbProxyTest {
     @Test
     public void shouldSetNullAsParam() throws SQLException {
         mockDb.addUpdatedRowId(1L);
-        assertThat(dbProxyTestDao.insertDate(null).toBlocking().single().getKey()).isEqualTo(1L);
+        assertThat(dbProxyTestDao.insertWithGeneratedKey(null).toBlocking().single().getKey()).isEqualTo(1L);
         mockDb.verifyUpdate("insert into table (date) values (?)", new Object[]{null});
     }
 

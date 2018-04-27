@@ -9,7 +9,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -31,8 +30,6 @@ public class ColumnDeserializerFactory {
             return (resultSet) -> Optional.of(resultSet.getBoolean(columnIndex));
         } else if (columnClass.equals(Boolean.class)) {
             return (resultSet) -> mayBeNull(resultSet, resultSet.getBoolean(columnIndex));
-        } else if (columnClass.equals(Date.class)) {
-            return (resultSet) -> Optional.ofNullable(getDate(resultSet, columnIndex));
         } else if (columnClass.isEnum()) {
             return (resultSet) -> Optional.ofNullable(getEnum(columnClass, resultSet, columnIndex));
         } else if (columnClass.equals(float.class)) {
@@ -75,14 +72,6 @@ public class ColumnDeserializerFactory {
             value = null;
         }
         return Optional.ofNullable(value);
-    }
-
-    private static Date getDate(ResultSet resultSet, int columnIndex) throws SQLException {
-        Timestamp timestamp = resultSet.getTimestamp(columnIndex);
-        if (timestamp != null) {
-            return new Date(timestamp.getTime());
-        }
-        return null;
     }
 
     private static LocalDate getLocalDate(ResultSet resultSet, int columnIndex) throws SQLException {

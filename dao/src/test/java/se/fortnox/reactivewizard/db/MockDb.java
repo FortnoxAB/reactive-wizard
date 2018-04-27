@@ -2,7 +2,6 @@ package se.fortnox.reactivewizard.db;
 
 import org.mockito.stubbing.OngoingStubbing;
 import org.mockito.stubbing.Stubber;
-import se.fortnox.reactivewizard.dates.Dates;
 import se.fortnox.reactivewizard.db.config.DatabaseConfig;
 
 import java.sql.Connection;
@@ -14,6 +13,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
 import java.util.Calendar;
+import java.util.TimeZone;
 
 import static org.fest.assertions.Assertions.assertThat;
 import static org.mockito.Matchers.any;
@@ -132,12 +132,18 @@ public class MockDb {
 
     }
 
+    private Calendar getCalendar() {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTimeZone(TimeZone.getTimeZone("Europe/Stockholm"));
+        return calendar;
+    }
+
     public void verifyUpdate(String query, Object... args) throws SQLException {
         for (int i = 0; i < args.length; i++) {
             if (args[i] == null) {
                 verify(ps).setNull(eq(i + 1), anyInt());
             } else if (args[i].getClass().equals(Timestamp.class)) {
-                Calendar cal = Dates.getCalendar();
+                Calendar cal = getCalendar();
                 cal.setTimeInMillis(((Timestamp)args[i]).getTime());
                 verify(ps).setTimestamp(eq(i + 1), eq((Timestamp)args[i]), eq(cal));
             } else {
@@ -157,7 +163,7 @@ public class MockDb {
             if (args[i] == null) {
                 verify(ps).setNull(eq(i + 1), anyInt());
             } else if (args[i].getClass().equals(Timestamp.class)) {
-                Calendar cal = Dates.getCalendar();
+                Calendar cal = getCalendar();
                 cal.setTimeInMillis(((Timestamp)args[i]).getTime());
                 verify(ps).setTimestamp(eq(i + 1), eq((Timestamp)args[i]), eq(cal));
             } else {

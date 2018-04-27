@@ -2,12 +2,12 @@ package se.fortnox.reactivewizard.db.query;
 
 import java.sql.Array;
 import java.sql.Connection;
-import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Calendar;
+import java.sql.Date;
 import java.util.List;
 
 public class PreparedStatementParameters {

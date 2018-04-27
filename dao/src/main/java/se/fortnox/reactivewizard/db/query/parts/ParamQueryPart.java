@@ -1,6 +1,5 @@
 package se.fortnox.reactivewizard.db.query.parts;
 
-import se.fortnox.reactivewizard.dates.Dates;
 import se.fortnox.reactivewizard.db.query.PreparedStatementParameters;
 import se.fortnox.reactivewizard.json.JsonSerializerFactory;
 import se.fortnox.reactivewizard.util.ReflectionUtil;
@@ -68,16 +67,7 @@ public class ParamQueryPart implements DynamicQueryPart {
 
     protected PreparedStatementParamSetter createParamSetter(Type type) throws SQLException {
         Class<?> rawType = ReflectionUtil.getRawType(type);
-        if (java.util.Date.class.isAssignableFrom(rawType)) {
-            return (parameters, value) -> {
-                Calendar           calendar  = Dates.getCalendar();
-                java.util.Date     date      = (java.util.Date)value;
-                java.sql.Timestamp timestamp = new java.sql.Timestamp(date.getTime());
-                calendar.setTime(date);
-
-                parameters.addTimestamp(timestamp, calendar);
-            };
-        } else if (LocalDate.class.isAssignableFrom(rawType)) {
+        if (LocalDate.class.isAssignableFrom(rawType)) {
             return (parameters, value) -> {
                 java.sql.Date sqlDate = java.sql.Date.valueOf((LocalDate)value);
                 parameters.addDate(sqlDate);
