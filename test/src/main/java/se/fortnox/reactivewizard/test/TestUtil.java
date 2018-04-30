@@ -25,7 +25,7 @@ public final class TestUtil {
      * Example:
      * <p>
      * <pre>
-     * verify(assignmentDAO).createAssignment(matches((ass -&gt; {
+     * verify(assignmentDao).createAssignment(matches((ass -&gt; {
      *  assertThat(ass.getTitle()).isEqualTo(&quot;Ass 1&quot;);
      *  assertThat(ass.getClientId()).isEqualTo(&quot;501780&quot;);
      * })));

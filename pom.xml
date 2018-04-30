@@ -50,6 +50,7 @@
     </distributionManagement>
 
     <modules>
+        <module>api</module>
         <module>test</module>
         <module>utils</module>
         <module>json</module>
@@ -60,6 +61,7 @@
         <module>binding</module>
         <module>bootstrap</module>
         <module>server</module>
+        <module>dao</module>
         <module>examples</module>
         <module>metrics</module>
     </modules>
@@ -73,6 +75,7 @@
         <jackson.version>2.8.8</jackson.version>
         <slf4j.version>1.7.22</slf4j.version>
         <guice.version>4.1.0</guice.version>
+        <guava.version>23.0</guava.version>
 
         <junit.version>4.12</junit.version>
         <fest.version>1.4</fest.version>
