@@ -4,7 +4,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 import javax.inject.Inject;
 import javax.inject.Named;
+import javax.inject.Singleton;
 
+@Singleton
 public class ConfigFactory {
     private JsonNode tree;
 
@@ -24,5 +26,4 @@ public class ConfigFactory {
     public <T> T get(Class<T> cls) {
         return ConfigReader.fromTree(tree, cls);
     }
-
 }
