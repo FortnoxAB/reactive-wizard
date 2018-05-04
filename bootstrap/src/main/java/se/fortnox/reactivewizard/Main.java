@@ -12,7 +12,7 @@ import se.fortnox.reactivewizard.logging.LoggingFactory;
 /**
  * Main application entry point. Will scan for all modules on the classpath and run them.
  * If you want to run code at startup, use a custom module.
- *
+ * <p>
  * Requires a config file as last parameter.
  */
 public class Main {
@@ -21,13 +21,13 @@ public class Main {
             System.out.println("Usage: java -jar app.jar config.yml");
             return;
         }
-        String configFile = args[args.length - 1];
+        String        configFile    = args[args.length - 1];
         ConfigFactory configFactory = new ConfigFactory(configFile);
         configFactory.get(LoggingFactory.class).init();
+
         Module bootstrap = new AbstractModule() {
             @Override
             protected void configure() {
-                bind(ConfigFactory.class).toInstance(configFactory);
                 bind(String[].class).annotatedWith(Names.named("args")).toInstance(args);
             }
         };

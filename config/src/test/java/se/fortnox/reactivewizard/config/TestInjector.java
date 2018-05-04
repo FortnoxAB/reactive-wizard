@@ -30,7 +30,7 @@ public class TestInjector {
     private static final class MockConfigAutoBindModule extends ConfigAutoBindModule {
 
         public MockConfigAutoBindModule() {
-            super(null, new String[]{""});
+            super(null, null);
         }
 
         @Override
