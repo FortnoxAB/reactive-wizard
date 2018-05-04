@@ -33,6 +33,7 @@ public class DbProxy implements InvocationHandler {
     private final Map<Method, ObservableStatementFactory> statementFactories = new ConcurrentHashMap<>();
     private final ConnectionProvider                      connectionProvider;
     private final Function<Object[], String>              paramSerializer;
+    private final DatabaseConfig                          databaseConfig;
 
     @Inject
     public DbProxy(DatabaseConfig databaseConfig,
@@ -40,10 +41,15 @@ public class DbProxy implements InvocationHandler {
         DbStatementFactoryFactory dbStatementFactoryFactory,
         JsonSerializerFactory jsonSerializerFactory
     ) {
-        this(threadPool(databaseConfig.getPoolSize()), connectionProvider, dbStatementFactoryFactory, jsonSerializerFactory);
+        this(databaseConfig,
+            threadPool(databaseConfig.getPoolSize()),
+            connectionProvider,
+            dbStatementFactoryFactory,
+            jsonSerializerFactory);
     }
 
-    public DbProxy(Scheduler scheduler,
+    public DbProxy(DatabaseConfig databaseConfig,
+        Scheduler scheduler,
         ConnectionProvider connectionProvider,
         DbStatementFactoryFactory dbStatementFactoryFactory,
         JsonSerializerFactory jsonSerializerFactory
@@ -53,10 +59,15 @@ public class DbProxy implements InvocationHandler {
         this.dbStatementFactoryFactory = dbStatementFactoryFactory;
         this.paramSerializer = jsonSerializerFactory.createStringSerializer(new TypeReference<Object[]>() {
         });
+        this.databaseConfig = databaseConfig;
     }
 
-    public DbProxy(ConnectionProvider connectionProvider) {
-        this(Schedulers.io(), connectionProvider, new DbStatementFactoryFactory(), new JsonSerializerFactory());
+    public DbProxy(DatabaseConfig databaseConfig, ConnectionProvider connectionProvider) {
+        this(databaseConfig,
+            Schedulers.io(),
+            connectionProvider,
+            new DbStatementFactoryFactory(),
+            new JsonSerializerFactory());
     }
 
     private static Scheduler threadPool(int poolSize) {
@@ -88,7 +99,8 @@ public class DbProxy implements InvocationHandler {
                 pagingOutput,
                 scheduler,
                 paramSerializer,
-                createMetrics(method));
+                createMetrics(method),
+                databaseConfig);
             statementFactories.put(method, observableStatementFactory);
         }
         return observableStatementFactory.create(args);

@@ -1,5 +1,6 @@
 package se.fortnox.reactivewizard.db;
 
+import se.fortnox.reactivewizard.db.config.DatabaseConfig;
 import com.google.common.collect.Lists;
 import org.fest.assertions.Fail;
 import org.junit.Test;
@@ -21,7 +22,7 @@ import static org.mockito.Mockito.when;
 public class ParameterizedQueryTest {
 
     MockDb  db      = new MockDb();
-    DbProxy dbProxy = new DbProxy(db.getConnectionProvider());
+    DbProxy dbProxy = new DbProxy(new DatabaseConfig(), db.getConnectionProvider());
     TestDao dao     = dbProxy.create(TestDao.class);
 
     @Test

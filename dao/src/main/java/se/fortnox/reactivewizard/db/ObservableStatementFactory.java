@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Scheduler;
+import se.fortnox.reactivewizard.db.config.DatabaseConfig;
 import se.fortnox.reactivewizard.db.paging.PagingOutput;
 import se.fortnox.reactivewizard.db.statement.DbStatementFactory;
 import se.fortnox.reactivewizard.db.statement.Statement;
@@ -24,7 +25,6 @@ import static rx.Observable.error;
 
 public class ObservableStatementFactory {
 
-    public static final  int    QUERY_LOG_THRESHOLD_MS = 5000;
     public static final  int    RECORD_BUFFER_SIZE     = 100000;
     private static final Logger LOG                    = LoggerFactory.getLogger("Dao");
     private final ConnectionProvider         connectionProvider;
@@ -33,13 +33,15 @@ public class ObservableStatementFactory {
     private final Scheduler                  scheduler;
     private final Metrics                    metrics;
     private final Function<Object[], String> paramSerializer;
+    private final DatabaseConfig             config;
 
     public ObservableStatementFactory(@Nullable ConnectionProvider connectionProvider,
         DbStatementFactory statementFactory,
         PagingOutput pagingOutput,
         Scheduler scheduler,
         Function<Object[], String> paramSerializer,
-        Metrics metrics
+        Metrics metrics,
+        DatabaseConfig config
     ) {
         this.connectionProvider = connectionProvider;
         this.statementFactory = statementFactory;
@@ -47,6 +49,7 @@ public class ObservableStatementFactory {
         this.scheduler = scheduler;
         this.metrics = metrics;
         this.paramSerializer = paramSerializer;
+        this.config = config;
     }
 
     private static void closeSilently(Connection connection) {
@@ -91,7 +94,7 @@ public class ObservableStatementFactory {
     }
 
     private void logSlowQuery(long time, Object[] args) {
-        if (time > QUERY_LOG_THRESHOLD_MS) {
+        if (time > config.getSlowQueryLogThreshold()) {
             LOG.warn(format("Slow query: %s\nargs: %s\ntime: %d", statementFactory, paramSerializer.apply(args), time));
         }
     }

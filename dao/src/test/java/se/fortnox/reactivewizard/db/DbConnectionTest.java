@@ -1,5 +1,6 @@
 package se.fortnox.reactivewizard.db;
 
+import se.fortnox.reactivewizard.db.config.DatabaseConfig;
 import org.junit.Test;
 import rx.Observable;
 
@@ -14,7 +15,7 @@ public class DbConnectionTest {
         MockDb mockDb = new MockDb();
         mockDb.addRowColumn(1, 1, "testdata", String.class, "value");
 
-        DbProxy dbProxy = new DbProxy(mockDb.getConnectionProvider());
+	    DbProxy dbProxy = new DbProxy(new DatabaseConfig(), mockDb.getConnectionProvider());
         TestDao daoMock = dbProxy.create(TestDao.class);
         daoMock.list().map(s -> daoMock.list()).toBlocking().single();
 

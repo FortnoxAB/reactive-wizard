@@ -4,6 +4,7 @@ import org.junit.Test;
 import rx.Observable;
 import se.fortnox.reactivewizard.CollectionOptions;
 import se.fortnox.reactivewizard.CollectionOptions.SortOrder;
+import se.fortnox.reactivewizard.db.config.DatabaseConfig;
 import se.fortnox.reactivewizard.db.paging.CollectionOptionsWithResult;
 
 import java.sql.SQLException;
@@ -18,7 +19,7 @@ import static org.mockito.Mockito.verify;
  */
 public class CollectionOptionsTest {
     MockDb               mockDb               = new MockDb();
-    DbProxy              proxy                = new DbProxy(mockDb.getConnectionProvider());
+    DbProxy              proxy                = new DbProxy(new DatabaseConfig(), mockDb.getConnectionProvider());
     CollectionOptionsDao collectionOptionsDao = proxy.create(CollectionOptionsDao.class);
 
     @Test
@@ -148,6 +149,13 @@ public class CollectionOptionsTest {
         mockDb.verifySelect("select * from table order by name ASC, id LIMIT 101");
     }
 
+    @Test
+    public void shouldInjectSortBeforeQueriesLastOrderBy() throws SQLException {
+        CollectionOptions collectionOptions = new CollectionOptions("name", CollectionOptions.SortOrder.ASC);
+        collectionOptionsDao.selectWithMultipleOrderBy(collectionOptions).toBlocking().singleOrDefault(null);
+        mockDb.verifySelect("select name, lastname from customers where name in (select first_name from persons order by first_name) order by name ASC, lastname LIMIT 101");
+    }
+
     interface CollectionOptionsDao {
         @Query("select * from table")
         Observable<String> selectWithPaging(CollectionOptions collectionOptions);
@@ -169,5 +177,8 @@ public class CollectionOptionsTest {
 
         @Query(value = "select * from table", defaultLimit = 10)
         Observable<String> selectWithDefaultLimit10(CollectionOptions collectionOptions);
+
+        @Query(value= "select name, lastname from customers where name in (select first_name from persons order by first_name) order by lastname", allowedSortColumns = {"name"})
+        Observable<String> selectWithMultipleOrderBy(CollectionOptions collectionOptions);
     }
 }

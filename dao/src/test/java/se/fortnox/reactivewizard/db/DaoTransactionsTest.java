@@ -5,6 +5,7 @@ import org.junit.Test;
 import org.mockito.InOrder;
 import rx.Observable;
 import rx.Observer;
+import se.fortnox.reactivewizard.db.config.DatabaseConfig;
 import se.fortnox.reactivewizard.db.statement.MinimumAffectedRowsException;
 import se.fortnox.reactivewizard.db.transactions.DaoObservable;
 import se.fortnox.reactivewizard.db.transactions.DaoTransactions;
@@ -35,7 +36,7 @@ import static se.fortnox.reactivewizard.test.TestUtil.assertException;
 public class DaoTransactionsTest {
     MockDb             db                 = new MockDb();
     ConnectionProvider connectionProvider = db.getConnectionProvider();
-    DbProxy            dbProxy            = new DbProxy(connectionProvider);
+    DbProxy            dbProxy            = new DbProxy(new DatabaseConfig(), connectionProvider);
     TestDao            dao                = dbProxy.create(TestDao.class);
     DaoTransactions    daoTransactions    = new DaoTransactionsImpl();
 
