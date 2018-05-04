@@ -14,7 +14,7 @@ public class DatabaseConfig {
     private long   idleTimeout           = 600000;
     private long   maxLifetime           = 1800000;
     private int    minimumIdle           = 1;
-	private long   slowQueryLogThreshold = 5000;
+    private long   slowQueryLogThreshold = 5000;
 
     public String getSchema() {
         return schema;
