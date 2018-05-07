@@ -6,21 +6,23 @@ import org.junit.Test;
 import org.slf4j.MDC;
 import rx.Observable;
 import se.fortnox.reactivewizard.db.config.DatabaseConfig;
+import se.fortnox.reactivewizard.db.transactions.DaoTransactionsImpl;
 import se.fortnox.reactivewizard.metrics.Metrics;
 
 import java.sql.SQLException;
 import java.util.SortedMap;
 
 import static org.fest.assertions.Assertions.assertThat;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static se.fortnox.reactivewizard.LoggingMockUtil.createMockedLogAppender;
 import static se.fortnox.reactivewizard.test.TestUtil.matches;
 
 public class LoggingTest {
-    private       MockDb     mockDb     = new MockDb();
-    private final DbProxy    dbProxy    = new DbProxy(new DatabaseConfig(), mockDb.getConnectionProvider());
-    private final LoggingDao loggingDao = dbProxy.create(LoggingDao.class);
+    private final MockDb              mockDb          = new MockDb();
+    private final DaoTransactionsImpl daoTransactions = new DaoTransactionsImpl();
+    private final DatabaseConfig      databaseConfig  = new DatabaseConfig();
+    private final DbProxy             dbProxy         = new DbProxy(databaseConfig, mockDb.getConnectionProvider());
+    private final LoggingDao          loggingDao      = dbProxy.create(LoggingDao.class);
 
     @Test
     public void shouldGenerateMetrics() {
@@ -45,11 +47,13 @@ public class LoggingTest {
     }
 
     @Test
-    public void shouldLogSlowQueries() throws SQLException, InterruptedException, NoSuchFieldException, IllegalAccessException {
+    public void shouldLogSlowQueries() throws SQLException, NoSuchFieldException, IllegalAccessException {
+        databaseConfig.setSlowQueryLogThreshold(1);
+
         // Given
         Appender mockAppender = createMockedLogAppender(ObservableStatementFactory.class);
         when(mockDb.getPreparedStatement().executeQuery()).thenAnswer(i -> {
-            Thread.sleep(5100);
+            Thread.sleep(2);
             return mockDb.getResultSet();
         });
 
@@ -57,15 +61,70 @@ public class LoggingTest {
         loggingDao.doSomething("hej").toBlocking().singleOrDefault(null);
 
         // Then
-        verify(mockAppender).doAppend(matches(log -> {
+        verify(mockAppender).doAppend(matches(log ->
             assertThat(log.getMessage().toString()).matches("Slow query: select \\* from table where name=:name\n" +
                 "args: \\[\"hej\"\\]\n" +
-                "time: \\d+");
-        }));
+                "time: \\d+")
+        ));
+        verifyNoMoreInteractions(mockAppender);
+    }
+
+    @Test
+    public void shouldLogSlowQueriesWhenNotTransaction() throws SQLException, NoSuchFieldException, IllegalAccessException {
+        databaseConfig.setSlowQueryLogThreshold(1);
+
+        // Given
+        Appender mockAppender = createMockedLogAppender(ObservableStatementFactory.class);
+        when(mockDb.getPreparedStatement().executeUpdate()).thenAnswer(i -> {
+            Thread.sleep(2);
+            return 1;
+        });
+
+        // When
+        loggingDao.doSomeUpdate("hej").toBlocking().singleOrDefault(null);
+
+        // Then
+        verify(mockAppender).doAppend(matches(log ->
+            assertThat(log.getMessage().toString()).matches("Slow query: update table set name=:name\n" +
+                "args: \\[\"hej\"\\]\n" +
+                "time: \\d+")
+        ));
+        verifyNoMoreInteractions(mockAppender);
+    }
+
+    @Test
+    public void shouldNotLogSlowQueriesForTransactions() throws SQLException, NoSuchFieldException, IllegalAccessException {
+        databaseConfig.setSlowQueryLogThreshold(1);
+
+        // Given
+        Appender mockAppender = createMockedLogAppender(ObservableStatementFactory.class);
+        when(mockDb.getPreparedStatement().executeUpdate()).thenAnswer(i -> {
+            Thread.sleep(2);
+            return 1;
+        });
+
+        // When
+        Observable<Integer> insert = loggingDao.doSomeInsert("hej");
+        Observable<Integer> update = loggingDao.doSomeUpdate("hej");
+        Observable<Integer> delete = loggingDao.doSomeDelete("hej");
+        daoTransactions.createTransaction(insert, update, delete);
+        insert.subscribe();
+
+        // Then
+        verifyNoMoreInteractions(mockAppender);
     }
 
     public interface LoggingDao {
         @Query("select * from table where name=:name")
         Observable<Integer> doSomething(String name);
+
+        @Update("insert into table values(:name)")
+        Observable<Integer> doSomeInsert(String name);
+
+        @Update("update table set name=:name")
+        Observable<Integer> doSomeUpdate(String name);
+
+        @Update("delete from table where name=:name")
+        Observable<Integer> doSomeDelete(String name);
     }
 }
