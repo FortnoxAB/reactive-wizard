@@ -27,6 +27,7 @@ public class ResponseDecorator {
     protected static <T> Observable<T> apply(Observable<T> output, JaxRsResult<T> result) {
         if (output instanceof ObservableWithHeaders) {
             Map<String,String> headers = ((ObservableWithHeaders) output).getHeaders();
+            headers.forEach(result::addHeader);
             return output.doOnEach(new SetHeadersOnEmit(headers, result));
         }
         return output;
