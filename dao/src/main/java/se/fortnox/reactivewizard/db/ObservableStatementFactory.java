@@ -25,7 +25,7 @@ import static rx.Observable.error;
 
 public class ObservableStatementFactory {
 
-    public static final  int    RECORD_BUFFER_SIZE     = 100000;
+    private static final  int    RECORD_BUFFER_SIZE     = 100000;
     private static final Logger LOG                    = LoggerFactory.getLogger("Dao");
     private final ConnectionProvider         connectionProvider;
     private final DbStatementFactory         statementFactory;
@@ -86,15 +86,15 @@ public class ObservableStatementFactory {
 
         result = pagingOutput.apply(result, args);
         result = result.onBackpressureBuffer(RECORD_BUFFER_SIZE);
-        result = metrics.measure(result, time -> logSlowQuery(time, args));
+        result = metrics.measure(result, time -> logSlowQuery(transactionHolder.get(), time, args));
         result = LoggingContext.transfer(result);
         result = result.subscribeOn(scheduler);
 
         return new DaoObservable<>(result, transactionHolder);
     }
 
-    private void logSlowQuery(long time, Object[] args) {
-        if (time > config.getSlowQueryLogThreshold()) {
+    private void logSlowQuery(TransactionStatement transactionStatement, long time, Object[] args) {
+        if (transactionStatement == null && time > config.getSlowQueryLogThreshold()) {
             LOG.warn(format("Slow query: %s\nargs: %s\ntime: %d", statementFactory, paramSerializer.apply(args), time));
         }
     }
