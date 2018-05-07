@@ -5,6 +5,7 @@ import org.apache.log4j.Appender;
 import org.junit.Test;
 import org.slf4j.MDC;
 import rx.Observable;
+import se.fortnox.reactivewizard.db.config.DatabaseConfig;
 import se.fortnox.reactivewizard.metrics.Metrics;
 
 import java.sql.SQLException;
@@ -18,7 +19,7 @@ import static se.fortnox.reactivewizard.test.TestUtil.matches;
 
 public class LoggingTest {
     private       MockDb     mockDb     = new MockDb();
-    private final DbProxy    dbProxy    = new DbProxy(mockDb.getConnectionProvider());
+    private final DbProxy    dbProxy    = new DbProxy(new DatabaseConfig(), mockDb.getConnectionProvider());
     private final LoggingDao loggingDao = dbProxy.create(LoggingDao.class);
 
     @Test

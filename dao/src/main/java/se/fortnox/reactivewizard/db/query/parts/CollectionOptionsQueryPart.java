@@ -81,7 +81,7 @@ public class CollectionOptionsQueryPart implements QueryPart {
 
     private void addOrderBy(StringBuilder sql, String orderBy) {
         StringBuilder orderByClause = new StringBuilder(orderBy);
-        int           pos           = sql.toString().toUpperCase().indexOf(ORDER_BY);
+        int           pos           = sql.toString().toUpperCase().lastIndexOf(ORDER_BY);
         if (pos != -1) {
             pos += ORDER_BY.length();
             orderByClause.append(", ");

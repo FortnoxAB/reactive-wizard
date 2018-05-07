@@ -9,11 +9,12 @@ public class DatabaseConfig {
     private String user;
     private String password;
     private String schema;
-    private int    maximumPoolSize   = 10;
-    private long   connectionTimeout = 30000;
-    private long   idleTimeout       = 600000;
-    private long   maxLifetime       = 1800000;
-    private int    minimumIdle       = 1;
+    private int    maximumPoolSize       = 10;
+    private long   connectionTimeout     = 30000;
+    private long   idleTimeout           = 600000;
+    private long   maxLifetime           = 1800000;
+    private int    minimumIdle           = 1;
+    private long   slowQueryLogThreshold = 5000;
 
     public String getSchema() {
         return schema;
@@ -87,4 +88,11 @@ public class DatabaseConfig {
         this.minimumIdle = minimumIdle;
     }
 
+    public long getSlowQueryLogThreshold() {
+        return slowQueryLogThreshold;
+    }
+
+    public void setSlowQueryLogThreshold(long slowQueryLogThreshold) {
+        this.slowQueryLogThreshold = slowQueryLogThreshold;
+    }
 }
