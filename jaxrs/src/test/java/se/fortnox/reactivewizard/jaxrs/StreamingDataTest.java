@@ -63,19 +63,23 @@ public class StreamingDataTest {
     @Test
     public void shouldSendStreamingResultWithHeaders() {
         HttpServer<ByteBuf, ByteBuf> server   = testServer(streamingResource).getServer();
-        HttpClient<ByteBuf, ByteBuf> client   = HttpClient.newClient("localhost", server.getServerPort());
-        HttpClientResponse<ByteBuf>  response = client.createGet("/stream/withHeaders").toBlocking().single();
+        try {
+            HttpClient<ByteBuf, ByteBuf> client = HttpClient.newClient("localhost", server.getServerPort());
+            HttpClientResponse<ByteBuf> response = client.createGet("/stream/withHeaders").toBlocking().single();
 
-        List<String> strings = response.getContent().map(byteBuf -> byteBuf.toString(Charset.defaultCharset()))
-                .toList()
-                .toBlocking()
-                .single();
+            List<String> strings = response.getContent().map(byteBuf -> byteBuf.toString(Charset.defaultCharset()))
+                    .toList()
+                    .toBlocking()
+                    .single();
 
-        assertThat(strings).hasSize(2);
-        assertThat(strings.get(0)).isEqualTo("a");
-        assertThat(strings.get(1)).isEqualTo("b");
-        assertThat(response.getHeader("Content-Type")).isEqualTo(MediaType.TEXT_PLAIN);
-        assertThat(response.getHeader("my-header")).isEqualTo("my-value");
+            assertThat(strings).hasSize(2);
+            assertThat(strings.get(0)).isEqualTo("a");
+            assertThat(strings.get(1)).isEqualTo("b");
+            assertThat(response.getHeader("Content-Type")).isEqualTo(MediaType.TEXT_PLAIN);
+            assertThat(response.getHeader("my-header")).isEqualTo("my-value");
+        } finally {
+            server.shutdown();
+        }
     }
 
     /**
