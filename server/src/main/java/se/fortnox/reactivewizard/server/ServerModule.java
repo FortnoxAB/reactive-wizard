@@ -8,6 +8,7 @@ import io.netty.buffer.ByteBuf;
 import io.reactivex.netty.protocol.http.server.RequestHandler;
 import se.fortnox.reactivewizard.binding.AutoBindModule;
 import se.fortnox.reactivewizard.binding.scanners.InjectAnnotatedScanner;
+import se.fortnox.reactivewizard.jaxrs.JaxRsMeta;
 import se.fortnox.reactivewizard.jaxrs.JaxRsRequestHandler;
 import se.fortnox.reactivewizard.jaxrs.JaxRsResourcesProvider;
 import se.fortnox.reactivewizard.jaxrs.params.ParamResolver;
@@ -55,7 +56,7 @@ public class ServerModule implements AutoBindModule {
 
 
         for (Class<?> cls : injectAnnotatedScanner.getClasses()) {
-            Optional<Class<?>> jaxRsClass = jaxRsResourceRegistry.getJaxRsClass(cls);
+            Optional<Class<?>> jaxRsClass = JaxRsMeta.getJaxRsClass(cls);
             if (jaxRsClass.isPresent()) {
                 jaxRsResourceRegistry.add(binder.getProvider(jaxRsClass.get()));
             }

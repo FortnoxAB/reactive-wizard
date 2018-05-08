@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 import java.io.IOException;
@@ -68,7 +69,7 @@ public class ConfigReader {
 
         T cfg;
         try {
-            if (obj == null) {
+            if (obj == null || obj == NullNode.getInstance()) {
                 cfg = cls.newInstance();
             } else {
                 ObjectReader reader = mapper.reader(cls);
