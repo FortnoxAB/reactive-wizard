@@ -16,29 +16,29 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 @SuppressWarnings("serial")
 public class ValidationFailedException extends WebException {
 
-	private Set<ConstraintViolation<Object>> result;
+    private Set<ConstraintViolation<Object>> result;
 
-	public ValidationFailedException(Set<ConstraintViolation<Object>> result) {
-		super(HttpResponseStatus.BAD_REQUEST, ValidationFieldError.from(result));
+    public ValidationFailedException(Set<ConstraintViolation<Object>> result) {
+        super(HttpResponseStatus.BAD_REQUEST, ValidationFieldError.from(result));
 
-		this.result = result;
-	}
+        this.result = result;
+    }
 
-	private List<Map<String, String>> getUserError() {
-		List<Map<String, String>> outp = new LinkedList<>();
-		for (ConstraintViolation<Object> v : result) {
-			Map<String, String> err = new HashMap<String, String>();
-			err.put(v.getPropertyPath().toString(), v.getMessage());
-			outp.add(err);
-		}
-		return outp;
-	}
+    private List<Map<String, String>> getUserError() {
+        List<Map<String, String>> outp = new LinkedList<>();
+        for (ConstraintViolation<Object> v : result) {
+            Map<String, String> err = new HashMap<String, String>();
+            err.put(v.getPropertyPath().toString(), v.getMessage());
+            outp.add(err);
+        }
+        return outp;
+    }
 
-	@Override
-	public String toString() {
-		if (result != null) {
-			return getUserError().toString();
-		}
-		return super.toString();
-	}
+    @Override
+    public String toString() {
+        if (result != null) {
+            return getUserError().toString();
+        }
+        return super.toString();
+    }
 }

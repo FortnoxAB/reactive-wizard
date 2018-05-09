@@ -1,1 +1,4 @@
 myconfig:
+
+server:
+  enabled: false

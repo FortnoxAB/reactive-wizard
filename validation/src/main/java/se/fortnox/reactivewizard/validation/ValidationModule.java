@@ -24,7 +24,7 @@ public class ValidationModule implements AutoBindModule {
 
     @Override
     public void configure(Binder binder) {
-        binder.bind(Validator.class).toProvider(()->{
+        binder.bind(Validator.class).toProvider(() -> {
             return Validation
                     .byDefaultProvider()
                     .configure()
@@ -39,7 +39,7 @@ public class ValidationModule implements AutoBindModule {
 
         // Validate all resources
         Provider<ValidatorUtil> validatorUtilProvider = binder.getProvider(ValidatorUtil.class);
-        injectAnnotatedScanner.getClasses().forEach(cls->{
+        injectAnnotatedScanner.getClasses().forEach(cls -> {
             Optional<Class<?>> jaxRsClass = JaxRsMeta.getJaxRsClass(cls);
             if (jaxRsClass.isPresent() && jaxRsClass.get().isInterface()) {
                 bindValidationProxy(binder, validatorUtilProvider, (Class)cls, jaxRsClass.get());

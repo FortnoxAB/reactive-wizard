@@ -27,6 +27,6 @@ public class ConfigAutoBindModule implements AutoBindModule {
     }
 
     private <T> Provider<T> configProvider(Class<T> configCls, Provider<ConfigFactory> configFactoryProvider) {
-        return ()->configFactoryProvider.get().get(configCls);
+        return () -> configFactoryProvider.get().get(configCls);
     }
 }
