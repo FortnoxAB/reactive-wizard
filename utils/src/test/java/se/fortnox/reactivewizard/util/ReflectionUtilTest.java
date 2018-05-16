@@ -62,6 +62,11 @@ public class ReflectionUtilTest {
         assertThat(ReflectionUtil.newInstance(PrivateDefaultConstructor.class)).isNotNull();
     }
 
+    @Test
+    public void shouldCreateInstantiator() {
+        assertThat(ReflectionUtil.instantiator(Parent.class).get()).isInstanceOf(Parent.class);
+    }
+
 
     @Test
     public void shouldThrowHelpfulExceptionWhenNoZeroParametersConstructorExists()  {

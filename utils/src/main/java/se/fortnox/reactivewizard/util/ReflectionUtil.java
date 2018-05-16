@@ -6,20 +6,14 @@ import se.fortnox.reactivewizard.util.rx.PropertyResolver;
 
 import javax.inject.Provider;
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Proxy;
-import java.lang.reflect.Type;
+import java.lang.invoke.*;
+import java.lang.reflect.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static java.util.Arrays.asList;
@@ -293,18 +287,7 @@ public class ReflectionUtil {
     }
 
     public static <T> T newInstance(Class<T> cls) {
-        try {
-            Constructor<?> constructor = Stream.of(cls.getDeclaredConstructors())
-                .filter(c -> c.getParameterCount() == 0)
-                .findFirst()
-                .orElseThrow(NoSuchMethodException::new);
-            constructor.setAccessible(true);
-            return cls.cast(constructor.newInstance());
-        } catch (NoSuchMethodException e) {
-            throw new RuntimeException("No constructor with zero parameters found on " + cls.getSimpleName(), e);
-        } catch (IllegalAccessException | InstantiationException | InvocationTargetException e) {
-            throw new RuntimeException(e);
-        }
+        return instantiator(cls).get();
     }
 
     /**
@@ -347,6 +330,50 @@ public class ReflectionUtil {
                 return getMethod(cls.getSuperclass(), propertyName);
             }
             return null;
+        }
+    }
+
+    public static <T> Supplier<T> instantiator(Class<T> cls) {
+        try {
+            Constructor<?> constructor = Stream.of(cls.getDeclaredConstructors())
+                    .filter(c -> c.getParameterCount() == 0)
+                    .findFirst()
+                    .orElseThrow(NoSuchMethodException::new);
+            MethodHandles.Lookup lookup = lookupFor(cls, constructor);
+            constructor.setAccessible(true);
+            MethodHandle methodHandle = lookup.unreflectConstructor(constructor);
+            CallSite callSite = LambdaMetafactory.metafactory(
+                    lookup,
+                    "get",
+                    MethodType.methodType(Supplier.class),
+                    MethodType.methodType(Object.class),
+                    methodHandle,
+                    methodHandle.type()
+            );
+            return (Supplier<T>)callSite.getTarget().invoke();
+        } catch (NoSuchMethodException e) {
+            throw new RuntimeException("No constructor with zero parameters found on " + cls.getSimpleName(), e);
+        } catch (IllegalAccessException | InstantiationException | InvocationTargetException e) {
+            throw new RuntimeException(e);
+        } catch (Throwable throwable) {
+            throw new RuntimeException(throwable);
+        }
+    }
+
+    private static <T> MethodHandles.Lookup lookupFor(Class<T> cls, AccessibleObject accessibleObject) {
+        try {
+            final MethodHandles.Lookup original = MethodHandles.lookup();
+            if (accessibleObject.isAccessible()) {
+                return original;
+            }
+            // Change the lookup to allow private access
+            final Field internal = MethodHandles.Lookup.class.getDeclaredField("IMPL_LOOKUP");
+            internal.setAccessible(true);
+            final MethodHandles.Lookup trusted = (MethodHandles.Lookup) internal.get(original);
+
+            return trusted.in(cls);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 }
