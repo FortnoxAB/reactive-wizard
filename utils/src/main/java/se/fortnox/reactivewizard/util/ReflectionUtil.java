@@ -13,6 +13,7 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -360,7 +361,7 @@ public class ReflectionUtil {
         }
     }
 
-    private static <T> MethodHandles.Lookup lookupFor(Class<T> cls, AccessibleObject accessibleObject) {
+    static <T> MethodHandles.Lookup lookupFor(Class<T> cls, AccessibleObject accessibleObject) {
         try {
             final MethodHandles.Lookup original = MethodHandles.lookup();
             if (accessibleObject.isAccessible()) {
@@ -375,5 +376,26 @@ public class ReflectionUtil {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    static <I,T> Function<I, T> lambdaForFunction(MethodHandles.Lookup lookup, MethodHandle methodHandle) throws Throwable {
+        CallSite callSite = LambdaMetafactory.metafactory(
+                lookup,
+                "apply",
+                MethodType.methodType(Function.class),
+                MethodType.methodType(Object.class, Object.class),
+                methodHandle,
+                methodHandle.type()
+        );
+        return (Function<I,T>) callSite.getTarget().invoke();
+    }
+
+
+    public static <I,T> Function<I,T> getter(Class<I> instanceCls, String propertyPath) {
+        Optional<PropertyResolver> propertyResolver = ReflectionUtil.getPropertyResolver(instanceCls, propertyPath.split("\\."));
+        if (!propertyResolver.isPresent()) {
+            throw new RuntimeException("Property path not found: "+propertyPath);
+        }
+        return propertyResolver.get().getter();
     }
 }

@@ -3,6 +3,7 @@ package se.fortnox.reactivewizard.util;
 import org.junit.Test;
 
 import java.util.List;
+import java.util.function.Function;
 
 import static org.fest.assertions.Assertions.assertThat;
 import static org.fest.assertions.Fail.fail;
@@ -67,6 +68,23 @@ public class ReflectionUtilTest {
         assertThat(ReflectionUtil.instantiator(Parent.class).get()).isInstanceOf(Parent.class);
     }
 
+    @Test
+    public void shouldCreateGetterLambda() {
+        Parent parent = new Parent();
+        parent.setI(3);
+
+        Function<Parent, Integer> getFromParent = ReflectionUtil.getter(Parent.class, "i");
+        assertThat(getFromParent.apply(parent)).isEqualTo(3);
+
+
+        Inner inner = new Inner();
+        inner.setI(5);
+        parent.setInner(inner);
+
+        Function<Parent, Integer> getFromInner = ReflectionUtil.getter(Parent.class, "inner.i");
+        assertThat(getFromInner.apply(parent)).isEqualTo(5);
+    }
+
 
     @Test
     public void shouldThrowHelpfulExceptionWhenNoZeroParametersConstructorExists()  {
@@ -92,6 +110,7 @@ public class ReflectionUtilTest {
         private int i;
         private int k;
         private int l;
+        private Inner inner;
 
         public int getI() {
             return i;
@@ -103,6 +122,26 @@ public class ReflectionUtilTest {
 
         protected int getK() {
             return k;
+        }
+
+        public Inner getInner() {
+            return inner;
+        }
+
+        public void setInner(Inner inner) {
+            this.inner = inner;
+        }
+    }
+
+    static class Inner {
+        private int i;
+
+        public int getI() {
+            return i;
+        }
+
+        public void setI(int i) {
+            this.i = i;
         }
     }
 

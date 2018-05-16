@@ -8,8 +8,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.Optional;
+import java.util.function.Function;
 
-public class PropertyResolver {
+public class PropertyResolver<I,T> {
     private final Type       genericType;
     private final Property[] properties;
     private final Class<?>   type;
@@ -43,15 +44,8 @@ public class PropertyResolver {
         return genericType;
     }
 
-    public Object getValue(Object value) {
-        try {
-            for (Property prop : properties) {
-                value = prop.getValue(value);
-            }
-            return value;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+    public T getValue(I value) {
+        return getter().apply(value);
     }
 
     public Optional<PropertyResolver> subPath(String[] subPath) {
@@ -99,12 +93,50 @@ public class PropertyResolver {
         return Arrays.toString(properties);
     }
 
-    private static class Property {
-        private final String   name;
-        private final Class<?> type;
-        private final Type     genericType;
-        private final Getter   getter;
-        private final Setter   setter;
+    public Function<I,T> getter() {
+        if (properties.length == 0) {
+            throw new IllegalArgumentException("No properties found");
+        }
+        if (properties.length == 1) {
+            return properties[0].getter();
+        }
+
+        try {
+
+            Function[] functionChain = new Function[properties.length];
+            for (int i = 0; i < properties.length; i++) {
+                functionChain[i] = properties[i].getter();
+            }
+            return new FunctionChain(functionChain);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static class FunctionChain<I,T> implements Function<I,T> {
+
+        private final Function[] functionChain;
+
+        public FunctionChain(Function[] functionChain) {
+            this.functionChain = functionChain;
+        }
+
+        @Override
+        public T apply(I instance) {
+            Object currentInstance = instance;
+            for (int i = 0; i < functionChain.length && currentInstance != null; i++) {
+                currentInstance = functionChain[i].apply(currentInstance);
+            }
+            return (T)currentInstance;
+        }
+    }
+
+    private static class Property<I,T> {
+        private final String      name;
+        private final Class<?>    type;
+        private final Type        genericType;
+        private final Getter<I,T> getter;
+        private final Setter<I,T> setter;
 
         Property(String name, Class<?> type, Type genericType, Getter getter, Setter setter) {
             this.name = name;
@@ -114,9 +146,9 @@ public class PropertyResolver {
             this.setter = setter;
         }
 
-        private static Property from(Class<?> cls, String prop) {
-            final Getter getter = ReflectionUtil.getGetter(cls, prop);
-            final Setter setter = ReflectionUtil.getSetter(cls, prop);
+        private static <I,T> Property<I,T> from(Class<I> cls, String prop) {
+            final Getter<I,T> getter = ReflectionUtil.getGetter(cls, prop);
+            final Setter<I,T> setter = ReflectionUtil.getSetter(cls, prop);
 
             if (getter != null) {
                 return new Property(prop, getter.getReturnType(), getter.getGenericReturnType(), getter, setter);
@@ -135,8 +167,8 @@ public class PropertyResolver {
             return genericType;
         }
 
-        Object getValue(Object instance) throws InvocationTargetException, IllegalAccessException {
-            return getter.invoke(instance);
+        T getValue(I instance) {
+            return getter().apply(instance);
         }
 
         boolean hasSetter() {
@@ -147,13 +179,17 @@ public class PropertyResolver {
             return name;
         }
 
-        void setValue(Object instance, Object value) throws InvocationTargetException, IllegalAccessException {
+        void setValue(I instance, T value) throws InvocationTargetException, IllegalAccessException {
             setter.invoke(instance, value);
         }
 
         @Override
         public String toString() {
             return name;
+        }
+
+        public Function<I,T> getter() {
+            return getter.getterFunction();
         }
     }
 }

@@ -1,31 +1,42 @@
 package se.fortnox.reactivewizard.util;
 
+import java.lang.invoke.*;
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
+import java.util.function.Function;
+
+import static se.fortnox.reactivewizard.util.ReflectionUtil.lambdaForFunction;
 
 /**
  * Represents a getter field.
  */
-public class FieldGetter implements Getter {
-    public static Getter create(Class<?> cls, Field field) {
+public class FieldGetter<I,T> implements Getter<I,T> {
+    private final Function<I,T> fieldLambda;
+
+    public static <I,T> Getter<I,T> create(Class<I> cls, Field field) {
         AccessorUtil.MemberTypeInfo memberTypeInfo = AccessorUtil.fieldTypeInfo(cls, field);
-        return new FieldGetter(field, memberTypeInfo.getReturnType(), memberTypeInfo.getGenericReturnType());
+        return new FieldGetter<>(field, memberTypeInfo.getReturnType(), memberTypeInfo.getGenericReturnType());
     }
 
-    private final Field    field;
     private final Class<?> returnType;
     private final Type     genericReturnType;
 
-    private FieldGetter(Field field, Class<?> returnType, Type genericReturnType) {
-        this.field = field;
+    private FieldGetter(Field field, Class<T> returnType, Type genericReturnType) {
         this.returnType = returnType;
         this.genericReturnType = genericReturnType;
         field.setAccessible(true);
+        this.fieldLambda = instance-> {
+            try {
+                return (T)field.get(instance);
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException(e);
+            }
+        };
     }
 
     @Override
-    public Object invoke(Object instance) throws IllegalAccessException {
-        return field.get(instance);
+    public T invoke(I instance) {
+        return fieldLambda.apply(instance);
     }
 
     @Override
@@ -36,5 +47,10 @@ public class FieldGetter implements Getter {
     @Override
     public Type getGenericReturnType() {
         return genericReturnType;
+    }
+
+    @Override
+    public Function<I,T> getterFunction() {
+        return fieldLambda;
     }
 }

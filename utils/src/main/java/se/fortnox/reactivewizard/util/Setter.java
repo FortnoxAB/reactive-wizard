@@ -6,8 +6,8 @@ import java.lang.reflect.Type;
 /**
  * Interface for a setter.
  */
-public interface Setter {
-    void invoke(Object instance, Object value) throws InvocationTargetException, IllegalAccessException;
+public interface Setter<I,T> {
+    void invoke(I instance, T value) throws InvocationTargetException, IllegalAccessException;
 
     Class<?> getParameterType();
 
