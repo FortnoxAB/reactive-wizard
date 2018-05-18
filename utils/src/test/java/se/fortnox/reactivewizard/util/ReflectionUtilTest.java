@@ -3,6 +3,7 @@ package se.fortnox.reactivewizard.util;
 import org.junit.Test;
 
 import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 import static org.fest.assertions.Assertions.assertThat;
@@ -83,6 +84,23 @@ public class ReflectionUtilTest {
 
         Function<Parent, Integer> getFromInner = ReflectionUtil.getter(Parent.class, "inner.i");
         assertThat(getFromInner.apply(parent)).isEqualTo(5);
+    }
+
+    @Test
+    public void shouldCreateSetterLambda() {
+        Parent parent = new Parent();
+
+        BiConsumer<Parent, Integer> setOnParent = ReflectionUtil.setter(Parent.class, "i");
+        setOnParent.accept(parent, 2);
+        assertThat(parent.getI()).isEqualTo(2);
+
+
+        Inner inner = new Inner();
+        parent.setInner(inner);
+
+        BiConsumer<Parent, Object> setOnInner = ReflectionUtil.setter(Parent.class, "inner.i");
+        setOnInner.accept(parent, 4);
+        assertThat(parent.getInner().getI()).isEqualTo(4);
     }
 
 

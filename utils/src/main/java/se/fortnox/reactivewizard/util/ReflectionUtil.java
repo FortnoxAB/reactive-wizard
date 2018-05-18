@@ -13,6 +13,7 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -254,6 +255,7 @@ public class ReflectionUtil {
                 return MethodSetter.create(original, first.get());
             }
         } catch (Exception ignored) {
+            ignored.printStackTrace();
         }
 
         try {
@@ -397,5 +399,14 @@ public class ReflectionUtil {
             throw new RuntimeException("Property path not found: "+propertyPath);
         }
         return propertyResolver.get().getter();
+    }
+
+    public static <I,T> BiConsumer<I,T> setter(Class<I> instanceCls, String propertyPath) {
+        Optional<PropertyResolver> propertyResolver = ReflectionUtil.getPropertyResolver(instanceCls, propertyPath.split("\\."));
+        if (!propertyResolver.isPresent()) {
+            throw new RuntimeException("Property path not found: "+propertyPath);
+        }
+        return propertyResolver.get().setter();
+
     }
 }

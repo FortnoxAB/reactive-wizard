@@ -2,21 +2,22 @@ package se.fortnox.reactivewizard.util;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
+import java.util.function.BiConsumer;
 
 /**
  * Represents a setter field.
  */
-public class FieldSetter implements Setter {
-    public static Setter create(Class<?> cls, Field field) {
+public class FieldSetter<I,T> implements Setter<I,T> {
+    public static <I,T> Setter<I,T> create(Class<I> cls, Field field) {
         AccessorUtil.MemberTypeInfo memberTypeInfo = AccessorUtil.fieldTypeInfo(cls, field);
-        return new FieldSetter(field, memberTypeInfo.getReturnType(), memberTypeInfo.getGenericReturnType());
+        return new FieldSetter<>(field, memberTypeInfo.getReturnType(), memberTypeInfo.getGenericReturnType());
     }
 
     private final Field    field;
     private final Class<?> parameterType;
     private final Type     genericParameterType;
 
-    private FieldSetter(Field field, Class<?> parameterType, Type genericParameterType) {
+    private FieldSetter(Field field, Class<T> parameterType, Type genericParameterType) {
         this.field = field;
         this.parameterType = parameterType;
         this.genericParameterType = genericParameterType;
@@ -24,7 +25,7 @@ public class FieldSetter implements Setter {
     }
 
     @Override
-    public void invoke(Object instance, Object value) throws IllegalAccessException {
+    public void invoke(I instance, T value) throws IllegalAccessException {
         field.set(instance, value);
     }
 
@@ -36,5 +37,16 @@ public class FieldSetter implements Setter {
     @Override
     public Type getGenericParameterType() {
         return genericParameterType;
+    }
+
+    @Override
+    public BiConsumer setterFunction() {
+        return (instance,value)-> {
+            try {
+                field.set(instance, value);
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException(e);
+            }
+        };
     }
 }
