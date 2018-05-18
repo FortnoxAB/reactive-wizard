@@ -1,11 +1,8 @@
 package se.fortnox.reactivewizard.util;
 
-import java.lang.invoke.*;
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
 import java.util.function.Function;
-
-import static se.fortnox.reactivewizard.util.ReflectionUtil.lambdaForFunction;
 
 /**
  * Represents a getter field.
@@ -25,7 +22,7 @@ public class FieldGetter<I,T> implements Getter<I,T> {
         this.returnType = returnType;
         this.genericReturnType = genericReturnType;
         field.setAccessible(true);
-        this.fieldLambda = instance-> {
+        this.fieldLambda = instance -> {
             try {
                 return (T)field.get(instance);
             } catch (IllegalAccessException e) {

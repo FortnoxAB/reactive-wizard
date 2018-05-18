@@ -6,8 +6,21 @@ import se.fortnox.reactivewizard.util.rx.PropertyResolver;
 
 import javax.inject.Provider;
 import java.lang.annotation.Annotation;
-import java.lang.invoke.*;
-import java.lang.reflect.*;
+import java.lang.invoke.CallSite;
+import java.lang.invoke.LambdaMetafactory;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
+import java.lang.reflect.AccessibleObject;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Proxy;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -70,6 +83,7 @@ public class ReflectionUtil {
      * @param property Property name to extract
      * @return Value of the property
      */
+    @Deprecated
     public static Object getValue(Object object, String property) {
         Class<? extends Object> cls = object.getClass();
         property = property.substring(0, 1).toUpperCase() + property.substring(1);
@@ -184,6 +198,7 @@ public class ReflectionUtil {
      * @param propertyName The property to locate a getter for.
      * @return a Getter instance for either a method or a field
      */
+    @Deprecated
     public static Getter getGetter(Class<?> cls, String propertyName) {
         return getGetter(cls, cls, propertyName);
     }
@@ -232,6 +247,7 @@ public class ReflectionUtil {
      * @param propertyName The property to locate a setter for.
      * @return a Setter instance for either a method or a field
      */
+    @Deprecated
     public static Setter getSetter(Class<?> cls, String propertyName) {
         return getSetter(cls, cls, propertyName);
     }
@@ -274,6 +290,7 @@ public class ReflectionUtil {
         return PropertyResolver.from(type, propertyNames);
     }
 
+    @Deprecated
     public static Method getSetterFromGetter(Method getter) {
         String name = getter.getName();
         String setterName;
@@ -289,8 +306,9 @@ public class ReflectionUtil {
         }
     }
 
+    @Deprecated
     public static <T> T newInstance(Class<T> cls) {
-        return instantiator(cls).get();
+        return instantiator(cls).get().get();
     }
 
     /**
@@ -336,7 +354,7 @@ public class ReflectionUtil {
         }
     }
 
-    public static <T> Supplier<T> instantiator(Class<T> cls) {
+    public static <T> Optional<Supplier<T>> instantiator(Class<T> cls) {
         try {
             Constructor<?> constructor = Stream.of(cls.getDeclaredConstructors())
                     .filter(c -> c.getParameterCount() == 0)
@@ -353,7 +371,7 @@ public class ReflectionUtil {
                     methodHandle,
                     methodHandle.type()
             );
-            return (Supplier<T>)callSite.getTarget().invoke();
+            return Optional.ofNullable((Supplier<T>)callSite.getTarget().invoke());
         } catch (NoSuchMethodException e) {
             throw new RuntimeException("No constructor with zero parameters found on " + cls.getSimpleName(), e);
         } catch (IllegalAccessException | InstantiationException | InvocationTargetException e) {
@@ -393,20 +411,14 @@ public class ReflectionUtil {
     }
 
 
-    public static <I,T> Function<I,T> getter(Class<I> instanceCls, String propertyPath) {
+    public static <I,T> Optional<Function<I,T>> getter(Class<I> instanceCls, String propertyPath) {
         Optional<PropertyResolver> propertyResolver = ReflectionUtil.getPropertyResolver(instanceCls, propertyPath.split("\\."));
-        if (!propertyResolver.isPresent()) {
-            throw new RuntimeException("Property path not found: "+propertyPath);
-        }
-        return propertyResolver.get().getter();
+        return propertyResolver.map(PropertyResolver::getter);
     }
 
-    public static <I,T> BiConsumer<I,T> setter(Class<I> instanceCls, String propertyPath) {
+    public static <I,T> Optional<BiConsumer<I,T>> setter(Class<I> instanceCls, String propertyPath) {
         Optional<PropertyResolver> propertyResolver = ReflectionUtil.getPropertyResolver(instanceCls, propertyPath.split("\\."));
-        if (!propertyResolver.isPresent()) {
-            throw new RuntimeException("Property path not found: "+propertyPath);
-        }
-        return propertyResolver.get().setter();
+        return propertyResolver.map(PropertyResolver::setter);
 
     }
 }

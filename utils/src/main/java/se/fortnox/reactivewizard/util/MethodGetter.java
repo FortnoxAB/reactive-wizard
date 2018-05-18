@@ -31,7 +31,7 @@ public class MethodGetter<I,T> implements Getter<I,T> {
         try {
             MethodHandle methodHandle = lookup.unreflect(method);
             getterLambda = lambdaForFunction(lookup, methodHandle);
-        } catch(Throwable t) {
+        } catch (Throwable t) {
             throw new RuntimeException(t);
         }
 

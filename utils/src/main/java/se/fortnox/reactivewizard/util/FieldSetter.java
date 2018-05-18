@@ -41,7 +41,7 @@ public class FieldSetter<I,T> implements Setter<I,T> {
 
     @Override
     public BiConsumer setterFunction() {
-        return (instance,value)-> {
+        return (instance,value) -> {
             try {
                 field.set(instance, value);
             } catch (IllegalAccessException e) {

@@ -1,13 +1,14 @@
 package se.fortnox.reactivewizard.util;
 
-import java.lang.invoke.*;
-import java.lang.reflect.InvocationTargetException;
+
+import java.lang.invoke.CallSite;
+import java.lang.invoke.LambdaMetafactory;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.function.BiConsumer;
-import java.util.function.Function;
-
-import static se.fortnox.reactivewizard.util.ReflectionUtil.lambdaForFunction;
 
 /**
  * Represents a setter method.
@@ -32,7 +33,7 @@ public class MethodSetter<I,T> implements Setter<I,T> {
         try {
             MethodHandle methodHandle = lookup.unreflect(method);
             setterLambda = compileLambda(lookup, methodHandle);
-        } catch(Throwable t) {
+        } catch (Throwable t) {
             throw new RuntimeException(t);
         }
 

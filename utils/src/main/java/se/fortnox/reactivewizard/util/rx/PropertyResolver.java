@@ -10,6 +10,7 @@ import java.util.Arrays;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 public class PropertyResolver<I,T> {
     private final Type       genericType;
@@ -45,6 +46,7 @@ public class PropertyResolver<I,T> {
         return genericType;
     }
 
+    @Deprecated
     public T getValue(I value) {
         return getter().apply(value);
     }
@@ -63,6 +65,7 @@ public class PropertyResolver<I,T> {
         return Optional.empty();
     }
 
+    @Deprecated
     public void setValue(Object object, Object value) {
         try {
             for (int i = 0; i < properties.length - 1; i++) {
@@ -96,7 +99,7 @@ public class PropertyResolver<I,T> {
 
     public Function<I,T> getter() {
         if (properties.length == 0) {
-            throw new IllegalArgumentException("No properties found");
+            return (Function<I, T>) Function.identity();
         }
         if (properties.length == 1) {
             return properties[0].getter();
@@ -124,11 +127,18 @@ public class PropertyResolver<I,T> {
 
         try {
 
-            Function[] getterChain = new Function[properties.length-1];
-            for (int i = 0; i < properties.length-1; i++) {
+            Function[] getterChain = new Function[properties.length - 1];
+            BiConsumer[] setterChain = new BiConsumer[properties.length - 1];
+            Supplier[] instantiators = new Supplier[properties.length - 1];
+            for (int i = 0; i < properties.length - 1; i++) {
                 getterChain[i] = properties[i].getter();
+                setterChain[i] = properties[i].setter();
+                Optional<Supplier> instantiator = ReflectionUtil.instantiator(properties[i].getType());
+                if (instantiator.isPresent()) {
+                    instantiators[i] = instantiator.get();
+                }
             }
-            return new SetterChain(getterChain, properties[properties.length-1].setter());
+            return new SetterChain(getterChain, setterChain, instantiators, properties[properties.length - 1].setter());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -155,10 +165,14 @@ public class PropertyResolver<I,T> {
     private static class SetterChain<I,T> implements BiConsumer<I,T> {
 
         private final Function[] getterChain;
+        private final BiConsumer[] setterChain;
+        private final Supplier[] instantiators;
         private final BiConsumer setter;
 
-        public SetterChain(Function[] getterChain, BiConsumer setter) {
+        public SetterChain(Function[] getterChain, BiConsumer[] setterChain, Supplier[] instantiators, BiConsumer setter) {
             this.getterChain = getterChain;
+            this.setterChain = setterChain;
+            this.instantiators = instantiators;
             this.setter = setter;
         }
 
@@ -166,7 +180,12 @@ public class PropertyResolver<I,T> {
         public void accept(I instance, T value) {
             Object currentInstance = instance;
             for (int i = 0; i < getterChain.length && currentInstance != null; i++) {
-                currentInstance = getterChain[i].apply(currentInstance);
+                Object next = getterChain[i].apply(currentInstance);
+                if (next == null) {
+                    next = instantiators[i].get();
+                    setterChain[i].accept(currentInstance, next);
+                }
+                currentInstance = next;
             }
             if (currentInstance == null) {
                 throw new IllegalArgumentException("Found null in setter chain");

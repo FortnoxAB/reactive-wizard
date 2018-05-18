@@ -66,7 +66,7 @@ public class ReflectionUtilTest {
 
     @Test
     public void shouldCreateInstantiator() {
-        assertThat(ReflectionUtil.instantiator(Parent.class).get()).isInstanceOf(Parent.class);
+        assertThat(ReflectionUtil.instantiator(Parent.class).get().get()).isInstanceOf(Parent.class);
     }
 
     @Test
@@ -74,7 +74,7 @@ public class ReflectionUtilTest {
         Parent parent = new Parent();
         parent.setI(3);
 
-        Function<Parent, Integer> getFromParent = ReflectionUtil.getter(Parent.class, "i");
+        Function<Parent, Integer> getFromParent = ReflectionUtil.<Parent,Integer>getter(Parent.class, "i").get();
         assertThat(getFromParent.apply(parent)).isEqualTo(3);
 
 
@@ -82,7 +82,7 @@ public class ReflectionUtilTest {
         inner.setI(5);
         parent.setInner(inner);
 
-        Function<Parent, Integer> getFromInner = ReflectionUtil.getter(Parent.class, "inner.i");
+        Function<Parent, Integer> getFromInner = ReflectionUtil.<Parent,Integer>getter(Parent.class, "inner.i").get();
         assertThat(getFromInner.apply(parent)).isEqualTo(5);
     }
 
@@ -90,7 +90,7 @@ public class ReflectionUtilTest {
     public void shouldCreateSetterLambda() {
         Parent parent = new Parent();
 
-        BiConsumer<Parent, Integer> setOnParent = ReflectionUtil.setter(Parent.class, "i");
+        BiConsumer<Parent, Integer> setOnParent = ReflectionUtil.<Parent,Integer>setter(Parent.class, "i").get();
         setOnParent.accept(parent, 2);
         assertThat(parent.getI()).isEqualTo(2);
 
@@ -98,9 +98,20 @@ public class ReflectionUtilTest {
         Inner inner = new Inner();
         parent.setInner(inner);
 
-        BiConsumer<Parent, Object> setOnInner = ReflectionUtil.setter(Parent.class, "inner.i");
+        BiConsumer<Parent, Integer> setOnInner = ReflectionUtil.<Parent,Integer>setter(Parent.class, "inner.i").get();
         setOnInner.accept(parent, 4);
         assertThat(parent.getInner().getI()).isEqualTo(4);
+    }
+
+    @Test
+    public void shouldSupportNullsOnSetterPath() {
+        Parent parent = new Parent();
+        BiConsumer<Parent, Integer> setter = ReflectionUtil.<Parent,Integer>setter(Parent.class, "inner.i").get();
+
+        setter.accept(parent, 7);
+
+        assertThat(parent.getInner().getI()).isEqualTo(7);
+
     }
 
 
