@@ -48,7 +48,7 @@ public class TestInjector {
     private static final class MockConfigAutoBindModule extends ConfigAutoBindModule {
 
         public MockConfigAutoBindModule() {
-            super(null, null);
+            super(null);
         }
 
         @Override
