@@ -4,13 +4,14 @@ import org.junit.Before;
 import org.junit.Test;
 import rx.Observable;
 
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static org.fest.assertions.Assertions.assertThat;
 import static rx.Observable.empty;
 
 public class FieldGetterTest extends AccessorTest {
-    private Getter value;
+    private Getter<GenericFieldSubclass, Integer> value;
     private Getter longObservable;
     private Getter genericSuperKey;
     private Getter genericSuperValue;
@@ -39,6 +40,13 @@ public class FieldGetterTest extends AccessorTest {
         assertThat(genericSuperValue.invoke(new GenericFieldSubclass(5))).isEqualTo(5);
         assertThat(superKey.invoke(new FieldSubclass(5))).isEqualTo("5");
         assertThat(superValue.invoke(new FieldSubclass(5))).isEqualTo(5);
+    }
+
+    @Test
+    public void shouldSupportLambdaGetter() {
+        Function<GenericFieldSubclass, Integer> getter = value.getterFunction();
+        assertThat(getter.apply(new GenericFieldSubclass(5))).isEqualTo(5);
+
     }
 
     @Test
