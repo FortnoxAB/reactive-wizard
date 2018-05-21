@@ -75,9 +75,6 @@ public class ConfigReader {
                 ObjectReader reader = mapper.reader(cls);
                 cfg = reader.readValue(obj);
             }
-
-            // TODO Disabled until we migrate the validation module
-            // ValidatorUtil.validate(cfg);
         } catch (Exception e) {
             throw new RuntimeException("Error reading " + fieldName + " for config " + cls.getName(), e);
         }

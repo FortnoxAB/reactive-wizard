@@ -111,4 +111,10 @@ public class ConfigReaderTest {
         TestConfig testConfig = injector.getInstance(TestConfig.class);
         assertThat(testConfig.getMyKey()).isEqualTo("myValue");
     }
+
+    @Test
+    public void shouldSupportEmptyConfig() {
+        EmptyConfig testConfig = ConfigReader.fromFile("src/test/resources/testconfig.yml", EmptyConfig.class);
+        assertThat(testConfig).isNotNull();
+    }
 }
