@@ -5,11 +5,13 @@ import java.lang.reflect.Proxy;
 import java.util.Set;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
 import javax.validation.Validator;
 import javax.validation.executable.ExecutableValidator;
 
+@Singleton
 public class ValidatorUtil {
 
     private final Validator validator;

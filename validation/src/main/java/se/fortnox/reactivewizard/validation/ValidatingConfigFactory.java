@@ -4,7 +4,9 @@ import se.fortnox.reactivewizard.config.ConfigFactory;
 
 import javax.inject.Inject;
 import javax.inject.Named;
+import javax.inject.Singleton;
 
+@Singleton
 public class ValidatingConfigFactory extends ConfigFactory {
     private final ValidatorUtil validatorUtil;
 

@@ -1,7 +1,6 @@
 package se.fortnox.reactivewizard.validation;
 
 import javax.inject.Provider;
-import javax.validation.Valid;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -30,11 +29,9 @@ class ValidatingProxy implements InvocationHandler, Provider<Object> {
         }
         try {
             return method.invoke(target, args);
-        } catch (ValidationFailedException e) {
-            throw e;
         } catch (InvocationTargetException e) {
             if (e.getTargetException() instanceof RuntimeException) {
-                throw (RuntimeException) e.getTargetException();
+                throw e.getTargetException();
             }
             throw e;
         }
@@ -50,7 +47,7 @@ class ValidatingProxy implements InvocationHandler, Provider<Object> {
     }
 
     /**
-     * Creates a proxy for the given service, whihc validates arguments before
+     * Creates a proxy for the given service, which validates arguments before
      * calling the service.
      *
      * @param serviceInterface is the interface to use for the proxy
