@@ -13,15 +13,23 @@ public class FieldSetter<I,T> implements Setter<I,T> {
         return new FieldSetter<>(field, memberTypeInfo.getReturnType(), memberTypeInfo.getGenericReturnType());
     }
 
-    private final Field    field;
-    private final Class<?> parameterType;
-    private final Type     genericParameterType;
+    private final Field           field;
+    private final BiConsumer<I,T> setter;
+    private final Class<?>        parameterType;
+    private final Type            genericParameterType;
 
     private FieldSetter(Field field, Class<T> parameterType, Type genericParameterType) {
         this.field = field;
         this.parameterType = parameterType;
         this.genericParameterType = genericParameterType;
         field.setAccessible(true);
+        setter = (instance,value) -> {
+            try {
+                field.set(instance, value);
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException(e);
+            }
+        };
     }
 
     @Override
@@ -40,13 +48,7 @@ public class FieldSetter<I,T> implements Setter<I,T> {
     }
 
     @Override
-    public BiConsumer setterFunction() {
-        return (instance,value) -> {
-            try {
-                field.set(instance, value);
-            } catch (IllegalAccessException e) {
-                throw new RuntimeException(e);
-            }
-        };
+    public BiConsumer<I,T> setterFunction() {
+        return setter;
     }
 }
