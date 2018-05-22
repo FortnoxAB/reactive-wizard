@@ -1,8 +1,4 @@
-package se.fortnox.reactivewizard.util.rx;
-
-import se.fortnox.reactivewizard.util.Getter;
-import se.fortnox.reactivewizard.util.ReflectionUtil;
-import se.fortnox.reactivewizard.util.Setter;
+package se.fortnox.reactivewizard.util;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Type;
@@ -46,11 +42,6 @@ public class PropertyResolver<I,T> {
         return genericType;
     }
 
-    @Deprecated
-    public T getValue(I value) {
-        return getter().apply(value);
-    }
-
     public Optional<PropertyResolver> subPath(String[] subPath) {
         Optional<PropertyResolver> propsToAppend = from(getPropertyType(), subPath);
         if (propsToAppend.isPresent()) {
@@ -63,27 +54,6 @@ public class PropertyResolver<I,T> {
             return Optional.of(new PropertyResolver(otherPropertyResolver.getPropertyType(), otherPropertyResolver.getPropertyGenericType(), newProperties));
         }
         return Optional.empty();
-    }
-
-    @Deprecated
-    public void setValue(Object object, Object value) {
-        try {
-            for (int i = 0; i < properties.length - 1; i++) {
-                Property property = properties[i];
-                Object   next     = property.getValue(object);
-                if (next == null) {
-                    verifySetter(property);
-                    next = ReflectionUtil.newInstance(property.getType());
-                    property.setValue(object, next);
-                }
-                object = next;
-            }
-            Property property = properties[properties.length - 1];
-            verifySetter(property);
-            property.setValue(object, value);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     private void verifySetter(Property property) {

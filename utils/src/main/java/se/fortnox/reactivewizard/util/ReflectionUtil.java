@@ -2,7 +2,6 @@ package se.fortnox.reactivewizard.util;
 
 import rx.Observable;
 import rx.Single;
-import se.fortnox.reactivewizard.util.rx.PropertyResolver;
 
 import javax.inject.Provider;
 import java.lang.annotation.Annotation;
@@ -74,28 +73,6 @@ public class ReflectionUtil {
 
     private static boolean methodsEquals(Method method, Method candidateMethod) {
         return candidateMethod.getName().equals(method.getName()) && Arrays.equals(candidateMethod.getParameterTypes(), method.getParameterTypes());
-    }
-
-    /**
-     * Extracts a named property from an object using reflection.
-     *
-     * @param object Target object
-     * @param property Property name to extract
-     * @return Value of the property
-     */
-    @Deprecated
-    public static Object getValue(Object object, String property) {
-        Class<? extends Object> cls = object.getClass();
-        property = property.substring(0, 1).toUpperCase() + property.substring(1);
-        try {
-            try {
-                return cls.getMethod("get" + property, new Class[0]).invoke(object);
-            } catch (NoSuchMethodException e) {
-                return cls.getMethod("is" + property, new Class[0]).invoke(object);
-            }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     public static Method getOverriddenMethod(Method method) {
@@ -198,8 +175,7 @@ public class ReflectionUtil {
      * @param propertyName The property to locate a getter for.
      * @return a Getter instance for either a method or a field
      */
-    @Deprecated
-    public static Getter getGetter(Class<?> cls, String propertyName) {
+    static Getter getGetter(Class<?> cls, String propertyName) {
         return getGetter(cls, cls, propertyName);
     }
 
@@ -247,8 +223,7 @@ public class ReflectionUtil {
      * @param propertyName The property to locate a setter for.
      * @return a Setter instance for either a method or a field
      */
-    @Deprecated
-    public static Setter getSetter(Class<?> cls, String propertyName) {
+    static Setter getSetter(Class<?> cls, String propertyName) {
         return getSetter(cls, cls, propertyName);
     }
 
@@ -288,27 +263,6 @@ public class ReflectionUtil {
 
     public static Optional<PropertyResolver> getPropertyResolver(Type type, String... propertyNames) {
         return PropertyResolver.from(type, propertyNames);
-    }
-
-    @Deprecated
-    public static Method getSetterFromGetter(Method getter) {
-        String name = getter.getName();
-        String setterName;
-        if (name.startsWith("is")) {
-            setterName = "set" + name.substring(2);
-        } else {
-            setterName = "set" + name.substring(3);
-        }
-        try {
-            return getter.getDeclaringClass().getMethod(setterName, getter.getReturnType());
-        } catch (NoSuchMethodException e) {
-            return null;
-        }
-    }
-
-    @Deprecated
-    public static <T> T newInstance(Class<T> cls) {
-        return instantiator(cls).get().get();
     }
 
     /**

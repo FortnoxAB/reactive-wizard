@@ -1,7 +1,7 @@
 package se.fortnox.reactivewizard.util.rx;
 
 import org.junit.Test;
-import se.fortnox.reactivewizard.util.rx.PropertyResolver;
+import se.fortnox.reactivewizard.util.PropertyResolver;
 
 import static org.fest.assertions.Assertions.assertThat;
 
@@ -13,9 +13,9 @@ public class PropertyResolverTest {
 
         Mutable mutable = new Mutable();
         mutable.setAnInt(5);
-        assertThat(propertyResolver.getValue(mutable)).isEqualTo(5);
-        propertyResolver.setValue(mutable, 10);
-        assertThat(propertyResolver.getValue(mutable)).isEqualTo(10);
+        assertThat(propertyResolver.getter().apply(mutable)).isEqualTo(5);
+        propertyResolver.setter().accept(mutable, 10);
+        assertThat(propertyResolver.getter().apply(mutable)).isEqualTo(10);
     }
 
     @Test
@@ -24,9 +24,9 @@ public class PropertyResolverTest {
         assertThat(propertyResolver).isNotNull();
 
         Immutable immutable = new Immutable(5);
-        assertThat(propertyResolver.getValue(immutable)).isEqualTo(5);
-        propertyResolver.setValue(immutable, 10);
-        assertThat(propertyResolver.getValue(immutable)).isEqualTo(10);
+        assertThat(propertyResolver.getter().apply(immutable)).isEqualTo(5);
+        propertyResolver.setter().accept(immutable, 10);
+        assertThat(propertyResolver.getter().apply(immutable)).isEqualTo(10);
     }
 
     public static class Mutable {

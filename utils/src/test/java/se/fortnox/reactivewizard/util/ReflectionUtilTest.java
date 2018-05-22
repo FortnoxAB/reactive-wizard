@@ -59,9 +59,9 @@ public class ReflectionUtilTest {
 
     @Test
     public void shouldInstantiate() {
-        assertThat(ReflectionUtil.newInstance(Parent.class)).isNotNull();
-        assertThat(ReflectionUtil.newInstance(Child.class)).isNotNull();
-        assertThat(ReflectionUtil.newInstance(PrivateDefaultConstructor.class)).isNotNull();
+        assertThat(ReflectionUtil.instantiator(Parent.class).get().get()).isNotNull();
+        assertThat(ReflectionUtil.instantiator(Child.class).get().get()).isNotNull();
+        assertThat(ReflectionUtil.instantiator(PrivateDefaultConstructor.class).get().get()).isNotNull();
     }
 
     @Test
@@ -118,7 +118,7 @@ public class ReflectionUtilTest {
     @Test
     public void shouldThrowHelpfulExceptionWhenNoZeroParametersConstructorExists()  {
         try {
-            ReflectionUtil.newInstance(NoZeroParametersConstructorClass.class);
+            ReflectionUtil.instantiator(NoZeroParametersConstructorClass.class).get().get();
             fail("Expected RuntimeException, but none was thrown");
         } catch (RuntimeException exception) {
             assertThat(exception.getMessage())

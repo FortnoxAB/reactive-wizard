@@ -5,7 +5,7 @@ import org.slf4j.LoggerFactory;
 import se.fortnox.reactivewizard.json.JsonDeserializerFactory;
 import se.fortnox.reactivewizard.util.CamelSnakeConverter;
 import se.fortnox.reactivewizard.util.ReflectionUtil;
-import se.fortnox.reactivewizard.util.rx.PropertyResolver;
+import se.fortnox.reactivewizard.util.PropertyResolver;
 
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -13,7 +13,6 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
