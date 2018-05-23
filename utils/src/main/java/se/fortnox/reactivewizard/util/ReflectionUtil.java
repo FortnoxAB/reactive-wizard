@@ -246,7 +246,6 @@ public class ReflectionUtil {
                 return MethodSetter.create(original, first.get());
             }
         } catch (Exception ignored) {
-            ignored.printStackTrace();
         }
 
         try {

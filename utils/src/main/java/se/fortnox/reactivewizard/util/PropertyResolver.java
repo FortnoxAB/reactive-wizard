@@ -76,7 +76,6 @@ public class PropertyResolver<I,T> {
         }
 
         try {
-
             Function[] functionChain = new Function[properties.length];
             for (int i = 0; i < properties.length; i++) {
                 functionChain[i] = properties[i].getter();
@@ -96,7 +95,6 @@ public class PropertyResolver<I,T> {
         }
 
         try {
-
             Function[] getterChain = new Function[properties.length - 1];
             BiConsumer[] setterChain = new BiConsumer[properties.length - 1];
             Supplier[] instantiators = new Supplier[properties.length - 1];
