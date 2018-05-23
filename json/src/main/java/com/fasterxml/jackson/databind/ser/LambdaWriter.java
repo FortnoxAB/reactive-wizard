@@ -60,8 +60,14 @@ public class LambdaWriter extends BeanPropertyWriter {
     @Override
     @SuppressWarnings("checkstyle:LocalVariableName")
     public void serializeAsField(Object bean, JsonGenerator gen, SerializerProvider prov) throws Exception {
-        Object value = this.lambda != null ? this.lambda.apply(bean) :
-                this._accessorMethod == null ? this._field.get(bean) : this._accessorMethod.invoke(bean);
+        Object value;
+        if (this.lambda != null) {
+            value = this.lambda.apply(bean);
+        } else if (this._accessorMethod == null) {
+            value = this._field.get(bean);
+        } else {
+            value = this._accessorMethod.invoke(bean);
+        }
 
         ////////////////////////////////
         // BEGIN COPY & PASTE
@@ -111,8 +117,14 @@ public class LambdaWriter extends BeanPropertyWriter {
 
     @Override
     public void serializeAsElement(Object bean, JsonGenerator gen, SerializerProvider prov) throws Exception {
-        Object value = this.lambda != null ? this.lambda.apply(bean) :
-                this._accessorMethod == null ? this._field.get(bean) : this._accessorMethod.invoke(bean);
+        Object value;
+        if (this.lambda != null) {
+            value = this.lambda.apply(bean);
+        } else if (this._accessorMethod == null) {
+            value = this._field.get(bean);
+        } else {
+            value = this._accessorMethod.invoke(bean);
+        }
 
         ////////////////////////////////
         // BEGIN COPY & PASTE

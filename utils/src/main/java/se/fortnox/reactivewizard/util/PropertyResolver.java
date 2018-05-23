@@ -56,12 +56,6 @@ public class PropertyResolver<I,T> {
         return Optional.empty();
     }
 
-    private void verifySetter(Property property) {
-        if (!property.hasSetter()) {
-            throw new RuntimeException("Value from " + property.getName() + " was null and there is no setter");
-        }
-    }
-
     @Override
     public String toString() {
         return Arrays.toString(properties);
