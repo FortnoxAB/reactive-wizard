@@ -64,6 +64,7 @@
         <module>dao</module>
         <module>examples</module>
         <module>metrics</module>
+        <module>client</module>
         <module>validation</module>
     </modules>
 
