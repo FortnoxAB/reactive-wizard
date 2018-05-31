@@ -24,63 +24,63 @@ import static rx.Observable.just;
  * Provides httpclients for use in proxies. This needs to be a singleton as the
  * maxConnections limit is set per client. It also needs to handle both ssl and
  * non-ssl clients as this may differ between calls.
- *
- * @author jonashall
  */
 @Singleton
 public class RxClientProvider {
-	private final ConcurrentHashMap<InetSocketAddress, HttpClient<ByteBuf, ByteBuf>> clients = new ConcurrentHashMap<>();
-	private final HttpClientConfig config;
-	private final HealthRecorder   healthRecorder;
+    private final ConcurrentHashMap<InetSocketAddress, HttpClient<ByteBuf, ByteBuf>> clients = new ConcurrentHashMap<>();
+    private final HttpClientConfig                                                   config;
+    private final HealthRecorder                                                     healthRecorder;
 
-	@Inject
-	public RxClientProvider(HttpClientConfig config, HealthRecorder healthRecorder) {
-		this.config = config;
-		this.healthRecorder = healthRecorder;
-	}
+    @Inject
+    public RxClientProvider(HttpClientConfig config, HealthRecorder healthRecorder) {
+        this.config = config;
+        this.healthRecorder = healthRecorder;
+    }
 
-	public HttpClient<ByteBuf, ByteBuf> clientFor(InetSocketAddress serverInfo) {
-		return clients.computeIfAbsent(serverInfo, this::buildClient);
-	}
+    public HttpClient<ByteBuf, ByteBuf> clientFor(InetSocketAddress serverInfo) {
+        return clients.computeIfAbsent(serverInfo, this::buildClient);
+    }
 
-	private HttpClient<ByteBuf, ByteBuf> buildClient(InetSocketAddress socketAddress) {
-		PoolConfig<ByteBuf, ByteBuf> poolConfig = new PoolConfig<>();
-		poolConfig.limitDeterminationStrategy(new MetricPublishingMaxConnectionsBasedStrategy(config.getMaxConnections(), healthRecorder));
-		ConnectionProviderFactory<ByteBuf, ByteBuf> pool = new UnsubscribeAwareConnectionProviderFactory(createConnectionProviderFactory(poolConfig), poolConfig);
+    private HttpClient<ByteBuf, ByteBuf> buildClient(InetSocketAddress socketAddress) {
+        PoolConfig<ByteBuf, ByteBuf> poolConfig = new PoolConfig<>();
+        poolConfig.limitDeterminationStrategy(new MetricPublishingMaxConnectionsBasedStrategy(config.getMaxConnections(), healthRecorder));
+        ConnectionProviderFactory<ByteBuf, ByteBuf> connectionProviderFactory = createConnectionProviderFactory(poolConfig);
 
-		HttpClient<ByteBuf, ByteBuf> client = HttpClient.newClient(pool, just(new Host(socketAddress)))
-			.readTimeOut(10, TimeUnit.SECONDS)
-			.followRedirects(false)
-			.pipelineConfigurator(UnsubscribeAwareHttpClientToConnectionBridge::configurePipeline);
+        ConnectionProviderFactory<ByteBuf, ByteBuf> pool = new UnsubscribeAwareConnectionProviderFactory(connectionProviderFactory, poolConfig);
 
-		if (config.isHttps()) {
-			client = client.unsafeSecure();
-		}
-		return client;
-	}
+        HttpClient<ByteBuf, ByteBuf> client = HttpClient.newClient(pool, just(new Host(socketAddress)))
+            .readTimeOut(10, TimeUnit.SECONDS)
+            .followRedirects(false)
+            .pipelineConfigurator(UnsubscribeAwareHttpClientToConnectionBridge::configurePipeline);
 
-	protected ConnectionProviderFactory<ByteBuf, ByteBuf> createConnectionProviderFactory(PoolConfig<ByteBuf, ByteBuf> poolConfig) {
-		return SingleHostPoolingProviderFactory.create(poolConfig);
-	}
+        if (config.isHttps()) {
+            client = client.unsafeSecure();
+        }
+        return client;
+    }
 
-	/**
-	 * Logs number of available connections in pool and reports unhealthy when pool is exhausted.
-	 */
-	private static class MetricPublishingMaxConnectionsBasedStrategy extends MaxConnectionsBasedStrategy {
-		private final HealthRecorder healthRecorder;
+    protected ConnectionProviderFactory<ByteBuf, ByteBuf> createConnectionProviderFactory(PoolConfig<ByteBuf, ByteBuf> poolConfig) {
+        return SingleHostPoolingProviderFactory.create(poolConfig);
+    }
 
-		public MetricPublishingMaxConnectionsBasedStrategy(int maxConnections, HealthRecorder healthRecorder) {
-			super(maxConnections);
-			this.healthRecorder = healthRecorder;
-			Metrics.registry().register(
-				"http_client_permits_id:" + this.hashCode(),
-				(Gauge<Integer>)this::getAvailablePermits
-			);
-		}
+    /**
+     * Logs number of available connections in pool and reports unhealthy when pool is exhausted.
+     */
+    private static class MetricPublishingMaxConnectionsBasedStrategy extends MaxConnectionsBasedStrategy {
+        private final HealthRecorder healthRecorder;
 
-		@Override
-		public boolean acquireCreationPermit(long acquireStartTime, TimeUnit timeUnit) {
-			return healthRecorder.logStatus(this, super.acquireCreationPermit(acquireStartTime, timeUnit));
-		}
-	}
+        public MetricPublishingMaxConnectionsBasedStrategy(int maxConnections, HealthRecorder healthRecorder) {
+            super(maxConnections);
+            this.healthRecorder = healthRecorder;
+            Metrics.registry().register(
+                "http_client_permits_id:" + this.hashCode(),
+                (Gauge<Integer>)this::getAvailablePermits
+            );
+        }
+
+        @Override
+        public boolean acquireCreationPermit(long acquireStartTime, TimeUnit timeUnit) {
+            return healthRecorder.logStatus(this, super.acquireCreationPermit(acquireStartTime, timeUnit));
+        }
+    }
 }

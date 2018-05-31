@@ -9,7 +9,7 @@ import javax.ws.rs.Path;
 public class JaxRsClassScanner extends AbstractClassScanner {
     @Override
     public void visit(FastClasspathScanner fastClasspathScanner) {
-        fastClasspathScanner.matchClassesWithAnnotation(Path.class, cls->{
+        fastClasspathScanner.matchClassesWithAnnotation(Path.class, cls -> {
             if (cls.isInterface()) {
                 add(cls);
             }

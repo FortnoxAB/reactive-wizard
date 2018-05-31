@@ -1,24 +1,26 @@
 package se.fortnox.reactivewizard.client;
 
-import se.fortnox.reactivewizard.client.RequestBuilder;
-import se.fortnox.reactivewizard.client.RequestTracer;
-import se.fortnox.reactivewizard.util.ManifestUtil;
 import io.netty.handler.codec.http.HttpMethod;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.fest.assertions.Assertions.assertThat;
+import se.fortnox.reactivewizard.util.ManifestUtil;
 
 import java.net.InetSocketAddress;
 
+import static org.fest.assertions.Assertions.assertThat;
+
 public class RequestTracerTest {
-    private static final String HOST_NAME = "localhost";
-    private static final String VERSION = "0.0.1-SNAPSHOT";
-    private static final String ARTIFACT_ID = "reactivewizard-client";
+    private static final String HOST_NAME                 = "localhost";
+    private static final String VERSION                   = "0.0.1-SNAPSHOT";
+    private static final String ARTIFACT_ID               = "reactivewizard-client";
     private static final String X_VIA_CLIENT_HEADER_VALUE = String.format("%s:%s:%s", HOST_NAME, ARTIFACT_ID, VERSION);
 
     private RequestTracer  requestTracer;
     private RequestBuilder requestBuilder;
+
+    private static String getXViaClientValue(RequestBuilder requestBuilder) {
+        return requestBuilder.getHeaders().get("X-Via-Client");
+    }
 
     @Before
     public void setup() {
@@ -51,9 +53,5 @@ public class RequestTracerTest {
             "%s,%s", X_VIA_CLIENT_HEADER_VALUE, X_VIA_CLIENT_HEADER_VALUE
         );
         assertThat(getXViaClientValue(requestBuilder)).isEqualTo(xViaClientForRequestChainExpectedValue);
-    }
-
-    private static String getXViaClientValue(RequestBuilder requestBuilder) {
-        return requestBuilder.getHeaders().get("X-Via-Client");
     }
 }

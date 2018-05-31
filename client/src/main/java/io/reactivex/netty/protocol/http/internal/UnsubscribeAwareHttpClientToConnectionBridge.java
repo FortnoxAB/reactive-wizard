@@ -12,19 +12,21 @@ import rx.subscriptions.Subscriptions;
  * the connection will be returned to the pool and the response will be sent to the next user of the pooled connection.
  */
 public class UnsubscribeAwareHttpClientToConnectionBridge extends HttpClientToConnectionBridge {
+    public static void configurePipeline(ChannelPipeline pipeline) {
+        UnsubscribeAwareHttpClientToConnectionBridge handler = new UnsubscribeAwareHttpClientToConnectionBridge();
+        String                                       name    = UnsubscribeAwareHttpClientToConnectionBridge.class.getName();
+        pipeline.replace("HttpClientToConnectionBridge#0", name, handler);
+    }
+
     @Override
     protected ConnectionInputSubscriber newConnectionInputSubscriber(ConnectionInputSubscriberEvent orig, Channel channel) {
         ConnectionInputSubscriber toReturn = super.newConnectionInputSubscriber(orig, channel);
-        orig.getSubscriber().add(Subscriptions.create(()->{
+        orig.getSubscriber().add(Subscriptions.create(() -> {
             // Unsubscribed. Need to check if we are in the state of waiting for the response from the server.
             if (!toReturn.getState().receiveStarted()) {
                 onClosedBeforeReceiveComplete(channel);
             }
         }));
         return toReturn;
-    }
-
-    public static void configurePipeline(ChannelPipeline pipeline) {
-        pipeline.replace("HttpClientToConnectionBridge#0", UnsubscribeAwareHttpClientToConnectionBridge.class.getName(), new UnsubscribeAwareHttpClientToConnectionBridge());
     }
 }
