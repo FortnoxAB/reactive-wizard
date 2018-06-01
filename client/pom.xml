@@ -71,6 +71,20 @@
 			<scope>test</scope>
 		</dependency>
 
+		<dependency>
+			<groupId>se.fortnox.reactivewizard</groupId>
+			<artifactId>reactivewizard-server</artifactId>
+			<version>${project.version}</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>se.fortnox.reactivewizard</groupId>
+			<artifactId>reactivewizard-config</artifactId>
+			<version>${project.version}</version>
+			<scope>test</scope>
+			<classifier>tests</classifier>
+		</dependency>
 	</dependencies>
 
 </project>

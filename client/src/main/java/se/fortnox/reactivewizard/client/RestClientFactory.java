@@ -23,15 +23,11 @@ public class RestClientFactory implements AutoBindModule {
         this.jaxRsClassScanner = jaxRsClassScanner;
     }
 
-    private <T> Provider<T> provider(Class<T> iface, Provider<HttpClient> hcp) {
-        return new Provider<T>() {
-            @Override
-            public T get() {
-                T httpProxy = hcp.get().create(iface);
-                log.debug("Created " + Proxy.getInvocationHandler(httpProxy)
-                    + " for " + iface.getName());
-                return httpProxy;
-            }
+    private <T> Provider<T> provider(Class<T> iface, Provider<HttpClient> httpClientProvider) {
+        return () -> {
+            T httpProxy = httpClientProvider.get().create(iface);
+            log.debug("Created {} for {}", Proxy.getInvocationHandler(httpProxy), iface.getName());
+            return httpProxy;
         };
     }
 
