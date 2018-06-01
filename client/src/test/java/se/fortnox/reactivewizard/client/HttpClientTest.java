@@ -1,6 +1,7 @@
 package se.fortnox.reactivewizard.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.inject.Injector;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.reactivex.netty.channel.Connection;
@@ -17,12 +18,15 @@ import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 import org.junit.Assert;
 import org.junit.Test;
+import org.mockito.Mockito;
 import rx.Observable;
 import rx.Single;
+import se.fortnox.reactivewizard.config.TestInjector;
 import se.fortnox.reactivewizard.jaxrs.JaxRsMeta;
 import se.fortnox.reactivewizard.jaxrs.PATCH;
 import se.fortnox.reactivewizard.jaxrs.WebException;
 import se.fortnox.reactivewizard.metrics.HealthRecorder;
+import se.fortnox.reactivewizard.server.ServerConfig;
 import se.fortnox.reactivewizard.util.rx.RetryWithDelay;
 
 import javax.ws.rs.Consumes;
@@ -56,7 +60,10 @@ import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static java.lang.String.format;
 import static org.fest.assertions.Assertions.assertThat;
 import static org.fest.assertions.Fail.fail;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static rx.Observable.defer;
@@ -279,6 +286,22 @@ public class HttpClientTest {
         Method     method = TestResource.class.getMethod("withPathAndQueryParam", String.class, String.class);
         String     path   = client.getPath(method, new Object[]{"key_with_ä", "value_with_+"}, new JaxRsMeta(method, null));
         assertThat(path).isEqualTo("/hello/{fid}/key_with_%C3%A4?value=value_with_%2B");
+    }
+
+    @Test
+    public void shouldEncodeWithMultipleQueryParams() throws Exception {
+        HttpClient client = new HttpClient(new HttpClientConfig("localhost"));
+        Method     method = TestResource.class.getMethod("withMultipleQueryParam", String.class, String.class);
+        String     path   = client.getPath(method, new Object[]{"first", "second"}, new JaxRsMeta(method, null));
+        assertThat(path).isEqualTo("/hello/multipleQueryParams?valueA=first&valueB=second");
+    }
+
+    @Test
+    public void shouldEncodePathWithoutNullValues() throws Exception {
+        HttpClient client = new HttpClient(new HttpClientConfig("localhost"));
+        Method     method = TestResource.class.getMethod("withPathAndQueryParam", String.class, String.class);
+        String     path   = client.getPath(method, new Object[]{"path", null}, new JaxRsMeta(method, null));
+        assertThat(path).isEqualTo("/hello/{fid}/path");
     }
 
     @Test
@@ -678,6 +701,25 @@ public class HttpClientTest {
         server.shutdown();
     }
 
+    @Test
+    public void shouldSetTimeoutOnResource() throws URISyntaxException {
+        HttpClientConfig httpClientConfig = new HttpClientConfig();
+        httpClientConfig.setUrl("http://anything");
+
+        HttpClient mockClient = Mockito.spy(new HttpClient(httpClientConfig));
+
+        Injector injector = TestInjector.create(binder -> {
+            binder.bind(ServerConfig.class).toInstance(new ServerConfig() {{
+                setEnabled(false);
+            }});
+            binder.bind(HttpClient.class).toInstance(mockClient);
+        });
+
+        TestResource testResource = injector.getInstance(TestResource.class);
+        HttpClient.setTimeout(testResource, 1300, TimeUnit.MILLISECONDS);
+        verify(mockClient, times(1)).setTimeout(eq(1300), eq(TimeUnit.MILLISECONDS));
+    }
+
     private String response10mb() {
         char[] resp = new char[10 * 1024 * 1024];
         for (int i = 0; i < resp.length; i++) {
@@ -701,6 +743,9 @@ public class HttpClientTest {
 
         @Path("{fid}/{key}")
         Observable<String> withPathAndQueryParam(@PathParam("key") String key, @QueryParam("value") String value);
+
+        @Path("multipleQueryParams")
+        Observable<String> withMultipleQueryParam(@QueryParam("valueA") String valueA, @QueryParam("valueB") String valueB);
 
         @Path("{fid}/{key:.*}")
         Observable<String> withRegExpPathAndQueryParam(@PathParam("key") String key, @QueryParam("value") String value);

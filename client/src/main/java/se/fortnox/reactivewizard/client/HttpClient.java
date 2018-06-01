@@ -141,14 +141,13 @@ public class HttpClient implements InvocationHandler {
         return (T)Proxy.newProxyInstance(jaxRsInterface.getClassLoader(), new Class[]{jaxRsInterface}, this);
     }
 
-
     @Override
-    public Object invoke(Object proxy, Method method, Object[] args) {
-        if (args == null) {
-            args = new Object[0];
+    public Object invoke(Object proxy, Method method, Object[] arguments) {
+        if (arguments == null) {
+            arguments = new Object[0];
         }
 
-        RequestBuilder fullReq = createRequest(method, args);
+        RequestBuilder fullReq = createRequest(method, arguments);
 
         addDevOverrides(fullReq);
 
@@ -207,28 +206,28 @@ public class HttpClient implements InvocationHandler {
         return type.equals(BYTEARRAY_TYPE);
     }
 
-    private void addDevOverrides(RequestBuilder fullReq) {
+    private void addDevOverrides(RequestBuilder fullRequest) {
         if (config.getDevServerInfo() != null) {
-            fullReq.setServerInfo(config.getDevServerInfo());
+            fullRequest.setServerInfo(config.getDevServerInfo());
         }
 
         if (config.getDevCookie() != null) {
-            String cookie = fullReq.getHeaders().get("Cookie") + ";" + config.getDevCookie();
-            fullReq.getHeaders().remove("Cookie");
-            fullReq.addHeader("Cookie", cookie);
+            String cookie = fullRequest.getHeaders().get("Cookie") + ";" + config.getDevCookie();
+            fullRequest.getHeaders().remove("Cookie");
+            fullRequest.addHeader("Cookie", cookie);
         }
 
         if (config.getDevHeaders() != null && config.getDevHeaders() != null) {
-            config.getDevHeaders().forEach(fullReq::addHeader);
+            config.getDevHeaders().forEach(fullRequest::addHeader);
         }
     }
 
-    protected <T> Observable<T> measure(RequestBuilder fullReq, Observable<T> output) {
-        return Metrics.get("OUT_res:" + fullReq.getKey()).measure(output);
+    protected <T> Observable<T> measure(RequestBuilder fullRequest, Observable<T> output) {
+        return Metrics.get("OUT_res:" + fullRequest.getKey()).measure(output);
     }
 
-    protected <T> Observable<T> withRetry(RequestBuilder fullReq, Observable<T> resp) {
-        return resp.retryWhen(new RetryWithDelay(config.getRetryCount(), config.getRetryDelayMs(),
+    protected <T> Observable<T> withRetry(RequestBuilder fullReq, Observable<T> response) {
+        return response.retryWhen(new RetryWithDelay(config.getRetryCount(), config.getRetryDelayMs(),
             throwable -> {
                 if (throwable instanceof TimeoutException) {
                     return false;
@@ -288,11 +287,11 @@ public class HttpClient implements InvocationHandler {
         }
     }
 
-    protected void addFormParamToOutput(StringBuilder output, Object val, FormParam formParam) {
+    protected void addFormParamToOutput(StringBuilder output, Object value, FormParam formParam) {
         if (output.length() != 0) {
             output.append("&");
         }
-        output.append(formParam.value()).append("=").append(urlEncode(val.toString()));
+        output.append(formParam.value()).append("=").append(urlEncode(value.toString()));
     }
 
     private FormParam getFormParam(Annotation[] annotations) {
@@ -305,8 +304,8 @@ public class HttpClient implements InvocationHandler {
     }
 
     protected boolean isBodyArg(@SuppressWarnings("unused") Class<?> cls, Annotation[] annotations) {
-        for (Annotation pa : annotations) {
-            if (pa instanceof QueryParam || pa instanceof PathParam || pa instanceof HeaderParam || pa instanceof CookieParam) {
+        for (Annotation annotation : annotations) {
+            if (annotation instanceof QueryParam || annotation instanceof PathParam || annotation instanceof HeaderParam || annotation instanceof CookieParam) {
                 return false;
             }
         }
@@ -351,13 +350,13 @@ public class HttpClient implements InvocationHandler {
         return detailedError;
     }
 
-    protected RequestBuilder createRequest(Method method, Object[] args) {
+    protected RequestBuilder createRequest(Method method, Object[] arguments) {
         JaxRsMeta meta = new JaxRsMeta(method);
 
         RequestBuilder request = new RequestBuilder(serverInfo, meta.getHttpMethod(), meta.getFullPath());
-        request.setUri(getPath(method, args, meta));
-        setHeaderParams(request, method, args);
-        addCustomParams(request, method, args);
+        request.setUri(getPath(method, arguments, meta));
+        setHeaderParams(request, method, arguments);
+        addCustomParams(request, method, arguments);
 
         Consumes consumes = method.getAnnotation(Consumes.class);
         if (consumes != null && consumes.value().length != 0) {
@@ -368,36 +367,36 @@ public class HttpClient implements InvocationHandler {
             requestTracer.addTrace(request);
         }
 
-        addContent(method, args, request);
+        addContent(method, arguments, request);
 
         return request;
     }
 
     @SuppressWarnings("unchecked")
-    private void addCustomParams(RequestBuilder request, Method method, Object[] args) {
+    private void addCustomParams(RequestBuilder request, Method method, Object[] arguments) {
         Class<?>[] types = method.getParameterTypes();
         for (int i = 0; i < types.length; i++) {
             RequestParameterSerializer serializer = requestParameterSerializers.getSerializer(types[i]);
             if (serializer != null) {
-                serializer.addParameter(args[i], request);
+                serializer.addParameter(arguments[i], request);
             }
         }
     }
 
-    private void setHeaderParams(RequestBuilder request, Method method, Object[] args) {
+    private void setHeaderParams(RequestBuilder request, Method method, Object[] arguments) {
         Class<?>[]     types       = method.getParameterTypes();
         Annotation[][] annotations = method.getParameterAnnotations();
         for (int i = 0; i < types.length; i++) {
-            Object val = args[i];
-            if (val == null) {
+            Object value = arguments[i];
+            if (value == null) {
                 continue;
             }
-            for (Annotation a : annotations[i]) {
-                if (a instanceof HeaderParam) {
-                    request.addHeader(((HeaderParam)a).value(), serialize(val));
-                } else if (a instanceof CookieParam) {
+            for (Annotation annotation : annotations[i]) {
+                if (annotation instanceof HeaderParam) {
+                    request.addHeader(((HeaderParam)annotation).value(), serialize(value));
+                } else if (annotation instanceof CookieParam) {
                     final String currentCookieValue = request.getHeaders().get("Cookie");
-                    final String cookiePart         = ((CookieParam)a).value() + "=" + serialize(val);
+                    final String cookiePart         = ((CookieParam)annotation).value() + "=" + serialize(value);
                     if (currentCookieValue != null) {
                         request.addHeader("Cookie", format("%s; %s", currentCookieValue, cookiePart));
                     } else {
@@ -438,17 +437,17 @@ public class HttpClient implements InvocationHandler {
         }
     }
 
-    protected String getPath(Method method, Object[] args, JaxRsMeta meta) {
+    protected String getPath(Method method, Object[] arguments, JaxRsMeta meta) {
         String path = meta.getFullPath();
 
         StringBuilder  query       = null;
         Class<?>[]     types       = method.getParameterTypes();
         Annotation[][] annotations = method.getParameterAnnotations();
         for (int i = 0; i < types.length; i++) {
-            Object val = args[i];
-            for (Annotation a : annotations[i]) {
-                if (a instanceof QueryParam) {
-                    if (val == null) {
+            Object value = arguments[i];
+            for (Annotation annotation : annotations[i]) {
+                if (annotation instanceof QueryParam) {
+                    if (value == null) {
                         continue;
                     }
                     if (query == null) {
@@ -456,14 +455,14 @@ public class HttpClient implements InvocationHandler {
                     } else {
                         query.append('&');
                     }
-                    query.append(((QueryParam)a).value());
+                    query.append(((QueryParam)annotation).value());
                     query.append('=');
-                    query.append(encode(serialize(val)));
-                } else if (a instanceof PathParam) {
-                    if (path.contains("{" + ((PathParam)a).value() + ":.*}")) {
-                        path = path.replaceAll("\\{" + ((PathParam)a).value() + ":.*\\}", this.encode(this.serialize(val)));
+                    query.append(encode(serialize(value)));
+                } else if (annotation instanceof PathParam) {
+                    if (path.contains("{" + ((PathParam)annotation).value() + ":.*}")) {
+                        path = path.replaceAll("\\{" + ((PathParam)annotation).value() + ":.*\\}", this.encode(this.serialize(value)));
                     } else {
-                        path = path.replaceAll("\\{" + ((PathParam)a).value() + "\\}", this.urlEncode(this.serialize(val)));
+                        path = path.replaceAll("\\{" + ((PathParam)annotation).value() + "\\}", this.urlEncode(this.serialize(value)));
                     }
                 }
             }

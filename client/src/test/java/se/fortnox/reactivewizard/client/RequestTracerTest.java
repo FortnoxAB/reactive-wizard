@@ -49,8 +49,7 @@ public class RequestTracerTest {
         requestTracer.addTrace(requestBuilder);
 
         // Verification
-        String xViaClientForRequestChainExpectedValue = String.format(
-            "%s,%s", X_VIA_CLIENT_HEADER_VALUE, X_VIA_CLIENT_HEADER_VALUE
+        String xViaClientForRequestChainExpectedValue = String.format("%s,%s", X_VIA_CLIENT_HEADER_VALUE, X_VIA_CLIENT_HEADER_VALUE
         );
         assertThat(getXViaClientValue(requestBuilder)).isEqualTo(xViaClientForRequestChainExpectedValue);
     }
