@@ -84,6 +84,7 @@ public class ReflectionUtil {
             }
         }
         found = findMethodInClass(method, method.getDeclaringClass());
+        found = found.filter(m -> !m.equals(method));
         return found.orElse(null);
     }
 

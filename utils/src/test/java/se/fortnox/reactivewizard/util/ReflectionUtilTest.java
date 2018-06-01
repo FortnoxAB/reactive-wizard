@@ -1,7 +1,16 @@
 package se.fortnox.reactivewizard.util;
 
 import org.junit.Test;
+import rx.Observable;
 
+import javax.inject.Provider;
+import javax.ws.rs.GET;
+import javax.ws.rs.HeaderParam;
+import javax.ws.rs.QueryParam;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -135,6 +144,105 @@ public class ReflectionUtilTest {
         assertThat(setter).isNotNull();
     }
 
+    @Test
+    public void shouldFindParameterAnnotationsFromMethod() throws NoSuchMethodException {
+        Method resourceGet = TestResource.class.getMethod("resourceGet", String.class, String.class);
+        List<List<Annotation>> parameterAnnotations = ReflectionUtil.getParameterAnnotations(resourceGet);
+        assertThat(parameterAnnotations).hasSize(2);
+        assertThat(parameterAnnotations.get(0)).hasSize(1);
+        assertThat(parameterAnnotations.get(0).get(0)).isInstanceOf(QueryParam.class);
+        assertThat(parameterAnnotations.get(1).get(0)).isInstanceOf(HeaderParam.class);
+
+
+        Method instanceMethod = TestResourceImpl.class.getMethod("resourceGet", String.class, String.class);
+        parameterAnnotations = ReflectionUtil.getParameterAnnotations(instanceMethod);
+        assertThat(parameterAnnotations).hasSize(2);
+        assertThat(parameterAnnotations.get(0)).hasSize(1);
+        assertThat(parameterAnnotations.get(0).get(0)).isInstanceOf(QueryParam.class);
+        assertThat(parameterAnnotations.get(1).get(0)).isInstanceOf(HeaderParam.class);
+    }
+
+    @Test
+    public void shouldFindParameterAnnotationsFromParameter() throws NoSuchMethodException {
+        Method resourceGet = TestResource.class.getMethod("resourceGet", String.class, String.class);
+        List<Annotation> parameterAnnotations = ReflectionUtil.getParameterAnnotations(resourceGet.getParameters()[0]);
+        assertThat(parameterAnnotations).hasSize(1);
+        assertThat(parameterAnnotations.get(0)).isInstanceOf(QueryParam.class);
+
+        Method instanceMethod = TestResourceImpl.class.getMethod("resourceGet", String.class, String.class);
+        parameterAnnotations = ReflectionUtil.getParameterAnnotations(instanceMethod.getParameters()[0]);
+        assertThat(parameterAnnotations).hasSize(1);
+        assertThat(parameterAnnotations.get(0)).isInstanceOf(QueryParam.class);
+    }
+
+    @Test
+    public void shouldFindMethodAnnotations() throws NoSuchMethodException {
+        Method resourceGet = TestResource.class.getMethod("resourceGet", String.class, String.class);
+        List<Annotation> methodAnnotations = ReflectionUtil.getAnnotations(resourceGet);
+        assertThat(methodAnnotations).hasSize(1);
+        assertThat(methodAnnotations.get(0)).isInstanceOf(GET.class);
+
+        Method instanceMethod = TestResourceImpl.class.getMethod("resourceGet", String.class, String.class);
+        methodAnnotations = ReflectionUtil.getAnnotations(instanceMethod);
+        assertThat(methodAnnotations).hasSize(1);
+        assertThat(methodAnnotations.get(0)).isInstanceOf(GET.class);
+    }
+
+    @Test
+    public void shouldFindMethodAnnotation() throws NoSuchMethodException {
+        Method resourceGet = TestResource.class.getMethod("resourceGet", String.class, String.class);
+        assertThat(ReflectionUtil.getAnnotation(resourceGet, GET.class)).isNotNull().isInstanceOf(GET.class);
+
+        Method instanceMethod = TestResourceImpl.class.getMethod("resourceGet", String.class, String.class);
+        assertThat(ReflectionUtil.getAnnotation(instanceMethod, GET.class)).isNotNull().isInstanceOf(GET.class);
+    }
+
+    @Test
+    public void shouldFindObservableType() throws NoSuchMethodException {
+        Method resourceGet = TestResource.class.getMethod("resourceGet", String.class, String.class);
+        assertThat(ReflectionUtil.getTypeOfObservable(resourceGet)).isEqualTo(String.class);
+
+        Method instanceMethod = TestResourceImpl.class.getMethod("resourceGet", String.class, String.class);
+        assertThat(ReflectionUtil.getTypeOfObservable(instanceMethod)).isEqualTo(String.class);
+    }
+
+    @Test
+    public void shouldFindInstanceMethodThroughInvocationHandler() throws NoSuchMethodException {
+        Method interfaceMethod = TestResource.class.getMethod("resourceGet", String.class, String.class);
+
+        Object proxy = Proxy.newProxyInstance(this.getClass().getClassLoader(), new Class[]{TestResource.class}, new InstanceExposingInvocationHandler(new TestResourceImpl()));
+        Method proxyMethod = proxy.getClass().getMethod("resourceGet", String.class, String.class);
+
+        Method instanceMethod = ReflectionUtil.getInstanceMethod(proxyMethod, proxy);
+        assertThat(instanceMethod).isNotEqualTo(interfaceMethod);
+        assertThat(instanceMethod).isEqualTo(TestResourceImpl.class.getMethod("resourceGet", String.class, String.class));
+    }
+
+    @Test
+    public void shouldFindGenericParameterType() throws NoSuchMethodException {
+        Method interfaceMethod = TestResource.class.getMethod("methodWithGenericParameter", List.class);
+        assertThat(ReflectionUtil.getGenericParameter(interfaceMethod.getGenericParameterTypes()[0])).isEqualTo(Integer.class);
+    }
+
+    private static class InstanceExposingInvocationHandler implements InvocationHandler, Provider {
+
+        private final Object instance;
+
+        public InstanceExposingInvocationHandler(Object instance) {
+            this.instance = instance;
+        }
+
+        @Override
+        public Object invoke(Object o, Method method, Object[] objects) throws Throwable {
+            return null;
+        }
+
+        @Override
+        public Object get() {
+            return instance;
+        }
+    }
+
     static class Parent {
         private int i;
         private int k;
@@ -212,6 +320,26 @@ public class ReflectionUtilTest {
 
         public PrivateDefaultConstructor(int a) {
             this.a = a;
+        }
+    }
+
+    public interface TestResource {
+        @GET
+        Observable<String> resourceGet(@QueryParam("name") String name, @HeaderParam("lang") String lang);
+
+        void methodWithGenericParameter(List<Integer> integerList);
+    }
+
+    public static class TestResourceImpl implements TestResource {
+
+        @Override
+        public Observable<String> resourceGet(String name, String lang) {
+            return null;
+        }
+
+        @Override
+        public void methodWithGenericParameter(List<Integer> integerList) {
+
         }
     }
 }
