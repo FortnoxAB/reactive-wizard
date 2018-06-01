@@ -3,3 +3,5 @@ myTestConfig:
   configWithEnvPlaceholder: {{CUSTOM_ENV_VAR}}
   configWithEnvPlaceholderInMiddle: before{{CUSTOM_ENV_VAR}}after
   url: http://{{HOST}}:{{PORT}}/test
+
+myEmptyConfig:
