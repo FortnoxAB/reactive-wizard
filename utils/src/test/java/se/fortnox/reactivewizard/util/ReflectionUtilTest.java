@@ -77,12 +77,6 @@ public class ReflectionUtilTest {
     }
 
     @Test
-    public void shouldFailInstantiate() {
-        Object actual = ReflectionUtil.instantiator(int.class).get();
-        assertThat(actual).isNotNull();
-    }
-
-    @Test
     public void shouldCreateInstantiator() {
         assertThat(ReflectionUtil.instantiator(Parent.class).get()).isInstanceOf(Parent.class);
     }

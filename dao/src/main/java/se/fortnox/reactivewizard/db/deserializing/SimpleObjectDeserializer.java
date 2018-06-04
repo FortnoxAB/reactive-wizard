@@ -22,12 +22,7 @@ public class SimpleObjectDeserializer {
                 metaData,
                 SimpleObjectDeserializer::createRecordPropertyDeserializer);
 
-        Optional<Supplier<I>> instantiatorMaybe = ReflectionUtil.instantiator(cls);
-        if (!instantiatorMaybe.isPresent()) {
-            throw new IllegalArgumentException("Cannot instatiate " + cls + " for deserializing from database");
-        }
-
-        Supplier<I> instantiator = instantiatorMaybe.get();
+        Supplier<I> instantiator = ReflectionUtil.instantiator(cls);
 
         return (rs) -> {
             Object object = instantiator.get();
