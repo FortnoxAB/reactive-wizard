@@ -20,6 +20,7 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -90,7 +91,7 @@ public class DbProxy implements InvocationHandler {
         if (observableStatementFactory == null || DebugUtil.IS_DEBUG) {
             if (DebugUtil.IS_DEBUG) {
                 // Need to get the actual interface method in order to get updated annotations
-                method = ReflectionUtil.getOverriddenMethod(method);
+                method = Optional.ofNullable(ReflectionUtil.getOverriddenMethod(method)).orElse(method);
             }
             DbStatementFactory statementFactory = dbStatementFactoryFactory.createStatementFactory(method);
             PagingOutput       pagingOutput     = new PagingOutput(method);
