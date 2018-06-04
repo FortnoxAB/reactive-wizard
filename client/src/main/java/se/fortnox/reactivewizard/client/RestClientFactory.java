@@ -34,6 +34,7 @@ public class RestClientFactory implements AutoBindModule {
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Override
     public void configure(Binder binder) {
+        Multibinder.newSetBinder(binder, TypeLiteral.get(PreRequestHook.class));
         Multibinder.newSetBinder(binder, TypeLiteral.get(RequestParameterSerializer.class));
         Provider<HttpClient> httpClientProvider = binder.getProvider(HttpClient.class);
         jaxRsClassScanner.getClasses().forEach(cls -> {
