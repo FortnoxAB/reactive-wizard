@@ -1,31 +1,45 @@
 package se.fortnox.reactivewizard.util;
 
-import java.lang.reflect.InvocationTargetException;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
+import java.util.function.Function;
+
+import static se.fortnox.reactivewizard.util.ReflectionUtil.lambdaForFunction;
 
 /**
  * Represents a getter method.
  */
-public class MethodGetter implements Getter {
+public class MethodGetter<I,T> implements Getter<I,T> {
+    private final Function<I, T> getterLambda;
+
     public static Getter create(Class<?> cls, Method method) {
         AccessorUtil.MemberTypeInfo memberTypeInfo = AccessorUtil.getterTypeInfo(cls, method);
         return new MethodGetter(method, memberTypeInfo.getReturnType(), memberTypeInfo.getGenericReturnType());
     }
 
-    private final Method   method;
     private final Class<?> returnType;
     private final Type     genericReturnType;
 
-    private MethodGetter(Method method, Class<?> returnType, Type genericReturnType) {
+    private MethodGetter(Method method, Class<T> returnType, Type genericReturnType) {
         this.returnType = returnType;
-        this.method = method;
         this.genericReturnType = genericReturnType;
+
+        MethodHandles.Lookup lookup = ReflectionUtil.lookupFor(method.getDeclaringClass(), method);
+
+        try {
+            MethodHandle methodHandle = lookup.unreflect(method);
+            getterLambda = lambdaForFunction(lookup, methodHandle);
+        } catch (Throwable t) {
+            throw new RuntimeException(t);
+        }
+
     }
 
     @Override
-    public Object invoke(Object instance) throws InvocationTargetException, IllegalAccessException {
-        return method.invoke(instance);
+    public T invoke(I instance) {
+        return getterLambda.apply(instance);
     }
 
     @Override
@@ -36,5 +50,10 @@ public class MethodGetter implements Getter {
     @Override
     public Type getGenericReturnType() {
         return genericReturnType;
+    }
+
+    @Override
+    public Function<I, T> getterFunction() {
+        return getterLambda;
     }
 }

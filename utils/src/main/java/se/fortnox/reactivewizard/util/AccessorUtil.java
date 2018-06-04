@@ -69,7 +69,7 @@ class AccessorUtil {
         return new MemberTypeInfo(returnType, genericReturnType);
     }
 
-    static MemberTypeInfo setterTypeInfo(Class<?> cls, Method method) {
+    static <I> MemberTypeInfo setterTypeInfo(Class<I> cls, Method method) {
         Map<String, Class<?>> genericTypenameToType = AccessorUtil.typesByGenericName(cls, method);
         Class<?> genericType = genericTypenameToType.get(method.getGenericParameterTypes()[0].getTypeName());
 
@@ -83,19 +83,19 @@ class AccessorUtil {
             genericReturnType = genericType;
         }
 
-        return new MemberTypeInfo(returnType, genericReturnType);
+        return new MemberTypeInfo<>(returnType, genericReturnType);
     }
 
-    static class MemberTypeInfo {
-        private final Class<?> returnType;
+    static class MemberTypeInfo<T> {
+        private final Class<T> returnType;
         private final Type genericReturnType;
 
-        private MemberTypeInfo(Class<?> returnType, Type genericReturnType) {
+        private MemberTypeInfo(Class<T> returnType, Type genericReturnType) {
             this.returnType = returnType;
             this.genericReturnType = genericReturnType;
         }
 
-        public Class<?> getReturnType() {
+        public Class<T> getReturnType() {
             return returnType;
         }
 

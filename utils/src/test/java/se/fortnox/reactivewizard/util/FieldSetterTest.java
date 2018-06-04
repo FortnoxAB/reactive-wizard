@@ -4,6 +4,7 @@ import org.junit.Before;
 import org.junit.Test;
 import rx.Observable;
 
+import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
 import static org.fest.assertions.Assertions.assertThat;
@@ -50,6 +51,14 @@ public class FieldSetterTest extends AccessorTest {
 
         superValue.invoke(bar, 9);
         assertThat(bar.superValue).isEqualTo(9);
+    }
+
+    @Test
+    public void shouldSupportSetterLambda() {
+        GenericFieldSubclass foo = new GenericFieldSubclass(1);
+        BiConsumer<GenericFieldSubclass, Integer> setter = value.setterFunction();
+        setter.accept(foo, 9);
+        assertThat(foo.value).isEqualTo(9);
     }
 
     @Test

@@ -3,14 +3,13 @@ package se.fortnox.reactivewizard.db.query.parts;
 import se.fortnox.reactivewizard.db.query.PreparedStatementParameters;
 import se.fortnox.reactivewizard.json.JsonSerializerFactory;
 import se.fortnox.reactivewizard.util.ReflectionUtil;
-import se.fortnox.reactivewizard.util.rx.PropertyResolver;
+import se.fortnox.reactivewizard.util.PropertyResolver;
 
 import java.lang.reflect.Type;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -22,6 +21,7 @@ public class ParamQueryPart implements DynamicQueryPart {
     protected final PropertyResolver             argResolver;
     protected final int                          argIndex;
     private final   PreparedStatementParamSetter paramSetter;
+    private final   Function<Object,Object>      getter;
 
     public ParamQueryPart(int argIndex, Type cls) throws SQLException {
         this(argIndex, ReflectionUtil.getPropertyResolver(cls, new String[0]).get());
@@ -34,6 +34,7 @@ public class ParamQueryPart implements DynamicQueryPart {
     protected ParamQueryPart(int argIndex, PropertyResolver argResolver) throws SQLException {
         this.argIndex = argIndex;
         this.argResolver = argResolver;
+        this.getter = argResolver.getter();
         paramSetter = createParamSetter(argResolver.getPropertyGenericType());
     }
 
@@ -53,7 +54,7 @@ public class ParamQueryPart implements DynamicQueryPart {
     }
 
     protected Object getValue(Object[] args) {
-        return argResolver.getValue(args[argIndex]);
+        return getter.apply(args[argIndex]);
     }
 
     @Override

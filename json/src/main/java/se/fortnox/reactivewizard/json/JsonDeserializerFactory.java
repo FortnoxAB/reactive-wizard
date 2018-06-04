@@ -56,12 +56,12 @@ public class JsonDeserializerFactory {
     }
 
     private <T> Function<byte[], T> createByteDeserializer(ObjectReader reader) {
-        return str -> {
-            if (str == null) {
+        return bytes -> {
+            if (bytes == null) {
                 return null;
             }
             try {
-                return reader.readValue(str);
+                return reader.readValue(bytes);
             } catch (Exception e) {
                 throw new InvalidJsonException(e);
             }

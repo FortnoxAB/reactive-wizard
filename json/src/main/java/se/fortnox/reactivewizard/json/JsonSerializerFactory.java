@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.ser.BeanSerializerFactory;
+import com.fasterxml.jackson.databind.ser.SerializerFactory;
 
 import javax.inject.Inject;
 import java.util.function.Function;
@@ -17,7 +19,8 @@ public class JsonSerializerFactory {
 
     @Inject
     public JsonSerializerFactory(ObjectMapper mapper) {
-        this.mapper = mapper;
+        this.mapper = mapper.setSerializerFactory(mapper.getSerializerFactory()
+                .withSerializerModifier(new LambdaSerializerModifier()));
     }
 
     public JsonSerializerFactory() {
