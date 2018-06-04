@@ -12,12 +12,14 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 import static org.fest.assertions.Assertions.assertThat;
 import static org.fest.assertions.Fail.fail;
+import static org.mockito.Mockito.mock;
 
 public class ReflectionUtilTest {
     @Test
@@ -69,14 +71,20 @@ public class ReflectionUtilTest {
 
     @Test
     public void shouldInstantiate() {
-        assertThat(ReflectionUtil.instantiator(Parent.class).get().get()).isNotNull();
-        assertThat(ReflectionUtil.instantiator(Child.class).get().get()).isNotNull();
-        assertThat(ReflectionUtil.instantiator(PrivateDefaultConstructor.class).get().get()).isNotNull();
+        assertThat(ReflectionUtil.instantiator(Parent.class).get()).isNotNull();
+        assertThat(ReflectionUtil.instantiator(Child.class).get()).isNotNull();
+        assertThat(ReflectionUtil.instantiator(PrivateDefaultConstructor.class).get()).isNotNull();
+    }
+
+    @Test
+    public void shouldFailInstantiate() {
+        Object actual = ReflectionUtil.instantiator(int.class).get();
+        assertThat(actual).isNotNull();
     }
 
     @Test
     public void shouldCreateInstantiator() {
-        assertThat(ReflectionUtil.instantiator(Parent.class).get().get()).isInstanceOf(Parent.class);
+        assertThat(ReflectionUtil.instantiator(Parent.class).get()).isInstanceOf(Parent.class);
     }
 
     @Test
@@ -128,7 +136,7 @@ public class ReflectionUtilTest {
     @Test
     public void shouldThrowHelpfulExceptionWhenNoZeroParametersConstructorExists()  {
         try {
-            ReflectionUtil.instantiator(NoZeroParametersConstructorClass.class).get().get();
+            ReflectionUtil.instantiator(NoZeroParametersConstructorClass.class).get();
             fail("Expected RuntimeException, but none was thrown");
         } catch (RuntimeException exception) {
             assertThat(exception.getMessage())
@@ -208,6 +216,31 @@ public class ReflectionUtilTest {
     }
 
     @Test
+    public void shouldFailFindingObservableType() throws NoSuchMethodException {
+        Method nonGenericReturnMethod = TestResource.class.getMethod("methodWithGenericParameter", List.class);
+        try {
+            ReflectionUtil.getTypeOfObservable(nonGenericReturnMethod);
+            fail("expected exception");
+        } catch (RuntimeException e) {
+            assertThat(e.getMessage()).isEqualTo("method does not have a generic return type");
+        }
+
+        Method nonObservableGenericReturnType = TestResource.class.getMethod("nonObservableGenericReturnType");
+        try {
+            ReflectionUtil.getTypeOfObservable(nonObservableGenericReturnType);
+            fail("expected exception");
+        } catch (RuntimeException e) {
+            assertThat(e.getMessage()).isEqualTo("java.util.List<java.lang.String> is not an Observable or Single");
+        }
+    }
+
+    @Test
+    public void shouldFindObservableFromMockedType() throws NoSuchMethodException {
+        Method instanceMethod = mock(TestResource.class).getClass().getMethod("resourceGet", String.class, String.class);
+        assertThat(ReflectionUtil.getTypeOfObservable(instanceMethod)).isEqualTo(String.class);
+    }
+
+    @Test
     public void shouldFindInstanceMethodThroughInvocationHandler() throws NoSuchMethodException {
         Method interfaceMethod = TestResource.class.getMethod("resourceGet", String.class, String.class);
 
@@ -223,6 +256,21 @@ public class ReflectionUtilTest {
     public void shouldFindGenericParameterType() throws NoSuchMethodException {
         Method interfaceMethod = TestResource.class.getMethod("methodWithGenericParameter", List.class);
         assertThat(ReflectionUtil.getGenericParameter(interfaceMethod.getGenericParameterTypes()[0])).isEqualTo(Integer.class);
+
+
+        Method methodWithoutGenerics = TestResource.class.getMethod("resourceGet", String.class, String.class);
+        try {
+            ReflectionUtil.getGenericParameter(methodWithoutGenerics.getGenericParameterTypes()[0]);
+        } catch (RuntimeException e) {
+            assertThat(e.getMessage()).isEqualTo("The sent in type class java.lang.String is not a ParameterizedType");
+        }
+
+        Method methodWithMultipleGenerics = TestResource.class.getMethod("methodWithMultiGenericParameter", Map.class);
+        try {
+            ReflectionUtil.getGenericParameter(methodWithMultipleGenerics.getGenericParameterTypes()[0]);
+        } catch (RuntimeException e) {
+            assertThat(e.getMessage()).isEqualTo("The sent in type java.util.Map<java.lang.String, java.lang.Integer> should have exactly one type argument, but had 2");
+        }
     }
 
     @Test
@@ -348,6 +396,10 @@ public class ReflectionUtilTest {
         Observable<String> resourceGet(@QueryParam("name") String name, @HeaderParam("lang") String lang);
 
         void methodWithGenericParameter(List<Integer> integerList);
+
+        void methodWithMultiGenericParameter(Map<String,Integer> integerList);
+
+        List<String> nonObservableGenericReturnType();
     }
 
     public static class TestResourceImpl implements TestResource {
@@ -360,6 +412,16 @@ public class ReflectionUtilTest {
         @Override
         public void methodWithGenericParameter(List<Integer> integerList) {
 
+        }
+
+        @Override
+        public void methodWithMultiGenericParameter(Map<String, Integer> integerList) {
+
+        }
+
+        @Override
+        public List<String> nonObservableGenericReturnType() {
+            return null;
         }
     }
 }

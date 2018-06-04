@@ -6,6 +6,7 @@ import rx.Single;
 import javax.inject.Provider;
 import java.lang.annotation.Annotation;
 import java.lang.invoke.CallSite;
+import java.lang.invoke.LambdaConversionException;
 import java.lang.invoke.LambdaMetafactory;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -37,6 +38,9 @@ public class ReflectionUtil {
         Type type = method.getGenericReturnType();
         if (!(type instanceof ParameterizedType)) {
             method = getInterfaceMethod(method);
+            if (method == null) {
+                throw new RuntimeException("method does not have a generic return type");
+            }
             type = method.getGenericReturnType();
         }
         ParameterizedType parameterizedType = (ParameterizedType)type;
@@ -55,7 +59,7 @@ public class ReflectionUtil {
         ParameterizedType pt                  = (ParameterizedType)type;
         Type[]            actualTypeArguments = pt.getActualTypeArguments();
         if (actualTypeArguments.length != 1) {
-            throw new RuntimeException("The sent in type " + type + " should have exactly one type argument, but had " + actualTypeArguments);
+            throw new RuntimeException("The sent in type " + type + " should have exactly one type argument, but had " + actualTypeArguments.length);
         }
         return (Class<?>)actualTypeArguments[0];
     }
@@ -308,7 +312,7 @@ public class ReflectionUtil {
         }
     }
 
-    public static <T> Optional<Supplier<T>> instantiator(Class<T> cls) {
+    public static <T> Supplier<T> instantiator(Class<T> cls) {
         try {
             Constructor<?> constructor = Stream.of(cls.getDeclaredConstructors())
                     .filter(c -> c.getParameterCount() == 0)
@@ -325,13 +329,11 @@ public class ReflectionUtil {
                     methodHandle,
                     methodHandle.type()
             );
-            return Optional.ofNullable((Supplier<T>)callSite.getTarget().invoke());
+            return (Supplier<T>)callSite.getTarget().invoke();
         } catch (NoSuchMethodException e) {
             throw new RuntimeException("No constructor with zero parameters found on " + cls.getSimpleName(), e);
-        } catch (IllegalAccessException | InstantiationException | InvocationTargetException e) {
+        } catch (Throwable e) {
             throw new RuntimeException(e);
-        } catch (Throwable throwable) {
-            throw new RuntimeException(throwable);
         }
     }
 

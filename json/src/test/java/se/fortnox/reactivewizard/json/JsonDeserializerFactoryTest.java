@@ -1,7 +1,5 @@
 package se.fortnox.reactivewizard.json;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.junit.Before;
 import org.junit.Test;
@@ -44,8 +42,6 @@ public class JsonDeserializerFactoryTest {
             LocalDateTime.of(2017, 1, 1, 13, 37),
             Optional.of("foo"),
             OptionalInt.of(15));
-
-
     }
 
     @Test
@@ -62,8 +58,30 @@ public class JsonDeserializerFactoryTest {
     }
 
     @Test
+    public void shouldThrowInvalidJsonExceptionUsingByteArayDeserializer() {
+        Function<byte[], ImmutableEntity> deserializer = deserializerFactory.createByteDeserializer(ImmutableEntity.class);
+
+        try {
+            deserializer.apply("not real json".getBytes());
+            fail("Expected exception, but none was thrown");
+        } catch(Exception actualException) {
+            assertThat(actualException).isInstanceOf(InvalidJsonException.class);
+            assertThat(actualException.getMessage()).contains("Unrecognized token");
+        }
+    }
+
+    @Test
     public void shouldDeserializeNullToNull() {
         Function<String, ImmutableEntity> deserializer = deserializerFactory.createDeserializer(ImmutableEntity.class);
+
+        ImmutableEntity result = deserializer.apply(null);
+
+        assertThat(result).isNull();
+    }
+
+    @Test
+    public void shouldDeserializeByteArrayNullToNull() {
+        Function<byte[], ImmutableEntity> deserializer = deserializerFactory.createByteDeserializer(ImmutableEntity.class);
 
         ImmutableEntity result = deserializer.apply(null);
 
@@ -136,59 +154,6 @@ public class JsonDeserializerFactoryTest {
         Jdk8Types result = deserializer.apply(json);
 
         assertThat(result).isEqualTo(jdk8Types);
-    }
-
-    @Test
-    public void shouldDeserializeUsingProtectedProp() {
-        PrivateEntity entity = new PrivateEntity();
-        entity.setProtectedProp("hello");
-        Function<PrivateEntity, String> serializer = serializerFactory.createStringSerializer(PrivateEntity.class);
-
-        assertThat(serializer.apply(entity)).isEqualTo("{\"protectedProp\":\"hello\"}");
-    }
-
-    @Test
-    public void shouldDeserializeUsingPrivateClassWithPublicProp() {
-        PrivateEntity entity = new PrivateEntity();
-        entity.setPublicPropInPrivateClass("hello");
-        Function<PrivateEntity, String> serializer = serializerFactory.createStringSerializer(PrivateEntity.class);
-
-        assertThat(serializer.apply(entity)).isEqualTo("{\"publicPropInPrivateClass\":\"hello\"}");
-    }
-
-    @Test
-    public void shouldDeserializeUsingFieldProp() {
-        PrivateEntity entity = new PrivateEntity();
-        entity.fieldProp = "hello";
-        Function<PrivateEntity, String> serializer = serializerFactory.createStringSerializer(PrivateEntity.class);
-
-        assertThat(serializer.apply(entity)).isEqualTo("{\"fieldProp\":\"hello\"}");
-    }
-
-    private static class PrivateEntity {
-        private String protectedProp;
-        private String publicPropInPrivateClass;
-        @JsonInclude(JsonInclude.Include.NON_NULL)
-        public String fieldProp;
-
-        @JsonProperty()
-        @JsonInclude(JsonInclude.Include.NON_NULL)
-        String getProtectedProp() {
-            return protectedProp;
-        }
-
-        public void setProtectedProp(String myprop) {
-            this.protectedProp = myprop;
-        }
-
-        @JsonInclude(JsonInclude.Include.NON_NULL)
-        public String getPublicPropInPrivateClass() {
-            return publicPropInPrivateClass;
-        }
-
-        public void setPublicPropInPrivateClass(String publicPropInPrivateClass) {
-            this.publicPropInPrivateClass = publicPropInPrivateClass;
-        }
     }
 
     private MutableEntity mutableEntity(String stringProperty, int intProperty) {

@@ -1,9 +1,13 @@
-package se.fortnox.reactivewizard.util.rx;
+package se.fortnox.reactivewizard.util;
 
 import org.junit.Test;
 import se.fortnox.reactivewizard.util.PropertyResolver;
 
+import java.util.Optional;
+import java.util.function.Function;
+
 import static org.fest.assertions.Assertions.assertThat;
+import static org.fest.assertions.Fail.fail;
 
 public class PropertyResolverTest {
     @Test
@@ -27,6 +31,31 @@ public class PropertyResolverTest {
         assertThat(propertyResolver.getter().apply(immutable)).isEqualTo(5);
         propertyResolver.setter().accept(immutable, 10);
         assertThat(propertyResolver.getter().apply(immutable)).isEqualTo(10);
+    }
+
+    @Test
+    public void emptyPropertyResolver() {
+        try {
+            PropertyResolver.from(Mutable.class, new String[0]).get().setter();
+            fail("expected exception");
+        } catch (IllegalArgumentException e) {}
+
+        Mutable instance = new Mutable();
+        Function getter = PropertyResolver.from(Mutable.class, new String[0]).get().getter();
+        assertThat(getter.apply(instance)).isSameAs(instance);
+    }
+
+    @Test
+    public void missingProperty() {
+        assertThat(PropertyResolver.from(Mutable.class, new String[]{"nonexisting"}).isPresent()).isFalse();
+
+        PropertyResolver propertyResolver = PropertyResolver.from(Mutable.class, new String[0]).get();
+        assertThat(propertyResolver.subPath(new String[]{"nonexisting"}).isPresent()).isFalse();
+    }
+
+    @Test
+    public void testToString() {
+        PropertyResolver.from(Mutable.class, new String[]{"anInt"}).get().toString();
     }
 
     public static class Mutable {

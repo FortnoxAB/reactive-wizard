@@ -69,15 +69,11 @@ public class PropertyResolver<I,T> {
             return properties[0].getter();
         }
 
-        try {
-            Function[] functionChain = new Function[properties.length];
-            for (int i = 0; i < properties.length; i++) {
-                functionChain[i] = properties[i].getter();
-            }
-            return new FunctionChain(functionChain);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        Function[] functionChain = new Function[properties.length];
+        for (int i = 0; i < properties.length; i++) {
+            functionChain[i] = properties[i].getter();
         }
+        return new FunctionChain<>(functionChain);
     }
 
     public BiConsumer<I,T> setter() {
@@ -88,22 +84,15 @@ public class PropertyResolver<I,T> {
             return properties[0].setter();
         }
 
-        try {
-            Function[] getterChain = new Function[properties.length - 1];
-            BiConsumer[] setterChain = new BiConsumer[properties.length - 1];
-            Supplier[] instantiators = new Supplier[properties.length - 1];
-            for (int i = 0; i < properties.length - 1; i++) {
-                getterChain[i] = properties[i].getter();
-                setterChain[i] = properties[i].setter();
-                Optional<Supplier> instantiator = ReflectionUtil.instantiator(properties[i].getType());
-                if (instantiator.isPresent()) {
-                    instantiators[i] = instantiator.get();
-                }
-            }
-            return new SetterChain(getterChain, setterChain, instantiators, properties[properties.length - 1].setter());
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        Function[] getterChain = new Function[properties.length - 1];
+        BiConsumer[] setterChain = new BiConsumer[properties.length - 1];
+        Supplier[] instantiators = new Supplier[properties.length - 1];
+        for (int i = 0; i < properties.length - 1; i++) {
+            getterChain[i] = properties[i].getter();
+            setterChain[i] = properties[i].setter();
+            instantiators[i] = ReflectionUtil.instantiator(properties[i].getType());
         }
+        return new SetterChain(getterChain, setterChain, instantiators, properties[properties.length - 1].setter());
     }
 
     private static class FunctionChain<I,T> implements Function<I,T> {
@@ -149,9 +138,6 @@ public class PropertyResolver<I,T> {
                 }
                 currentInstance = next;
             }
-            if (currentInstance == null) {
-                throw new IllegalArgumentException("Found null in setter chain");
-            }
             setter.accept(currentInstance, value);
         }
     }
@@ -190,10 +176,6 @@ public class PropertyResolver<I,T> {
 
         Type getGenericType() {
             return genericType;
-        }
-
-        String getName() {
-            return name;
         }
 
         @Override
