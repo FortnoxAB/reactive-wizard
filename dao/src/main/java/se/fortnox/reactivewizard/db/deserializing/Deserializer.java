@@ -5,8 +5,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Optional;
 
-interface Deserializer {
-    Optional<?> deserialize(ResultSet rs) throws SQLException,
+interface Deserializer<T> {
+    Optional<T> deserialize(ResultSet rs) throws SQLException,
         InvocationTargetException, IllegalAccessException,
         InstantiationException;
 }

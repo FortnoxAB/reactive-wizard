@@ -2,10 +2,16 @@ package se.fortnox.reactivewizard.util;
 
 import rx.Observable;
 import rx.Single;
-import se.fortnox.reactivewizard.util.rx.PropertyResolver;
 
 import javax.inject.Provider;
 import java.lang.annotation.Annotation;
+import java.lang.invoke.CallSite;
+import java.lang.invoke.LambdaConversionException;
+import java.lang.invoke.LambdaMetafactory;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
+import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
@@ -20,6 +26,9 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static java.util.Arrays.asList;
@@ -29,6 +38,9 @@ public class ReflectionUtil {
         Type type = method.getGenericReturnType();
         if (!(type instanceof ParameterizedType)) {
             method = getInterfaceMethod(method);
+            if (method == null) {
+                throw new RuntimeException("method does not have a generic return type");
+            }
             type = method.getGenericReturnType();
         }
         ParameterizedType parameterizedType = (ParameterizedType)type;
@@ -47,7 +59,7 @@ public class ReflectionUtil {
         ParameterizedType pt                  = (ParameterizedType)type;
         Type[]            actualTypeArguments = pt.getActualTypeArguments();
         if (actualTypeArguments.length != 1) {
-            throw new RuntimeException("The sent in type " + type + " should have exactly one type argument, but had " + actualTypeArguments);
+            throw new RuntimeException("The sent in type " + type + " should have exactly one type argument, but had " + actualTypeArguments.length);
         }
         return (Class<?>)actualTypeArguments[0];
     }
@@ -67,27 +79,6 @@ public class ReflectionUtil {
         return candidateMethod.getName().equals(method.getName()) && Arrays.equals(candidateMethod.getParameterTypes(), method.getParameterTypes());
     }
 
-    /**
-     * Extracts a named property from an object using reflection.
-     *
-     * @param object Target object
-     * @param property Property name to extract
-     * @return Value of the property
-     */
-    public static Object getValue(Object object, String property) {
-        Class<? extends Object> cls = object.getClass();
-        property = property.substring(0, 1).toUpperCase() + property.substring(1);
-        try {
-            try {
-                return cls.getMethod("get" + property, new Class[0]).invoke(object);
-            } catch (NoSuchMethodException e) {
-                return cls.getMethod("is" + property, new Class[0]).invoke(object);
-            }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     public static Method getOverriddenMethod(Method method) {
         Optional<Method> found;
         for (Class<?> iface : method.getDeclaringClass().getInterfaces()) {
@@ -97,6 +88,7 @@ public class ReflectionUtil {
             }
         }
         found = findMethodInClass(method, method.getDeclaringClass());
+        found = found.filter(m -> !m.equals(method));
         return found.orElse(null);
     }
 
@@ -188,7 +180,7 @@ public class ReflectionUtil {
      * @param propertyName The property to locate a getter for.
      * @return a Getter instance for either a method or a field
      */
-    public static Getter getGetter(Class<?> cls, String propertyName) {
+    static Getter getGetter(Class<?> cls, String propertyName) {
         return getGetter(cls, cls, propertyName);
     }
 
@@ -236,7 +228,7 @@ public class ReflectionUtil {
      * @param propertyName The property to locate a setter for.
      * @return a Setter instance for either a method or a field
      */
-    public static Setter getSetter(Class<?> cls, String propertyName) {
+    static Setter getSetter(Class<?> cls, String propertyName) {
         return getSetter(cls, cls, propertyName);
     }
 
@@ -275,36 +267,6 @@ public class ReflectionUtil {
 
     public static Optional<PropertyResolver> getPropertyResolver(Type type, String... propertyNames) {
         return PropertyResolver.from(type, propertyNames);
-    }
-
-    public static Method getSetterFromGetter(Method getter) {
-        String name = getter.getName();
-        String setterName;
-        if (name.startsWith("is")) {
-            setterName = "set" + name.substring(2);
-        } else {
-            setterName = "set" + name.substring(3);
-        }
-        try {
-            return getter.getDeclaringClass().getMethod(setterName, getter.getReturnType());
-        } catch (NoSuchMethodException e) {
-            return null;
-        }
-    }
-
-    public static <T> T newInstance(Class<T> cls) {
-        try {
-            Constructor<?> constructor = Stream.of(cls.getDeclaredConstructors())
-                .filter(c -> c.getParameterCount() == 0)
-                .findFirst()
-                .orElseThrow(NoSuchMethodException::new);
-            constructor.setAccessible(true);
-            return cls.cast(constructor.newInstance());
-        } catch (NoSuchMethodException e) {
-            throw new RuntimeException("No constructor with zero parameters found on " + cls.getSimpleName(), e);
-        } catch (IllegalAccessException | InstantiationException | InvocationTargetException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     /**
@@ -348,5 +310,71 @@ public class ReflectionUtil {
             }
             return null;
         }
+    }
+
+    public static <T> Supplier<T> instantiator(Class<T> cls) {
+        try {
+            Constructor<?> constructor = Stream.of(cls.getDeclaredConstructors())
+                    .filter(c -> c.getParameterCount() == 0)
+                    .findFirst()
+                    .orElseThrow(NoSuchMethodException::new);
+            MethodHandles.Lookup lookup = lookupFor(cls, constructor);
+            constructor.setAccessible(true);
+            MethodHandle methodHandle = lookup.unreflectConstructor(constructor);
+            CallSite callSite = LambdaMetafactory.metafactory(
+                    lookup,
+                    "get",
+                    MethodType.methodType(Supplier.class),
+                    MethodType.methodType(Object.class),
+                    methodHandle,
+                    methodHandle.type()
+            );
+            return (Supplier<T>)callSite.getTarget().invoke();
+        } catch (NoSuchMethodException e) {
+            throw new RuntimeException("No constructor with zero parameters found on " + cls.getSimpleName(), e);
+        } catch (Throwable e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    static <T> MethodHandles.Lookup lookupFor(Class<T> cls, AccessibleObject accessibleObject) {
+        try {
+            final MethodHandles.Lookup original = MethodHandles.lookup();
+            if (accessibleObject.isAccessible()) {
+                return original;
+            }
+            // Change the lookup to allow private access
+            final Field internal = MethodHandles.Lookup.class.getDeclaredField("IMPL_LOOKUP");
+            internal.setAccessible(true);
+            final MethodHandles.Lookup trusted = (MethodHandles.Lookup) internal.get(original);
+
+            return trusted.in(cls);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    static <I,T> Function<I, T> lambdaForFunction(MethodHandles.Lookup lookup, MethodHandle methodHandle) throws Throwable {
+        CallSite callSite = LambdaMetafactory.metafactory(
+                lookup,
+                "apply",
+                MethodType.methodType(Function.class),
+                MethodType.methodType(Object.class, Object.class),
+                methodHandle,
+                methodHandle.type()
+        );
+        return (Function<I,T>) callSite.getTarget().invoke();
+    }
+
+
+    public static <I,T> Optional<Function<I,T>> getter(Class<I> instanceCls, String propertyPath) {
+        Optional<PropertyResolver> propertyResolver = ReflectionUtil.getPropertyResolver(instanceCls, propertyPath.split("\\."));
+        return propertyResolver.map(PropertyResolver::getter);
+    }
+
+    public static <I,T> Optional<BiConsumer<I,T>> setter(Class<I> instanceCls, String propertyPath) {
+        Optional<PropertyResolver> propertyResolver = ReflectionUtil.getPropertyResolver(instanceCls, propertyPath.split("\\."));
+        return propertyResolver.map(PropertyResolver::setter);
+
     }
 }

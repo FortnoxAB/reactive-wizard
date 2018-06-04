@@ -5,7 +5,7 @@ import org.slf4j.LoggerFactory;
 import se.fortnox.reactivewizard.json.JsonDeserializerFactory;
 import se.fortnox.reactivewizard.util.CamelSnakeConverter;
 import se.fortnox.reactivewizard.util.ReflectionUtil;
-import se.fortnox.reactivewizard.util.rx.PropertyResolver;
+import se.fortnox.reactivewizard.util.PropertyResolver;
 
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -14,13 +14,14 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 
 class DeserializerUtil {
     private static final Logger                  LOG                       = LoggerFactory.getLogger(DeserializerUtil.class);
     private static final JsonDeserializerFactory JSON_DESERIALIZER_FACTORY = new JsonDeserializerFactory();
 
-    static <T> Map<String[], T> createPropertyDeserializers(Class<?> cls, ResultSetMetaData metaData,
-        BiFunction<PropertyResolver, Deserializer, T> deserializerFactory
+    static <I,T> Map<String[], T> createPropertyDeserializers(Class<I> cls, ResultSetMetaData metaData,
+        BiFunction<PropertyResolver<I,?>, Deserializer, T> deserializerFactory
     ) throws SQLException {
         Map<String[], T> propertyDeserializers = new LinkedHashMap<>();
 
@@ -32,7 +33,7 @@ class DeserializerUtil {
 
             Optional<PropertyResolver> propertyResolver = ReflectionUtil.getPropertyResolver(cls, propertyPath);
             if (propertyResolver.isPresent()) {
-                T propertyDeserializer = createPropertyDeserializer(propertyResolver.get(), metaData, i + 1, deserializerFactory);
+                T propertyDeserializer = createPropertyDeserializer((PropertyResolver<I, ?>) propertyResolver.get(), metaData, i + 1, deserializerFactory);
                 propertyDeserializers.put(propertyPath, propertyDeserializer);
             } else {
                 LOG.warn("Tried to deserialize column " + column + ", but found no matching property named " + propertyName + " in " + cls.getSimpleName());
@@ -41,8 +42,8 @@ class DeserializerUtil {
         return Collections.unmodifiableMap(propertyDeserializers);
     }
 
-    private static <T> T createPropertyDeserializer(PropertyResolver propertyResolver, ResultSetMetaData metaData,
-        int columnIndex, BiFunction<PropertyResolver, Deserializer, T> deserializerFactory
+    private static <I,T> T createPropertyDeserializer(PropertyResolver<I,?> propertyResolver, ResultSetMetaData metaData,
+        int columnIndex, BiFunction<PropertyResolver<I,?>, Deserializer, T> deserializerFactory
     ) throws SQLException {
         Class<?> type       = propertyResolver.getPropertyType();
         int      columnType = metaData.getColumnType(columnIndex);
@@ -55,14 +56,18 @@ class DeserializerUtil {
         return deserializerFactory.apply(propertyResolver, simpleProp);
     }
 
-    private static <T> T jsonPropertyDeserializer(PropertyResolver propertyResolver,
+    private static <I,T> T jsonPropertyDeserializer(PropertyResolver<I,?> propertyResolver,
         int columnIndex,
-        BiFunction<PropertyResolver, Deserializer, T> deserializerFactory,
+        BiFunction<PropertyResolver<I,?>, Deserializer, T> deserializerFactory,
         Class<?> type
     ) {
+        Function<String, ?> deserializer = JSON_DESERIALIZER_FACTORY.createDeserializer(type);
         return deserializerFactory.apply(propertyResolver, (rs) -> {
             String columnValue = rs.getString(columnIndex);
-            Object value       = JSON_DESERIALIZER_FACTORY.createDeserializer(type).apply(columnValue);
+            if (columnValue == null) {
+                return Optional.empty();
+            }
+            Object value       = deserializer.apply(columnValue);
             return Optional.ofNullable(value);
         });
     }
