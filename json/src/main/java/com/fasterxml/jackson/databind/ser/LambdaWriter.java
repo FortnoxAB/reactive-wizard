@@ -18,7 +18,7 @@ import java.util.function.Function;
 /**
  * A version of @{@link BeanPropertyWriter} that uses lambdas to access getters with better performance.
  *
- * Unfortunately there was some copy&paste needed, which means that we are quite dependent on the version of jackson here.
+ * Unfortunately there was some copy and paste needed, which means that we are quite dependent on the version of jackson here.
  */
 public class LambdaWriter extends BeanPropertyWriter {
     private Function<Object, Object> lambda;
