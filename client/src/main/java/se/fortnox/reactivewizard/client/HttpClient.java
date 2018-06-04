@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.type.TypeFactory;
+import com.google.common.collect.Sets;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
@@ -19,7 +20,6 @@ import se.fortnox.reactivewizard.jaxrs.WebException;
 import se.fortnox.reactivewizard.logging.LoggingContext;
 import se.fortnox.reactivewizard.metrics.HealthRecorder;
 import se.fortnox.reactivewizard.metrics.Metrics;
-import se.fortnox.reactivewizard.util.ManifestUtil;
 import se.fortnox.reactivewizard.util.ReflectionUtil;
 import se.fortnox.reactivewizard.util.rx.RetryWithDelay;
 
@@ -39,22 +39,22 @@ import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Proxy;
 import java.lang.reflect.Type;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLEncoder;
-import java.net.UnknownHostException;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import static java.lang.String.format;
+import static java.util.Collections.emptySet;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static rx.Observable.just;
 
@@ -62,23 +62,11 @@ public class HttpClient implements InvocationHandler {
     private static final Logger           LOG            = LoggerFactory.getLogger(HttpClient.class);
     private static final ByteBufCollector COLLECTOR      = new ByteBufCollector(10 * 1024 * 1024);
     private static final Class            BYTEARRAY_TYPE = (new byte[0]).getClass();
-    private static       String           hostName;
-
-    static {
-        try {
-            // A number of HttpClient instances is created (at least during tests)
-            // and the following call takes a while so the result should be reused
-            // to avoid slowing down the application's start
-            hostName = InetAddress.getLocalHost().getHostName();
-        } catch (UnknownHostException e) {
-            throw new RuntimeException("Cannot get the localhost address.", e);
-        }
-    }
 
     protected final InetSocketAddress           serverInfo;
     protected final HttpClientConfig            config;
     private final   RequestParameterSerializers requestParameterSerializers;
-    private final   RequestTracer               requestTracer;
+    private final   Set<PreRequestHook>         preRequestHooks;
     private         RxClientProvider            clientProvider;
     private         ObjectMapper                objectMapper;
     private         int                         timeout     = 10;
@@ -88,7 +76,8 @@ public class HttpClient implements InvocationHandler {
     public HttpClient(HttpClientConfig config,
         RxClientProvider clientProvider,
         ObjectMapper objectMapper,
-        RequestParameterSerializers requestParameterSerializers
+        RequestParameterSerializers requestParameterSerializers,
+        Set<PreRequestHook> preRequestHooks
     ) {
         this.config = config;
         this.clientProvider = clientProvider;
@@ -96,14 +85,11 @@ public class HttpClient implements InvocationHandler {
         this.requestParameterSerializers = requestParameterSerializers;
 
         serverInfo = new InetSocketAddress(config.getHost(), config.getPort());
-
-        this.requestTracer = ManifestUtil.getManifestValues()
-            .map(manifestValues -> new RequestTracer(manifestValues, hostName))
-            .orElse(null);
+        this.preRequestHooks = preRequestHooks;
     }
 
     public HttpClient(HttpClientConfig config) {
-        this(config, new RxClientProvider(config, new HealthRecorder()), new ObjectMapper(), new RequestParameterSerializers());
+        this(config, new RxClientProvider(config, new HealthRecorder()), new ObjectMapper(), new RequestParameterSerializers(), emptySet());
     }
 
     public static Observable<String> get(String url) {
@@ -133,7 +119,7 @@ public class HttpClient implements InvocationHandler {
     }
 
     public static <T> T create(HttpClientConfig config, RxClientProvider clientProvider, ObjectMapper objectMapper, Class<T> jaxRsInterface) {
-        return new HttpClient(config, clientProvider, objectMapper, new RequestParameterSerializers()).create(jaxRsInterface);
+        return new HttpClient(config, clientProvider, objectMapper, new RequestParameterSerializers(), null).create(jaxRsInterface);
     }
 
     @SuppressWarnings("unchecked")
@@ -363,13 +349,15 @@ public class HttpClient implements InvocationHandler {
             request.addHeader("Content-Type", consumes.value()[0]);
         }
 
-        if (requestTracer != null) {
-            requestTracer.addTrace(request);
-        }
+        applyPreRequestHooks(request);
 
         addContent(method, arguments, request);
 
         return request;
+    }
+
+    private void applyPreRequestHooks(RequestBuilder request) {
+        preRequestHooks.forEach(hook -> hook.apply(request));
     }
 
     @SuppressWarnings("unchecked")

@@ -1,6 +1,7 @@
 package se.fortnox.reactivewizard.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Sets;
 import com.google.inject.Injector;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpResponseStatus;
@@ -27,6 +28,7 @@ import se.fortnox.reactivewizard.jaxrs.PATCH;
 import se.fortnox.reactivewizard.jaxrs.WebException;
 import se.fortnox.reactivewizard.metrics.HealthRecorder;
 import se.fortnox.reactivewizard.server.ServerConfig;
+import se.fortnox.reactivewizard.test.TestUtil;
 import se.fortnox.reactivewizard.util.rx.RetryWithDelay;
 
 import javax.ws.rs.Consumes;
@@ -45,7 +47,9 @@ import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -63,7 +67,6 @@ import static org.fest.assertions.Fail.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static rx.Observable.defer;
@@ -114,7 +117,7 @@ public class HttpClientTest {
     }
 
     private TestResource getHttpProxy(HttpClientConfig config) {
-        HttpClient client = new HttpClient(config, new RxClientProvider(config, healthRecorder), new ObjectMapper(), new RequestParameterSerializers());
+        HttpClient client = new HttpClient(config, new RxClientProvider(config, healthRecorder), new ObjectMapper(), new RequestParameterSerializers(), Collections.emptySet());
         return client.create(TestResource.class);
     }
 
@@ -205,7 +208,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldReportHealthyWhenPoolIsNotExhausted() throws URISyntaxException {
+    public void shouldReportHealthyWhenPoolIsNotExhausted() {
         withServer(server -> {
             TestResource resource = getHttpProxy(server.getServerPort(), 5);
 
@@ -246,7 +249,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldReturnDetailedError() throws URISyntaxException {
+    public void shouldReturnDetailedError() {
         String                       detailedErrorJson = "{\"error\":1,\"message\":\"Detailed error description.\",\"code\":100}";
         HttpServer<ByteBuf, ByteBuf> server            = startServer(HttpResponseStatus.BAD_REQUEST, detailedErrorJson);
 
@@ -321,7 +324,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldSupportSingleSource() throws Exception {
+    public void shouldSupportSingleSource() {
         HttpServer<ByteBuf, ByteBuf> server = startServer(HttpResponseStatus.OK, "\"OK\"");
 
         TestResource resource = getHttpProxy(server.getServerPort());
@@ -331,14 +334,14 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldHandleLargeResponses() throws URISyntaxException {
-        final HttpServer<ByteBuf, ByteBuf> server   = startServer(HttpResponseStatus.OK, response10mb());
+    public void shouldHandleLargeResponses() {
+        final HttpServer<ByteBuf, ByteBuf> server   = startServer(HttpResponseStatus.OK, generate10MbString());
         TestResource                       resource = getHttpProxy(server.getServerPort());
         resource.getHello().toBlocking().single();
     }
 
     @Test
-    public void shouldSupportByteArrayResponse() throws URISyntaxException {
+    public void shouldSupportByteArrayResponse() {
         final HttpServer<ByteBuf, ByteBuf> server   = startServer(HttpResponseStatus.OK, "hej");
         TestResource                       resource = getHttpProxy(server.getServerPort());
         byte[]                             result   = resource.getAsBytes().toBlocking().single();
@@ -363,7 +366,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldNotRetryFor4XXResponses() throws URISyntaxException {
+    public void shouldNotRetryFor4XXResponses() {
         AtomicLong                   callCount = new AtomicLong();
         HttpServer<ByteBuf, ByteBuf> server    = startServer(NOT_FOUND, "", r -> callCount.incrementAndGet());
 
@@ -378,7 +381,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldNotRetryOnTimeout() throws URISyntaxException {
+    public void shouldNotRetryOnTimeout() {
         AtomicLong callCount = new AtomicLong();
         // Slow server
         HttpServer<ByteBuf, ByteBuf> server = HttpServer.newServer(0).start((request, response) -> {
@@ -401,7 +404,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldHandleMultipleChunks() throws URISyntaxException {
+    public void shouldHandleMultipleChunks() {
         HttpServer<ByteBuf, ByteBuf> server = HttpServer.newServer(0).start((request, response) -> {
             response.setStatus(HttpResponseStatus.OK);
             return response.writeStringAndFlushOnEach(just("\"he")
@@ -415,7 +418,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldDeserializeVoidResult() throws URISyntaxException, InterruptedException {
+    public void shouldDeserializeVoidResult() {
         HttpServer<ByteBuf, ByteBuf> server = startServer(HttpResponseStatus.CREATED, "");
 
         TestResource resource = getHttpProxy(server.getServerPort());
@@ -425,7 +428,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldShutDownConnectionOnTimeoutBeforeHeaders() throws InterruptedException, URISyntaxException {
+    public void shouldShutDownConnectionOnTimeoutBeforeHeaders() throws URISyntaxException {
         Consumer<String>             serverLog = mock(Consumer.class);
         HttpServer<ByteBuf, ByteBuf> server    = createTestServer(serverLog);
 
@@ -459,7 +462,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldShutDownConnectionOnTimeoutEstablishingConnection() throws InterruptedException, URISyntaxException {
+    public void shouldShutDownConnectionOnTimeoutEstablishingConnection() throws URISyntaxException {
         HttpClientConfig config = new HttpClientConfig("http://127.0.0.1");
         config.setMaxConnections(1);
 
@@ -478,7 +481,7 @@ public class HttpClientTest {
                 }));
             }
         };
-        HttpClient   client   = new HttpClient(config, clientProvider, new ObjectMapper(), new RequestParameterSerializers());
+        HttpClient   client   = new HttpClient(config, clientProvider, new ObjectMapper(), new RequestParameterSerializers(), Collections.emptySet());
         TestResource resource = client.create(TestResource.class);
         HttpClient.setTimeout(resource, 100, TimeUnit.MILLISECONDS);
 
@@ -520,7 +523,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldCloseConnectionOnTimeoutDuringContentReceive() throws InterruptedException, URISyntaxException {
+    public void shouldCloseConnectionOnTimeoutDuringContentReceive() throws URISyntaxException {
         Consumer<String>             serverLog = mock(Consumer.class);
         HttpServer<ByteBuf, ByteBuf> server    = createTestServer(serverLog);
 
@@ -555,7 +558,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldShouldNotGivePoolExhaustedIfServerDoesNotCloseConnection() throws InterruptedException, URISyntaxException {
+    public void shouldShouldNotGivePoolExhaustedIfServerDoesNotCloseConnection() throws URISyntaxException {
 
         LogManager.getLogger(HttpClient.class).setLevel(Level.toLevel(Level.OFF_INT));
 
@@ -591,7 +594,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void willRequestWithMultipleCookies() throws URISyntaxException {
+    public void willRequestWithMultipleCookies() {
         Consumer<HttpServerRequest<ByteBuf>> reqLog = mock(Consumer.class);
         HttpServer<ByteBuf, ByteBuf>         server = startServer(OK, "", reqLog::accept);
 
@@ -620,7 +623,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldSendFormParamsAsBodyWithCorrectContentType() throws InterruptedException {
+    public void shouldSendFormParamsAsBodyWithCorrectContentType()  {
         AtomicReference<HttpServerRequest<ByteBuf>> recordedRequest     = new AtomicReference<>();
         AtomicReference<String>                     recordedRequestBody = new AtomicReference<>();
 
@@ -629,7 +632,7 @@ public class HttpClientTest {
             response.setStatus(HttpResponseStatus.CREATED);
             return request.getContent().flatMap(buf -> {
                 recordedRequestBody.set(buf.toString(Charset.defaultCharset()));
-                return Observable.<Void>empty();
+                return Observable.empty();
             });
         });
 
@@ -643,7 +646,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldNotSendHeaderParamsAsPostBody() throws InterruptedException {
+    public void shouldNotSendHeaderParamsAsPostBody()  {
         AtomicReference<HttpServerRequest<ByteBuf>> recordedRequest     = new AtomicReference<>();
         AtomicReference<String>                     recordedRequestBody = new AtomicReference<>();
         HttpServer<ByteBuf, ByteBuf> server = HttpServer.newServer(0).start((request, response) -> {
@@ -651,7 +654,7 @@ public class HttpClientTest {
             response.setStatus(HttpResponseStatus.CREATED);
             return request.getContent().flatMap(buf -> {
                 recordedRequestBody.set(buf.toString(Charset.defaultCharset()));
-                return Observable.<Void>empty();
+                return Observable.empty();
             });
         });
 
@@ -667,7 +670,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldUseConsumesAnnotationAsContentTypeHeader() throws InterruptedException {
+    public void shouldUseConsumesAnnotationAsContentTypeHeader()  {
         AtomicReference<HttpServerRequest<ByteBuf>> recordedRequest = new AtomicReference<>();
         HttpServer<ByteBuf, ByteBuf>                server          = startServer(OK, "", recordedRequest::set);
 
@@ -720,7 +723,33 @@ public class HttpClientTest {
         verify(mockClient, times(1)).setTimeout(eq(1300), eq(TimeUnit.MILLISECONDS));
     }
 
-    private String response10mb() {
+    @Test
+    public void shouldExecutePreRequestHooks() throws URISyntaxException {
+        HttpServer<ByteBuf, ByteBuf> server = HttpServer.newServer(0).start((request, response) -> {
+            response.setStatus(HttpResponseStatus.OK);
+            return response.writeString(just("\"hi\""));
+        });
+
+        String           url            = "localhost:" + server.getServerPort();
+        HttpClientConfig config         = new HttpClientConfig(url);
+        RxClientProvider clientProvider = new RxClientProvider(config, healthRecorder);
+
+        PreRequestHook          preRequestHook  = mock(PreRequestHook.class);
+        HashSet<PreRequestHook> preRequestHooks = Sets.newHashSet(preRequestHook);
+
+        HttpClient client = new HttpClient(config, clientProvider, new ObjectMapper(), new RequestParameterSerializers(), preRequestHooks);
+
+        TestResource resource = client.create(TestResource.class);
+        resource.getHello().toBlocking().single();
+
+        verify(preRequestHook, times(1)).apply((TestUtil.matches(requestBuilder -> {
+            assertThat(requestBuilder.getFullUrl()).isEqualToIgnoringCase(url + "/hello");
+        })));
+
+        server.shutdown();
+    }
+
+    private String generate10MbString() {
         char[] resp = new char[10 * 1024 * 1024];
         for (int i = 0; i < resp.length; i++) {
             resp[i] = 'a';
