@@ -12,6 +12,7 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
@@ -222,6 +223,25 @@ public class ReflectionUtilTest {
     public void shouldFindGenericParameterType() throws NoSuchMethodException {
         Method interfaceMethod = TestResource.class.getMethod("methodWithGenericParameter", List.class);
         assertThat(ReflectionUtil.getGenericParameter(interfaceMethod.getGenericParameterTypes()[0])).isEqualTo(Integer.class);
+    }
+
+    @Test
+    public void shouldSupportSubPathsOfProperties() {
+        Optional<PropertyResolver> propertyResolverMaybe = ReflectionUtil.getPropertyResolver(Parent.class, "inner");
+        PropertyResolver resolver = propertyResolverMaybe.get();
+
+        assertThat(resolver.getPropertyType()).isEqualTo(Inner.class);
+
+        Optional<PropertyResolver<Parent,Integer>> subPathMaybe = resolver.subPath(new String[]{"i"});
+        PropertyResolver<Parent,Integer> subPath = subPathMaybe.get();
+
+        assertThat(subPath.getPropertyType()).isEqualTo(int.class);
+
+        Parent entity = new Parent();
+        entity.setInner(new Inner(){{
+            setI(4);
+        }});
+        assertThat(subPath.getter().apply(entity)).isEqualTo(4);
     }
 
     private static class InstanceExposingInvocationHandler implements InvocationHandler, Provider {

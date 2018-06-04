@@ -49,7 +49,7 @@ public class PropertyResolver<I,T> {
             Property[]       propertiesToAppend    = otherPropertyResolver.properties;
             Property[]       newProperties         = new Property[this.properties.length + propertiesToAppend.length];
             System.arraycopy(properties, 0, newProperties, 0, properties.length);
-            System.arraycopy(propertiesToAppend, 0, newProperties, properties.length, newProperties.length);
+            System.arraycopy(propertiesToAppend, 0, newProperties, properties.length, propertiesToAppend.length);
 
             return Optional.of(new PropertyResolver(otherPropertyResolver.getPropertyType(), otherPropertyResolver.getPropertyGenericType(), newProperties));
         }
@@ -192,20 +192,8 @@ public class PropertyResolver<I,T> {
             return genericType;
         }
 
-        T getValue(I instance) {
-            return getter().apply(instance);
-        }
-
-        boolean hasSetter() {
-            return setter != null;
-        }
-
         String getName() {
             return name;
-        }
-
-        void setValue(I instance, T value) throws InvocationTargetException, IllegalAccessException {
-            setter.invoke(instance, value);
         }
 
         @Override
