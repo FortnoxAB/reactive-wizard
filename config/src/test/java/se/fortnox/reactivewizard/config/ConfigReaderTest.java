@@ -1,17 +1,36 @@
 package se.fortnox.reactivewizard.config;
 
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonPointer;
+import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.core.ObjectCodec;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
+import com.fasterxml.jackson.databind.node.JsonNodeCreator;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.JsonNodeType;
+import com.fasterxml.jackson.databind.node.MissingNode;
+import com.fasterxml.jackson.databind.node.NullNode;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.name.Names;
 import org.junit.Test;
+import org.yaml.snakeyaml.error.MarkedYAMLException;
 import se.fortnox.reactivewizard.binding.AutoBindModules;
+import se.fortnox.reactivewizard.test.TestUtil;
 
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.fest.assertions.Assertions.assertThat;
+import static org.fest.assertions.Fail.fail;
+import static se.fortnox.reactivewizard.test.TestUtil.assertException;
 
 public class ConfigReaderTest {
     /**
@@ -116,5 +135,16 @@ public class ConfigReaderTest {
     public void shouldSupportEmptyConfig() {
         EmptyConfig testConfig = ConfigReader.fromFile("src/test/resources/testconfig.yml", EmptyConfig.class);
         assertThat(testConfig).isNotNull();
+    }
+
+
+    @Test
+    public void shouldThrowExceptionForInvalidYaml() {
+        try {
+            ConfigReader.fromFile("src/test/resources/testconfig-invalid.yml", EmptyConfig.class);
+            fail("Expected exception, but none was thrown");
+        } catch (RuntimeException exception) {
+            assertException(exception, MarkedYAMLException.class);
+        }
     }
 }
