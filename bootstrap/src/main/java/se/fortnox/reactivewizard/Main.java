@@ -4,7 +4,6 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Module;
 import com.google.inject.name.Names;
-import org.slf4j.LoggerFactory;
 import se.fortnox.reactivewizard.binding.AutoBindModules;
 import se.fortnox.reactivewizard.config.ConfigFactory;
 import se.fortnox.reactivewizard.logging.LoggingFactory;
