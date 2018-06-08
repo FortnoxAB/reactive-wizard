@@ -137,38 +137,6 @@ public class HttpClientConfig {
         this.devHeaders = devHeaders;
     }
 
-    /**
-     * The interval in milliseconds at which the connection pool should be cleaned and dangling connections closed.
-     *
-     * @return
-     */
-    public long getPoolAutoCleanupInterval() {
-        return poolAutoCleanupInterval;
-    }
-
-    public void setPoolAutoCleanupInterval(long poolAutoCleanupInterval) {
-        this.poolAutoCleanupInterval = poolAutoCleanupInterval;
-    }
-
-    /**
-     * The maximum time that a connection can be in use. If a connection is used longer than this time, it will be
-     * forcibly closed and discarded (not returned to pool). This is needed for calls resulting in timeouts, which, due
-     * to keepalived connections, are not closed when the timeout error is returned. This is because the timeout is
-     * propagated upwards only be an unsubscribe, which cannot be differentiated from other subscribes (i.e. not
-     * interested in the response any more).
-     * <p>
-     * See https://github.com/ReactiveX/RxNetty/issues/225
-     *
-     * @return
-     */
-    public long getMaxRequestTime() {
-        return maxRequestTime;
-    }
-
-    public void setMaxRequestTime(long maxRequestTime) {
-        this.maxRequestTime = maxRequestTime;
-    }
-
     public boolean isHttps() {
         return isHttps;
     }

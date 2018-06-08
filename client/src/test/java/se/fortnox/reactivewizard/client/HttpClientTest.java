@@ -581,8 +581,6 @@ public class HttpClientTest {
 
         // this config ensures that the autocleanup will run before the hystrix timeout
         HttpClientConfig config = new HttpClientConfig("localhost:" + server.getServerPort());
-        config.setPoolAutoCleanupInterval(300);
-        config.setMaxRequestTime(150);
         config.setMaxConnections(2);
         HttpClient   client   = new HttpClient(config);
         TestResource resource = client.create(TestResource.class);
