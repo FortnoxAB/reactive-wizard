@@ -237,6 +237,7 @@ public class HttpClient implements InvocationHandler {
 
     private boolean expectsRawResponse(Method method) {
         Type type = ReflectionUtil.getTypeOfObservable(method);
+
         return (type instanceof ParameterizedType && ((ParameterizedType)type).getRawType().equals(HttpClientResponse.class));
     }
 
@@ -461,26 +462,26 @@ public class HttpClient implements InvocationHandler {
         return path;
     }
 
-    protected String serialize(Object val) {
-        if (val instanceof Date) {
-            return String.valueOf(((Date)val).getTime());
+    protected String serialize(Object value) {
+        if (value instanceof Date) {
+            return String.valueOf(((Date)value).getTime());
         }
-        if (val.getClass().isArray()) {
-            val = Arrays.asList((Object[])val);
+        if (value.getClass().isArray()) {
+            value = Arrays.asList((Object[])value);
         }
-        if (val instanceof List) {
-            StringBuilder sb     = new StringBuilder();
-            List          values = (List)val;
-            for (int i = 0; i < values.size(); i++) {
-                Object value = values.get(i);
-                sb.append(value);
-                if (i < values.size() - 1) {
-                    sb.append(",");
+        if (value instanceof List) {
+            StringBuilder stringBuilder     = new StringBuilder();
+            List          list = (List)value;
+            for (int i = 0; i < list.size(); i++) {
+                Object entryValue = list.get(i);
+                stringBuilder.append(entryValue);
+                if (i < list.size() - 1) {
+                    stringBuilder.append(",");
                 }
             }
-            return sb.toString();
+            return stringBuilder.toString();
         }
-        return val.toString();
+        return value.toString();
     }
 
     public static class DetailedError extends Throwable {

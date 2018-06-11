@@ -1,9 +1,11 @@
 package se.fortnox.reactivewizard.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import com.google.inject.Injector;
 import io.netty.buffer.ByteBuf;
+import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.reactivex.netty.channel.Connection;
 import io.reactivex.netty.client.ConnectionProvider;
@@ -13,6 +15,7 @@ import io.reactivex.netty.client.internal.SingleHostConnectionProvider;
 import io.reactivex.netty.client.pool.PoolConfig;
 import io.reactivex.netty.client.pool.PoolExhaustedException;
 import io.reactivex.netty.client.pool.PooledConnectionProvider;
+import io.reactivex.netty.protocol.http.client.HttpClientResponse;
 import io.reactivex.netty.protocol.http.server.HttpServer;
 import io.reactivex.netty.protocol.http.server.HttpServerRequest;
 import org.apache.log4j.Level;
@@ -23,6 +26,7 @@ import org.mockito.Mockito;
 import rx.Observable;
 import rx.Single;
 import se.fortnox.reactivewizard.config.TestInjector;
+import se.fortnox.reactivewizard.jaxrs.ByteBufCollector;
 import se.fortnox.reactivewizard.jaxrs.JaxRsMeta;
 import se.fortnox.reactivewizard.jaxrs.PATCH;
 import se.fortnox.reactivewizard.jaxrs.WebException;
@@ -33,22 +37,26 @@ import se.fortnox.reactivewizard.util.rx.RetryWithDelay;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.CookieParam;
+import javax.ws.rs.DELETE;
 import javax.ws.rs.FormParam;
 import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import java.lang.reflect.Method;
 import java.net.ConnectException;
+import java.net.InetSocketAddress;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -64,7 +72,6 @@ import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static java.lang.String.format;
 import static org.fest.assertions.Assertions.assertThat;
 import static org.fest.assertions.Fail.fail;
-import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -574,8 +581,6 @@ public class HttpClientTest {
 
         // this config ensures that the autocleanup will run before the hystrix timeout
         HttpClientConfig config = new HttpClientConfig("localhost:" + server.getServerPort());
-        config.setPoolAutoCleanupInterval(300);
-        config.setMaxRequestTime(150);
         config.setMaxConnections(2);
         HttpClient   client   = new HttpClient(config);
         TestResource resource = client.create(TestResource.class);
@@ -623,7 +628,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldSendFormParamsAsBodyWithCorrectContentType()  {
+    public void shouldSendFormParamsAsBodyWithCorrectContentType() {
         AtomicReference<HttpServerRequest<ByteBuf>> recordedRequest     = new AtomicReference<>();
         AtomicReference<String>                     recordedRequestBody = new AtomicReference<>();
 
@@ -646,7 +651,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldNotSendHeaderParamsAsPostBody()  {
+    public void shouldNotSendHeaderParamsAsPostBody() {
         AtomicReference<HttpServerRequest<ByteBuf>> recordedRequest     = new AtomicReference<>();
         AtomicReference<String>                     recordedRequestBody = new AtomicReference<>();
         HttpServer<ByteBuf, ByteBuf> server = HttpServer.newServer(0).start((request, response) -> {
@@ -670,7 +675,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldUseConsumesAnnotationAsContentTypeHeader()  {
+    public void shouldUseConsumesAnnotationAsContentTypeHeader() {
         AtomicReference<HttpServerRequest<ByteBuf>> recordedRequest = new AtomicReference<>();
         HttpServer<ByteBuf, ByteBuf>                server          = startServer(OK, "", recordedRequest::set);
 
@@ -682,8 +687,29 @@ public class HttpClientTest {
         server.shutdown();
     }
 
+
     @Test
-    public void shouldAllowBodyInPatchCalls() {
+    public void shouldSetDevParams() throws URISyntaxException {
+        AtomicReference<HttpServerRequest<ByteBuf>> recordedRequest = new AtomicReference<>();
+        HttpServer<ByteBuf, ByteBuf>                server          = startServer(OK, "", recordedRequest::set);
+
+        HttpClientConfig httpClientConfig = new HttpClientConfig("notactualhost:12345");
+        httpClientConfig.setDevCookie("DevCookie=123");
+        ImmutableMap<String, String> devHeader = ImmutableMap.<String, String>builder().put("DevHeader", "213").build();
+        httpClientConfig.setDevHeaders(devHeader);
+        httpClientConfig.setDevServerInfo(new InetSocketAddress("localhost", server.getServerPort()));
+
+        TestResource resource = getHttpProxy(httpClientConfig);
+        resource.withCookie("cookieParam").toBlocking().singleOrDefault(null);
+
+        assertThat(recordedRequest.get().getHeader("Cookie")).isEqualTo("cookie=cookieParam;DevCookie=123");
+        assertThat(recordedRequest.get().getHeader("DevHeader")).isEqualTo("213");
+
+        server.shutdown();
+    }
+
+    @Test
+    public void shouldAllowBodyInPostPutDeletePatchCalls() {
         AtomicReference<HttpServerRequest<ByteBuf>> recordedRequest     = new AtomicReference<>();
         AtomicReference<String>                     recordedRequestBody = new AtomicReference<>();
 
@@ -697,9 +723,24 @@ public class HttpClientTest {
         });
 
         TestResource resource = getHttpProxy(server.getServerPort());
-        resource.patch("test").toBlocking().lastOrDefault(null);
 
+        resource.patch("test").toBlocking().lastOrDefault(null);
         assertThat(recordedRequestBody.get()).isEqualTo("\"test\"");
+        assertThat(recordedRequest.get().getHttpMethod()).isEqualTo(HttpMethod.PATCH);
+
+        resource.delete("test").toBlocking().lastOrDefault(null);
+        assertThat(recordedRequestBody.get()).isEqualTo("\"test\"");
+        assertThat(recordedRequest.get().getHttpMethod()).isEqualTo(HttpMethod.DELETE);
+
+
+        resource.put("test").toBlocking().lastOrDefault(null);
+        assertThat(recordedRequestBody.get()).isEqualTo("\"test\"");
+        assertThat(recordedRequest.get().getHttpMethod()).isEqualTo(HttpMethod.PUT);
+
+
+        resource.post("test").toBlocking().lastOrDefault(null);
+        assertThat(recordedRequestBody.get()).isEqualTo("\"test\"");
+        assertThat(recordedRequest.get().getHttpMethod()).isEqualTo(HttpMethod.POST);
 
         server.shutdown();
     }
@@ -721,6 +762,19 @@ public class HttpClientTest {
         TestResource testResource = injector.getInstance(TestResource.class);
         HttpClient.setTimeout(testResource, 1300, TimeUnit.MILLISECONDS);
         verify(mockClient, times(1)).setTimeout(eq(1300), eq(TimeUnit.MILLISECONDS));
+    }
+
+    @Test
+    public void shouldReturnRawResponse() {
+        HttpServer<ByteBuf, ByteBuf> server   = startServer(OK, "this is my response");
+        TestResource                 resource = getHttpProxy(server.getServerPort());
+        HttpClientResponse<ByteBuf>  response = resource.getRawResponse().toBlocking().single();
+
+        assertThat(response.getStatus()).isEqualTo(OK);
+
+        String body = new ByteBufCollector(1024 * 1024).collectString(response.getContent()).toBlocking().single();
+        assertThat(body).isEqualTo("this is my response");
+
     }
 
     @Test
@@ -784,6 +838,9 @@ public class HttpClientTest {
         Observable<byte[]> withMultipleCookies(@CookieParam("cookie1") String param1, @CookieParam("cookie2") String param2);
 
         @GET
+        Observable<String> withCookie(@CookieParam("cookie") String param);
+
+        @GET
         Observable<byte[]> getAsBytes();
 
         @POST
@@ -806,5 +863,17 @@ public class HttpClientTest {
 
         @PATCH
         Observable<Void> patch(String value);
+
+        @DELETE
+        Observable<Void> delete(String value);
+
+        @PUT
+        Observable<Void> put(String value);
+
+        @POST
+        Observable<Void> post(String value);
+
+        @GET
+        Observable<HttpClientResponse<ByteBuf>> getRawResponse();
     }
 }

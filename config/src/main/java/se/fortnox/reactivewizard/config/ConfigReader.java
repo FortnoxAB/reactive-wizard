@@ -72,7 +72,7 @@ public class ConfigReader {
             if (obj == null || obj == NullNode.getInstance()) {
                 cfg = cls.newInstance();
             } else {
-                ObjectReader reader = mapper.reader(cls);
+                ObjectReader reader = mapper.readerFor(cls);
                 cfg = reader.readValue(obj);
             }
         } catch (Exception e) {
