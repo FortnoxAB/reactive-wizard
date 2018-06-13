@@ -13,6 +13,10 @@ public class DbTestObj {
 
     private List<String> listOfStrings;
 
+	private List<TestEnum> listOfEnums;
+
+	private List<DbTestObj> listOfObjects;
+
     private Double doubleVal;
 
     private DbTestObj child;
@@ -76,4 +80,20 @@ public class DbTestObj {
     public String getValueWithoutGetter() {
         return noGetterValue;
     }
+
+    public List<TestEnum> getListOfEnums() {
+        return listOfEnums;
+    }
+
+    public void setListOfEnums(List<TestEnum> listOfEnums) {
+        this.listOfEnums = listOfEnums;
+    }
+
+	public List<DbTestObj> getListOfObjects() {
+		return listOfObjects;
+	}
+
+	public void setListOfObjects(List<DbTestObj> listOfObjects) {
+		this.listOfObjects = listOfObjects;
+	}
 }

@@ -7,11 +7,7 @@ import org.junit.Before;
 import org.junit.Test;
 import se.fortnox.reactivewizard.db.deserializing.DbResultSetDeserializer;
 
-import java.sql.Array;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
-import java.sql.Types;
+import java.sql.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -319,6 +315,50 @@ public class DbResultSetDeserializerTest {
         assertThat(myTestObj.getListOfStrings()).isNotNull().hasSize(2);
         assertThat(myTestObj.getListOfStrings().get(0)).isEqualTo("one");
         assertThat(myTestObj.getListOfStrings().get(1)).isEqualTo("two");
+    }
+
+    @Test
+    public void shouldDeserializeListOfEnums() throws SQLException {
+        when(meta.getColumnCount()).thenReturn(1);
+        when(meta.getColumnLabel(1)).thenReturn("list_of_enums");
+        when(rs.getMetaData()).thenReturn(meta);
+        when(rs.getString(1)).thenReturn("[\"T1\", \"T2\"]");
+        when(rs.wasNull()).thenReturn(false);
+
+        DbResultSetDeserializer des = new DbResultSetDeserializer(DbTestObj.class);
+        DbTestObj myTestObj = (DbTestObj)des.deserialize(rs);
+        assertThat(myTestObj.getListOfEnums()).hasSize(2);
+        assertThat(myTestObj.getListOfEnums().get(0)).isInstanceOf(TestEnum.class);
+    }
+
+    @Test
+    public void shouldDeserializeListOfObjects() throws SQLException {
+        when(meta.getColumnCount()).thenReturn(1);
+        when(meta.getColumnLabel(1)).thenReturn("list_of_objects");
+        when(rs.getMetaData()).thenReturn(meta);
+        when(rs.getString(1)).thenReturn("[{}, {}]");
+        when(rs.wasNull()).thenReturn(false);
+
+        DbResultSetDeserializer des = new DbResultSetDeserializer(DbTestObj.class);
+        DbTestObj myTestObj = (DbTestObj)des.deserialize(rs);
+        assertThat(myTestObj.getListOfObjects()).hasSize(2);
+        assertThat(myTestObj.getListOfObjects().get(0)).isInstanceOf(DbTestObj.class);
+        assertThat(myTestObj.getListOfObjects().get(1)).isInstanceOf(DbTestObj.class);
+    }
+
+    @Test
+    public void shouldDeserializeJsonObject() throws SQLException {
+        when(meta.getColumnCount()).thenReturn(1);
+        when(meta.getColumnLabel(1)).thenReturn("child");
+        when(meta.getColumnType(1)).thenReturn(Types.OTHER);
+        when(rs.getMetaData()).thenReturn(meta);
+
+        when(rs.getString(1)).thenReturn("{}");
+        when(rs.wasNull()).thenReturn(false);
+
+        DbResultSetDeserializer des = new DbResultSetDeserializer(DbTestObj.class);
+        DbTestObj myTestObj = (DbTestObj)des.deserialize(rs);
+        assertThat(myTestObj.getChild()).isNotNull();
     }
 
     @Test
