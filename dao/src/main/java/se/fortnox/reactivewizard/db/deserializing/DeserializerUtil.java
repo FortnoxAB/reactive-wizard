@@ -1,12 +1,14 @@
 package se.fortnox.reactivewizard.db.deserializing;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import se.fortnox.reactivewizard.json.JsonDeserializerFactory;
 import se.fortnox.reactivewizard.util.CamelSnakeConverter;
-import se.fortnox.reactivewizard.util.ReflectionUtil;
 import se.fortnox.reactivewizard.util.PropertyResolver;
+import se.fortnox.reactivewizard.util.ReflectionUtil;
 
+import java.lang.reflect.Type;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.Collections;
@@ -50,7 +52,7 @@ class DeserializerUtil {
 
         Deserializer simpleProp = ColumnDeserializerFactory.getColumnDeserializer(type, columnType, columnIndex);
         if (simpleProp == null) {
-            return jsonPropertyDeserializer(propertyResolver, columnIndex, deserializerFactory, type);
+            return jsonPropertyDeserializer(propertyResolver, columnIndex, deserializerFactory);
         }
 
         return deserializerFactory.apply(propertyResolver, simpleProp);
@@ -58,10 +60,16 @@ class DeserializerUtil {
 
     private static <I,T> T jsonPropertyDeserializer(PropertyResolver<I,?> propertyResolver,
         int columnIndex,
-        BiFunction<PropertyResolver<I,?>, Deserializer, T> deserializerFactory,
-        Class<?> type
+        BiFunction<PropertyResolver<I,?>, Deserializer, T> deserializerFactory
     ) {
-        Function<String, ?> deserializer = JSON_DESERIALIZER_FACTORY.createDeserializer(type);
+        Type propertyGenericType = propertyResolver.getPropertyGenericType();
+        Function<String, ?> deserializer = JSON_DESERIALIZER_FACTORY.createDeserializer(new TypeReference<Object>() {
+            @Override
+            public Type getType() {
+                return propertyGenericType;
+            }
+        });
+
         return deserializerFactory.apply(propertyResolver, (rs) -> {
             String columnValue = rs.getString(columnIndex);
             if (columnValue == null) {

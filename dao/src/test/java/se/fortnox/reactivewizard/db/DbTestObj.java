@@ -13,7 +13,9 @@ public class DbTestObj {
 
     private List<String> listOfStrings;
 
-    private List<TestEnum> listOfEnums;
+	private List<TestEnum> listOfEnums;
+
+	private List<DbTestObj> listOfObjects;
 
     private Double doubleVal;
 
@@ -86,4 +88,12 @@ public class DbTestObj {
     public void setListOfEnums(List<TestEnum> listOfEnums) {
         this.listOfEnums = listOfEnums;
     }
+
+	public List<DbTestObj> getListOfObjects() {
+		return listOfObjects;
+	}
+
+	public void setListOfObjects(List<DbTestObj> listOfObjects) {
+		this.listOfObjects = listOfObjects;
+	}
 }
