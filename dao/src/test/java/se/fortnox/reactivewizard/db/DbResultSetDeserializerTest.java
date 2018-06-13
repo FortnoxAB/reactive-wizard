@@ -322,6 +322,19 @@ public class DbResultSetDeserializerTest {
     }
 
     @Test
+    public void shouldDeserializeListOfEnums() throws SQLException {
+        when(meta.getColumnCount()).thenReturn(1);
+        when(meta.getColumnLabel(1)).thenReturn("list_of_enums");
+        when(rs.getMetaData()).thenReturn(meta);
+        when(rs.getString(1)).thenReturn("[\"T1\", \"T2\"]");
+        when(rs.wasNull()).thenReturn(false);
+
+        DbResultSetDeserializer des = new DbResultSetDeserializer(DbTestObj.class);
+        DbTestObj myTestObj = (DbTestObj)des.deserialize(rs);
+        assertThat(myTestObj.getListOfEnums().get(0)).isInstanceOf(TestEnum.class);
+    }
+
+    @Test
     public void shouldDeserializeNullCollectionAsNull() throws SQLException {
         DbResultSetDeserializer des = new DbResultSetDeserializer(DbTestObj.class);
         when(meta.getColumnCount()).thenReturn(1);

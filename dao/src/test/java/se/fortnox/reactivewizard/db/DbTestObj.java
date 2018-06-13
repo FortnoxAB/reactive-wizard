@@ -13,6 +13,8 @@ public class DbTestObj {
 
     private List<String> listOfStrings;
 
+    private List<ParameterizedQueryTest.TestEnum> listOfEnums;
+
     private Double doubleVal;
 
     private DbTestObj child;
@@ -75,5 +77,13 @@ public class DbTestObj {
 
     public String getValueWithoutGetter() {
         return noGetterValue;
+    }
+
+    public List<ParameterizedQueryTest.TestEnum> getListOfEnums() {
+        return listOfEnums;
+    }
+
+    public void setListOfEnums(List<ParameterizedQueryTest.TestEnum> listOfEnums) {
+        this.listOfEnums = listOfEnums;
     }
 }
