@@ -13,7 +13,7 @@ public class DbTestObj {
 
     private List<String> listOfStrings;
 
-    private List<ParameterizedQueryTest.TestEnum> listOfEnums;
+    private List<TestEnum> listOfEnums;
 
     private Double doubleVal;
 
@@ -79,11 +79,11 @@ public class DbTestObj {
         return noGetterValue;
     }
 
-    public List<ParameterizedQueryTest.TestEnum> getListOfEnums() {
+    public List<TestEnum> getListOfEnums() {
         return listOfEnums;
     }
 
-    public void setListOfEnums(List<ParameterizedQueryTest.TestEnum> listOfEnums) {
+    public void setListOfEnums(List<TestEnum> listOfEnums) {
         this.listOfEnums = listOfEnums;
     }
 }
