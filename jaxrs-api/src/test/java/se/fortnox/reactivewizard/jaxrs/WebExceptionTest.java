@@ -110,6 +110,19 @@ public class WebExceptionTest {
     }
 
     @Test
+    public void shouldSetErrorToGivenValueWhenErrorCodeAndThrowableIsGiven() {
+        WebException webException = new WebException(BAD_REQUEST, "error_code",new IllegalArgumentException("cause"));
+        assertThat(webException.getError()).isEqualTo("error_code");
+        assertThat(webException.getCause()).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    public void shouldSetThrowableToGivenValueWhenErrorCodeAndThrowableIsGiven() {
+        WebException webException = new WebException(BAD_REQUEST, "error_code",new IllegalArgumentException("cause"));
+        assertThat(webException.getCause()).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
     public void shouldSetErrorParams() {
         WebException webException = new WebException(BAD_REQUEST)
             .withErrorParams("donkey");
