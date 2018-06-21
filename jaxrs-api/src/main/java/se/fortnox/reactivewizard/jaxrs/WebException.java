@@ -29,6 +29,11 @@ public class WebException extends RuntimeException {
         this.logLevel = logLevelFromStatus(httpStatus);
     }
 
+    public WebException(HttpResponseStatus httpStatus, String errorCode, Throwable throwable) {
+        this(httpStatus, throwable, true);
+        this.error = errorCode;
+    }
+
     public WebException(HttpResponseStatus httpStatus) {
         this(httpStatus, (Throwable)null);
     }
@@ -62,7 +67,7 @@ public class WebException extends RuntimeException {
     }
 
     public WebException(HttpResponseStatus httpStatus, String errorCode) {
-        this(httpStatus, errorCode, null);
+        this(httpStatus, errorCode, (String)null);
     }
 
     private static String errorCodeFromStatus(HttpResponseStatus status) {
