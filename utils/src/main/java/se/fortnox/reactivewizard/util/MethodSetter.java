@@ -46,9 +46,16 @@ public class MethodSetter<I,T> implements Setter<I,T> {
                 MethodType.methodType(BiConsumer.class),
                 MethodType.methodType(void.class, Object.class, Object.class),
                 methodHandle,
-                methodHandle.type()
+                wrapMethodType(methodHandle.type())
         );
         return (BiConsumer<I,T>) callSite.getTarget().invoke();
+    }
+
+    private MethodType wrapMethodType(MethodType methodType) {
+        // JDK9+ has made changes to LambdaMetaFactory that prevent lambdas from being able to do proper
+        // adaptation of types. In particular boxed types are no longer widened appropriately and
+        // Object can no longer be adapted to primitive types.
+        return methodType.wrap().changeReturnType(void.class);
     }
 
     @Override
