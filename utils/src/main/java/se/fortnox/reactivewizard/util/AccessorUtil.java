@@ -1,10 +1,9 @@
 package se.fortnox.reactivewizard.util;
 
-import sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl;
-
 import java.lang.reflect.Field;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
@@ -24,8 +23,8 @@ class AccessorUtil {
             Class<?> superclass = subClass.getSuperclass();
             Type genericSuperclass = subClass.getGenericSuperclass();
             while (superclass != null && superclass != Object.class) {
-                if (genericSuperclass instanceof ParameterizedTypeImpl) {
-                    Class<?> type = (Class<?>) ((ParameterizedTypeImpl) genericSuperclass).getActualTypeArguments()[i];
+                if (genericSuperclass instanceof ParameterizedType) {
+                    Class<?> type = (Class<?>) ((ParameterizedType) genericSuperclass).getActualTypeArguments()[i];
                     typeByName.put(typeName, type);
                 }
                 genericSuperclass = superclass.getGenericSuperclass();
