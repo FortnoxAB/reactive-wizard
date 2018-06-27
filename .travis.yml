@@ -1,5 +1,9 @@
 language: java
 
+jdk:
+  - openjdk9
+  - openjdk8
+
 branches:
   only:
     - master
