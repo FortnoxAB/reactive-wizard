@@ -31,7 +31,7 @@ public class DbProxy implements InvocationHandler {
 
     private final DbStatementFactoryFactory               dbStatementFactoryFactory;
     private final Scheduler                               scheduler;
-    private final Map<Method, ObservableStatementFactory> statementFactories = new ConcurrentHashMap<>();
+    private final Map<Method, ObservableStatementFactory> statementFactories;
     private final ConnectionProvider                      connectionProvider;
     private final Function<Object[], String>              paramSerializer;
     private final DatabaseConfig                          databaseConfig;
@@ -55,12 +55,24 @@ public class DbProxy implements InvocationHandler {
         DbStatementFactoryFactory dbStatementFactoryFactory,
         JsonSerializerFactory jsonSerializerFactory
     ) {
+        this(databaseConfig, scheduler, connectionProvider, dbStatementFactoryFactory,
+                jsonSerializerFactory.createStringSerializer(new TypeReference<Object[]>() {   }),
+                new ConcurrentHashMap<>());
+    }
+
+    private DbProxy(DatabaseConfig databaseConfig,
+                   Scheduler scheduler,
+                   ConnectionProvider connectionProvider,
+                   DbStatementFactoryFactory dbStatementFactoryFactory,
+                   Function<Object[], String> paramSerializer,
+                   Map<Method, ObservableStatementFactory> statementFactories
+    ) {
         this.scheduler = scheduler;
         this.connectionProvider = connectionProvider;
         this.dbStatementFactoryFactory = dbStatementFactoryFactory;
-        this.paramSerializer = jsonSerializerFactory.createStringSerializer(new TypeReference<Object[]>() {
-        });
+        this.paramSerializer = paramSerializer;
         this.databaseConfig = databaseConfig;
+        this.statementFactories = statementFactories;
     }
 
     public DbProxy(DatabaseConfig databaseConfig, ConnectionProvider connectionProvider) {
@@ -95,7 +107,7 @@ public class DbProxy implements InvocationHandler {
             }
             DbStatementFactory statementFactory = dbStatementFactoryFactory.createStatementFactory(method);
             PagingOutput       pagingOutput     = new PagingOutput(method);
-            observableStatementFactory = new ObservableStatementFactory(connectionProvider,
+            observableStatementFactory = new ObservableStatementFactory(
                 statementFactory,
                 pagingOutput,
                 scheduler,
@@ -104,11 +116,15 @@ public class DbProxy implements InvocationHandler {
                 databaseConfig);
             statementFactories.put(method, observableStatementFactory);
         }
-        return observableStatementFactory.create(args);
+        return observableStatementFactory.create(args, connectionProvider);
     }
 
     private Metrics createMetrics(Method method) {
         String type = method.isAnnotationPresent(Query.class) ? "query" : "update";
         return Metrics.get("DAO_type:" + type + "_method:" + method.getDeclaringClass().getName() + "." + method.getName() + "_" + method.getParameterCount());
+    }
+
+    public DbProxy usingConnectionProvider(ConnectionProvider connectionProvider) {
+        return new DbProxy(databaseConfig, scheduler, connectionProvider, dbStatementFactoryFactory, paramSerializer, statementFactories);
     }
 }
