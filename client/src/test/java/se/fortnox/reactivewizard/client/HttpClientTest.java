@@ -542,7 +542,7 @@ public class HttpClientTest {
 
         resource.servertest("fast")
             // Delay needed so that repeat will not subscribe immediately, as the pooled connection is released on the event loop thread.
-            .delaySubscription(1, TimeUnit.MILLISECONDS)
+            .delaySubscription(10, TimeUnit.MILLISECONDS)
             .repeat(10).toBlocking().last();
 
         verify(serverLog, times(10)).accept("/hello/servertest/fast");
@@ -550,7 +550,7 @@ public class HttpClientTest {
         try {
             resource.servertest("slowBody")
                 .timeout(50, TimeUnit.MILLISECONDS)
-                .delaySubscription(1, TimeUnit.MILLISECONDS)
+                .delaySubscription(10, TimeUnit.MILLISECONDS)
                 .retry(10)
                 .toBlocking()
                 .last();
