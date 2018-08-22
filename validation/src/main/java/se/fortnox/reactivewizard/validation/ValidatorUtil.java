@@ -1,15 +1,12 @@
 package se.fortnox.reactivewizard.validation;
 
-import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
-import java.util.Set;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
 import javax.validation.Validator;
-import javax.validation.executable.ExecutableValidator;
+import java.lang.reflect.Method;
+import java.util.Set;
 
 @Singleton
 public class ValidatorUtil {
