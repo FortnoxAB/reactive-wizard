@@ -27,7 +27,6 @@ public class ObservableStatementFactory {
 
     private static final  int    RECORD_BUFFER_SIZE     = 100000;
     private static final Logger LOG                    = LoggerFactory.getLogger("Dao");
-    private final ConnectionProvider         connectionProvider;
     private final DbStatementFactory         statementFactory;
     private final PagingOutput               pagingOutput;
     private final Scheduler                  scheduler;
@@ -35,7 +34,7 @@ public class ObservableStatementFactory {
     private final Function<Object[], String> paramSerializer;
     private final DatabaseConfig             config;
 
-    public ObservableStatementFactory(@Nullable ConnectionProvider connectionProvider,
+    public ObservableStatementFactory(
         DbStatementFactory statementFactory,
         PagingOutput pagingOutput,
         Scheduler scheduler,
@@ -43,7 +42,6 @@ public class ObservableStatementFactory {
         Metrics metrics,
         DatabaseConfig config
     ) {
-        this.connectionProvider = connectionProvider;
         this.statementFactory = statementFactory;
         this.pagingOutput = pagingOutput;
         this.scheduler = scheduler;
@@ -60,7 +58,7 @@ public class ObservableStatementFactory {
         }
     }
 
-    public Observable<Object> create(Object[] args) {
+    public Observable<Object> create(Object[] args, ConnectionProvider connectionProvider) {
         AtomicReference<TransactionStatement> transactionHolder = new AtomicReference<>();
 
         Observable<Object> result = Observable.create(subscription -> {
@@ -72,7 +70,7 @@ public class ObservableStatementFactory {
                 transaction.setConnectionProvider(connectionProvider);
                 transaction.executeStatement(dbStatement);
             } else {
-                executeStatement(dbStatement);
+                executeStatement(dbStatement, connectionProvider);
             }
         });
 
@@ -99,7 +97,7 @@ public class ObservableStatementFactory {
         }
     }
 
-    private void executeStatement(Statement dbStatement) {
+    private void executeStatement(Statement dbStatement, ConnectionProvider connectionProvider) {
         if (connectionProvider == null) {
             throw new RuntimeException("No connection provider configured!");
         }
