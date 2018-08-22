@@ -12,7 +12,7 @@ import java.lang.reflect.Proxy;
  * Exposes the underlying target for reflection purpose using Provider interface.
  *
  */
-class ValidatingProxy implements InvocationHandler, Provider<Object> {
+public class ValidatingProxy implements InvocationHandler, Provider<Object> {
 
     private final Object target;
     private final ValidatorUtil validatorUtil;
