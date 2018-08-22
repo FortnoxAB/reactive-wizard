@@ -448,14 +448,14 @@ public class HttpClientTest {
 
         resource.servertest("fast")
             // Delay needed so that repeat will not subscribe immediately, as the pooled connection is released on the event loop thread.
-            .delaySubscription(1, TimeUnit.MILLISECONDS)
+            .delaySubscription(10, TimeUnit.MILLISECONDS)
             .repeat(10).doOnNext(System.out::println).toBlocking().last();
 
         verify(serverLog, times(10)).accept("/hello/servertest/fast");
 
         try {
             resource.servertest("slowHeaders")
-                .delaySubscription(1, TimeUnit.MILLISECONDS)
+                .delaySubscription(10, TimeUnit.MILLISECONDS)
                 .retry(5)
                 .doOnNext(System.out::println).toBlocking().last();
             fail("expected exception");
@@ -494,7 +494,7 @@ public class HttpClientTest {
 
         try {
             resource.getHello()
-                .delaySubscription(1, TimeUnit.MILLISECONDS)
+                .delaySubscription(10, TimeUnit.MILLISECONDS)
                 .retry(5)
                 .toBlocking().last();
             fail("expected exception");
