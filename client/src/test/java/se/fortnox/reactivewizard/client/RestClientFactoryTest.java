@@ -21,7 +21,7 @@ public class RestClientFactoryTest {
     @Test
     public void shouldProxyResourceInterfacesToHttpClient() throws URISyntaxException {
         HttpClientConfig httpClientConfig = new HttpClientConfig();
-        httpClientConfig.setUrl("http://anything");
+        httpClientConfig.setUrl("http://localhost");
 
         HttpClient mockClient = Mockito.spy(new HttpClient(httpClientConfig));
 

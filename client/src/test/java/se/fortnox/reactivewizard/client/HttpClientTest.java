@@ -51,6 +51,7 @@ import java.lang.reflect.Method;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.net.URISyntaxException;
+import java.net.UnknownHostException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -693,7 +694,7 @@ public class HttpClientTest {
         AtomicReference<HttpServerRequest<ByteBuf>> recordedRequest = new AtomicReference<>();
         HttpServer<ByteBuf, ByteBuf>                server          = startServer(OK, "", recordedRequest::set);
 
-        HttpClientConfig httpClientConfig = new HttpClientConfig("notactualhost:12345");
+        HttpClientConfig httpClientConfig = new HttpClientConfig("localhost:12345");
         httpClientConfig.setDevCookie("DevCookie=123");
         ImmutableMap<String, String> devHeader = ImmutableMap.<String, String>builder().put("DevHeader", "213").build();
         httpClientConfig.setDevHeaders(devHeader);
@@ -748,7 +749,7 @@ public class HttpClientTest {
     @Test
     public void shouldSetTimeoutOnResource() throws URISyntaxException {
         HttpClientConfig httpClientConfig = new HttpClientConfig();
-        httpClientConfig.setUrl("http://anything");
+        httpClientConfig.setUrl("http://localhost");
 
         HttpClient mockClient = Mockito.spy(new HttpClient(httpClientConfig));
 
@@ -801,6 +802,18 @@ public class HttpClientTest {
         })));
 
         server.shutdown();
+    }
+
+    @Test
+    public void shouldBlockStartupIfHostCannotBeResolved() {
+        String host = "Nonexistinghost" + new Date().getTime();
+        try {
+            new HttpClientConfig(host);
+        } catch (Exception e) {
+            assertThat(e).isInstanceOf(RuntimeException.class);
+            assertThat(e.getMessage()).isEqualTo("Cannot resolve host for httpClient: " + host);
+            assertThat(e.getCause()).isInstanceOf(UnknownHostException.class);
+        }
     }
 
     private String generate10MbString() {

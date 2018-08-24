@@ -6,9 +6,11 @@ import se.fortnox.reactivewizard.config.Config;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.UnknownHostException;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -16,10 +18,6 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 
 @Config("httpClient")
 public class HttpClientConfig {
-
-    private static final String CURLY_PLACEHOLDER_BEGIN = "begin-curly--";
-
-    private static final String CURLY_PLACEHOLDER_END = "--end-curly";
 
     @Valid
     @JsonProperty("port")
@@ -77,21 +75,14 @@ public class HttpClientConfig {
     }
 
     public void setUrl(String url) throws URISyntaxException {
+        this.url = url;
         if (!url.contains("://")) {
-            url = "http://" + url;
+            this.url = "http://" + url;
         }
-        // Replace all curly braces with a placeholder string, because they are
-        // not allowed in host names. We want to allow them in order to replace
-        // part of the host name with a variable.
-        String validUrl = url.replaceAll("\\{", CURLY_PLACEHOLDER_BEGIN)
-            .replaceAll("\\}", CURLY_PLACEHOLDER_END);
-        URI uri = new URI(validUrl);
-        host = uri.getHost();
+        URI uri = new URI(this.url);
+        setHost(uri.getHost());
         if (host == null) {
-            throw new RuntimeException("Could not parse host from " + url);
-        } else {
-            host = host.replaceAll(CURLY_PLACEHOLDER_BEGIN, "{")
-                .replaceAll(CURLY_PLACEHOLDER_END, "}");
+            throw new RuntimeException("Could not parse host from " + this.url);
         }
 
         isHttps = "https".equals(uri.getScheme());
@@ -155,5 +146,14 @@ public class HttpClientConfig {
 
     public void setRetryDelayMs(int retryDelayMs) {
         this.retryDelayMs = retryDelayMs;
+    }
+
+    public void setHost(String host) {
+        this.host = host;
+        try {
+            InetAddress.getByName(host);
+        } catch (UnknownHostException e) {
+            throw new RuntimeException("Cannot resolve host for httpClient: " + host, e);
+        }
     }
 }
