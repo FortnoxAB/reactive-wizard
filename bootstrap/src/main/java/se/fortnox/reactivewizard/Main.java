@@ -16,20 +16,25 @@ import se.fortnox.reactivewizard.logging.LoggingFactory;
  */
 public class Main {
     public static void main(String[] args) {
-        if (args.length == 0) {
-            System.out.println("Usage: java -jar app.jar config.yml");
-            return;
-        }
-        String        configFile    = args[args.length - 1];
-        ConfigFactory configFactory = new ConfigFactory(configFile);
-        configFactory.get(LoggingFactory.class).init();
-
-        Module bootstrap = new AbstractModule() {
-            @Override
-            protected void configure() {
-                bind(String[].class).annotatedWith(Names.named("args")).toInstance(args);
+        try {
+            if (args.length == 0) {
+                System.out.println("Usage: java -jar app.jar config.yml");
+                return;
             }
-        };
-        Guice.createInjector(new AutoBindModules(bootstrap));
+            String configFile = args[args.length - 1];
+            ConfigFactory configFactory = new ConfigFactory(configFile);
+            configFactory.get(LoggingFactory.class).init();
+
+            Module bootstrap = new AbstractModule() {
+                @Override
+                protected void configure() {
+                    bind(String[].class).annotatedWith(Names.named("args")).toInstance(args);
+                }
+            };
+            Guice.createInjector(new AutoBindModules(bootstrap));
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.exit(-1);
+        }
     }
 }
