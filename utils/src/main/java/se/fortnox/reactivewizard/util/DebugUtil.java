@@ -4,7 +4,7 @@ package se.fortnox.reactivewizard.util;
  * Utilities for debugging in the development environment.
  */
 public class DebugUtil {
-    public static final boolean IS_DEBUG = isIdePresent();
+    public static final boolean IS_DEBUG = isIdePresent() || isMavenDebug();
 
     /**
      * Checks for the presence of an IDE, currently just IntelliJ.
@@ -14,4 +14,7 @@ public class DebugUtil {
         return classLoader.getResource("com/intellij") != null;
     }
 
+    private static boolean isMavenDebug() {
+        return Boolean.getBoolean("maven.surefire.debug");
+    }
 }
