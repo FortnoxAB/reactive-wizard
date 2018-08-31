@@ -6,13 +6,8 @@ import static org.fest.assertions.Fail.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
 
-import java.lang.annotation.Documented;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import java.lang.annotation.*;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -28,7 +23,6 @@ import javax.validation.constraints.NotNull;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.After;
 import se.fortnox.reactivewizard.jaxrs.Wrap;
 import se.fortnox.reactivewizard.jaxrs.FieldError;
 import se.fortnox.reactivewizard.jaxrs.WebException;
@@ -261,8 +255,38 @@ public class ValidationExamples {
     /**
      * This is in your impl module:
      */
+    @PeriodPrivateValidation
     class PeriodPrivate extends PeriodPublic {
     }
+
+    @Target(value={ElementType.TYPE, ElementType.PARAMETER})
+    @Retention(RetentionPolicy.RUNTIME)
+    @Constraint(validatedBy=PeriodPrivateValidator.class)
+    @Documented
+    public @interface PeriodPrivateValidation {
+        String message() default "";
+        Class<?>[] groups() default {};
+        Class<? extends Payload>[] payload() default {};
+    }
+
+    public static class PeriodPrivateValidator extends CustomEntityValidator<PeriodPrivateValidation, PeriodPrivate> {
+
+        @Override
+        public void initialize(PeriodPrivateValidation periodValidation) {
+        }
+
+        @Override
+        public List<FieldError> isValid(PeriodPrivate entity) {
+            if (entity != null
+                && entity.getStartDate() != null
+                && entity.getEndDate() != null
+                && entity.getEndDate().before(entity.getStartDate())) {
+                return asList(new FieldError("endDate", "validation.enddate.before.startdate"));
+            }
+            return null;
+        }
+    }
+
 
 
     /**
@@ -282,7 +306,7 @@ public class ValidationExamples {
         assertValidationException(()->service.acceptsPeriod(new PeriodPrivate(){{
             setStartDate(new Date(10));
             setEndDate(new Date(8));
-        }}), "{'id':'.*','error':'validation','fields':[{'field':'endDate','error':'validation.future'}]}");
+        }}), "{'id':'.*','error':'validation','fields':[{'field':'endDate','error':'validation.future'},{'field':'endDate','error':'validation.enddate.before.startdate'}]}");
     }
 
     /**
