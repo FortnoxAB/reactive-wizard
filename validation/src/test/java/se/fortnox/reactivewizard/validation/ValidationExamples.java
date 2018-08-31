@@ -118,9 +118,9 @@ public class ValidationExamples {
          * we get a validation error:
          */
         assertValidationException(callService(new IntInputClass() {{
-                    setAge(1);
-                }}),
-                "{'id':'.*','error':'validation','fields':[{'field':'age','error':'validation.min','errorParams':{'value':3}}]}");
+                setAge(1);
+            }}),
+            "{'id':'.*','error':'validation','fields':[{'field':'age','error':'validation.min','errorParams':{'value':3}}]}");
         /**
          * Note that we also return the expected minimum in the error here, so
          * that the caller knows how to improve their request.
@@ -130,9 +130,9 @@ public class ValidationExamples {
          * Now we send in 8 which is higher than the max
          */
         assertValidationException(callService(new IntInputClass() {{
-                    setAge(8);
-                }}),
-                "{'id':'.*','error':'validation','fields':[{'field':'age','error':'validation.max','errorParams':{'value':6}}]}");
+                setAge(8);
+            }}),
+            "{'id':'.*','error':'validation','fields':[{'field':'age','error':'validation.max','errorParams':{'value':6}}]}");
 
         /**
          * And then we use a valid value of 4, which gives no error.
@@ -144,6 +144,7 @@ public class ValidationExamples {
 
     /**
      * These are the constraints that are part of the javax validation api:
+     *
      * @AssertFalse
      * @AssertTrue
      * @DecimalMax
@@ -156,10 +157,7 @@ public class ValidationExamples {
      * @Null
      * @Past
      * @Pattern
-     * @Size
-     *
-     * And these are shipped with Hibernate:
-     *
+     * @Size And these are shipped with Hibernate:
      * @CreditCardNumber
      * @EAN
      * @Email
@@ -204,6 +202,7 @@ public class ValidationExamples {
 
     /**
      * If we send in an entity where startDate and endDate is null, the
+     *
      * @NotNull validation kicks in. This is why we do not return an error
      * if startDate is null in the PeriodValidator, because we would get
      * double validation errors.
@@ -211,7 +210,7 @@ public class ValidationExamples {
     @Test
     public void shouldFailIfStartDateIsNull() throws ParseException {
         assertValidationException(callService(new Period()),
-                "{'id':'.*','error':'validation','fields':[{'field':'startDate','error':'validation.notnull'}]}");
+            "{'id':'.*','error':'validation','fields':[{'field':'startDate','error':'validation.notnull'}]}");
     }
 
     /**
@@ -259,13 +258,15 @@ public class ValidationExamples {
     class PeriodPrivate extends PeriodPublic {
     }
 
-    @Target(value={ElementType.TYPE, ElementType.PARAMETER})
+    @Target(value = {ElementType.TYPE, ElementType.PARAMETER})
     @Retention(RetentionPolicy.RUNTIME)
-    @Constraint(validatedBy=PeriodPrivateValidator.class)
+    @Constraint(validatedBy = PeriodPrivateValidator.class)
     @Documented
     public @interface PeriodPrivateValidation {
         String message() default "";
+
         Class<?>[] groups() default {};
+
         Class<? extends Payload>[] payload() default {};
     }
 
@@ -288,7 +289,6 @@ public class ValidationExamples {
     }
 
 
-
     /**
      * And in your service you add the @Wrap annotation to ensure that your subclass is injected.
      */
@@ -303,7 +303,7 @@ public class ValidationExamples {
     @Test
     public void shouldUseSubTypeWhenValidating() {
         MyPeriodService service = ValidatingProxy.create(MyPeriodService.class, new MyPeriodServiceImpl(), new ValidatorUtil());
-        assertValidationException(()->service.acceptsPeriod(new PeriodPrivate(){{
+        assertValidationException(() -> service.acceptsPeriod(new PeriodPrivate() {{
             setStartDate(new Date(10));
             setEndDate(new Date(8));
         }}), "{'id':'.*','error':'validation','fields':[{'field':'endDate','error':'validation.future'},{'field':'endDate','error':'validation.enddate.before.startdate'}]}");
@@ -323,9 +323,9 @@ public class ValidationExamples {
             Date startDateInDb = new Date(10);
             if (period.getStartDate().before(startDateInDb)) {
                 throw new WebException(new FieldError("startDate", "startdate.before.stored.date",
-                        new HashMap<String,Object>(){{
-                    put("stored", startDateInDb);
-                }}));
+                    new HashMap<String, Object>() {{
+                        put("stored", startDateInDb);
+                    }}));
             }
             return null;
         }
@@ -334,7 +334,7 @@ public class ValidationExamples {
     @Test
     public void shouldReturnValidationErrorFromService() {
         MyValidatingService service = new MyValidatingService();
-        assertValidationException(()->service.acceptsPeriod(new Period(){{
+        assertValidationException(() -> service.acceptsPeriod(new Period() {{
             setStartDate(new Date(5));
         }}), "{'id':'.*','error':'validation','fields':[{'field':'startDate','error':'validation.startdate.before.stored.date','errorParams':{'stored':10}}]}");
     }
@@ -367,8 +367,8 @@ public class ValidationExamples {
     @Test
     public void shouldValidateParentButNotChildIfNoValidateAnnotation() {
         assertValidationException(callService(new EntityWithUnvalidatedChild()),
-                "{'id':'.*','error':'validation','fields':[{'field':'child','error':'validation.notnull'}]}");
-        callService(new EntityWithUnvalidatedChild(){{
+            "{'id':'.*','error':'validation','fields':[{'field':'child','error':'validation.notnull'}]}");
+        callService(new EntityWithUnvalidatedChild() {{
             setChild(new Child());
         }});
     }
@@ -385,21 +385,21 @@ public class ValidationExamples {
 
     @Test
     public void shouldValidateParentAndChildIfValidateAnnotation() {
-        assertValidationException(callService(new EntityWithValidatedChild(){{
-            setChild(new Child());
-        }}),
-                "{'id':'.*','error':'validation','fields':[{'field':'child.name','error':'validation.notnull'}]}");
-        callService(new EntityWithValidatedChild(){{
-            setChild(new Child(){{
+        assertValidationException(callService(new EntityWithValidatedChild() {{
+                setChild(new Child());
+            }}),
+            "{'id':'.*','error':'validation','fields':[{'field':'child.name','error':'validation.notnull'}]}");
+        callService(new EntityWithValidatedChild() {{
+            setChild(new Child() {{
 
             }});
         }});
     }
 
     private static <T> Runnable callService(T inputClass) {
-        AcceptingService<T> service = mock(AcceptingService.class);
+        AcceptingService<T> service          = mock(AcceptingService.class);
         AcceptingService<T> validatedService = ValidatingProxy.create(AcceptingService.class, service, new ValidatorUtil());
-        return ()->validatedService.call(inputClass);
+        return () -> validatedService.call(inputClass);
     }
 
     private static void assertValidationException(Runnable runnable, Consumer<WebException> validationAsserter) {
@@ -414,12 +414,12 @@ public class ValidationExamples {
 
     private static void assertValidationException(Runnable runnable, String exceptionAsJson) {
         String pattern = exceptionAsJson
-                .replaceAll("'", "\\\"")
-                .replaceAll("\\{", "\\\\{")
-                .replaceAll("\\}", "\\\\}")
-                .replaceAll("\\[", "\\\\[")
-                .replaceAll("\\]", "\\\\]");
-        assertValidationException(runnable, e->{
+            .replaceAll("'", "\\\"")
+            .replaceAll("\\{", "\\\\{")
+            .replaceAll("\\}", "\\\\}")
+            .replaceAll("\\[", "\\\\[")
+            .replaceAll("\\]", "\\\\]");
+        assertValidationException(runnable, e -> {
             try {
                 assertThat(new ObjectMapper().writeValueAsString(e)).matches(pattern);
             } catch (JsonProcessingException e1) {
