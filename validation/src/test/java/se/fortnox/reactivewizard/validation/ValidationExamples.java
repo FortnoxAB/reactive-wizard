@@ -8,6 +8,7 @@ import static org.mockito.Mockito.*;
 
 import java.lang.annotation.*;
 import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -177,6 +178,94 @@ public class ValidationExamples {
      * @ScriptAssert
      * @URL
      */
+
+    /***********************************************************
+     * Now let's create some custom validations.
+     *
+     * We start with a custom field validation. We create our entity with a date
+     * and we add a custom validation @Before meaning that the date must be before
+     * the date we pass to the validator.
+     */
+
+    class EntityWithDate {
+        @Before("2016-01-01")
+        private Date date;
+
+        public Date getDate() {
+            return date;
+        }
+
+        public void setDate(Date date) {
+            this.date = date;
+        }
+    }
+
+    /**
+     * Then we define the annotation @Before. We mark it as applicable to fields
+     * and we set the validatedBy to a class com.fortnox.reactivewizard.validation.BeforeValidator.
+     *
+     * We set the message to the error code that we want to output in our
+     * response. This should be a string intended to be used in a mapping (or
+     * if-statement). The "groups" and "payload" is something hibernate
+     * requires but which is of no interest to us at this point.
+     *
+     * The String value is the parameter to our annotation. You can add
+     * multiple of these (with outher names than value), and the will be part
+     * of the error response.
+     */
+    @Target(value={ElementType.FIELD})
+    @Retention(RetentionPolicy.RUNTIME)
+    @Constraint(validatedBy=BeforeValidator.class)
+    @Documented
+    public @interface Before {
+        String message() default "not.before";
+        Class<?>[] groups() default {};
+        Class<? extends Payload>[] payload() default {};
+        String value();
+    }
+
+    /**
+     * This is our validator. It has an initialize method where you can grab
+     * your parameters. In this case we parse the date from the String.
+     *
+     * It also has an isValid method where you return true or false.
+     */
+    public static class BeforeValidator extends CustomFieldValidator<Before, Date> {
+
+        private Date date;
+
+        @Override
+        public void initialize(Before before) {
+            try {
+                date = new SimpleDateFormat("yyyy-MM-dd").parse(before.value());
+            } catch (ParseException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        @Override
+        public boolean isValid(Date d) {
+            if (d != null && !d.before(date)) {
+                return false;
+            }
+            return true;
+        }
+    }
+
+    /**
+     * Now we try it out. We pass an entity which has a date after 2016-01-01
+     * to our service and expect it to give us an error back.
+     *
+     * Note that the response contains our error code and also the value we set
+     * on the annotation.
+     */
+    @Test
+    public void shouldFailIfFieldValidationIsNotMet() throws ParseException {
+        assertValidationException(callService(new EntityWithDate() {{
+                setDate(new SimpleDateFormat("yyyy-MM-dd").parse("2016-02-01"));
+            }}),
+            "{'id':'.*','error':'validation','fields':[{'field':'date','error':'validation.not.before','errorParams':{'value':'2016-01-01'}}]}");
+    }
 
     /**
      * Next is validation on the entity level, which is useful when you have a
@@ -386,7 +475,7 @@ public class ValidationExamples {
         assertValidationException(() -> service.acceptsPeriod(new PeriodPrivate() {{
             setStartDate(new Date(10));
             setEndDate(new Date(8));
-        }}), "{'id':'.*','error':'validation','fields':[{'field':'endDate','error':'validation.future'},{'field':'endDate','error':'validation.enddate.before.startdate'}]}");
+        }}), "{'id':'.*','error':'validation','fields':[{'field':'endDate','error':'validation.enddate.before.startdate'},{'field':'endDate','error':'validation.future'}]}");
     }
 
     /**
