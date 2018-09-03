@@ -157,7 +157,10 @@ public class ValidationExamples {
      * @Null
      * @Past
      * @Pattern
-     * @Size And these are shipped with Hibernate:
+     * @Size
+     *
+     * And these are shipped with Hibernate:
+     *
      * @CreditCardNumber
      * @EAN
      * @Email
@@ -175,7 +178,17 @@ public class ValidationExamples {
      * @URL
      */
 
-
+    /**
+     * Next is validation on the entity level, which is useful when you have a
+     *      * dependency between fields. A common thing is that you have a startDate
+     *      * and endDate and the endDate, if present, must not be before the
+     *      * startDate. Field level validation is of no use here, so we need to put
+     *      * the validation on the entity.
+     *      *
+     *      * We create a new annotation @PeriodValidation and add that to a Period
+     *      * class.
+     */
+    @PeriodValidation
     class Period {
 
         @NotNull
@@ -199,6 +212,73 @@ public class ValidationExamples {
             this.endDate = endDate;
         }
     }
+
+    /**
+     * This is how the annotation looks like. It is exactly like the @Before
+     * annotation above, but in this case we do not define a message. That is
+     * because we want the validator to give us a message per field that fails
+     * validation, not for the whole entity.
+     */
+    @Target(value={ElementType.TYPE, ElementType.PARAMETER})
+    @Retention(RetentionPolicy.RUNTIME)
+    @Constraint(validatedBy=PeriodValidator.class)
+    @Documented
+    public @interface PeriodValidation {
+        String message() default "";
+        Class<?>[] groups() default {};
+        Class<? extends Payload>[] payload() default {};
+    }
+
+    /**
+     * And this is our validator. It resembles the BeforeValidator but since it
+     * extends CustomEntityValidator the isValid method should return a list of
+     * errors, where we get one or more errors for every field that is invalid.
+     */
+    public static class PeriodValidator extends CustomEntityValidator<PeriodValidation, Period> {
+
+        @Override
+        public void initialize(PeriodValidation periodValidation) {
+        }
+
+        @Override
+        public List<FieldError> isValid(Period entity) {
+            if (entity != null
+                && entity.getStartDate() != null
+                && entity.getEndDate() != null
+                && entity.getEndDate().before(entity.getStartDate())) {
+                return asList(new FieldError("endDate", "enddate.before.startdate"));
+            }
+            return null;
+        }
+    }
+
+    /**
+     * When we send in a period with an endDate before the startDate we expect
+     * to get a validation error. The error is pointing to the endDate field
+     * and we get the error code from the validator.
+     */
+    @Test
+    public void shouldFailIfEndDateBeforeStartDate() {
+        assertValidationException(callService(new Period() {{
+                setStartDate(new Date(10));
+                setEndDate(new Date(8));
+            }}),
+            "{'id':'.*','error':'validation','fields':[{'field':'endDate','error':'validation.enddate.before.startdate'}]}");
+
+    }
+
+    /**
+     * And if we send in an ok entity we get no error.
+     */
+    @Test
+    public void shouldNotFailIfValidationIsMet() {
+        // pass a valid instance, and you get no exception
+        callService(new Period() {{
+            setStartDate(new Date(10));
+            setEndDate(new Date(18));
+        }}).run();
+    }
+
 
     /**
      * If we send in an entity where startDate and endDate is null, the
