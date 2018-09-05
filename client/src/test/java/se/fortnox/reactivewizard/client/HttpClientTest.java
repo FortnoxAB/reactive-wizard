@@ -320,7 +320,7 @@ public class HttpClientTest {
         HttpClient client = new HttpClient(new HttpClientConfig("localhost"));
         Method     method = TestResource.class.getMethod("withRegExpPathAndQueryParam", String.class, String.class);
         String     path   = client.getPath(method, new Object[]{"key/with/Slash", "value/with/slash"}, new JaxRsMeta(method, null));
-        assertThat(path).isEqualTo("/hello/{fid}/key/with/Slash?value=value/with/slash");
+        assertThat(path).isEqualTo("/hello/{fid}/key/with/Slash?value=value%2Fwith%2Fslash");
     }
 
     @Test
@@ -328,7 +328,15 @@ public class HttpClientTest {
         HttpClient client = new HttpClient(new HttpClientConfig("localhost"));
         Method     method = TestResource.class.getMethod("withPathAndQueryParam", String.class, String.class);
         String     path   = client.getPath(method, new Object[]{"key/with/Slash", "value/with/slash"}, new JaxRsMeta(method, null));
-        assertThat(path).isEqualTo("/hello/{fid}/key%2Fwith%2FSlash?value=value/with/slash");
+        assertThat(path).isEqualTo("/hello/{fid}/key%2Fwith%2FSlash?value=value%2Fwith%2Fslash");
+    }
+
+    @Test
+    public void shouldEncodePathAndQueryWithColon() throws Exception {
+        HttpClient client = new HttpClient(new HttpClientConfig("localhost"));
+        Method     method = TestResource.class.getMethod("withPathAndQueryParam", String.class, String.class);
+        String     path   = client.getPath(method, new Object[]{"path:param", "query-param-with:colon"}, new JaxRsMeta(method, null));
+        assertThat(path).isEqualTo("/hello/{fid}/path%3Aparam?value=query-param-with%3Acolon");
     }
 
     @Test
