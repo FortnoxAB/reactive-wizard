@@ -446,7 +446,7 @@ public class HttpClient implements InvocationHandler {
                     }
                     query.append(((QueryParam)annotation).value());
                     query.append('=');
-                    query.append(encode(serialize(value)));
+                    query.append(urlEncode(serialize(value)));
                 } else if (annotation instanceof PathParam) {
                     if (path.contains("{" + ((PathParam)annotation).value() + ":.*}")) {
                         path = path.replaceAll("\\{" + ((PathParam)annotation).value() + ":.*\\}", this.encode(this.serialize(value)));
