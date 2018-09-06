@@ -21,10 +21,12 @@ import io.reactivex.netty.protocol.http.server.HttpServerRequest;
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mockito;
 import rx.Observable;
 import rx.Single;
+import rx.exceptions.CompositeException;
 import se.fortnox.reactivewizard.config.TestInjector;
 import se.fortnox.reactivewizard.jaxrs.ByteBufCollector;
 import se.fortnox.reactivewizard.jaxrs.JaxRsMeta;
@@ -57,7 +59,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -181,7 +182,7 @@ public class HttpClientTest {
         healthRecorder = new HealthRecorder() {
             @Override
             public boolean logStatus(Object key, boolean currentStatus) {
-                if (currentStatus == false) {
+                if (!currentStatus) {
                     wasUnhealthy.set(true);
                 }
                 return super.logStatus(key, currentStatus);
@@ -346,6 +347,8 @@ public class HttpClientTest {
         final HttpServer<ByteBuf, ByteBuf> server   = startServer(HttpResponseStatus.OK, generate10MbString());
         TestResource                       resource = getHttpProxy(server.getServerPort());
         resource.getHello().toBlocking().single();
+
+        server.shutdown();
     }
 
     @Test
@@ -354,6 +357,8 @@ public class HttpClientTest {
         TestResource                       resource = getHttpProxy(server.getServerPort());
         byte[]                             result   = resource.getAsBytes().toBlocking().single();
         assertThat(new String(result)).isEqualTo("hej");
+
+        server.shutdown();
     }
 
     @Test
@@ -371,6 +376,8 @@ public class HttpClientTest {
             assertThat(e.getStatus()).isEqualTo(INTERNAL_SERVER_ERROR);
         }
         assertThat(callCount.get()).isEqualTo(4);
+
+        server.shutdown();
     }
 
     @Test
@@ -386,19 +393,22 @@ public class HttpClientTest {
             assertThat(e.getStatus()).isEqualTo(HttpResponseStatus.NOT_FOUND);
         }
         assertThat(callCount.get()).isEqualTo(1);
+
+        server.shutdown();
     }
 
     @Test
     public void shouldNotRetryOnTimeout() {
         AtomicLong callCount = new AtomicLong();
         // Slow server
-        HttpServer<ByteBuf, ByteBuf> server = HttpServer.newServer(0).start((request, response) -> {
-            callCount.incrementAndGet();
-            return Observable.defer(() -> {
-                response.setStatus(HttpResponseStatus.NOT_FOUND);
-                return Observable.<Void>empty();
-            }).delaySubscription(1000, TimeUnit.MILLISECONDS);
-        });
+        HttpServer<ByteBuf, ByteBuf> server = HttpServer.newServer(0)
+            .start((request, response) -> {
+                callCount.incrementAndGet();
+                return Observable.defer(() -> {
+                    response.setStatus(HttpResponseStatus.NOT_FOUND);
+                    return Observable.<Void>empty();
+                }).delaySubscription(1000, TimeUnit.MILLISECONDS);
+            });
 
         TestResource resource = getHttpProxy(server.getServerPort());
         HttpClient.setTimeout(resource, 500, TimeUnit.MILLISECONDS);
@@ -409,6 +419,8 @@ public class HttpClientTest {
             assertThat(e.getCause()).isInstanceOf(TimeoutException.class);
         }
         assertThat(callCount.get()).isEqualTo(1);
+
+        server.shutdown();
     }
 
     @Test
@@ -423,6 +435,8 @@ public class HttpClientTest {
         TestResource resource = getHttpProxy(server.getServerPort());
         String       result   = resource.getHello().toBlocking().single();
         assertThat(result).isEqualTo("hello");
+
+        server.shutdown();
     }
 
     @Test
@@ -450,7 +464,10 @@ public class HttpClientTest {
         resource.servertest("fast")
             // Delay needed so that repeat will not subscribe immediately, as the pooled connection is released on the event loop thread.
             .delaySubscription(10, TimeUnit.MILLISECONDS)
-            .repeat(10).doOnNext(System.out::println).toBlocking().last();
+            .repeat(10)
+            .doOnNext(System.out::println)
+            .toBlocking()
+            .last();
 
         verify(serverLog, times(10)).accept("/hello/servertest/fast");
 
@@ -458,8 +475,10 @@ public class HttpClientTest {
             resource.servertest("slowHeaders")
                 .delaySubscription(10, TimeUnit.MILLISECONDS)
                 .retry(5)
-                .doOnNext(System.out::println).toBlocking().last();
-            fail("expected exception");
+                .doOnNext(System.out::println)
+                .toBlocking()
+                .last();
+            fail("Expected exception, but none was thrown");
         } catch (Exception e) {
             assertThat(e.getCause()).isInstanceOf(TimeoutException.class);
         }
@@ -516,7 +535,8 @@ public class HttpClientTest {
                 return Observable.defer(() -> {
                     response.setStatus(HttpResponseStatus.OK);
                     return response.writeString(just("\"slowHeaders\""));
-                }).delaySubscription(5000, TimeUnit.MILLISECONDS);
+                })
+                    .delaySubscription(5000, TimeUnit.MILLISECONDS);
             }
             if (request.getDecodedPath().equals("/hello/servertest/slowBody")) {
                 response.setStatus(HttpResponseStatus.OK);
@@ -544,18 +564,21 @@ public class HttpClientTest {
         resource.servertest("fast")
             // Delay needed so that repeat will not subscribe immediately, as the pooled connection is released on the event loop thread.
             .delaySubscription(10, TimeUnit.MILLISECONDS)
-            .repeat(10).toBlocking().last();
+            .repeat(10)
+            .toBlocking()
+            .last();
 
         verify(serverLog, times(10)).accept("/hello/servertest/fast");
 
         try {
             resource.servertest("slowBody")
                 .timeout(50, TimeUnit.MILLISECONDS)
+                // Delay needed so that repeat will not subscribe immediately, as the pooled connection is released on the event loop thread.
                 .delaySubscription(10, TimeUnit.MILLISECONDS)
                 .retry(10)
                 .toBlocking()
                 .last();
-            fail("expected exception");
+            fail("Expected TimeoutException, but no exception was thrown");
         } catch (Exception e) {
             assertThat(e.getCause()).isInstanceOf(TimeoutException.class);
         }
@@ -570,15 +593,17 @@ public class HttpClientTest {
 
         LogManager.getLogger(HttpClient.class).setLevel(Level.toLevel(Level.OFF_INT));
 
-        HttpServer<ByteBuf, ByteBuf> server = HttpServer.newServer(0).start((request, response) -> {
-            return Observable.defer(() -> {
-                response.setStatus(HttpResponseStatus.OK);
-                return response.writeString(just("\"hello\""));
-            }).delaySubscription(50000, TimeUnit.MILLISECONDS)
-                .doOnError(e -> {
-                    e.printStackTrace();
-                });
-        });
+        HttpServer<ByteBuf, ByteBuf> server = HttpServer.newServer(0)
+            .start((request, response) -> {
+                return Observable.defer(() -> {
+                    response.setStatus(HttpResponseStatus.OK);
+                    return response.writeString(just("\"hello\""));
+                })
+                    .delaySubscription(50000, TimeUnit.MILLISECONDS)
+                    .doOnError(e -> {
+                        e.printStackTrace();
+                    });
+            });
 
         // this config ensures that the autocleanup will run before the hystrix timeout
         HttpClientConfig config = new HttpClientConfig("localhost:" + server.getServerPort());
@@ -613,6 +638,8 @@ public class HttpClientTest {
             assertThat(req.headerIterator()).isNotEmpty();
             assertThat(req.getHeader("Cookie")).isEqualTo(cookieHeader);
         }));
+
+        server.shutdown();
     }
 
     private HttpServer<ByteBuf, ByteBuf> startServer(HttpResponseStatus status, String body, Consumer<HttpServerRequest<ByteBuf>> callback) {
@@ -776,6 +803,7 @@ public class HttpClientTest {
         String body = new ByteBufCollector(1024 * 1024).collectString(response.getContent()).toBlocking().single();
         assertThat(body).isEqualTo("this is my response");
 
+        server.shutdown();
     }
 
     @Test
