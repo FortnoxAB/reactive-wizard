@@ -1,5 +1,6 @@
 package se.fortnox.reactivewizard.client;
 
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
@@ -399,6 +400,23 @@ public class HttpClientTest {
             fail("expected exception");
         } catch (WebException e) {
             assertThat(e.getStatus()).isEqualTo(HttpResponseStatus.NOT_FOUND);
+        }
+        assertThat(callCount.get()).isEqualTo(1);
+
+        server.shutdown();
+    }
+
+    @Test
+    public void shouldNotRetryForJsonParseErrors() {
+        AtomicLong                   callCount = new AtomicLong();
+        HttpServer<ByteBuf, ByteBuf> server    = startServer(OK, "{\"result\":[]}", r -> callCount.incrementAndGet());
+
+        TestResource resource = getHttpProxy(server.getServerPort());
+        try {
+            resource.getWrappedPojo().toBlocking().singleOrDefault(null);
+            fail("expected exception");
+        } catch (Exception e) {
+            assertThat(e.getCause()).isInstanceOf(JsonMappingException.class);
         }
         assertThat(callCount.get()).isEqualTo(1);
 
@@ -924,5 +942,32 @@ public class HttpClientTest {
 
         @GET
         Observable<HttpClientResponse<ByteBuf>> getRawResponse();
+
+        @GET
+        Observable<Wrapper> getWrappedPojo();
+    }
+
+    class Wrapper {
+        private Pojo result;
+
+        public Pojo getResult() {
+            return result;
+        }
+
+        public void setResult(Pojo result) {
+            this.result = result;
+        }
+    }
+
+    class Pojo {
+        private String name;
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
     }
 }
