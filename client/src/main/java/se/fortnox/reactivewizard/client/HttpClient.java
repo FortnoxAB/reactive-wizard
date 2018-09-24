@@ -2,6 +2,7 @@ package se.fortnox.reactivewizard.client;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.type.TypeFactory;
@@ -216,6 +217,11 @@ public class HttpClient implements InvocationHandler {
         return response.retryWhen(new RetryWithDelay(config.getRetryCount(), config.getRetryDelayMs(),
             throwable -> {
                 if (throwable instanceof TimeoutException) {
+                    return false;
+                }
+                Throwable cause = throwable.getCause();
+                if (throwable instanceof JsonMappingException || cause instanceof JsonMappingException) {
+                    // Do not retry when deserialization failed
                     return false;
                 }
                 if (!(throwable instanceof WebException)) {
