@@ -71,10 +71,12 @@ public class LoggingFactory {
 
     private void configureJUL() {
         final InputStream stream = LoggingFactory.class.getClassLoader().getResourceAsStream("rw-jul-logging.properties");
-        try {
-            getLogManager().readConfiguration(stream);
-        } catch (IOException | NullPointerException e) {
-            e.printStackTrace();
+        if(stream != null) {
+            try {
+                getLogManager().readConfiguration(stream);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 
