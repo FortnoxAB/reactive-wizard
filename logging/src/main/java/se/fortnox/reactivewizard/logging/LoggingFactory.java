@@ -14,6 +14,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
 
+import static java.util.logging.LogManager.getLogManager;
+
 /**
  * Factory for initializing logging configuration and also container of logging configuration from YAML.
  */
@@ -36,6 +38,10 @@ public class LoggingFactory {
     @JsonProperty("levels")
     Map<String, String> levels = new HashMap<>();
 
+    @Valid
+    @JsonProperty("julLoggingActivation")
+    Boolean julLoggingActivation = false;
+
     public void init() {
         if (appenders == null) {
             appenders = new HashMap<>();
@@ -54,6 +60,22 @@ public class LoggingFactory {
             props.setProperty("log4j.logger." + e.getKey(), e.getValue());
         }
         LoggingConfiguration.getInstance().configure(props);
+
+        /*
+        Provides a facility to reconfigure JUL via a reactivewizard config.
+         */
+        if(julLoggingActivation) {
+	        configureJUL();
+        }
+    }
+
+    private void configureJUL() {
+        final InputStream stream = LoggingFactory.class.getClassLoader().getResourceAsStream("rw-jul-logging.properties");
+        try {
+            getLogManager().readConfiguration(stream);
+        } catch (IOException | NullPointerException e) {
+            e.printStackTrace();
+        }
     }
 
     private void loadConfigurationsFromFiles(Properties props) {
