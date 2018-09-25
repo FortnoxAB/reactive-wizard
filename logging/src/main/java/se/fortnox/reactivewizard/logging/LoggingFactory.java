@@ -42,6 +42,9 @@ public class LoggingFactory {
     @JsonProperty("julLoggingActivation")
     Boolean julLoggingActivation = false;
 
+    /**
+     * Configure logging framework(s) and supply defaults.
+     */
     public void init() {
         if (appenders == null) {
             appenders = new HashMap<>();
@@ -61,17 +64,15 @@ public class LoggingFactory {
         }
         LoggingConfiguration.getInstance().configure(props);
 
-        /*
-        Provides a facility to reconfigure JUL via a reactivewizard config.
-         */
-        if(julLoggingActivation) {
-	        configureJUL();
+        // Provides a facility to reconfigure JUL via a reactivewizard config.
+        if (julLoggingActivation) {
+            configureJavaUtilLogging();
         }
     }
 
-    private void configureJUL() {
+    private void configureJavaUtilLogging() {
         final InputStream stream = LoggingFactory.class.getClassLoader().getResourceAsStream("rw-jul-logging.properties");
-        if(stream != null) {
+        if (stream != null) {
             try {
                 getLogManager().readConfiguration(stream);
             } catch (IOException e) {
