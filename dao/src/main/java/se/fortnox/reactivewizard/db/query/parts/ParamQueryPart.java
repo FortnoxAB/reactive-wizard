@@ -10,6 +10,7 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -61,7 +62,8 @@ public class ParamQueryPart implements DynamicQueryPart {
     public DynamicQueryPart subPath(String[] subPath) throws SQLException {
         Optional<PropertyResolver> propertyResolver = argResolver.subPath(subPath);
         if (!propertyResolver.isPresent()) {
-            throw new RuntimeException("Properties " + subPath + " cannot be found in " + argResolver);
+            throw new RuntimeException(String.format("Properties %s cannot be found in %s",
+                Arrays.toString(subPath), argResolver.getPropertyType()));
         }
         return new ParamQueryPart(argIndex, propertyResolver.get());
     }
