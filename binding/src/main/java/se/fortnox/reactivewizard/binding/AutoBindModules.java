@@ -69,7 +69,8 @@ public class AutoBindModules implements Module {
 
     @Override
     public void configure(Binder binder) {
-        Injector bootstrapInjector = Guice.createInjector(bootstrapBindings);
+        Injector bootstrapInjector = Guice.createInjector(bootstrapBindings,
+            internalBinder -> internalBinder.bind(Runtime.class).toProvider(Runtime::getRuntime));
 
         List<AutoBindModule> autoBindModules = createAutoBindModules(bootstrapInjector);
 
