@@ -6,11 +6,7 @@ import static org.fest.assertions.Fail.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
 
-import java.lang.annotation.Documented;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import java.lang.annotation.*;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -28,7 +24,6 @@ import javax.validation.constraints.NotNull;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.After;
 import se.fortnox.reactivewizard.jaxrs.Wrap;
 import se.fortnox.reactivewizard.jaxrs.FieldError;
 import se.fortnox.reactivewizard.jaxrs.WebException;
@@ -124,9 +119,9 @@ public class ValidationExamples {
          * we get a validation error:
          */
         assertValidationException(callService(new IntInputClass() {{
-                    setAge(1);
-                }}),
-                "{'id':'.*','error':'validation','fields':[{'field':'age','error':'validation.min','errorParams':{'value':3}}]}");
+                setAge(1);
+            }}),
+            "{'id':'.*','error':'validation','fields':[{'field':'age','error':'validation.min','errorParams':{'value':3}}]}");
         /**
          * Note that we also return the expected minimum in the error here, so
          * that the caller knows how to improve their request.
@@ -136,9 +131,9 @@ public class ValidationExamples {
          * Now we send in 8 which is higher than the max
          */
         assertValidationException(callService(new IntInputClass() {{
-                    setAge(8);
-                }}),
-                "{'id':'.*','error':'validation','fields':[{'field':'age','error':'validation.max','errorParams':{'value':6}}]}");
+                setAge(8);
+            }}),
+            "{'id':'.*','error':'validation','fields':[{'field':'age','error':'validation.max','errorParams':{'value':6}}]}");
 
         /**
          * And then we use a valid value of 4, which gives no error.
@@ -150,6 +145,7 @@ public class ValidationExamples {
 
     /**
      * These are the constraints that are part of the javax validation api:
+     *
      * @AssertFalse
      * @AssertTrue
      * @DecimalMax
@@ -183,7 +179,105 @@ public class ValidationExamples {
      * @URL
      */
 
+    /***********************************************************
+     * Now let's create some custom validations.
+     *
+     * We start with a custom field validation. We create our entity with a date
+     * and we add a custom validation @Before meaning that the date must be before
+     * the date we pass to the validator.
+     */
 
+    class EntityWithDate {
+        @Before("2016-01-01")
+        private Date date;
+
+        public Date getDate() {
+            return date;
+        }
+
+        public void setDate(Date date) {
+            this.date = date;
+        }
+    }
+
+    /**
+     * Then we define the annotation @Before. We mark it as applicable to fields
+     * and we set the validatedBy to a class com.fortnox.reactivewizard.validation.BeforeValidator.
+     *
+     * We set the message to the error code that we want to output in our
+     * response. This should be a string intended to be used in a mapping (or
+     * if-statement). The "groups" and "payload" is something hibernate
+     * requires but which is of no interest to us at this point.
+     *
+     * The String value is the parameter to our annotation. You can add
+     * multiple of these (with outher names than value), and the will be part
+     * of the error response.
+     */
+    @Target(value={ElementType.FIELD})
+    @Retention(RetentionPolicy.RUNTIME)
+    @Constraint(validatedBy=BeforeValidator.class)
+    @Documented
+    public @interface Before {
+        String message() default "not.before";
+        Class<?>[] groups() default {};
+        Class<? extends Payload>[] payload() default {};
+        String value();
+    }
+
+    /**
+     * This is our validator. It has an initialize method where you can grab
+     * your parameters. In this case we parse the date from the String.
+     *
+     * It also has an isValid method where you return true or false.
+     */
+    public static class BeforeValidator extends CustomFieldValidator<Before, Date> {
+
+        private Date date;
+
+        @Override
+        public void initialize(Before before) {
+            try {
+                date = new SimpleDateFormat("yyyy-MM-dd").parse(before.value());
+            } catch (ParseException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        @Override
+        public boolean isValid(Date d) {
+            if (d != null && !d.before(date)) {
+                return false;
+            }
+            return true;
+        }
+    }
+
+    /**
+     * Now we try it out. We pass an entity which has a date after 2016-01-01
+     * to our service and expect it to give us an error back.
+     *
+     * Note that the response contains our error code and also the value we set
+     * on the annotation.
+     */
+    @Test
+    public void shouldFailIfFieldValidationIsNotMet() throws ParseException {
+        assertValidationException(callService(new EntityWithDate() {{
+                setDate(new SimpleDateFormat("yyyy-MM-dd").parse("2016-02-01"));
+            }}),
+            "{'id':'.*','error':'validation','fields':[{'field':'date','error':'validation.not.before','errorParams':{'value':'2016-01-01'}}]}");
+    }
+
+    /**
+     * Next is validation on the entity level, which is useful when you have a
+     *      * dependency between fields. A common thing is that you have a startDate
+     *      * and endDate and the endDate, if present, must not be before the
+     *      * startDate. Field level validation is of no use here, so we need to put
+     *      * the validation on the entity.
+     *      *
+     *      * We create a new annotation @PeriodValidation and add that to a Period
+     *      * class.
+     */
+    @PeriodValidation
     class Period {
 
         @NotNull
@@ -209,7 +303,75 @@ public class ValidationExamples {
     }
 
     /**
+     * This is how the annotation looks like. It is exactly like the @Before
+     * annotation above, but in this case we do not define a message. That is
+     * because we want the validator to give us a message per field that fails
+     * validation, not for the whole entity.
+     */
+    @Target(value={ElementType.TYPE, ElementType.PARAMETER})
+    @Retention(RetentionPolicy.RUNTIME)
+    @Constraint(validatedBy=PeriodValidator.class)
+    @Documented
+    public @interface PeriodValidation {
+        String message() default "";
+        Class<?>[] groups() default {};
+        Class<? extends Payload>[] payload() default {};
+    }
+
+    /**
+     * And this is our validator. It resembles the BeforeValidator but since it
+     * extends CustomEntityValidator the isValid method should return a list of
+     * errors, where we get one or more errors for every field that is invalid.
+     */
+    public static class PeriodValidator extends CustomEntityValidator<PeriodValidation, Period> {
+
+        @Override
+        public void initialize(PeriodValidation periodValidation) {
+        }
+
+        @Override
+        public List<FieldError> isValid(Period entity) {
+            if (entity != null
+                && entity.getStartDate() != null
+                && entity.getEndDate() != null
+                && entity.getEndDate().before(entity.getStartDate())) {
+                return asList(new FieldError("endDate", "enddate.before.startdate"));
+            }
+            return null;
+        }
+    }
+
+    /**
+     * When we send in a period with an endDate before the startDate we expect
+     * to get a validation error. The error is pointing to the endDate field
+     * and we get the error code from the validator.
+     */
+    @Test
+    public void shouldFailIfEndDateBeforeStartDate() {
+        assertValidationException(callService(new Period() {{
+                setStartDate(new Date(10));
+                setEndDate(new Date(8));
+            }}),
+            "{'id':'.*','error':'validation','fields':[{'field':'endDate','error':'validation.enddate.before.startdate'}]}");
+
+    }
+
+    /**
+     * And if we send in an ok entity we get no error.
+     */
+    @Test
+    public void shouldNotFailIfValidationIsMet() {
+        // pass a valid instance, and you get no exception
+        callService(new Period() {{
+            setStartDate(new Date(10));
+            setEndDate(new Date(18));
+        }}).run();
+    }
+
+
+    /**
      * If we send in an entity where startDate and endDate is null, the
+     *
      * @NotNull validation kicks in. This is why we do not return an error
      * if startDate is null in the PeriodValidator, because we would get
      * double validation errors.
@@ -217,7 +379,7 @@ public class ValidationExamples {
     @Test
     public void shouldFailIfStartDateIsNull() throws ParseException {
         assertValidationException(callService(new Period()),
-                "{'id':'.*','error':'validation','fields':[{'field':'startDate','error':'validation.notnull'}]}");
+            "{'id':'.*','error':'validation','fields':[{'field':'startDate','error':'validation.notnull'}]}");
     }
 
     /**
@@ -261,7 +423,38 @@ public class ValidationExamples {
     /**
      * This is in your impl module:
      */
+    @PeriodPrivateValidation
     class PeriodPrivate extends PeriodPublic {
+    }
+
+    @Target(value = {ElementType.TYPE, ElementType.PARAMETER})
+    @Retention(RetentionPolicy.RUNTIME)
+    @Constraint(validatedBy = PeriodPrivateValidator.class)
+    @Documented
+    public @interface PeriodPrivateValidation {
+        String message() default "";
+
+        Class<?>[] groups() default {};
+
+        Class<? extends Payload>[] payload() default {};
+    }
+
+    public static class PeriodPrivateValidator extends CustomEntityValidator<PeriodPrivateValidation, PeriodPrivate> {
+
+        @Override
+        public void initialize(PeriodPrivateValidation periodValidation) {
+        }
+
+        @Override
+        public List<FieldError> isValid(PeriodPrivate entity) {
+            if (entity != null
+                && entity.getStartDate() != null
+                && entity.getEndDate() != null
+                && entity.getEndDate().before(entity.getStartDate())) {
+                return asList(new FieldError("endDate", "validation.enddate.before.startdate"));
+            }
+            return null;
+        }
     }
 
 
@@ -279,10 +472,10 @@ public class ValidationExamples {
     @Test
     public void shouldUseSubTypeWhenValidating() {
         MyPeriodService service = ValidatingProxy.create(MyPeriodService.class, new MyPeriodServiceImpl(), new ValidatorUtil());
-        assertValidationException(()->service.acceptsPeriod(new PeriodPrivate(){{
+        assertValidationException(() -> service.acceptsPeriod(new PeriodPrivate() {{
             setStartDate(new Date(10));
             setEndDate(new Date(8));
-        }}), "{'id':'.*','error':'validation','fields':[{'field':'endDate','error':'validation.future'}]}");
+        }}), "{'id':'.*','error':'validation','fields':[{'field':'endDate','error':'validation.enddate.before.startdate'},{'field':'endDate','error':'validation.future'}]}");
     }
 
     /**
@@ -299,9 +492,9 @@ public class ValidationExamples {
             Date startDateInDb = new Date(10);
             if (period.getStartDate().before(startDateInDb)) {
                 throw new WebException(new FieldError("startDate", "startdate.before.stored.date",
-                        new HashMap<String,Object>(){{
-                    put("stored", startDateInDb);
-                }}));
+                    new HashMap<String, Object>() {{
+                        put("stored", startDateInDb);
+                    }}));
             }
             return null;
         }
@@ -310,7 +503,7 @@ public class ValidationExamples {
     @Test
     public void shouldReturnValidationErrorFromService() {
         MyValidatingService service = new MyValidatingService();
-        assertValidationException(()->service.acceptsPeriod(new Period(){{
+        assertValidationException(() -> service.acceptsPeriod(new Period() {{
             setStartDate(new Date(5));
         }}), "{'id':'.*','error':'validation','fields':[{'field':'startDate','error':'validation.startdate.before.stored.date','errorParams':{'stored':10}}]}");
     }
@@ -343,8 +536,8 @@ public class ValidationExamples {
     @Test
     public void shouldValidateParentButNotChildIfNoValidateAnnotation() {
         assertValidationException(callService(new EntityWithUnvalidatedChild()),
-                "{'id':'.*','error':'validation','fields':[{'field':'child','error':'validation.notnull'}]}");
-        callService(new EntityWithUnvalidatedChild(){{
+            "{'id':'.*','error':'validation','fields':[{'field':'child','error':'validation.notnull'}]}");
+        callService(new EntityWithUnvalidatedChild() {{
             setChild(new Child());
         }});
     }
@@ -361,21 +554,21 @@ public class ValidationExamples {
 
     @Test
     public void shouldValidateParentAndChildIfValidateAnnotation() {
-        assertValidationException(callService(new EntityWithValidatedChild(){{
-            setChild(new Child());
-        }}),
-                "{'id':'.*','error':'validation','fields':[{'field':'child.name','error':'validation.notnull'}]}");
-        callService(new EntityWithValidatedChild(){{
-            setChild(new Child(){{
+        assertValidationException(callService(new EntityWithValidatedChild() {{
+                setChild(new Child());
+            }}),
+            "{'id':'.*','error':'validation','fields':[{'field':'child.name','error':'validation.notnull'}]}");
+        callService(new EntityWithValidatedChild() {{
+            setChild(new Child() {{
 
             }});
         }});
     }
 
     private static <T> Runnable callService(T inputClass) {
-        AcceptingService<T> service = mock(AcceptingService.class);
+        AcceptingService<T> service          = mock(AcceptingService.class);
         AcceptingService<T> validatedService = ValidatingProxy.create(AcceptingService.class, service, new ValidatorUtil());
-        return ()->validatedService.call(inputClass);
+        return () -> validatedService.call(inputClass);
     }
 
     private static void assertValidationException(Runnable runnable, Consumer<WebException> validationAsserter) {
@@ -390,12 +583,12 @@ public class ValidationExamples {
 
     private static void assertValidationException(Runnable runnable, String exceptionAsJson) {
         String pattern = exceptionAsJson
-                .replaceAll("'", "\\\"")
-                .replaceAll("\\{", "\\\\{")
-                .replaceAll("\\}", "\\\\}")
-                .replaceAll("\\[", "\\\\[")
-                .replaceAll("\\]", "\\\\]");
-        assertValidationException(runnable, e->{
+            .replaceAll("'", "\\\"")
+            .replaceAll("\\{", "\\\\{")
+            .replaceAll("\\}", "\\\\}")
+            .replaceAll("\\[", "\\\\[")
+            .replaceAll("\\]", "\\\\]");
+        assertValidationException(runnable, e -> {
             try {
                 assertThat(new ObjectMapper().writeValueAsString(e)).matches(pattern);
             } catch (JsonProcessingException e1) {
