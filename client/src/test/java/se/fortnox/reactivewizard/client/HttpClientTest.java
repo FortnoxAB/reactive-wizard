@@ -22,12 +22,10 @@ import io.reactivex.netty.protocol.http.server.HttpServerRequest;
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mockito;
 import rx.Observable;
 import rx.Single;
-import rx.exceptions.CompositeException;
 import se.fortnox.reactivewizard.config.TestInjector;
 import se.fortnox.reactivewizard.jaxrs.ByteBufCollector;
 import se.fortnox.reactivewizard.jaxrs.JaxRsMeta;
@@ -53,8 +51,8 @@ import javax.ws.rs.core.MediaType;
 import java.lang.reflect.Method;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
+import java.net.MalformedURLException;
 import java.net.URISyntaxException;
-import java.net.UnknownHostException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -832,6 +830,34 @@ public class HttpClientTest {
         server.shutdown();
     }
 
+
+    @Test
+    public void shouldHandleSimpleGetRequests() {
+        HttpServer<ByteBuf, ByteBuf> server   = startServer(OK, "this is my response");
+
+        String url = "http://localhost:" + server.getServerPort();
+        String response = HttpClient.get(url).toBlocking().single();
+
+        assertThat(response).isEqualTo("this is my response");
+
+        server.shutdown();
+    }
+
+    @Test
+    public void shouldErrorHandleSimpleGetRequestsWithBadUrl() {
+        HttpServer<ByteBuf, ByteBuf> server   = startServer(OK, "this is my response");
+
+        String url = "htp://localhost:" + server.getServerPort();
+
+        try {
+            HttpClient.get(url).toBlocking().single();
+        } catch (RuntimeException e) {
+            assertThat(e.getCause()).isInstanceOf(MalformedURLException.class);
+        }
+
+        server.shutdown();
+    }
+
     @Test
     public void shouldExecutePreRequestHooks() throws URISyntaxException {
         HttpServer<ByteBuf, ByteBuf> server = HttpServer.newServer(0).start((request, response) -> {
@@ -856,18 +882,6 @@ public class HttpClientTest {
         })));
 
         server.shutdown();
-    }
-
-    @Test
-    public void shouldBlockStartupIfHostCannotBeResolved() {
-        String host = "Nonexistinghost" + new Date().getTime();
-        try {
-            new HttpClientConfig(host);
-        } catch (Exception e) {
-            assertThat(e).isInstanceOf(RuntimeException.class);
-            assertThat(e.getMessage()).isEqualTo("Cannot resolve host for httpClient: " + host);
-            assertThat(e.getCause()).isInstanceOf(UnknownHostException.class);
-        }
     }
 
     private String generate10MbString() {

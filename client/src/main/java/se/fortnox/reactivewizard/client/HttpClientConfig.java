@@ -81,9 +81,6 @@ public class HttpClientConfig {
         }
         URI uri = new URI(this.url);
         setHost(uri.getHost());
-        if (host == null) {
-            throw new RuntimeException("Could not parse host from " + this.url);
-        }
 
         isHttps = "https".equals(uri.getScheme());
         port = uri.getPort();
