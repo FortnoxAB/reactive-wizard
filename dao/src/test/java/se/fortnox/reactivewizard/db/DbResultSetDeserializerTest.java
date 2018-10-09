@@ -7,6 +7,7 @@ import org.junit.Before;
 import org.junit.Test;
 import se.fortnox.reactivewizard.db.deserializing.DbResultSetDeserializer;
 
+import java.math.BigDecimal;
 import java.sql.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -98,6 +99,18 @@ public class DbResultSetDeserializerTest {
         when(rs.wasNull()).thenReturn(true);
         thenDeserialized(long.class).isEqualTo(0L);
         thenDeserialized(Long.class).isNull();
+    }
+
+    @Test
+    public void shouldDeserializeBigDecimal() throws SQLException {
+        when(rs.getBigDecimal(1)).thenReturn(BigDecimal.TEN);
+        thenDeserialized(BigDecimal.class).isEqualTo(BigDecimal.TEN);
+    }
+
+    @Test
+    public void shouldDeserializeNullBigDecimal() throws SQLException {
+        when(rs.getBigDecimal(1)).thenReturn(null);
+        thenDeserialized(BigDecimal.class).isNull();
     }
 
     @Test

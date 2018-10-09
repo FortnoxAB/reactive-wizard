@@ -1,9 +1,9 @@
 package se.fortnox.reactivewizard.db.deserializing;
 
+import java.math.BigDecimal;
 import java.sql.Array;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Timestamp;
 import java.sql.Types;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -40,6 +40,8 @@ public class ColumnDeserializerFactory {
             return (resultSet) -> Optional.of(resultSet.getDouble(columnIndex));
         } else if (columnClass.equals(Double.class)) {
             return (resultSet) -> mayBeNull(resultSet, resultSet.getDouble(columnIndex));
+        } else if (columnClass.equals(BigDecimal.class)) {
+            return (resultSet) -> mayBeNull(resultSet, resultSet.getBigDecimal(columnIndex));
         } else if (columnClass.equals(UUID.class)) {
             return (resultSet) -> mayBeNull(resultSet, resultSet.getObject(columnIndex));
         } else if (columnClass.equals(LocalDate.class)) {
