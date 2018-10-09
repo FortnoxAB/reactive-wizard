@@ -13,14 +13,17 @@ public class DbTestObj {
 
     private List<String> listOfStrings;
 
-	private List<TestEnum> listOfEnums;
+    private List<TestEnum> listOfEnums;
 
-	private List<DbTestObj> listOfObjects;
+    private List<DbTestObj> listOfObjects;
 
     private Double doubleVal;
 
     private DbTestObj child;
+
     private String    noGetterValue;
+
+    private byte[] bytes;
 
     public DbTestObj() {
     }
@@ -89,11 +92,19 @@ public class DbTestObj {
         this.listOfEnums = listOfEnums;
     }
 
-	public List<DbTestObj> getListOfObjects() {
-		return listOfObjects;
-	}
+    public List<DbTestObj> getListOfObjects() {
+        return listOfObjects;
+    }
 
-	public void setListOfObjects(List<DbTestObj> listOfObjects) {
-		this.listOfObjects = listOfObjects;
-	}
+    public void setListOfObjects(List<DbTestObj> listOfObjects) {
+        this.listOfObjects = listOfObjects;
+    }
+
+    public byte[] getBytes() {
+        return bytes;
+    }
+
+    public void setBytes(byte[] bytes) {
+        this.bytes = bytes;
+    }
 }
