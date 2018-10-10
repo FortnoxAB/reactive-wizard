@@ -41,9 +41,10 @@ public class DbProxyFactory implements AutoBindModule {
 
     /**
      * Checks if the -parameters flag was used to compile the dao class
+     * Exists system if daoclass if found not compiled with parameters.
+     *
      * @param cls the class to use when checking for parameters
-     * @return null if no method with parameters was found, true if method found and -parameters flag was used
-     *         Will log error and System.exit(1) if it turns out parameters flag was not used.
+     *
      */
     private void checkCompiledWithParameters(Class<?> cls) {
 
