@@ -396,6 +396,22 @@ public class DbResultSetDeserializerTest {
         thenDeserialized(String[].class).isNull();
     }
 
+    @Test
+    public void shouldDeserializeByteArray() throws SQLException {
+        when(meta.getColumnCount()).thenReturn(1);
+        when(meta.getColumnLabel(1)).thenReturn("bytes");
+        when(meta.getColumnType(1)).thenReturn(Types.BLOB);
+        when(rs.getMetaData()).thenReturn(meta);
+
+        when(rs.getBytes(1)).thenReturn("hello".getBytes());
+        when(rs.wasNull()).thenReturn(false);
+
+        DbResultSetDeserializer des = new DbResultSetDeserializer(DbTestObj.class);
+        DbTestObj myTestObj = (DbTestObj)des.deserialize(rs);
+        assertThat(myTestObj.getBytes()).isNotNull();
+        assertThat(myTestObj.getBytes()).isEqualTo("hello".getBytes());
+    }
+
     private ObjectAssert thenDeserialized(Class<?> cls) throws SQLException {
         DbResultSetDeserializer des = new DbResultSetDeserializer(cls);
         when(meta.getColumnCount()).thenReturn(1);

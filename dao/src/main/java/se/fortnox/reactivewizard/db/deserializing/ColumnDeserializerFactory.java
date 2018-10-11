@@ -51,6 +51,9 @@ public class ColumnDeserializerFactory {
         } else if (columnClass.equals(LocalDateTime.class)) {
             return (resultSet) -> Optional.ofNullable(getLocalDateTime(resultSet, columnIndex));
         } else if (columnClass.isArray()) {
+            if (columnClass.equals(byte[].class)) {
+                return (resultSet) -> Optional.ofNullable(resultSet.getBytes(columnIndex));
+            }
             return (resultSet) -> Optional.ofNullable(getArray(resultSet, columnIndex));
         } else if (columnClass.isAssignableFrom(List.class) && columnType == Types.ARRAY) {
             return (resultSet) -> Optional.ofNullable(getList(resultSet, columnIndex));
