@@ -10,6 +10,7 @@ import javax.inject.Provider;
 import javax.ws.rs.core.MediaType;
 import java.text.DateFormat;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Date;
 import java.util.HashMap;
@@ -45,6 +46,7 @@ public class DeserializerFactory {
                 put(Date.class, new DateDeserializer(dateFormatProvider));
                 put(LocalDate.class, new LocalDateDeserializer());
                 put(LocalTime.class, new LocalTimeDeserializer());
+                put(LocalDateTime.class, new LocalDateTimeDeserializer());
             }
         };
     }
