@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.type.TypeFactory;
-import com.google.common.collect.Sets;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
@@ -70,8 +69,8 @@ public class HttpClient implements InvocationHandler {
     private final   Set<PreRequestHook>         preRequestHooks;
     private         RxClientProvider            clientProvider;
     private         ObjectMapper                objectMapper;
-    private         int                         timeout     = 10;
-    private         TimeUnit                    timeoutUnit = TimeUnit.SECONDS;
+    private         int                         timeout;
+    private         TimeUnit                    timeoutUnit = TimeUnit.MILLISECONDS;
 
     @Inject
     public HttpClient(HttpClientConfig config,
@@ -87,6 +86,9 @@ public class HttpClient implements InvocationHandler {
 
         serverInfo = new InetSocketAddress(config.getHost(), config.getPort());
         this.preRequestHooks = preRequestHooks;
+
+        this.timeout = config.getMaxRequestTime();
+
     }
 
     public HttpClient(HttpClientConfig config) {

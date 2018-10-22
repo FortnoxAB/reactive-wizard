@@ -49,7 +49,7 @@ public class RxClientProvider {
         ConnectionProviderFactory<ByteBuf, ByteBuf> pool = new UnsubscribeAwareConnectionProviderFactory(connectionProviderFactory, poolConfig);
 
         HttpClient<ByteBuf, ByteBuf> client = HttpClient.newClient(pool, just(new Host(socketAddress)))
-            .readTimeOut(10, TimeUnit.SECONDS)
+            .readTimeOut(config.getMaxRequestTime(), TimeUnit.MILLISECONDS)
             .followRedirects(false)
             .pipelineConfigurator(UnsubscribeAwareHttpClientToConnectionBridge::configurePipeline);
 

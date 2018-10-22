@@ -41,11 +41,13 @@ public class HttpClientConfig {
 
     private int maxResponseSize = 10 * 1024 * 1024;
 
-    private long    poolAutoCleanupInterval = TimeUnit.MILLISECONDS.convert(10, MINUTES);
-    private long    maxRequestTime          = TimeUnit.MILLISECONDS.convert(1, MINUTES);
+    private long poolAutoCleanupInterval = TimeUnit.MILLISECONDS.convert(10, MINUTES);
+    private int  maxRequestTime          = 10000;
+
     private boolean isHttps;
-    private int     retryCount              = 3;
-    private int     retryDelayMs            = 1000;
+    private int     retryCount   = 3;
+    private int     retryDelayMs = 1000;
+
 
     public HttpClientConfig() {
     }
@@ -152,5 +154,13 @@ public class HttpClientConfig {
         } catch (UnknownHostException e) {
             throw new RuntimeException("Cannot resolve host for httpClient: " + host, e);
         }
+    }
+
+    public int getMaxRequestTime() {
+        return maxRequestTime;
+    }
+
+    public void setMaxRequestTime(int maxRequestTime) {
+        this.maxRequestTime = maxRequestTime;
     }
 }
