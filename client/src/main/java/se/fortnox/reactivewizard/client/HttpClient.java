@@ -87,7 +87,7 @@ public class HttpClient implements InvocationHandler {
         serverInfo = new InetSocketAddress(config.getHost(), config.getPort());
         this.preRequestHooks = preRequestHooks;
 
-        this.timeout = config.getMaxRequestTime();
+        this.timeout = config.getMaxRequestTimeMs();
 
     }
 

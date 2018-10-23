@@ -42,7 +42,7 @@ public class HttpClientConfig {
     private int maxResponseSize = 10 * 1024 * 1024;
 
     private long poolAutoCleanupInterval = TimeUnit.MILLISECONDS.convert(10, MINUTES);
-    private int  maxRequestTime          = 10000;
+    private int  maxRequestTimeMs        = 10000;
 
     private boolean isHttps;
     private int     retryCount   = 3;
@@ -156,11 +156,11 @@ public class HttpClientConfig {
         }
     }
 
-    public int getMaxRequestTime() {
-        return maxRequestTime;
+    public int getMaxRequestTimeMs() {
+        return maxRequestTimeMs;
     }
 
-    public void setMaxRequestTime(int maxRequestTime) {
-        this.maxRequestTime = maxRequestTime;
+    public void setMaxRequestTimeMs(int maxRequestTimeMs) {
+        this.maxRequestTimeMs = maxRequestTimeMs;
     }
 }
