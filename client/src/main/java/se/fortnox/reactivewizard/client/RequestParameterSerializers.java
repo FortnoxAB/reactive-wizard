@@ -1,6 +1,7 @@
 package se.fortnox.reactivewizard.client;
 
 import javax.inject.Inject;
+import java.lang.reflect.ParameterizedType;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
@@ -26,16 +27,7 @@ public class RequestParameterSerializers {
     }
 
     private Class<?> getAppliedClass(RequestParameterSerializer serializer) {
-        Optional<? extends Class<?>> cls = Arrays.stream(serializer.getClass().getDeclaredMethods())
-            .filter(method -> method.getName().equals("addParameter"))
-            .map(method -> method.getParameterTypes()[0])
-            .findFirst();
-
-        if (!cls.isPresent()) {
-            throw new RuntimeException(cls + " is missing addParameter");
-        }
-
-        return cls.get();
+        return (Class)((ParameterizedType)serializer.getClass().getGenericInterfaces()[0]).getActualTypeArguments()[0];
     }
 
     public RequestParameterSerializer<?> getSerializer(Class<?> type) {
