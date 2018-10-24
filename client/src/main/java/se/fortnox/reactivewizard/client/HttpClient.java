@@ -69,7 +69,7 @@ public class HttpClient implements InvocationHandler {
     private final   Set<PreRequestHook>         preRequestHooks;
     private         RxClientProvider            clientProvider;
     private         ObjectMapper                objectMapper;
-    private         int                         timeout;
+    private         int                         timeout = 10000;
     private         TimeUnit                    timeoutUnit = TimeUnit.MILLISECONDS;
 
     @Inject
@@ -86,9 +86,6 @@ public class HttpClient implements InvocationHandler {
 
         serverInfo = new InetSocketAddress(config.getHost(), config.getPort());
         this.preRequestHooks = preRequestHooks;
-
-        this.timeout = config.getMaxRequestTimeMs();
-
     }
 
     public HttpClient(HttpClientConfig config) {

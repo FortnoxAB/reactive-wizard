@@ -122,7 +122,7 @@ public class HttpClientTest {
         try {
             HttpClientConfig config = new HttpClientConfig("localhost:" + port);
             config.setMaxConnections(maxConn);
-            config.setMaxRequestTimeMs(maxRequestTime);
+            config.setReadTimeoutMs(maxRequestTime);
             return getHttpProxy(config);
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);

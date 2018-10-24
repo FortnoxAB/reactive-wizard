@@ -45,9 +45,9 @@ public class HttpClientConfig {
     private int  maxRequestTimeMs        = 10000;
 
     private boolean isHttps;
-    private int     retryCount   = 3;
-    private int     retryDelayMs = 1000;
-
+    private int     retryCount    = 3;
+    private int     retryDelayMs  = 1000;
+    private int     readTimeoutMs = 10000;
 
     public HttpClientConfig() {
     }
@@ -156,11 +156,11 @@ public class HttpClientConfig {
         }
     }
 
-    public int getMaxRequestTimeMs() {
-        return maxRequestTimeMs;
+    public int getReadTimeoutMs() {
+        return readTimeoutMs;
     }
 
-    public void setMaxRequestTimeMs(int maxRequestTimeMs) {
-        this.maxRequestTimeMs = maxRequestTimeMs;
+    public void setReadTimeoutMs(int readTimeoutMs) {
+        this.readTimeoutMs = readTimeoutMs;
     }
 }
