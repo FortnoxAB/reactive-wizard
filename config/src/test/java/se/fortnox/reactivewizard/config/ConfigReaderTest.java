@@ -85,14 +85,17 @@ public class ConfigReaderTest {
     public void shouldReplaceEnvPlaceholderWithValue() {
         Map<String, String> env = new HashMap<>(System.getenv());
         env.put("CUSTOM_ENV_VAR", "hello");
+        env.put("CUSTOM_ENV_VAR2", "hello again");
         setEnv(env);
 
         TestConfig testConfig = ConfigReader.fromFile("src/test/resources/testconfig.yml", TestConfig.class);
         assertThat(testConfig.getConfigWithEnvPlaceholder()).isEqualTo("hello");
+        assertThat(testConfig.getConfigWithEnvPlaceholder2()).isEqualTo("hello again");
         assertThat(testConfig.getConfigWithEnvPlaceholderInMiddle()).isEqualTo("beforehelloafter");
 
         testConfig = ConfigReader.fromTree(ConfigReader.readTree("src/test/resources/testconfig.yml"), TestConfig.class);
         assertThat(testConfig.getConfigWithEnvPlaceholder()).isEqualTo("hello");
+        assertThat(testConfig.getConfigWithEnvPlaceholder2()).isEqualTo("hello again");
         assertThat(testConfig.getConfigWithEnvPlaceholderInMiddle()).isEqualTo("beforehelloafter");
     }
 

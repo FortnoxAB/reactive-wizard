@@ -21,7 +21,7 @@ import java.util.regex.Pattern;
 public class ConfigReader {
     private static final Charset      UTF_8           = Charset.forName("UTF-8");
     private static final ObjectMapper mapper          = new ObjectMapper(new YAMLFactory()).configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-    private static final Pattern      ENV_PLACEHOLDER = Pattern.compile("\\{\\{([a-zA-Z_-]+)\\}\\}");
+    private static final Pattern      ENV_PLACEHOLDER = Pattern.compile("\\{\\{([a-zA-Z_]\\w+)\\}\\}");
 
     /**
      * Create an instance of a configuration from a file path.

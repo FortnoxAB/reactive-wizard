@@ -4,6 +4,7 @@ package se.fortnox.reactivewizard.config;
 public class TestConfig {
     private String myKey;
     private String configWithEnvPlaceholder;
+    private String configWithEnvPlaceholder2;
     private String configWithEnvPlaceholderInMiddle;
     private String url;
 
@@ -21,6 +22,14 @@ public class TestConfig {
 
     public void setConfigWithEnvPlaceholder(String configWithEnvPlaceholder) {
         this.configWithEnvPlaceholder = configWithEnvPlaceholder;
+    }
+
+    public String getConfigWithEnvPlaceholder2() {
+        return configWithEnvPlaceholder2;
+    }
+
+    public void setConfigWithEnvPlaceholder2(String configWithEnvPlaceholder2) {
+        this.configWithEnvPlaceholder2 = configWithEnvPlaceholder2;
     }
 
     public String getConfigWithEnvPlaceholderInMiddle() {
