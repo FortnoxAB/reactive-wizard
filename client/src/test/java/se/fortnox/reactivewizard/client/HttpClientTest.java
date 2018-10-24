@@ -111,13 +111,18 @@ public class HttpClientTest {
     }
 
     protected TestResource getHttpProxy(int port) {
-        return getHttpProxy(port, 1);
+        return getHttpProxy(port, 1, 10000);
     }
 
     protected TestResource getHttpProxy(int port, int maxConn) {
+        return getHttpProxy(port, maxConn, 10000);
+    }
+
+    protected TestResource getHttpProxy(int port, int maxConn, int maxRequestTime) {
         try {
             HttpClientConfig config = new HttpClientConfig("localhost:" + port);
             config.setMaxConnections(maxConn);
+            config.setReadTimeoutMs(maxRequestTime);
             return getHttpProxy(config);
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
@@ -443,6 +448,55 @@ public class HttpClientTest {
             assertThat(e.getCause()).isInstanceOf(TimeoutException.class);
         }
         assertThat(callCount.get()).isEqualTo(1);
+
+        server.shutdown();
+    }
+
+    @Test
+    public void shouldHandleLongerRequestsThan10SecondsWhenRequested() {
+        // Slow server
+        HttpServer<ByteBuf, ByteBuf> server = HttpServer.newServer(0)
+            .start((request, response) -> {
+
+                return Observable.defer(() -> {
+                    response.setStatus(HttpResponseStatus.NOT_FOUND);
+                    return Observable.<Void>empty();
+                }).delaySubscription(20000, TimeUnit.MILLISECONDS);
+            });
+
+        TestResource resource = getHttpProxy(server.getServerPort(), 1, 30000);
+        HttpClient.setTimeout(resource, 15000, TimeUnit.MILLISECONDS);
+        try {
+            resource.getHello().toBlocking().singleOrDefault(null);
+            fail("expected exception");
+        } catch (RuntimeException e) {
+            assertThat(e.getCause()).isInstanceOf(TimeoutException.class);
+        }
+
+        server.shutdown();
+    }
+
+    @Test
+    public void shouldThrowNettyReadTimeoutIfRequestTakesLongerThanClientIsConfigured() {
+        // Slow server
+        HttpServer<ByteBuf, ByteBuf> server = HttpServer.newServer(0)
+            .start((request, response) -> Observable.defer(() -> {
+                response.setStatus(HttpResponseStatus.NOT_FOUND);
+                return Observable.<Void>empty();
+            }).delaySubscription(1000, TimeUnit.MILLISECONDS));
+
+        //Create a resource with 500ms limit
+        TestResource resource = getHttpProxy(server.getServerPort(), 1, 500);
+
+        //Lets set the observable timeout higher than the httpproxy readTimeout
+        HttpClient.setTimeout(resource, 1000, TimeUnit.MILLISECONDS);
+
+        try {
+            resource.getHello().toBlocking().singleOrDefault(null);
+            fail("expected exception");
+        } catch (RuntimeException e) {
+            assertThat(e).isInstanceOf(io.netty.handler.timeout.TimeoutException.class);
+        }
 
         server.shutdown();
     }
