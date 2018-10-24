@@ -69,8 +69,8 @@ public class HttpClient implements InvocationHandler {
     private final   Set<PreRequestHook>         preRequestHooks;
     private         RxClientProvider            clientProvider;
     private         ObjectMapper                objectMapper;
-    private         int                         timeout = 10000;
-    private         TimeUnit                    timeoutUnit = TimeUnit.MILLISECONDS;
+    private         int                         timeout = 10;
+    private         TimeUnit                    timeoutUnit = TimeUnit.SECONDS;
 
     @Inject
     public HttpClient(HttpClientConfig config,
