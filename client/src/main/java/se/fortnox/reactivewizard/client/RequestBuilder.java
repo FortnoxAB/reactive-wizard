@@ -84,6 +84,10 @@ public class RequestBuilder {
             || method.equals(HttpMethod.PATCH);
     }
 
+    public boolean hasContent() {
+        return content != null;
+    }
+
     public void setContent(String content) {
         setContent(content.getBytes(charset));
     }
