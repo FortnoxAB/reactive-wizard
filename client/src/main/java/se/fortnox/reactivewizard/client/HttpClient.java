@@ -247,7 +247,7 @@ public class HttpClient implements InvocationHandler {
     }
 
     protected void addContent(Method method, Object[] arguments, RequestBuilder requestBuilder) {
-        if (!requestBuilder.canHaveBody()) {
+        if (!requestBuilder.canHaveBody() || requestBuilder.hasContent()) {
             return;
         }
         Class<?>[]     types       = method.getParameterTypes();

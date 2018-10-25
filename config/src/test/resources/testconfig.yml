@@ -1,6 +1,7 @@
 myTestConfig:
   myKey: myValue
   configWithEnvPlaceholder: {{CUSTOM_ENV_VAR}}
+  configWithEnvPlaceholder2: {{CUSTOM_ENV_VAR2}}
   configWithEnvPlaceholderInMiddle: before{{CUSTOM_ENV_VAR}}after
   url: http://{{HOST}}:{{PORT}}/test
 
