@@ -56,16 +56,17 @@ public class DbProxy implements InvocationHandler {
         JsonSerializerFactory jsonSerializerFactory
     ) {
         this(databaseConfig, scheduler, connectionProvider, dbStatementFactoryFactory,
-                jsonSerializerFactory.createStringSerializer(new TypeReference<Object[]>() {   }),
-                new ConcurrentHashMap<>());
+            jsonSerializerFactory.createStringSerializer(new TypeReference<Object[]>() {
+            }),
+            new ConcurrentHashMap<>());
     }
 
     private DbProxy(DatabaseConfig databaseConfig,
-                   Scheduler scheduler,
-                   ConnectionProvider connectionProvider,
-                   DbStatementFactoryFactory dbStatementFactoryFactory,
-                   Function<Object[], String> paramSerializer,
-                   Map<Method, ObservableStatementFactory> statementFactories
+        Scheduler scheduler,
+        ConnectionProvider connectionProvider,
+        DbStatementFactoryFactory dbStatementFactoryFactory,
+        Function<Object[], String> paramSerializer,
+        Map<Method, ObservableStatementFactory> statementFactories
     ) {
         this.scheduler = scheduler;
         this.connectionProvider = connectionProvider;
@@ -124,7 +125,11 @@ public class DbProxy implements InvocationHandler {
         return Metrics.get("DAO_type:" + type + "_method:" + method.getDeclaringClass().getName() + "." + method.getName() + "_" + method.getParameterCount());
     }
 
-    public DbProxy usingConnectionProvider(ConnectionProvider connectionProvider) {
+    public DbProxy create(ConnectionProvider connectionProvider, DatabaseConfig databaseConfig) {
         return new DbProxy(databaseConfig, scheduler, connectionProvider, dbStatementFactoryFactory, paramSerializer, statementFactories);
+    }
+
+    public DatabaseConfig getDatabaseConfig() {
+        return databaseConfig;
     }
 }
