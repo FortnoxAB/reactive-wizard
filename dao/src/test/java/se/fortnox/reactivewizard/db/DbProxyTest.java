@@ -10,9 +10,9 @@ import rx.Subscriber;
 import rx.exceptions.MissingBackpressureException;
 import rx.observers.TestSubscriber;
 import se.fortnox.reactivewizard.config.TestInjector;
+import se.fortnox.reactivewizard.db.config.DatabaseConfig;
 
 import java.sql.SQLException;
-import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -24,6 +24,7 @@ import static org.fest.assertions.Fail.fail;
 import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -221,6 +222,27 @@ public class DbProxyTest {
             return;
         }
         fail("expected exception");
+    }
+
+    @Test
+    public void shouldCreateNewDbProxyInstanceWithNewConnectionProviderAndNewDatabaseConfig() {
+        // given
+        DatabaseConfig oldConfig = new DatabaseConfig();
+        oldConfig.setUrl("fooo");
+
+        DatabaseConfig newConfig = new DatabaseConfig();
+        newConfig.setUrl("bar");
+
+        // when
+        DbProxy oldDbProxy = new DbProxy(oldConfig,mock(ConnectionProvider.class));
+
+        DbProxy newDbProxy = oldDbProxy.usingConnectionProviderAndDatabaseConfig(mock(ConnectionProvider.class),newConfig);
+
+        // then
+        assertThat(oldDbProxy).isNotSameAs(newDbProxy);
+        assertThat(newDbProxy.getDatabaseConfig()).isNotSameAs(oldConfig);
+        assertThat(newDbProxy.getDatabaseConfig()).isSameAs(newConfig);
+        assertThat(newDbProxy.getDatabaseConfig().getUrl()).isSameAs("bar");
     }
 
     @Test

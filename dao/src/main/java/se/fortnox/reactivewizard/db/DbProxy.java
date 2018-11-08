@@ -61,6 +61,14 @@ public class DbProxy implements InvocationHandler {
             new ConcurrentHashMap<>());
     }
 
+    public DbProxy(DatabaseConfig databaseConfig, ConnectionProvider connectionProvider) {
+        this(databaseConfig,
+            Schedulers.io(),
+            connectionProvider,
+            new DbStatementFactoryFactory(),
+            new JsonSerializerFactory());
+    }
+
     private DbProxy(DatabaseConfig databaseConfig,
         Scheduler scheduler,
         ConnectionProvider connectionProvider,
@@ -76,13 +84,7 @@ public class DbProxy implements InvocationHandler {
         this.statementFactories = statementFactories;
     }
 
-    public DbProxy(DatabaseConfig databaseConfig, ConnectionProvider connectionProvider) {
-        this(databaseConfig,
-            Schedulers.io(),
-            connectionProvider,
-            new DbStatementFactoryFactory(),
-            new JsonSerializerFactory());
-    }
+
 
     private static Scheduler threadPool(int poolSize) {
         if (poolSize == -1) {
@@ -125,7 +127,7 @@ public class DbProxy implements InvocationHandler {
         return Metrics.get("DAO_type:" + type + "_method:" + method.getDeclaringClass().getName() + "." + method.getName() + "_" + method.getParameterCount());
     }
 
-    public DbProxy create(ConnectionProvider connectionProvider, DatabaseConfig databaseConfig) {
+    public DbProxy usingConnectionProviderAndDatabaseConfig(ConnectionProvider connectionProvider, DatabaseConfig databaseConfig) {
         return new DbProxy(databaseConfig, scheduler, connectionProvider, dbStatementFactoryFactory, paramSerializer, statementFactories);
     }
 
