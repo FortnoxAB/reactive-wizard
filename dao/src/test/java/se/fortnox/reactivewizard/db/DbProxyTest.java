@@ -16,7 +16,6 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.Calendar;
 import java.util.concurrent.TimeUnit;
 
 import static org.fest.assertions.Assertions.assertThat;
@@ -236,7 +235,7 @@ public class DbProxyTest {
         // when
         DbProxy oldDbProxy = new DbProxy(oldConfig,mock(ConnectionProvider.class));
 
-        DbProxy newDbProxy = oldDbProxy.usingConnectionProviderAndDatabaseConfig(mock(ConnectionProvider.class),newConfig);
+        DbProxy newDbProxy = oldDbProxy.usingConnectionProvider(mock(ConnectionProvider.class),newConfig);
 
         // then
         assertThat(oldDbProxy).isNotSameAs(newDbProxy);

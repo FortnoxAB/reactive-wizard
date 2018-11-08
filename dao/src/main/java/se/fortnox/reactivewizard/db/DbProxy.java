@@ -127,7 +127,11 @@ public class DbProxy implements InvocationHandler {
         return Metrics.get("DAO_type:" + type + "_method:" + method.getDeclaringClass().getName() + "." + method.getName() + "_" + method.getParameterCount());
     }
 
-    public DbProxy usingConnectionProviderAndDatabaseConfig(ConnectionProvider connectionProvider, DatabaseConfig databaseConfig) {
+    public DbProxy usingConnectionProvider(ConnectionProvider connectionProvider) {
+        return new DbProxy(databaseConfig, scheduler, connectionProvider, dbStatementFactoryFactory, paramSerializer, statementFactories);
+    }
+
+    public DbProxy usingConnectionProvider(ConnectionProvider connectionProvider, DatabaseConfig databaseConfig) {
         return new DbProxy(databaseConfig, scheduler, connectionProvider, dbStatementFactoryFactory, paramSerializer, statementFactories);
     }
 
