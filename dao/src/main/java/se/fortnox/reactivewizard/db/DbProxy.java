@@ -56,23 +56,9 @@ public class DbProxy implements InvocationHandler {
         JsonSerializerFactory jsonSerializerFactory
     ) {
         this(databaseConfig, scheduler, connectionProvider, dbStatementFactoryFactory,
-                jsonSerializerFactory.createStringSerializer(new TypeReference<Object[]>() {   }),
-                new ConcurrentHashMap<>());
-    }
-
-    private DbProxy(DatabaseConfig databaseConfig,
-                   Scheduler scheduler,
-                   ConnectionProvider connectionProvider,
-                   DbStatementFactoryFactory dbStatementFactoryFactory,
-                   Function<Object[], String> paramSerializer,
-                   Map<Method, ObservableStatementFactory> statementFactories
-    ) {
-        this.scheduler = scheduler;
-        this.connectionProvider = connectionProvider;
-        this.dbStatementFactoryFactory = dbStatementFactoryFactory;
-        this.paramSerializer = paramSerializer;
-        this.databaseConfig = databaseConfig;
-        this.statementFactories = statementFactories;
+            jsonSerializerFactory.createStringSerializer(new TypeReference<Object[]>() {
+            }),
+            new ConcurrentHashMap<>());
     }
 
     public DbProxy(DatabaseConfig databaseConfig, ConnectionProvider connectionProvider) {
@@ -82,6 +68,23 @@ public class DbProxy implements InvocationHandler {
             new DbStatementFactoryFactory(),
             new JsonSerializerFactory());
     }
+
+    private DbProxy(DatabaseConfig databaseConfig,
+        Scheduler scheduler,
+        ConnectionProvider connectionProvider,
+        DbStatementFactoryFactory dbStatementFactoryFactory,
+        Function<Object[], String> paramSerializer,
+        Map<Method, ObservableStatementFactory> statementFactories
+    ) {
+        this.scheduler = scheduler;
+        this.connectionProvider = connectionProvider;
+        this.dbStatementFactoryFactory = dbStatementFactoryFactory;
+        this.paramSerializer = paramSerializer;
+        this.databaseConfig = databaseConfig;
+        this.statementFactories = statementFactories;
+    }
+
+
 
     private static Scheduler threadPool(int poolSize) {
         if (poolSize == -1) {
@@ -126,5 +129,13 @@ public class DbProxy implements InvocationHandler {
 
     public DbProxy usingConnectionProvider(ConnectionProvider connectionProvider) {
         return new DbProxy(databaseConfig, scheduler, connectionProvider, dbStatementFactoryFactory, paramSerializer, statementFactories);
+    }
+
+    public DbProxy usingConnectionProvider(ConnectionProvider connectionProvider, DatabaseConfig databaseConfig) {
+        return new DbProxy(databaseConfig, scheduler, connectionProvider, dbStatementFactoryFactory, paramSerializer, statementFactories);
+    }
+
+    public DatabaseConfig getDatabaseConfig() {
+        return databaseConfig;
     }
 }
