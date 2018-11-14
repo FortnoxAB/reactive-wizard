@@ -85,7 +85,7 @@
         <mockito.version>1.10.16</mockito.version>
         <blitz4j.version>1.37.2</blitz4j.version>
         <servocore.version>0.12.17</servocore.version>
-        <jacoco.version>0.8.1</jacoco.version>
+        <jacoco.version>0.8.2</jacoco.version>
     </properties>
 
     <profiles>
