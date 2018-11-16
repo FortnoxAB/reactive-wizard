@@ -11,7 +11,7 @@ public class ServerConfig {
     private boolean enabled = true;
     private int maxHeaderSize = 20 * 1024;
     private int maxInitialLineLengthDefault = 4096;
-
+    private int shutdownTimeoutSeconds = 20;
 
     public int getPort() {
         return port;
@@ -43,5 +43,13 @@ public class ServerConfig {
 
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
+    }
+
+    public int getShutdownTimeoutSeconds() {
+        return shutdownTimeoutSeconds;
+    }
+
+    public void setShutdownTimeoutMs(int shutdownTimeoutSeconds) {
+        this.shutdownTimeoutSeconds = shutdownTimeoutSeconds;
     }
 }

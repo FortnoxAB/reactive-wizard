@@ -58,9 +58,9 @@ public class RxNettyServer extends Thread {
 
     private void registerShutdownHook() {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            logger.info("Shutdown requested. Will wait up to 120 seconds...");
+            logger.info("Shutdown requested. Will wait up to {} seconds...", config.getShutdownTimeoutSeconds());
             server.shutdown();
-            if (!connectionCounter.awaitZero(120, TimeUnit.SECONDS)) {
+            if (!connectionCounter.awaitZero(config.getShutdownTimeoutSeconds(), TimeUnit.SECONDS)) {
                 logger.error("Shutdown proceeded while connection count was not zero: " + connectionCounter.getCount());
             }
             server.awaitShutdown();
