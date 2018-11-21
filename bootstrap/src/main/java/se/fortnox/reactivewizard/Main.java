@@ -17,18 +17,14 @@ import se.fortnox.reactivewizard.logging.LoggingFactory;
 public class Main {
     public static void main(String[] args) {
         try {
-            if (args.length == 0) {
-                System.out.println("Usage: java -jar app.jar config.yml");
-                return;
-            }
-            String configFile = args[args.length - 1];
-            ConfigFactory configFactory = new ConfigFactory(configFile);
+            ConfigFactory configFactory = new ConfigFactory(args);
             configFactory.get(LoggingFactory.class).init();
 
             Module bootstrap = new AbstractModule() {
                 @Override
                 protected void configure() {
                     bind(String[].class).annotatedWith(Names.named("args")).toInstance(args);
+                    bind(ConfigFactory.class).toInstance(configFactory);
                 }
             };
             Guice.createInjector(new AutoBindModules(bootstrap));

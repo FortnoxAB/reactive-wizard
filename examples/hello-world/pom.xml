@@ -62,19 +62,11 @@
     <dependencies>
         <dependency>
             <groupId>se.fortnox.reactivewizard</groupId>
-            <artifactId>reactivewizard-jaxrs</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>se.fortnox.reactivewizard</groupId>
             <artifactId>reactivewizard-bootstrap</artifactId>
         </dependency>
         <dependency>
             <groupId>se.fortnox.reactivewizard</groupId>
             <artifactId>reactivewizard-server</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>se.fortnox.reactivewizard</groupId>
-            <artifactId>reactivewizard-logging</artifactId>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
