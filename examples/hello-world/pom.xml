@@ -62,6 +62,10 @@
     <dependencies>
         <dependency>
             <groupId>se.fortnox.reactivewizard</groupId>
+            <artifactId>reactivewizard-jaxrs</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>se.fortnox.reactivewizard</groupId>
             <artifactId>reactivewizard-bootstrap</artifactId>
         </dependency>
         <dependency>
