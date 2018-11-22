@@ -1,6 +1,8 @@
 package se.fortnox.reactivewizard.config;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.POJONode;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -12,15 +14,18 @@ public class ConfigFactory {
 
     @Inject
     public ConfigFactory(@Named("args") String[] args) {
-        this(args[args.length - 1]);
+        this(args.length == 0 ? null : args[args.length - 1]);
     }
 
     public ConfigFactory(String configFile) {
-        if (configFile != null && configFile.endsWith(".yml")) {
-            tree = ConfigReader.readTree(configFile);
-        } else {
+        if (configFile == null) {
+            tree = new POJONode(new Object());
+            return;
+        }
+        if (!configFile.endsWith(".yml")) {
             throw new IllegalArgumentException("Only yml configuration implemented, you tried with: " + configFile);
         }
+        tree = ConfigReader.readTree(configFile);
     }
 
     public <T> T get(Class<T> cls) {
