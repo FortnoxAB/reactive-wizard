@@ -24,11 +24,13 @@ public class CompositeRequestHandler implements RequestHandler<ByteBuf,ByteBuf> 
     private static final Logger log = LoggerFactory.getLogger(CompositeRequestHandler.class);
     private final Set<RequestHandler<ByteBuf, ByteBuf>> handlers;
     private final ExceptionHandler exceptionHandler;
+    private final ConnectionCounter connectionCounter;
 
     @Inject
-    public CompositeRequestHandler(Set<RequestHandler<ByteBuf, ByteBuf>> handlers, ExceptionHandler exceptionHandler) {
+    public CompositeRequestHandler(Set<RequestHandler<ByteBuf, ByteBuf>> handlers, ExceptionHandler exceptionHandler, ConnectionCounter connectionCounter) {
         this.handlers = handlers;
         this.exceptionHandler = exceptionHandler;
+        this.connectionCounter = connectionCounter;
     }
 
     @Override
@@ -50,6 +52,8 @@ public class CompositeRequestHandler implements RequestHandler<ByteBuf,ByteBuf> 
         return exceptionHandler.handleException(request,
                 response,
                 new WebException(HttpResponseStatus.NOT_FOUND))
-                .doOnTerminate(() -> RequestLogger.logRequestResponse(request, response, requestStartTime, log));
+                .doOnTerminate(() -> RequestLogger.logRequestResponse(request, response, requestStartTime, log))
+                .doOnSubscribe(connectionCounter::increase)
+                .doOnUnsubscribe(connectionCounter::decrease);
     }
 }
