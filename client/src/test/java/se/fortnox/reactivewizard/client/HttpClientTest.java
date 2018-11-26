@@ -36,6 +36,7 @@ import se.fortnox.reactivewizard.server.ServerConfig;
 import se.fortnox.reactivewizard.test.TestUtil;
 import se.fortnox.reactivewizard.util.rx.RetryWithDelay;
 
+import javax.net.ssl.SSLHandshakeException;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.CookieParam;
 import javax.ws.rs.DELETE;
@@ -936,6 +937,68 @@ public class HttpClientTest {
         })));
 
         server.shutdown();
+    }
+
+    @Test
+    public void shouldHandleHttpsAgainstKnownHost() throws URISyntaxException {
+        HttpClientConfig httpClientConfig = new HttpClientConfig("https://sha512.badssl.com/");
+        Injector injector = TestInjector.create(binder -> {
+            binder.bind(ServerConfig.class).toInstance(new ServerConfig() {{
+                setEnabled(false);
+            }});
+            binder.bind(HttpClientConfig.class).toInstance(httpClientConfig);
+        });
+        RxClientProvider rxClientProvider = injector.getInstance(RxClientProvider.class);
+
+        rxClientProvider
+            .clientFor(new InetSocketAddress(httpClientConfig.getHost(), httpClientConfig.getPort()))
+            .createGet("/")
+            .flatMap(HttpClientResponse::discardContent)
+            .toBlocking()
+            .singleOrDefault(null);
+    }
+
+    @Test
+    public void shouldErrorOnUntrustedHost() throws URISyntaxException {
+        HttpClientConfig httpClientConfig = new HttpClientConfig("https://untrusted-root.badssl.com");
+        Injector injector = TestInjector.create(binder -> {
+            binder.bind(ServerConfig.class).toInstance(new ServerConfig() {{
+                setEnabled(false);
+            }});
+            binder.bind(HttpClientConfig.class).toInstance(httpClientConfig);
+        });
+        RxClientProvider rxClientProvider = injector.getInstance(RxClientProvider.class);
+
+        try {
+            rxClientProvider
+                .clientFor(new InetSocketAddress(httpClientConfig.getHost(), httpClientConfig.getPort()))
+                .createGet("/")
+                .flatMap(HttpClientResponse::discardContent)
+                .toBlocking()
+                .singleOrDefault(null);
+        } catch (RuntimeException runtimeException) {
+            assertThat(runtimeException.getCause()).isInstanceOf(SSLHandshakeException.class);
+        }
+    }
+
+    @Test
+    public void shouldHandleUnsafeSecureOnUntrustedHost() throws URISyntaxException {
+        HttpClientConfig httpClientConfig = new HttpClientConfig("https://untrusted-root.badssl.com");
+        httpClientConfig.setUnsafeSecure(true);
+        Injector injector = TestInjector.create(binder -> {
+            binder.bind(ServerConfig.class).toInstance(new ServerConfig() {{
+                setEnabled(false);
+            }});
+            binder.bind(HttpClientConfig.class).toInstance(httpClientConfig);
+        });
+        RxClientProvider rxClientProvider = injector.getInstance(RxClientProvider.class);
+
+        rxClientProvider
+            .clientFor(new InetSocketAddress(httpClientConfig.getHost(), httpClientConfig.getPort()))
+            .createGet("/")
+            .flatMap(HttpClientResponse::discardContent)
+            .toBlocking()
+            .singleOrDefault(null);
     }
 
     private String generate10MbString() {
