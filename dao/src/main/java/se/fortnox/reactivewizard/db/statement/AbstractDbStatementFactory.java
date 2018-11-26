@@ -66,7 +66,6 @@ public abstract class AbstractDbStatementFactory implements DbStatementFactory {
             if (!(statement instanceof StatementImpl)) {
                 return false;
             }
-
             return AbstractDbStatementFactory.this.sameBatch(((StatementImpl)statement).parameterizedQuery);
         }
 

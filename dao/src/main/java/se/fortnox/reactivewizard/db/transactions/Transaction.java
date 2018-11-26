@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import se.fortnox.reactivewizard.db.ConnectionProvider;
+import se.fortnox.reactivewizard.db.statement.Statement;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -57,8 +58,12 @@ public class Transaction<T> {
         } catch (Throwable e) {
             rollback(connection);
             closeConnection(connection);
-            allFailed(connection, e);
+            allFailed(e);
         }
+    }
+
+    public AtomicBoolean getWaitingForExecution() {
+        return waitingForExecution;
     }
 
     private void executeTransaction(Connection connection) throws SQLException {
@@ -94,14 +99,23 @@ public class Transaction<T> {
         }
     }
 
-    private void allFailed(Connection connection, Throwable throwable) {
-        for (TransactionStatement statement : statementsToExecute) {
+    private void allFailed(Throwable throwable) {
+        for (TransactionStatement transactionStatement : statementsToExecute) {
+            final Statement statement = transactionStatement.getAtomicStatement().get();
             try {
-                statement.getStatement().onError(throwable);
+                setTransactionToExecutable(transactionStatement, statement);
+                statement.onError(throwable);
             } catch (Exception onErrorException) {
                 log.error("onError threw exception", onErrorException);
             }
         }
+    }
+
+    private void setTransactionToExecutable(TransactionStatement transactionStatement, Statement statement) {
+        final AtomicReference<Statement> atomicStatement = transactionStatement.getAtomicStatement();
+        final Transaction                transaction     = transactionStatement.getTransaction();
+        atomicStatement.compareAndSet(statement,null);
+        transaction.getWaitingForExecution().compareAndSet(false,true);
     }
 
     private void rollback(Connection connection) {
