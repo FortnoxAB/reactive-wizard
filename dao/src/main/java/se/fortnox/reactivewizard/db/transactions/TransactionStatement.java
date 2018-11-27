@@ -40,14 +40,6 @@ public class TransactionStatement implements Batchable {
         transaction.setConnectionProvider(connectionProvider);
     }
 
-    public Transaction getTransaction() {
-        return transaction;
-    }
-
-    public AtomicReference<Statement> getAtomicStatement() {
-        return statement;
-    }
-
     @Override
     public boolean sameBatch(Batchable batchable) {
         return batchable instanceof TransactionStatement

@@ -62,10 +62,6 @@ public class Transaction<T> {
         }
     }
 
-    public AtomicBoolean getWaitingForExecution() {
-        return waitingForExecution;
-    }
-
     private void executeTransaction(Connection connection) throws SQLException {
         connection.setAutoCommit(false);
 
@@ -100,22 +96,16 @@ public class Transaction<T> {
     }
 
     private void allFailed(Throwable throwable) {
+        waitingForExecution.set(true);
         for (TransactionStatement transactionStatement : statementsToExecute) {
-            final Statement statement = transactionStatement.getAtomicStatement().get();
+            final Statement statement = transactionStatement.getStatement();
             try {
-                setTransactionToExecutable(transactionStatement, statement);
+                transactionStatement.removeStatement();
                 statement.onError(throwable);
             } catch (Exception onErrorException) {
                 log.error("onError threw exception", onErrorException);
             }
         }
-    }
-
-    private void setTransactionToExecutable(TransactionStatement transactionStatement, Statement statement) {
-        final AtomicReference<Statement> atomicStatement = transactionStatement.getAtomicStatement();
-        final Transaction                transaction     = transactionStatement.getTransaction();
-        atomicStatement.compareAndSet(statement,null);
-        transaction.getWaitingForExecution().compareAndSet(false,true);
     }
 
     private void rollback(Connection connection) {
