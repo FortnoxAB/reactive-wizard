@@ -985,7 +985,7 @@ public class HttpClientTest {
     @Test
     public void shouldHandleUnsafeSecureOnUntrustedHost() throws URISyntaxException {
         HttpClientConfig httpClientConfig = new HttpClientConfig("https://untrusted-root.badssl.com");
-        httpClientConfig.setInsecure(true);
+        httpClientConfig.setValidateCertificates(false);
         Injector injector = TestInjector.create(binder -> {
             binder.bind(ServerConfig.class).toInstance(new ServerConfig() {{
                 setEnabled(false);

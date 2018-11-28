@@ -44,8 +44,8 @@ public class RxClientProvider {
         return clients.computeIfAbsent(serverInfo, this::buildClient);
     }
 
-    private HttpClient<ByteBuf, ByteBuf> configureSsl(HttpClient<ByteBuf, ByteBuf> client, String host, int port, boolean isUnsafeSecure) {
-        if (isUnsafeSecure) {
+    private HttpClient<ByteBuf, ByteBuf> configureSsl(HttpClient<ByteBuf, ByteBuf> client, String host, int port, boolean isValidateCertificates) {
+        if (!isValidateCertificates) {
             return client.unsafeSecure();
         }
 
@@ -75,7 +75,7 @@ public class RxClientProvider {
             .pipelineConfigurator(UnsubscribeAwareHttpClientToConnectionBridge::configurePipeline);
 
         if (config.isHttps()) {
-            return configureSsl(client, config.getHost(), config.getPort(), config.isInsecure());
+            return configureSsl(client, config.getHost(), config.getPort(), config.isValidateCertificates());
         }
         return client;
     }

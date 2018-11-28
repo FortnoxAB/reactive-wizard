@@ -119,6 +119,6 @@ public class HttpClientConfigTest {
     public void shouldNotBeInsecureByDefault() throws URISyntaxException {
         HttpClientConfig httpClientConfig = new HttpClientConfig("https://example.com");
         assertThat(httpClientConfig.isHttps()).isTrue();
-        assertThat(httpClientConfig.isInsecure()).isFalse();
+        assertThat(httpClientConfig.isValidateCertificates()).isTrue();
     }
 }
