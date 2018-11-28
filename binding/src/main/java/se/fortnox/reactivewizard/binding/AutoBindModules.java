@@ -27,40 +27,41 @@ public class AutoBindModules implements Module {
      * We only want to find classes defined by our platform and user code.
      */
     private static final String[] PACKAGE_BLACKLIST = {
-            "-com.google",
-            "-liquibase",
-            "-io.netty",
-            "-org.yaml",
-            "-com.fasterxml",
-            "-org.postgresql",
-            "-org.apache",
-            "-org.hibernate",
-            "-rx",
-            "-org.jetbrains",
-            "-com.intellij",
-            "-com.netflix",
-            "-io.reactivex",
-            "-com.sun",
-            "-com.codahale",
-            "-com.zaxxer",
-            "-io.github.lukehutch",
-            "-io.prometheus",
-            "-org.jboss",
-            "-org.aopalliance",
-            "-redis",
-            "-net.minidev",
-            "-org.slf4j",
-            "-com.ryantenney",
-            "-net.logstash",
-            "-META-INF",
-            "-jar:java-atk-wrapper.jar",
-            "-jar:rt.jar",
-            "-jar:idea_rt.jar"
+        "-com.google",
+        "-liquibase",
+        "-io.netty",
+        "-org.yaml",
+        "-com.fasterxml",
+        "-org.postgresql",
+        "-org.apache",
+        "-org.hibernate",
+        "-rx",
+        "-org.jetbrains",
+        "-com.intellij",
+        "-com.netflix",
+        "-io.reactivex",
+        "-com.sun",
+        "-com.codahale",
+        "-com.zaxxer",
+        "-io.github.lukehutch",
+        "-io.prometheus",
+        "-org.jboss",
+        "-org.aopalliance",
+        "-redis",
+        "-net.minidev",
+        "-org.slf4j",
+        "-com.ryantenney",
+        "-net.logstash",
+        "-META-INF",
+        "-jar:java-atk-wrapper.jar",
+        "-jar:rt.jar",
+        "-jar:idea_rt.jar"
     };
-    private Module bootstrapBindings;
+    private              Module   bootstrapBindings;
 
     public AutoBindModules() {
-        this(binder -> { });
+        this(binder -> {
+        });
     }
 
     public AutoBindModules(Module bootstrapBindings) {
@@ -88,7 +89,7 @@ public class AutoBindModules implements Module {
         }
 
         mergedModule = Modules.override(mergedModule)
-                .with(bootstrapBindings);
+            .with(bootstrapBindings);
 
         binder.disableCircularProxies();
         mergedModule.configure(binder);
@@ -97,7 +98,7 @@ public class AutoBindModules implements Module {
     private List<AutoBindModule> createAutoBindModules(Injector bootstrapInjector) {
         List<AbstractClassScanner> scanners = createScanners(bootstrapInjector);
 
-        FastClasspathScanner classpathScanner = new FastClasspathScanner(PACKAGE_BLACKLIST);
+        FastClasspathScanner                  classpathScanner      = new FastClasspathScanner(PACKAGE_BLACKLIST);
         List<Class<? extends AutoBindModule>> autoBindModuleClasses = new ArrayList<>();
         scanners.forEach(scanner -> scanner.visit(classpathScanner));
         classpathScanner.matchClassesImplementing(AutoBindModule.class, autoBindModuleClasses::add);
@@ -106,8 +107,8 @@ public class AutoBindModules implements Module {
     }
 
     private List<AbstractClassScanner> createScanners(Injector factoryInjector) {
-        FastClasspathScanner classpathScanner = new FastClasspathScanner(AbstractClassScanner.class.getPackage().getName());
-        List<Class<? extends AbstractClassScanner>> scanners = new ArrayList<>();
+        FastClasspathScanner                        classpathScanner = new FastClasspathScanner(AbstractClassScanner.class.getPackage().getName());
+        List<Class<? extends AbstractClassScanner>> scanners         = new ArrayList<>();
         classpathScanner.matchSubclassesOf(AbstractClassScanner.class, scanners::add);
         classpathScanner.scan();
         return scanners.stream().map(factoryInjector::getInstance).collect(Collectors.toList());
