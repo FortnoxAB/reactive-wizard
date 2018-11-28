@@ -5,6 +5,7 @@ import org.junit.Test;
 import org.mockito.InOrder;
 import rx.Observable;
 import rx.Observer;
+import rx.observers.AssertableSubscriber;
 import se.fortnox.reactivewizard.db.config.DatabaseConfig;
 import se.fortnox.reactivewizard.db.statement.MinimumAffectedRowsException;
 import se.fortnox.reactivewizard.db.transactions.DaoObservable;
@@ -220,6 +221,23 @@ public class DaoTransactionsTest {
         verify(conn, never()).rollback();
         verify(conn, times(1)).commit();
         verify(conn).close();
+    }
+
+    @Test
+    public void shouldBeAbleToUseRetryOnTransaction() throws SQLException {
+
+        when(db.getPreparedStatement().getUpdateCount())
+            .thenReturn(0);
+
+        final Observable<Integer> update = dao.updateFail();
+
+        daoTransactions.createTransaction(update);
+        daoTransactions.executeTransaction(
+            update
+        ).retry(3).test().awaitTerminalEvent();
+
+        Connection conn = db.getConnection();
+        verify(conn, times(4)).rollback();
     }
 
     @Test(expected = RuntimeException.class)

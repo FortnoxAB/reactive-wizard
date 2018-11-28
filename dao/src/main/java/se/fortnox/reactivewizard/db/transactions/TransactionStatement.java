@@ -32,6 +32,10 @@ public class TransactionStatement implements Batchable {
         return statement.get();
     }
 
+    public void removeStatement() {
+        statement.set(null);
+    }
+
     public void setConnectionProvider(ConnectionProvider connectionProvider) {
         transaction.setConnectionProvider(connectionProvider);
     }

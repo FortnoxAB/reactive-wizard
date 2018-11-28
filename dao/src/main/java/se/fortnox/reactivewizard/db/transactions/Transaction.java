@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import se.fortnox.reactivewizard.db.ConnectionProvider;
+import se.fortnox.reactivewizard.db.statement.Statement;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -57,7 +58,7 @@ public class Transaction<T> {
         } catch (Throwable e) {
             rollback(connection);
             closeConnection(connection);
-            allFailed(connection, e);
+            allFailed(e);
         }
     }
 
@@ -94,10 +95,13 @@ public class Transaction<T> {
         }
     }
 
-    private void allFailed(Connection connection, Throwable throwable) {
-        for (TransactionStatement statement : statementsToExecute) {
+    private void allFailed(Throwable throwable) {
+        waitingForExecution.set(true);
+        for (TransactionStatement transactionStatement : statementsToExecute) {
+            final Statement statement = transactionStatement.getStatement();
             try {
-                statement.getStatement().onError(throwable);
+                transactionStatement.removeStatement();
+                statement.onError(throwable);
             } catch (Exception onErrorException) {
                 log.error("onError threw exception", onErrorException);
             }
