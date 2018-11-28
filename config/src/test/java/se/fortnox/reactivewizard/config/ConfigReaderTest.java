@@ -100,6 +100,17 @@ public class ConfigReaderTest {
     }
 
     @Test
+    public void shouldQuoteReplacementString() {
+        Map<String, String> env = new HashMap<>(System.getenv());
+        env.put("CUSTOM_ENV_VAR", "^THIS.IS.A.\\d{6}T\\d{7}.REGEX1$");
+        setEnv(env);
+
+        TestConfig testConfig = ConfigReader.fromFile("src/test/resources/testconfig.yml", TestConfig.class);
+        assertThat(testConfig.getConfigWithEnvPlaceholder()).isEqualTo("^THIS.IS.A.\\d{6}T\\d{7}.REGEX1$");
+
+    }
+
+    @Test
     public void shouldReplaceEnvPlaceholderWithEmptyStringIfEnvNotSet() {
         TestConfig testConfig = ConfigReader.fromFile("src/test/resources/testconfig-missing-value.yml", TestConfig.class);
         assertThat(testConfig.getConfigWithEnvPlaceholder()).isNull();
