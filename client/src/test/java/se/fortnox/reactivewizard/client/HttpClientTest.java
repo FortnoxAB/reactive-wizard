@@ -942,12 +942,7 @@ public class HttpClientTest {
     @Test
     public void shouldHandleHttpsAgainstKnownHost() throws URISyntaxException {
         HttpClientConfig httpClientConfig = new HttpClientConfig("https://sha512.badssl.com/");
-        Injector injector = TestInjector.create(binder -> {
-            binder.bind(ServerConfig.class).toInstance(new ServerConfig() {{
-                setEnabled(false);
-            }});
-            binder.bind(HttpClientConfig.class).toInstance(httpClientConfig);
-        });
+        Injector         injector         = injectorWithProgrammaticHttpClientConfig(httpClientConfig);
         RxClientProvider rxClientProvider = injector.getInstance(RxClientProvider.class);
 
         rxClientProvider
@@ -961,12 +956,7 @@ public class HttpClientTest {
     @Test
     public void shouldErrorOnUntrustedHost() throws URISyntaxException {
         HttpClientConfig httpClientConfig = new HttpClientConfig("https://untrusted-root.badssl.com");
-        Injector injector = TestInjector.create(binder -> {
-            binder.bind(ServerConfig.class).toInstance(new ServerConfig() {{
-                setEnabled(false);
-            }});
-            binder.bind(HttpClientConfig.class).toInstance(httpClientConfig);
-        });
+        Injector injector = injectorWithProgrammaticHttpClientConfig(httpClientConfig);
         RxClientProvider rxClientProvider = injector.getInstance(RxClientProvider.class);
 
         try {
@@ -986,12 +976,7 @@ public class HttpClientTest {
     public void shouldHandleUnsafeSecureOnUntrustedHost() throws URISyntaxException {
         HttpClientConfig httpClientConfig = new HttpClientConfig("https://untrusted-root.badssl.com");
         httpClientConfig.setValidateCertificates(false);
-        Injector injector = TestInjector.create(binder -> {
-            binder.bind(ServerConfig.class).toInstance(new ServerConfig() {{
-                setEnabled(false);
-            }});
-            binder.bind(HttpClientConfig.class).toInstance(httpClientConfig);
-        });
+        Injector injector = injectorWithProgrammaticHttpClientConfig(httpClientConfig);
         RxClientProvider rxClientProvider = injector.getInstance(RxClientProvider.class);
 
         rxClientProvider
@@ -1010,6 +995,15 @@ public class HttpClientTest {
         resp[0] = '\"';
         resp[resp.length - 1] = '\"';
         return new String(resp);
+    }
+
+    private Injector injectorWithProgrammaticHttpClientConfig(HttpClientConfig httpClientConfig) {
+        return TestInjector.create(binder -> {
+            binder.bind(ServerConfig.class).toInstance(new ServerConfig() {{
+                setEnabled(false);
+            }});
+            binder.bind(HttpClientConfig.class).toInstance(httpClientConfig);
+        });
     }
 
     @Path("/hello")
