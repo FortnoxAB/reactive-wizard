@@ -1,0 +1,149 @@
+package se.fortnox.reactivewizard.dbmigrate;
+
+import se.fortnox.reactivewizard.db.DbDriver;
+import liquibase.CatalogAndSchema;
+import liquibase.Contexts;
+import liquibase.LabelExpression;
+import liquibase.Liquibase;
+import liquibase.changelog.ChangeLogHistoryServiceFactory;
+import liquibase.database.Database;
+import liquibase.database.DatabaseFactory;
+import liquibase.database.jvm.JdbcConnection;
+import liquibase.exception.DatabaseException;
+import liquibase.exception.LiquibaseException;
+import liquibase.exception.LockException;
+import liquibase.executor.ExecutorService;
+import liquibase.ext.TimeoutLockService;
+import liquibase.lockservice.LockServiceFactory;
+import liquibase.resource.ClassLoaderResourceAccessor;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+/**
+ * Runs liquibase migrations for each file on the classpath named according to config. In a development environment this
+ * is may be multiple files. In a production environment (fatjar) this is often a single file.
+ */
+public class LiquibaseMigrate {
+
+    private List<Liquibase> liquibaseList;
+
+    public LiquibaseMigrate(LiquibaseConfig conf) throws LiquibaseException, IOException {
+        JdbcConnection conn = new JdbcConnection(getConnection(conf));
+
+        Enumeration<URL> resources = this.getClass()
+                .getClassLoader()
+                .getResources(conf.getMigrationsFile());
+        if (!resources.hasMoreElements()) {
+            throw new RuntimeException("Could not find migrations file " + conf.getMigrationsFile());
+        }
+
+        TimeoutLockService.setRenewalConnectionCreator(() -> createDatabaseConnectionFromConfiguration(conf));
+
+        liquibaseList = new ArrayList<>();
+        while (resources.hasMoreElements()) {
+            URL url = resources.nextElement();
+            String file = url.toExternalForm();
+            int jarFileSep = file.lastIndexOf('!');
+            String loggedFileName = file.substring(jarFileSep + 1);
+            Liquibase liquibase = new Liquibase(loggedFileName,
+                    new UrlAwareClassLoaderResourceAccessor(file),
+                    conn);
+            liquibase.getDatabase().setDefaultSchemaName(conf.getSchema());
+
+            liquibaseList.add(liquibase);
+        }
+    }
+
+    private Database createDatabaseConnectionFromConfiguration(LiquibaseConfig configuration) {
+        try {
+            return DatabaseFactory.getInstance().findCorrectDatabaseImplementation(new JdbcConnection(getConnection(configuration)));
+        } catch (DatabaseException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private Connection getConnection(LiquibaseConfig conf) {
+        try {
+            DbDriver.loadDriver(conf.getUrl());
+            Connection connection = DriverManager.getConnection(conf.getUrl(), conf.getUser(), conf.getPassword());
+            if (conf.getSchema() != null) {
+                connection.setSchema(conf.getSchema());
+            }
+            return connection;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void run() throws LiquibaseException {
+        for (Liquibase liquibase : liquibaseList) {
+            liquibase.update((String) null);
+        }
+    }
+
+    public void drop() throws DatabaseException, LockException {
+        for (Liquibase liquibase : liquibaseList) {
+            liquibase.dropAll();
+            break;
+        }
+        LockServiceFactory.getInstance().resetAll();
+    }
+
+    public void forceDrop() throws DatabaseException, LockException {
+        for (Liquibase liquibase : liquibaseList) {
+            Database database = liquibase.getDatabase();
+            CatalogAndSchema schema = new CatalogAndSchema(database.getDefaultCatalogName(), database.getDefaultSchemaName());
+            try {
+                liquibase.checkLiquibaseTables(false, null, new Contexts(), new LabelExpression());
+                database.dropDatabaseObjects(schema);
+            } catch (DatabaseException e) {
+                throw e;
+            } catch (Exception e) {
+                throw new DatabaseException(e);
+            } finally {
+                LockServiceFactory.getInstance().getLockService(database).destroy();
+                LockServiceFactory.getInstance().resetAll();
+                ChangeLogHistoryServiceFactory.getInstance().resetAll();
+                ExecutorService.getInstance().reset();
+            }
+            return;
+        }
+    }
+
+    class UrlAwareClassLoaderResourceAccessor extends ClassLoaderResourceAccessor {
+        private String realFileName;
+
+        public UrlAwareClassLoaderResourceAccessor(String realFileName) {
+            this.realFileName = realFileName;
+        }
+
+        @Override
+        public Set<InputStream> getResourcesAsStream(String path)
+                throws IOException {
+            if (realFileName.endsWith(path)) {
+                path = realFileName;
+            }
+
+            if (path.startsWith("file:") || path.startsWith("jar:file:")) {
+                URL url = new URL(path);
+                Set<InputStream> returnSet = new HashSet<InputStream>();
+                InputStream resourceAsStream = url.openStream();
+                if (resourceAsStream != null) {
+                    returnSet.add(resourceAsStream);
+                }
+                return returnSet;
+            }
+            return super.getResourcesAsStream(path);
+        }
+    }
+}
