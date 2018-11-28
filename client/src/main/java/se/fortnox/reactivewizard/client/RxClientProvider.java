@@ -85,7 +85,7 @@ public class RxClientProvider {
      *
      * @return An configured SSLEngine
      */
-    protected SSLEngine configureSslEngine(String host, int port) {
+    SSLEngine configureSslEngine(String host, int port) {
         try {
             return SSLContext.getDefault().createSSLEngine(host, port);
         } catch (Throwable e) {
