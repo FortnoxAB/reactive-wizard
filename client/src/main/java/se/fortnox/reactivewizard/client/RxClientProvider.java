@@ -58,7 +58,7 @@ public class RxClientProvider {
 
             return client.secure(sslEngine);
         } catch (Throwable e) {
-            throw new RuntimeException("Unable to create secure client.", e);
+            throw new RuntimeException("Unable to create secure https client.", e);
         }
     }
 
