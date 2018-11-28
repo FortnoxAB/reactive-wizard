@@ -976,6 +976,7 @@ public class HttpClientTest {
                 .flatMap(HttpClientResponse::discardContent)
                 .toBlocking()
                 .singleOrDefault(null);
+            fail("Expected SSLHandshakeException");
         } catch (RuntimeException runtimeException) {
             assertThat(runtimeException.getCause()).isInstanceOf(SSLHandshakeException.class);
         }
