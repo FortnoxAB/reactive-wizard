@@ -45,11 +45,11 @@ public class HttpClientConfig {
     private long maxRequestTime          = TimeUnit.MILLISECONDS.convert(1, MINUTES);
 
     private boolean isHttps;
-    private int     retryCount     = 3;
-    private int     retryDelayMs   = 1000;
-    private int     readTimeoutMs  = 10000;
-    @JsonProperty("unsafeSecure")
-    private boolean isUnsafeSecure = false;
+    private int     retryCount    = 3;
+    private int     retryDelayMs  = 1000;
+    private int     readTimeoutMs = 10000;
+    @JsonProperty("insecure")
+    private boolean isInsecure    = false;
 
     public HttpClientConfig() {
     }
@@ -166,11 +166,11 @@ public class HttpClientConfig {
         this.readTimeoutMs = readTimeoutMs;
     }
 
-    public boolean isUnsafeSecure() {
-        return isHttps() && isUnsafeSecure;
+    public boolean isInsecure() {
+        return isHttps() && isInsecure;
     }
 
-    public void setUnsafeSecure(boolean value) {
-        isUnsafeSecure = value;
+    public void setInsecure(boolean value) {
+        isInsecure = value;
     }
 }

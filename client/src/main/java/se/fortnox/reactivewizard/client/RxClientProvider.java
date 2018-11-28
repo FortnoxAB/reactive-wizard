@@ -75,7 +75,7 @@ public class RxClientProvider {
             .pipelineConfigurator(UnsubscribeAwareHttpClientToConnectionBridge::configurePipeline);
 
         if (config.isHttps()) {
-            return configureSsl(client, config.getHost(), config.getPort(), config.isUnsafeSecure());
+            return configureSsl(client, config.getHost(), config.getPort(), config.isInsecure());
         }
         return client;
     }
