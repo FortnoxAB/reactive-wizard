@@ -114,4 +114,11 @@ public class HttpClientConfigTest {
             assertThat(e.getCause()).isInstanceOf(UnknownHostException.class);
         }
     }
+
+    @Test
+    public void shouldNotBeInsecureByDefault() throws URISyntaxException {
+        HttpClientConfig httpClientConfig = new HttpClientConfig("https://example.com");
+        assertThat(httpClientConfig.isHttps()).isTrue();
+        assertThat(httpClientConfig.isInsecure()).isFalse();
+    }
 }
