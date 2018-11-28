@@ -50,7 +50,7 @@ public class RxClientProvider {
         }
 
         try {
-            SSLEngine sslEngine = sslEngines.computeIfAbsent(host + ":" + port, s -> {
+            SSLEngine sslEngine = sslEngines.computeIfAbsent(host + ":" + port, hostPortValue -> {
                 SSLEngine innerSslEngine = configureSslEngine(host, port);
                 innerSslEngine.setUseClientMode(true);
                 return innerSslEngine;
