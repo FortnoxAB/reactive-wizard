@@ -45,9 +45,11 @@ public class HttpClientConfig {
     private long maxRequestTime          = TimeUnit.MILLISECONDS.convert(1, MINUTES);
 
     private boolean isHttps;
-    private int     retryCount    = 3;
-    private int     retryDelayMs  = 1000;
-    private int     readTimeoutMs = 10000;
+    private int     retryCount             = 3;
+    private int     retryDelayMs           = 1000;
+    private int     readTimeoutMs          = 10000;
+    @JsonProperty("validateCertificates")
+    private boolean isValidateCertificates = true;
 
     public HttpClientConfig() {
     }
@@ -162,5 +164,13 @@ public class HttpClientConfig {
 
     public void setReadTimeoutMs(int readTimeoutMs) {
         this.readTimeoutMs = readTimeoutMs;
+    }
+
+    public boolean isValidateCertificates() {
+        return isHttps() && isValidateCertificates;
+    }
+
+    public void setValidateCertificates(boolean value) {
+        isValidateCertificates = value;
     }
 }

@@ -14,6 +14,8 @@ import se.fortnox.reactivewizard.metrics.Metrics;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLEngine;
 import java.net.InetSocketAddress;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -27,7 +29,8 @@ import static rx.Observable.just;
  */
 @Singleton
 public class RxClientProvider {
-    private final ConcurrentHashMap<InetSocketAddress, HttpClient<ByteBuf, ByteBuf>> clients = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<InetSocketAddress, HttpClient<ByteBuf, ByteBuf>> clients    = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, SSLEngine>                               sslEngines = new ConcurrentHashMap<>();
     private final HttpClientConfig                                                   config;
     private final HealthRecorder                                                     healthRecorder;
 
@@ -39,6 +42,24 @@ public class RxClientProvider {
 
     public HttpClient<ByteBuf, ByteBuf> clientFor(InetSocketAddress serverInfo) {
         return clients.computeIfAbsent(serverInfo, this::buildClient);
+    }
+
+    private HttpClient<ByteBuf, ByteBuf> configureSsl(HttpClient<ByteBuf, ByteBuf> client, String host, int port, boolean isValidateCertificates) {
+        if (!isValidateCertificates) {
+            return client.unsafeSecure();
+        }
+
+        try {
+            SSLEngine sslEngine = sslEngines.computeIfAbsent(host + ":" + port, hostPortValue -> {
+                SSLEngine innerSslEngine = configureSslEngine(host, port);
+                innerSslEngine.setUseClientMode(true);
+                return innerSslEngine;
+            });
+
+            return client.secure(sslEngine);
+        } catch (Throwable e) {
+            throw new RuntimeException("Unable to create secure https client.", e);
+        }
     }
 
     private HttpClient<ByteBuf, ByteBuf> buildClient(InetSocketAddress socketAddress) {
@@ -54,9 +75,22 @@ public class RxClientProvider {
             .pipelineConfigurator(UnsubscribeAwareHttpClientToConnectionBridge::configurePipeline);
 
         if (config.isHttps()) {
-            client = client.unsafeSecure();
+            return configureSsl(client, config.getHost(), config.getPort(), config.isValidateCertificates());
         }
         return client;
+    }
+
+    /**
+     * Allows for customization of the SSLEngine
+     *
+     * @return An configured SSLEngine
+     */
+    SSLEngine configureSslEngine(String host, int port) {
+        try {
+            return SSLContext.getDefault().createSSLEngine(host, port);
+        } catch (Throwable e) {
+            throw new RuntimeException("Unable to configure secure client", e);
+        }
     }
 
     protected ConnectionProviderFactory<ByteBuf, ByteBuf> createConnectionProviderFactory(PoolConfig<ByteBuf, ByteBuf> poolConfig) {
