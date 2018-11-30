@@ -43,12 +43,12 @@ public class RxClientProvider {
         return clients.computeIfAbsent(serverInfo, this::buildClient);
     }
 
-    private HttpClient<ByteBuf, ByteBuf> configureSSL(HttpClient<ByteBuf, ByteBuf> client, String host, int port, boolean isValidateCertificates) {
+    private HttpClient<ByteBuf, ByteBuf> configureSsl(HttpClient<ByteBuf, ByteBuf> client, String host, int port, boolean isValidateCertificates) {
         if (!isValidateCertificates) {
             return client.unsafeSecure();
         }
         try {
-            return client.secure((ignored) -> createSSLEngineForEachRequest(host, port));
+            return client.secure((ignored) -> createSslEngineForEachRequest(host, port));
         } catch (Throwable e) {
             throw new RuntimeException("Unable to create secure https client.", e);
         }
@@ -67,17 +67,18 @@ public class RxClientProvider {
             .pipelineConfigurator(UnsubscribeAwareHttpClientToConnectionBridge::configurePipeline);
 
         if (config.isHttps()) {
-            return configureSSL(client, config.getHost(), config.getPort(), config.isValidateCertificates());
+            return configureSsl(client, config.getHost(), config.getPort(), config.isValidateCertificates());
         }
         return client;
     }
 
+
     /**
-     * Allows for customization of the SSLEngine
+     * Allows for customization of the SSLEngine.
      *
      * @return An configured SSLEngine
      */
-    SSLEngine configureSSLEngine(String host, int port) {
+    SSLEngine configureSslEngine(String host, int port) {
         try {
             return SSLContext.getDefault().createSSLEngine(host, port);
         } catch (Throwable e) {
@@ -96,8 +97,8 @@ public class RxClientProvider {
      *
      * @return a new SSLEngine instance.
      */
-    private SSLEngine createSSLEngineForEachRequest(String host,int port) {
-        SSLEngine sslEngine = configureSSLEngine(host, port);
+    private SSLEngine createSslEngineForEachRequest(String host,int port) {
+        SSLEngine sslEngine = configureSslEngine(host, port);
         sslEngine.setUseClientMode(true);
         return sslEngine;
     }
