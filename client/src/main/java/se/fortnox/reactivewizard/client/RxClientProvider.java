@@ -30,7 +30,6 @@ import static rx.Observable.just;
 @Singleton
 public class RxClientProvider {
     private final ConcurrentHashMap<InetSocketAddress, HttpClient<ByteBuf, ByteBuf>> clients    = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<String, SSLEngine>                               sslEngines = new ConcurrentHashMap<>();
     private final HttpClientConfig                                                   config;
     private final HealthRecorder                                                     healthRecorder;
 
@@ -44,19 +43,12 @@ public class RxClientProvider {
         return clients.computeIfAbsent(serverInfo, this::buildClient);
     }
 
-    private HttpClient<ByteBuf, ByteBuf> configureSsl(HttpClient<ByteBuf, ByteBuf> client, String host, int port, boolean isValidateCertificates) {
+    private HttpClient<ByteBuf, ByteBuf> configureSSL(HttpClient<ByteBuf, ByteBuf> client, String host, int port, boolean isValidateCertificates) {
         if (!isValidateCertificates) {
             return client.unsafeSecure();
         }
-
         try {
-            SSLEngine sslEngine = sslEngines.computeIfAbsent(host + ":" + port, hostPortValue -> {
-                SSLEngine innerSslEngine = configureSslEngine(host, port);
-                innerSslEngine.setUseClientMode(true);
-                return innerSslEngine;
-            });
-
-            return client.secure(sslEngine);
+            return client.secure((ignored) -> createSSLEngineForEachRequest(host, port));
         } catch (Throwable e) {
             throw new RuntimeException("Unable to create secure https client.", e);
         }
@@ -75,7 +67,7 @@ public class RxClientProvider {
             .pipelineConfigurator(UnsubscribeAwareHttpClientToConnectionBridge::configurePipeline);
 
         if (config.isHttps()) {
-            return configureSsl(client, config.getHost(), config.getPort(), config.isValidateCertificates());
+            return configureSSL(client, config.getHost(), config.getPort(), config.isValidateCertificates());
         }
         return client;
     }
@@ -85,7 +77,7 @@ public class RxClientProvider {
      *
      * @return An configured SSLEngine
      */
-    SSLEngine configureSslEngine(String host, int port) {
+    SSLEngine configureSSLEngine(String host, int port) {
         try {
             return SSLContext.getDefault().createSSLEngine(host, port);
         } catch (Throwable e) {
@@ -95,6 +87,19 @@ public class RxClientProvider {
 
     protected ConnectionProviderFactory<ByteBuf, ByteBuf> createConnectionProviderFactory(PoolConfig<ByteBuf, ByteBuf> poolConfig) {
         return SingleHostPoolingProviderFactory.create(poolConfig);
+    }
+
+    /**
+     * Factory method that provides a new sslEngine for each connection.
+     *
+     * It prevents the issue when the SSL engine thinks that handshake has been made, but in fact, the connection is new.
+     *
+     * @return a new SSLEngine instance.
+     */
+    private SSLEngine createSSLEngineForEachRequest(String host,int port) {
+        SSLEngine sslEngine = configureSSLEngine(host, port);
+        sslEngine.setUseClientMode(true);
+        return sslEngine;
     }
 
     /**
