@@ -27,13 +27,16 @@ public class RxNettyServerTest {
     @Mock
     ConnectionCounter connectionCounter;
 
+    @Mock
+    CompositeRequestHandler compositeRequestHandler;
+
 
     @Test
     public void shouldSetServerToNullIfConfigSaysDisabled() throws InterruptedException {
         ServerConfig serverConfig = new ServerConfig();
         serverConfig.setEnabled(false);
 
-        RxNettyServer rxNettyServer = new RxNettyServer(serverConfig, connectionCounter, server);
+        RxNettyServer rxNettyServer = new RxNettyServer(serverConfig, connectionCounter, server, compositeRequestHandler);
         rxNettyServer.join();
 
         assertNull(rxNettyServer.getServer());
@@ -44,7 +47,7 @@ public class RxNettyServerTest {
         ServerConfig serverConfig = new ServerConfig();
         AtomicInteger startInvocedNumberOfTimes = new AtomicInteger(0);
 
-        RxNettyServer rxNettyServer = new RxNettyServer(serverConfig, connectionCounter, server) {
+        RxNettyServer rxNettyServer = new RxNettyServer(serverConfig, connectionCounter, server, compositeRequestHandler) {
             @Override
             public void start() {
                 startInvocedNumberOfTimes.incrementAndGet();
@@ -60,7 +63,7 @@ public class RxNettyServerTest {
     public void shouldAwaitShutDown() throws InterruptedException {
         ServerConfig serverConfig = new ServerConfig();
 
-        RxNettyServer rxNettyServer = new RxNettyServer(serverConfig, connectionCounter, server) {};
+        RxNettyServer rxNettyServer = new RxNettyServer(serverConfig, connectionCounter, server, compositeRequestHandler) {};
         rxNettyServer.join();
 
         verify(server,times(1)).awaitShutdown();

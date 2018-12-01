@@ -23,16 +23,16 @@ public class RxNettyServer extends Thread {
 
     @Inject
     public RxNettyServer(ServerConfig config, CompositeRequestHandler compositeRequestHandler, ConnectionCounter connectionCounter) {
-        this(config, connectionCounter,createHttpServer(config, compositeRequestHandler));
+        this(config, connectionCounter,createHttpServer(config), compositeRequestHandler);
     }
 
-    RxNettyServer(ServerConfig config, ConnectionCounter connectionCounter, HttpServer<ByteBuf,ByteBuf> httpServer) {
+    RxNettyServer(ServerConfig config, ConnectionCounter connectionCounter, HttpServer<ByteBuf,ByteBuf> httpServer, CompositeRequestHandler compositeRequestHandler) {
         super("RxNettyServerMain");
         this.config = config;
         this.connectionCounter = connectionCounter;
 
         if (config.isEnabled()) {
-            server = httpServer;
+            server = httpServer.start(compositeRequestHandler);
             start();
             registerShutdownHook();
         } else {
@@ -40,14 +40,13 @@ public class RxNettyServer extends Thread {
         }
     }
 
-    private static HttpServer<ByteBuf,ByteBuf> createHttpServer(ServerConfig config, CompositeRequestHandler compositeRequestHandler) {
+    private static HttpServer<ByteBuf,ByteBuf> createHttpServer(ServerConfig config) {
         return  HttpServer.newServer(config.getPort())
             .<ByteBuf,ByteBuf>pipelineConfigurator(
                 new NoContentFixConfigurator(
                     config.getMaxInitialLineLengthDefault(),
                     MAX_CHUNK_SIZE_DEFAULT,
-                    config.getMaxHeaderSize()))
-            .start(compositeRequestHandler);
+                    config.getMaxHeaderSize()));
     }
 
     /**
