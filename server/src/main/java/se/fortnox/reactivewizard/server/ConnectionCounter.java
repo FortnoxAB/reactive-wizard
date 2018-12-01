@@ -7,8 +7,18 @@ import java.util.concurrent.atomic.AtomicLong;
 
 @Singleton
 public class ConnectionCounter {
-    private final AtomicLong connections = new AtomicLong(0);
-    private final Semaphore connectionsZero = new Semaphore(1);
+    private final AtomicLong connections;
+    private final Semaphore connectionsZero;
+
+    public ConnectionCounter() {
+        connections = new AtomicLong(0);
+        connectionsZero = new Semaphore(1);
+    }
+
+    ConnectionCounter(AtomicLong connections, Semaphore connectionsZero) {
+        this.connections = connections;
+        this.connectionsZero = connectionsZero;
+    }
 
     public void increase() {
         if (connections.getAndIncrement() == 0) {

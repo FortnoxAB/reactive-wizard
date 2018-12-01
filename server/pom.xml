@@ -66,7 +66,12 @@
 							<goal>check</goal>
 						</goals>
 						<configuration>
-							<rules>
+                            <excludes>
+                                <exclude>**/*se/fortnox/reactivewizard/server/JaxRsResourceRegistry.class</exclude>
+                                <exclude>**/*se/fortnox/reactivewizard/server/ServerModule.class</exclude>
+                                <exclude>**/*se/fortnox/reactivewizard/server/JaxRsResourceRegistry.class</exclude>
+                            </excludes>
+                            <rules>
 								<!-- implmentation is needed only for Maven 2 -->
 								<rule implementation="org.jacoco.maven.RuleConfiguration">
 									<element>BUNDLE</element>
@@ -75,7 +80,7 @@
 										<limit implementation="org.jacoco.report.check.Limit">
 											<counter>COMPLEXITY</counter>
 											<value>COVEREDRATIO</value>
-											<minimum>0.14</minimum>
+											<minimum>0.65</minimum>
 										</limit>
 									</limits>
 								</rule>

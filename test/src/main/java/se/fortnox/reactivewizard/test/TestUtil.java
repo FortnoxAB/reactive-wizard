@@ -23,7 +23,7 @@ public final class TestUtil {
      * Wraps a lambda expression which does assertions on your object.
      * <p>
      * Example:
-     * <p>
+     * </p>
      * <pre>
      * verify(assignmentDao).createAssignment(matches((ass -&gt; {
      *  assertThat(ass.getTitle()).isEqualTo(&quot;Ass 1&quot;);
@@ -32,7 +32,7 @@ public final class TestUtil {
      * </pre>
      *
      * @param asserter a lambda expression doing assertions
-     * @return
+     * @param <T> is the type of consumer value
      */
     public static <T> T matches(Consumer<T> asserter) {
         return Mockito.argThat(new ArgumentMatcher<T>() {
@@ -64,6 +64,7 @@ public final class TestUtil {
      *
      * @param throwable The exception to apply assertion on
      * @param type Expected type of exception
+     * @param <T> The type of the expected exception
      * @return The assertion for further assertion chaining
      */
     public static <T extends Throwable> ThrowableAssert assertException(Throwable throwable, Class<T> type) {

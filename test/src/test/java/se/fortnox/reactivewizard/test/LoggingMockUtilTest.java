@@ -1,4 +1,4 @@
-package se.fortnox.reactivewizard.logging;
+package se.fortnox.reactivewizard.test;
 
 import org.apache.log4j.Appender;
 import org.junit.Test;

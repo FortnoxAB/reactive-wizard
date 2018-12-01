@@ -15,34 +15,39 @@ import java.util.concurrent.TimeUnit;
 @Singleton
 public class RxNettyServer extends Thread {
 
-    private static final Logger logger = LoggerFactory.getLogger(RxNettyServer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(RxNettyServer.class);
     private final ServerConfig config;
-    private final CompositeRequestHandler compositeRequestHandler;
     private final ConnectionCounter connectionCounter;
     public static final int MAX_CHUNK_SIZE_DEFAULT = 8192;
     private final HttpServer<ByteBuf, ByteBuf> server;
 
     @Inject
     public RxNettyServer(ServerConfig config, CompositeRequestHandler compositeRequestHandler, ConnectionCounter connectionCounter) {
+        this(config, connectionCounter,createHttpServer(config, compositeRequestHandler));
+    }
+
+    RxNettyServer(ServerConfig config, ConnectionCounter connectionCounter, HttpServer<ByteBuf,ByteBuf> httpServer) {
         super("RxNettyServerMain");
         this.config = config;
-        this.compositeRequestHandler = compositeRequestHandler;
         this.connectionCounter = connectionCounter;
 
         if (config.isEnabled()) {
-            server = HttpServer.newServer(config.getPort())
-                    .<ByteBuf,ByteBuf>pipelineConfigurator(
-                            new NoContentFixConfigurator(
-                                    config.getMaxInitialLineLengthDefault(),
-                                    MAX_CHUNK_SIZE_DEFAULT,
-                                    config.getMaxHeaderSize()))
-                    .start(compositeRequestHandler);
-
+            server = httpServer;
             start();
             registerShutdownHook();
         } else {
             server = null;
         }
+    }
+
+    private static HttpServer<ByteBuf,ByteBuf> createHttpServer(ServerConfig config, CompositeRequestHandler compositeRequestHandler) {
+        return  HttpServer.newServer(config.getPort())
+            .<ByteBuf,ByteBuf>pipelineConfigurator(
+                new NoContentFixConfigurator(
+                    config.getMaxInitialLineLengthDefault(),
+                    MAX_CHUNK_SIZE_DEFAULT,
+                    config.getMaxHeaderSize()))
+            .start(compositeRequestHandler);
     }
 
     /**
@@ -57,15 +62,17 @@ public class RxNettyServer extends Thread {
     }
 
     private void registerShutdownHook() {
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            logger.info("Shutdown requested. Will wait up to {} seconds...", config.getShutdownTimeoutSeconds());
-            server.shutdown();
-            if (!connectionCounter.awaitZero(config.getShutdownTimeoutSeconds(), TimeUnit.SECONDS)) {
-                logger.error("Shutdown proceeded while connection count was not zero: " + connectionCounter.getCount());
-            }
-            server.awaitShutdown();
-            logger.info("Shutdown complete");
-        }));
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> shutdownHook(config,server,connectionCounter)));
+    }
+
+    static void shutdownHook(ServerConfig config, HttpServer server, ConnectionCounter connectionCounter) {
+        LOG.info("Shutdown requested. Will wait up to {} seconds...", config.getShutdownTimeoutSeconds());
+        server.shutdown();
+        if (!connectionCounter.awaitZero(config.getShutdownTimeoutSeconds(), TimeUnit.SECONDS)) {
+            LOG.error("Shutdown proceeded while connection count was not zero: " + connectionCounter.getCount());
+        }
+        server.awaitShutdown();
+        LOG.info("Shutdown complete");
     }
 
 }

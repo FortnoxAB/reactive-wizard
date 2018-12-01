@@ -11,7 +11,7 @@ import static org.fest.assertions.Assertions.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static se.fortnox.reactivewizard.LoggingMockUtil.createMockedLogAppender;
+import static se.fortnox.reactivewizard.test.LoggingMockUtil.createMockedLogAppender;
 import static se.fortnox.reactivewizard.test.TestUtil.matches;
 
 public class DeserializerUtilTest {

@@ -14,7 +14,7 @@ import java.util.SortedMap;
 
 import static org.fest.assertions.Assertions.assertThat;
 import static org.mockito.Mockito.*;
-import static se.fortnox.reactivewizard.LoggingMockUtil.createMockedLogAppender;
+import static se.fortnox.reactivewizard.test.LoggingMockUtil.createMockedLogAppender;
 import static se.fortnox.reactivewizard.test.TestUtil.matches;
 
 public class LoggingTest {
