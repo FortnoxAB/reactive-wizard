@@ -4,6 +4,7 @@ package se.fortnox.reactivewizard.server;
 import io.netty.buffer.ByteBuf;
 import io.reactivex.netty.protocol.http.server.HttpServer;
 import org.apache.log4j.Appender;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
@@ -30,6 +31,10 @@ public class RxNettyServerTest {
     @Mock
     CompositeRequestHandler compositeRequestHandler;
 
+    @Before
+    public void before() {
+        when(server.start(compositeRequestHandler)).thenReturn(server);
+    }
 
     @Test
     public void shouldSetServerToNullIfConfigSaysDisabled() throws InterruptedException {
