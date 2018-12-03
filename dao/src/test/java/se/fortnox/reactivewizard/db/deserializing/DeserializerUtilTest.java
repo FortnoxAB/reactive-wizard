@@ -12,6 +12,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static se.fortnox.reactivewizard.test.LoggingMockUtil.createMockedLogAppender;
+import static se.fortnox.reactivewizard.test.LoggingMockUtil.destroyMockedAppender;
 import static se.fortnox.reactivewizard.test.TestUtil.matches;
 
 public class DeserializerUtilTest {
@@ -28,6 +29,7 @@ public class DeserializerUtilTest {
             assertThat(log.getMessage().toString())
                 .matches("Tried to deserialize column test_a, but found no matching property named testA in ClassWithoutPropertyA");
         }));
+        destroyMockedAppender(mockAppender, DeserializerUtil.class);
     }
 
     @Test
@@ -40,6 +42,7 @@ public class DeserializerUtilTest {
         DeserializerUtil.createPropertyDeserializers(ClassWithoutPropertyA.class, resultSet, (propertyResolver, deserializer) -> deserializer);
 
         verify(mockAppender, never()).doAppend(any());
+        destroyMockedAppender(mockAppender, DeserializerUtil.class);
     }
 }
 

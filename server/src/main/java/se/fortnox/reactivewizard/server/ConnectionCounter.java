@@ -11,8 +11,7 @@ public class ConnectionCounter {
     private final Semaphore connectionsZero;
 
     public ConnectionCounter() {
-        connections = new AtomicLong(0);
-        connectionsZero = new Semaphore(1);
+        this(new AtomicLong(0), new Semaphore(1));
     }
 
     ConnectionCounter(AtomicLong connections, Semaphore connectionsZero) {

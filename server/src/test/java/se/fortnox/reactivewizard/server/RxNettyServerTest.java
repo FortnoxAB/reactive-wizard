@@ -1,6 +1,5 @@
 package se.fortnox.reactivewizard.server;
 
-
 import io.netty.buffer.ByteBuf;
 import io.reactivex.netty.protocol.http.server.HttpServer;
 import org.apache.log4j.Appender;
@@ -16,14 +15,18 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.fest.assertions.Assertions.assertThat;
 import static org.junit.Assert.assertNull;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyInt;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static se.fortnox.reactivewizard.test.TestUtil.matches;
 
 @RunWith(MockitoJUnitRunner.class)
 public class RxNettyServerTest {
 
     @Mock
-    HttpServer<ByteBuf,ByteBuf> server;
+    HttpServer<ByteBuf, ByteBuf> server;
 
     @Mock
     ConnectionCounter connectionCounter;
@@ -49,7 +52,7 @@ public class RxNettyServerTest {
 
     @Test
     public void shouldStartTheServerIfConfigSaysEnabled() throws InterruptedException {
-        ServerConfig serverConfig = new ServerConfig();
+        ServerConfig  serverConfig              = new ServerConfig();
         AtomicInteger startInvocedNumberOfTimes = new AtomicInteger(0);
 
         RxNettyServer rxNettyServer = new RxNettyServer(serverConfig, connectionCounter, server, compositeRequestHandler) {
@@ -71,14 +74,14 @@ public class RxNettyServerTest {
         RxNettyServer rxNettyServer = new RxNettyServer(serverConfig, connectionCounter, server, compositeRequestHandler) {};
         rxNettyServer.join();
 
-        verify(server,times(1)).awaitShutdown();
+        verify(server, times(1)).awaitShutdown();
     }
 
     @Test
     public void shouldLogThatShutDownIsRegistered() throws NoSuchFieldException, IllegalAccessException {
         Appender mockAppender = LoggingMockUtil.createMockedLogAppender(RxNettyServer.class);
 
-        RxNettyServer.shutdownHook(new ServerConfig(),server,connectionCounter);
+        RxNettyServer.shutdownHook(new ServerConfig(), server, connectionCounter);
 
         verify(mockAppender).doAppend(matches(log ->
             assertThat(log.getMessage().toString()).matches("Shutdown requested. Will wait up to 20 seconds...")
@@ -87,21 +90,23 @@ public class RxNettyServerTest {
         verify(mockAppender).doAppend(matches(log ->
             assertThat(log.getMessage().toString()).matches("Shutdown complete")
         ));
+
+        LoggingMockUtil.destroyMockedAppender(mockAppender, RxNettyServer.class);
     }
 
     @Test
-    public void shouldCallServerShutDownWhenShutdownHookIsInvoked()  {
-        RxNettyServer.shutdownHook(new ServerConfig(),server,connectionCounter);
+    public void shouldCallServerShutDownWhenShutdownHookIsInvoked() {
+        RxNettyServer.shutdownHook(new ServerConfig(), server, connectionCounter);
 
-        verify(server,times(1)).shutdown();
-        verify(server,times(1)).awaitShutdown();
+        verify(server, times(1)).shutdown();
+        verify(server, times(1)).awaitShutdown();
     }
 
     @Test
     public void shouldLogErrorIfShutdownIsPerformedWhileConnectionCountIsNotZero() throws NoSuchFieldException, IllegalAccessException {
         Appender mockAppender = LoggingMockUtil.createMockedLogAppender(RxNettyServer.class);
 
-        when(connectionCounter.awaitZero(anyInt(),any(TimeUnit.class))).thenReturn(false);
+        when(connectionCounter.awaitZero(anyInt(), any(TimeUnit.class))).thenReturn(false);
         when(connectionCounter.getCount()).thenReturn(4L);
 
         RxNettyServer.shutdownHook(new ServerConfig(), server, connectionCounter);
@@ -113,6 +118,8 @@ public class RxNettyServerTest {
         verify(mockAppender).doAppend(matches(log ->
             assertThat(log.getMessage().toString()).matches("Shutdown proceeded while connection count was not zero: 4")
         ));
+
+        LoggingMockUtil.destroyMockedAppender(mockAppender, RxNettyServer.class);
     }
 
 }

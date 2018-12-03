@@ -18,13 +18,19 @@ public class LoggingMockUtil {
         return mockAppender;
     }
 
+    public static void destroyMockedAppender(Appender appender, Class cls) throws NoSuchFieldException, IllegalAccessException {
+        Logger   logger       = LoggingMockUtil.getLogger(cls);
+        appender.close();
+        logger.removeAppender(appender);
+    }
+
     /**
      * This unorthodox reflection magic is needed because the static logger of the ObservableStatementFactory may or may
      * not be initialized with the current LogManager, depending on the tests that have been run before.
      *
      * @return the logger instance used in the class
      */
-    private static Logger getLogger(Class cls) throws NoSuchFieldException, IllegalAccessException {
+    static Logger getLogger(Class cls) throws NoSuchFieldException, IllegalAccessException {
         Field logField = cls.getDeclaredField("LOG");
         logField.setAccessible(true);
         Log4jLoggerAdapter loggerAdapter = (Log4jLoggerAdapter)logField.get(null);
