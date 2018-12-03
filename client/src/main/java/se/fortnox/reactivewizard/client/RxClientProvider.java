@@ -48,7 +48,7 @@ public class RxClientProvider {
             return client.unsafeSecure();
         }
         try {
-            return client.secure((ignored) -> createSslEngineForEachRequest(host, port));
+            return client.secure((ignored) -> createSslEngineForEachConnection(host, port));
         } catch (Throwable e) {
             throw new RuntimeException("Unable to create secure https client.", e);
         }
@@ -97,7 +97,7 @@ public class RxClientProvider {
      *
      * @return a new SSLEngine instance.
      */
-    private SSLEngine createSslEngineForEachRequest(String host,int port) {
+    private SSLEngine createSslEngineForEachConnection(String host,int port) {
         SSLEngine sslEngine = configureSslEngine(host, port);
         sslEngine.setUseClientMode(true);
         return sslEngine;
