@@ -8,13 +8,14 @@ import rx.Observable;
 import se.fortnox.reactivewizard.db.config.DatabaseConfig;
 import se.fortnox.reactivewizard.db.transactions.DaoTransactionsImpl;
 import se.fortnox.reactivewizard.metrics.Metrics;
+import se.fortnox.reactivewizard.test.LoggingMockUtil;
 
 import java.sql.SQLException;
 import java.util.SortedMap;
 
 import static org.fest.assertions.Assertions.assertThat;
 import static org.mockito.Mockito.*;
-import static se.fortnox.reactivewizard.LoggingMockUtil.createMockedLogAppender;
+import static se.fortnox.reactivewizard.test.LoggingMockUtil.createMockedLogAppender;
 import static se.fortnox.reactivewizard.test.TestUtil.matches;
 
 public class LoggingTest {
@@ -67,6 +68,7 @@ public class LoggingTest {
                 "time: \\d+")
         ));
         verifyNoMoreInteractions(mockAppender);
+        LoggingMockUtil.destroyMockedAppender(mockAppender, ObservableStatementFactory.class);
     }
 
     @Test
@@ -90,6 +92,7 @@ public class LoggingTest {
                 "time: \\d+")
         ));
         verifyNoMoreInteractions(mockAppender);
+        LoggingMockUtil.destroyMockedAppender(mockAppender, ObservableStatementFactory.class);
     }
 
     @Test
@@ -112,6 +115,7 @@ public class LoggingTest {
 
         // Then
         verifyNoMoreInteractions(mockAppender);
+        LoggingMockUtil.destroyMockedAppender(mockAppender, ObservableStatementFactory.class);
     }
 
     public interface LoggingDao {
