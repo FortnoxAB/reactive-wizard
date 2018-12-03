@@ -30,7 +30,6 @@ import static rx.Observable.just;
 @Singleton
 public class RxClientProvider {
     private final ConcurrentHashMap<InetSocketAddress, HttpClient<ByteBuf, ByteBuf>> clients    = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<String, SSLEngine>                               sslEngines = new ConcurrentHashMap<>();
     private final HttpClientConfig                                                   config;
     private final HealthRecorder                                                     healthRecorder;
 
@@ -48,15 +47,8 @@ public class RxClientProvider {
         if (!isValidateCertificates) {
             return client.unsafeSecure();
         }
-
         try {
-            SSLEngine sslEngine = sslEngines.computeIfAbsent(host + ":" + port, hostPortValue -> {
-                SSLEngine innerSslEngine = configureSslEngine(host, port);
-                innerSslEngine.setUseClientMode(true);
-                return innerSslEngine;
-            });
-
-            return client.secure(sslEngine);
+            return client.secure((ignored) -> createSslEngineForEachConnection(host, port));
         } catch (Throwable e) {
             throw new RuntimeException("Unable to create secure https client.", e);
         }
@@ -80,8 +72,9 @@ public class RxClientProvider {
         return client;
     }
 
+
     /**
-     * Allows for customization of the SSLEngine
+     * Allows for customization of the SSLEngine.
      *
      * @return An configured SSLEngine
      */
@@ -95,6 +88,19 @@ public class RxClientProvider {
 
     protected ConnectionProviderFactory<ByteBuf, ByteBuf> createConnectionProviderFactory(PoolConfig<ByteBuf, ByteBuf> poolConfig) {
         return SingleHostPoolingProviderFactory.create(poolConfig);
+    }
+
+    /**
+     * Factory method that provides a new sslEngine for each connection.
+     *
+     * It prevents the issue when the SSL engine thinks that handshake has been made, but in fact, the connection is new.
+     *
+     * @return a new SSLEngine instance.
+     */
+    private SSLEngine createSslEngineForEachConnection(String host,int port) {
+        SSLEngine sslEngine = configureSslEngine(host, port);
+        sslEngine.setUseClientMode(true);
+        return sslEngine;
     }
 
     /**
