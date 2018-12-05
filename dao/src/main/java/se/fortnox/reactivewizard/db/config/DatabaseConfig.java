@@ -2,6 +2,8 @@ package se.fortnox.reactivewizard.db.config;
 
 import se.fortnox.reactivewizard.config.Config;
 
+import java.util.concurrent.Executor;
+
 @Config("database")
 public class DatabaseConfig {
 
@@ -15,6 +17,7 @@ public class DatabaseConfig {
     private long   maxLifetime           = 1800000;
     private int    minimumIdle           = 1;
     private long   slowQueryLogThreshold = 5000;
+    private long   socketTimeout         = 300;
 
     public String getSchema() {
         return schema;
@@ -94,5 +97,21 @@ public class DatabaseConfig {
 
     public void setSlowQueryLogThreshold(long slowQueryLogThreshold) {
         this.slowQueryLogThreshold = slowQueryLogThreshold;
+    }
+
+    /**
+     * Get the configured socket timeout.
+     * The socket timeout will be passed on to the jdbc driver and is a global timeout to stop absurdly long queries
+     * or strange network partition problems. If the value is 0 the timeout is disabled.
+     *
+     * @see java.sql.Connection#setNetworkTimeout(Executor, int)
+     * @return The socket timeout in seconds
+     */
+    public long getSocketTimeout() {
+        return socketTimeout;
+    }
+
+    public void setSocketTimeout(long socketTimeout) {
+        this.socketTimeout = socketTimeout;
     }
 }

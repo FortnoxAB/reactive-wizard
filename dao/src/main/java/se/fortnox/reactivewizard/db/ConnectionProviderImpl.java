@@ -30,6 +30,8 @@ public class ConnectionProviderImpl implements ConnectionProvider {
         connectionPool.setMaxLifetime(databaseConfig.getMaxLifetime());
         connectionPool.setMetricRegistry(Metrics.registry());
 
+        connectionPool.addDataSourceProperty("socketTimeout", databaseConfig.getSocketTimeout());
+
         DbDriver.loadDriver(databaseConfig.getUrl());
 
         ds = new HikariDataSource(connectionPool);
