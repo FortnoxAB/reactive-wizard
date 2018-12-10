@@ -67,7 +67,7 @@ public class ExceptionHandler {
         } else if (throwable instanceof WebException) {
             webException = (WebException)throwable;
         } else if (throwable instanceof ClosedChannelException) {
-            LOG.debug("ClosedChannelException: " + request.getHttpMethod() + " " + request.getUri(), throwable);
+            LOG.warn("ClosedChannelException: " + request.getHttpMethod() + " " + request.getUri(), throwable);
             return Observable.empty();
         } else {
             webException = new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR, throwable);
