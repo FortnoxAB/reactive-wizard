@@ -61,7 +61,7 @@ public class ExceptionHandlerTest {
     public void shouldLogClosedChannelExceptionAtDebugLevel() {
         assertLog(new MockHttpServerRequest("/path"),
             new ClosedChannelException(),
-            Level.DEBUG,
+            Level.WARN,
             "ClosedChannelException: GET /path");
     }
 
