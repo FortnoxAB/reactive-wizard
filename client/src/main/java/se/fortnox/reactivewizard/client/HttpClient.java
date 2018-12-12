@@ -60,11 +60,11 @@ import static rx.Observable.just;
 
 public class HttpClient implements InvocationHandler {
     private static final Logger           LOG            = LoggerFactory.getLogger(HttpClient.class);
-    private static final ByteBufCollector COLLECTOR      = new ByteBufCollector(10 * 1024 * 1024);
     private static final Class            BYTEARRAY_TYPE = (new byte[0]).getClass();
 
     protected final InetSocketAddress           serverInfo;
     protected final HttpClientConfig            config;
+    private final   ByteBufCollector            collector;
     private final   RequestParameterSerializers requestParameterSerializers;
     private final   Set<PreRequestHook>         preRequestHooks;
     private         RxClientProvider            clientProvider;
@@ -85,6 +85,7 @@ public class HttpClient implements InvocationHandler {
         this.requestParameterSerializers = requestParameterSerializers;
 
         serverInfo = new InetSocketAddress(config.getHost(), config.getPort());
+        collector = new ByteBufCollector(config.getMaxResponseSize());
         this.preRequestHooks = preRequestHooks;
     }
 
@@ -172,14 +173,14 @@ public class HttpClient implements InvocationHandler {
     }
 
     protected Observable<?> parseResponse(Method method, RequestBuilder request, HttpClientResponse<ByteBuf> response) {
-        final Observable<String> body = COLLECTOR.collectString(response.getContent()).singleOrDefault("");
+        final Observable<String> body = collector.collectString(response.getContent()).singleOrDefault("");
 
         if (expectsByteArrayResponse(method)) {
             if (response.getStatus().code() >= 400) {
                 return body.map(data -> handleError(request, response, data));
             }
 
-            return COLLECTOR.collectBytes(response.getContent());
+            return collector.collectBytes(response.getContent());
         }
 
         return body
