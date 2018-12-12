@@ -68,9 +68,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
-import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
-import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
-import static io.netty.handler.codec.http.HttpResponseStatus.OK;
+import static io.netty.handler.codec.http.HttpResponseStatus.*;
 import static java.lang.String.format;
 import static org.fest.assertions.Assertions.assertThat;
 import static org.fest.assertions.Fail.fail;
@@ -360,6 +358,22 @@ public class HttpClientTest {
         final HttpServer<ByteBuf, ByteBuf> server   = startServer(HttpResponseStatus.OK, generate10MbString());
         TestResource                       resource = getHttpProxy(server.getServerPort());
         resource.getHello().toBlocking().single();
+
+        server.shutdown();
+    }
+
+    @Test
+    public void shouldReturnBadRequestOnTooLargeResponses() throws URISyntaxException {
+        final HttpServer<ByteBuf, ByteBuf> server   = startServer(HttpResponseStatus.OK, "\"derp\"");
+        HttpClientConfig config                     = new HttpClientConfig("127.0.0.1:" + server.getServerPort());
+        config.setMaxResponseSize(5);
+        TestResource                       resource = getHttpProxy(config);
+        try {
+            resource.getHello().toBlocking().single();
+            fail("expected exception");
+        } catch (WebException e) {
+            assertThat(e.getStatus()).isEqualTo(BAD_REQUEST);
+        }
 
         server.shutdown();
     }
