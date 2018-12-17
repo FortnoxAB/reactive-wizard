@@ -56,6 +56,8 @@ import java.util.concurrent.TimeoutException;
 import static java.lang.String.format;
 import static java.util.Collections.emptySet;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
+import static rx.Observable.defer;
+import static rx.Observable.empty;
 import static rx.Observable.just;
 
 public class HttpClient implements InvocationHandler {
@@ -173,7 +175,13 @@ public class HttpClient implements InvocationHandler {
     }
 
     protected Observable<?> parseResponse(Method method, RequestBuilder request, HttpClientResponse<ByteBuf> response) {
-        final Observable<String> body = collector.collectString(response.getContent()).singleOrDefault("");
+        final Observable<String> body =
+            collector.collectString(
+                response
+                    .getContent()
+                    .switchIfEmpty(logEmptyResponse(request, response))
+            )
+            .singleOrDefault("");
 
         if (expectsByteArrayResponse(method)) {
             if (response.getStatus().code() >= 400) {
@@ -186,6 +194,15 @@ public class HttpClient implements InvocationHandler {
         return body
             .map(data -> handleError(request, response, data))
             .flatMap(str -> deserialize(method, str));
+    }
+
+    private Observable<? extends ByteBuf> logEmptyResponse(RequestBuilder request, HttpClientResponse<ByteBuf> response) {
+        return defer(() -> {
+
+            LOG.warn(request + " with headers " + request.getHeaders().entrySet() + " got empty response with status: " + response.getStatus());
+
+            return empty();
+        });
     }
 
     private boolean expectsByteArrayResponse(Method method) {
