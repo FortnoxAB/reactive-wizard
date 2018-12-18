@@ -146,7 +146,10 @@ public class HttpClient implements InvocationHandler {
             LOG.debug(fullReq + " with headers " + fullReq.getHeaders().entrySet());
         }
 
-        final Observable<HttpClientResponse<ByteBuf>> resp = fullReq.submit(rxClient).timeout(timeout, timeoutUnit);
+        final Observable<HttpClientResponse<ByteBuf>> resp = fullReq
+            .submit(rxClient)
+            .timeout(timeout, timeoutUnit)
+            .switchIfEmpty(logEmptyResponse(fullReq));
 
         Observable<?> output = null;
         if (expectsRawResponse(method)) {
@@ -175,13 +178,7 @@ public class HttpClient implements InvocationHandler {
     }
 
     protected Observable<?> parseResponse(Method method, RequestBuilder request, HttpClientResponse<ByteBuf> response) {
-        final Observable<String> body =
-            collector.collectString(
-                response
-                    .getContent()
-                    .switchIfEmpty(logEmptyResponse(request, response))
-            )
-            .singleOrDefault("");
+        final Observable<String> body = collector.collectString(response.getContent()).singleOrDefault("");
 
         if (expectsByteArrayResponse(method)) {
             if (response.getStatus().code() >= 400) {
@@ -196,10 +193,10 @@ public class HttpClient implements InvocationHandler {
             .flatMap(str -> deserialize(method, str));
     }
 
-    private Observable<? extends ByteBuf> logEmptyResponse(RequestBuilder request, HttpClientResponse<ByteBuf> response) {
+    private Observable<HttpClientResponse<ByteBuf>> logEmptyResponse(RequestBuilder request) {
         return defer(() -> {
 
-            LOG.warn(request + " with headers " + request.getHeaders().entrySet() + " got empty response with status: " + response.getStatus());
+            LOG.warn(request + " with headers " + request.getHeaders().entrySet() + " got empty response from submit");
 
             return empty();
         });

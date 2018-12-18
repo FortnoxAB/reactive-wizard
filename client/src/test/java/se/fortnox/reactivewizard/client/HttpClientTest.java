@@ -19,7 +19,6 @@ import io.reactivex.netty.client.pool.PooledConnectionProvider;
 import io.reactivex.netty.protocol.http.client.HttpClientResponse;
 import io.reactivex.netty.protocol.http.server.HttpServer;
 import io.reactivex.netty.protocol.http.server.HttpServerRequest;
-import org.apache.log4j.Appender;
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 import org.junit.Assert;
@@ -27,7 +26,6 @@ import org.junit.Test;
 import org.mockito.Mockito;
 import rx.Observable;
 import rx.Single;
-import rx.observers.AssertableSubscriber;
 import se.fortnox.reactivewizard.config.TestInjector;
 import se.fortnox.reactivewizard.jaxrs.ByteBufCollector;
 import se.fortnox.reactivewizard.jaxrs.JaxRsMeta;
@@ -35,7 +33,6 @@ import se.fortnox.reactivewizard.jaxrs.PATCH;
 import se.fortnox.reactivewizard.jaxrs.WebException;
 import se.fortnox.reactivewizard.metrics.HealthRecorder;
 import se.fortnox.reactivewizard.server.ServerConfig;
-import se.fortnox.reactivewizard.test.LoggingMockUtil;
 import se.fortnox.reactivewizard.test.TestUtil;
 import se.fortnox.reactivewizard.util.rx.RetryWithDelay;
 
@@ -74,7 +71,6 @@ import java.util.function.Consumer;
 import static io.netty.handler.codec.http.HttpResponseStatus.BAD_REQUEST;
 import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
-import static io.netty.handler.codec.http.HttpResponseStatus.NO_CONTENT;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static java.lang.String.format;
 import static org.fest.assertions.Assertions.assertThat;
@@ -91,7 +87,6 @@ import static se.fortnox.reactivewizard.test.TestUtil.matches;
 public class HttpClientTest {
 
     private HealthRecorder healthRecorder = new HealthRecorder();
-    private RxClientProvider clientProvider;
 
     @Test
     public void shouldNotRetryFailedPostCalls() {
@@ -143,18 +138,6 @@ public class HttpClientTest {
 
     protected void withServer(Consumer<HttpServer<ByteBuf, ByteBuf>> serverConsumer) {
         final HttpServer<ByteBuf, ByteBuf> server = startServer(HttpResponseStatus.OK, "\"OK\"");
-
-        LogManager.getLogger(RetryWithDelay.class).setLevel(Level.toLevel(Level.OFF_INT));
-
-        try {
-            serverConsumer.accept(server);
-        } finally {
-            server.shutdown();
-        }
-    }
-
-    protected void withServer(Consumer<HttpServer<ByteBuf, ByteBuf>> serverConsumer, HttpResponseStatus status, Observable<String> response) {
-        final HttpServer<ByteBuf, ByteBuf> server = startServer(status, response, byteBufHttpServerRequest -> {});
 
         LogManager.getLogger(RetryWithDelay.class).setLevel(Level.toLevel(Level.OFF_INT));
 
@@ -237,32 +220,6 @@ public class HttpClientTest {
                 assertThat(wasUnhealthy.get()).isTrue();
             }
         });
-    }
-
-    @Test
-    public void shouldLogOnEmptyResponse() {
-
-        withServer(server -> {
-            try {
-                HttpClientConfig config = new HttpClientConfig("127.0.0.1:" + server.getServerPort());
-                config.setMaxConnections(1);
-                config.setRetryCount(0);
-
-                Appender     mockedLogAppender = LoggingMockUtil.createMockedLogAppender(HttpClient.class);
-
-                TestResource resource = getHttpProxy(config);
-
-                AssertableSubscriber<String> test = resource.getHello().test();
-                test.awaitTerminalEvent();
-
-                verify(mockedLogAppender).doAppend(matches(loggingEvent -> {
-                    assertThat(loggingEvent.getMessage().toString()).isEqualTo("GET localhost:" + server.getServerPort() + "/hello with headers [] got empty response with status: 204 No Content");
-                }));
-            } catch (URISyntaxException | NoSuchFieldException | IllegalAccessException e) {
-                Assert.fail("Didnt expect exception");
-            }
-
-        }, NO_CONTENT, empty());
     }
 
     @Test
