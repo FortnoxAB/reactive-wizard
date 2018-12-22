@@ -68,7 +68,10 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
-import static io.netty.handler.codec.http.HttpResponseStatus.*;
+import static io.netty.handler.codec.http.HttpResponseStatus.BAD_REQUEST;
+import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
+import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
+import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static java.lang.String.format;
 import static org.fest.assertions.Assertions.assertThat;
 import static org.fest.assertions.Fail.fail;
@@ -736,10 +739,14 @@ public class HttpClientTest {
     }
 
     private HttpServer<ByteBuf, ByteBuf> startServer(HttpResponseStatus status, String body, Consumer<HttpServerRequest<ByteBuf>> callback) {
+        return startServer(status, just(body), callback);
+    }
+
+    private HttpServer<ByteBuf, ByteBuf> startServer(HttpResponseStatus status, Observable<String> body, Consumer<HttpServerRequest<ByteBuf>> callback) {
         return HttpServer.newServer(0).start((request, response) -> {
             callback.accept(request);
             response.setStatus(status);
-            return response.writeString(just(body));
+            return response.writeString(body);
         });
     }
 

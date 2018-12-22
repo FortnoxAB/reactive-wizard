@@ -56,6 +56,8 @@ import java.util.concurrent.TimeoutException;
 import static java.lang.String.format;
 import static java.util.Collections.emptySet;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
+import static rx.Observable.defer;
+import static rx.Observable.empty;
 import static rx.Observable.just;
 
 public class HttpClient implements InvocationHandler {
@@ -144,7 +146,10 @@ public class HttpClient implements InvocationHandler {
             LOG.debug(fullReq + " with headers " + fullReq.getHeaders().entrySet());
         }
 
-        final Observable<HttpClientResponse<ByteBuf>> resp = fullReq.submit(rxClient).timeout(timeout, timeoutUnit);
+        final Observable<HttpClientResponse<ByteBuf>> resp = fullReq
+            .submit(rxClient)
+            .timeout(timeout, timeoutUnit)
+            .switchIfEmpty(logEmptyResponse(fullReq));
 
         Observable<?> output = null;
         if (expectsRawResponse(method)) {
@@ -186,6 +191,15 @@ public class HttpClient implements InvocationHandler {
         return body
             .map(data -> handleError(request, response, data))
             .flatMap(str -> deserialize(method, str));
+    }
+
+    private Observable<HttpClientResponse<ByteBuf>> logEmptyResponse(RequestBuilder request) {
+        return defer(() -> {
+
+            LOG.warn(request + " with headers " + request.getHeaders().entrySet() + " got empty response from submit");
+
+            return empty();
+        });
     }
 
     private boolean expectsByteArrayResponse(Method method) {
