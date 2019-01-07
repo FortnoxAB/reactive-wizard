@@ -232,7 +232,7 @@ public class HttpClientTest {
 
         withServer(server -> {
 
-            try {
+                try {
                 HttpClientConfig config = new HttpClientConfig("127.0.0.1:" + server.getServerPort());
                 config.setRetryCount(1);
                 config.setRetryDelayMs(1000);
@@ -266,16 +266,11 @@ public class HttpClientTest {
     @Test
     public void shouldRetryIfEmptyReturnedOnGet() {
 
-        try {
-
             AtomicInteger callCount = new AtomicInteger();
             TestResource resource = getHttpProxyWithClientReturningEmpty(callCount);
             resource.getHello().toBlocking().singleOrDefault(null);
             assertThat(callCount.get()).isEqualTo(3);
 
-        } catch (Exception e) {
-            Assert.fail("Should not give exception");
-        }
     }
 
     @Test

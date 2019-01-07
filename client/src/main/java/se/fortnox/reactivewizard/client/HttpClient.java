@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import io.netty.buffer.ByteBuf;
-import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.reactivex.netty.protocol.http.client.HttpClientResponse;
 import org.slf4j.Logger;
@@ -53,6 +52,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import static io.netty.handler.codec.http.HttpMethod.POST;
 import static java.lang.String.format;
 import static java.util.Collections.emptySet;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
@@ -149,7 +149,7 @@ public class HttpClient implements InvocationHandler {
         final Observable<HttpClientResponse<ByteBuf>> resp = fullReq
             .submit(rxClient)
             .timeout(timeout, timeoutUnit)
-            .switchIfEmpty(retry(fullReq, method, arguments, rxClient, true));
+            .switchIfEmpty(retry(fullReq, rxClient, true));
 
         Observable<?> output = null;
         if (expectsRawResponse(method)) {
@@ -167,19 +167,6 @@ public class HttpClient implements InvocationHandler {
         } else {
             return output;
         }
-    }
-
-    /**
-     * Creates a request builder based on the method and the arguments
-     *
-     * @param method    the method
-     * @param arguments the arguments
-     * @return an instance of RequestBuilder
-     */
-    private RequestBuilder getRequestBuilder(Method method, Object[] arguments) {
-        RequestBuilder fullReq = createRequest(method, arguments);
-        addDevOverrides(fullReq);
-        return fullReq;
     }
 
     private void logFailedRequest(RequestBuilder fullReq, Throwable throwable) {
@@ -210,43 +197,37 @@ public class HttpClient implements InvocationHandler {
      * Retries the request if not a post.
      *
      * @param request      original request
-     * @param method       original method
-     * @param arguments    originial argument
      * @param rxClient     original rxClient
-     * @param retryIfFails true if we should retry if this requests fails as well. False if we should not retry anymore
+     * @param retryOnFailure true if we should retry if this requests fails as well. False if we should not retry anymore
      * @return Observable of HttpClientResponse
      */
     private Observable<HttpClientResponse<ByteBuf>> retry(RequestBuilder request,
-        Method method,
-        Object[] arguments,
         io.reactivex.netty.protocol.http.client.HttpClient<ByteBuf, ByteBuf> rxClient,
-        boolean retryIfFails
+        boolean retryOnFailure
     ) {
         return defer(() -> {
 
             // Don't retry if it was a POST, as it is not idempotent and the request
             // might have ended up at the server
-            if (request.getHttpMethod().equals(HttpMethod.POST)) {
+            if (POST.equals(request.getHttpMethod())) {
                 LOG.info("Won't retry POST on {} ", request.getUri());
                 return empty();
             }
 
-            RequestBuilder fullReq = getRequestBuilder(method, arguments);
-            LOG.warn("Got empty when doing a {} on {} ", request.getHttpMethod().toString(), request.getUri());
+            LOG.info("Got empty when doing a {} on {}, will retry again...", request.getHttpMethod().toString(), request.getUri());
 
-            return fullReq
+            return request
                 .submit(rxClient)
                 .timeout(timeout, timeoutUnit)
                 .switchIfEmpty(defer(() -> {
 
-                    if (retryIfFails) {
+                    if (retryOnFailure) {
                         LOG.warn("Got empty the second time as well. Giving it a third try");
-                        return retry(fullReq, method, arguments, rxClient, false);
-                    } else {
-                        LOG.warn("Got empty the third time, giving up now on trying {} on {}", request.getHttpMethod(), request.getUri());
-                        return empty();
+                        return retry(request, rxClient, false);
                     }
 
+                    LOG.warn("Got empty the third time, giving up now on trying {} on {}", request.getHttpMethod(), request.getUri());
+                    return empty();
                 }));
         });
     }
@@ -291,7 +272,7 @@ public class HttpClient implements InvocationHandler {
                     // Retry on system error of some kind, like IO
                     return true;
                 }
-                if (fullReq.getHttpMethod().equals(HttpMethod.POST)) {
+                if (fullReq.getHttpMethod().equals(POST)) {
                     // Don't retry if it was a POST, as it is not idempotent
                     return false;
                 }
