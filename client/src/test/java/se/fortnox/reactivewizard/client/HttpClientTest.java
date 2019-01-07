@@ -155,7 +155,7 @@ public class HttpClientTest {
         return client.create(TestResource.class);
     }
 
-    private TestResource getHttpProxyWithClientReturningEmpty(AtomicInteger atomicInteger) {
+    private TestResource getHttpProxyWithClientReturningEmpty(AtomicInteger callCounter) {
         HttpClientConfig config = null;
         try {
             config = new HttpClientConfig("localhost:8080");
@@ -169,7 +169,7 @@ public class HttpClientTest {
             public io.reactivex.netty.protocol.http.client.HttpClient<ByteBuf, ByteBuf> clientFor(InetSocketAddress serverInfo) {
                 io.reactivex.netty.protocol.http.client.HttpClient mock = mock(io.reactivex.netty.protocol.http.client.HttpClient.class);
                 when(mock.createRequest(any(), anyString())).thenAnswer(invocation -> {
-                    atomicInteger.incrementAndGet();
+                    callCounter.incrementAndGet();
                     return new EmptyReturningHttpClientRequest();
                 });
                 return mock;
