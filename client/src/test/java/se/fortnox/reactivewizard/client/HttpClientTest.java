@@ -256,8 +256,7 @@ public class HttpClientTest {
                     test.assertNoErrors();
                 }
 
-            } catch (Exception e) {
-            }
+            } catch (Exception ignore) {}
 
         });
     }
@@ -1240,11 +1239,6 @@ public class HttpClientTest {
         }
 
         @Override
-        public Observable<HttpClientResponse<ByteBuf>> writeContentAndFlushOnEach(Observable<ByteBuf> contentSource) {
-            return empty();
-        }
-
-        @Override
         public Observable<HttpClientResponse<ByteBuf>> writeContent(Observable<ByteBuf> contentSource, Func1<ByteBuf, Boolean> flushSelector
         ) {
             return empty();
@@ -1264,6 +1258,11 @@ public class HttpClientTest {
             Func2<T, ByteBuf, T> trailerMutator,
             Func1<ByteBuf, Boolean> flushSelector
         ) {
+            return empty();
+        }
+
+        @Override
+        public Observable<HttpClientResponse<ByteBuf>> writeContentAndFlushOnEach(Observable<ByteBuf> contentSource) {
             return empty();
         }
 
@@ -1383,17 +1382,17 @@ public class HttpClientTest {
         }
 
         @Override
+        public HttpClientRequest<ByteBuf, ByteBuf> setDateHeader(CharSequence name, Iterable<Date> values) {
+            return this;
+        }
+
+        @Override
         public HttpClientRequest<ByteBuf, ByteBuf> setHeader(CharSequence name, Object value) {
             return this;
         }
 
         @Override
         public HttpClientRequest<ByteBuf, ByteBuf> setHeaders(Map<? extends CharSequence, ? extends Iterable<Object>> headers) {
-            return this;
-        }
-
-        @Override
-        public HttpClientRequest<ByteBuf, ByteBuf> setDateHeader(CharSequence name, Iterable<Date> values) {
             return this;
         }
 
