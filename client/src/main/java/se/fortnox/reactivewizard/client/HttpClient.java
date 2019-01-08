@@ -48,6 +48,7 @@ import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -56,8 +57,6 @@ import static io.netty.handler.codec.http.HttpMethod.POST;
 import static java.lang.String.format;
 import static java.util.Collections.emptySet;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
-import static rx.Observable.defer;
-import static rx.Observable.empty;
 import static rx.Observable.just;
 
 public class HttpClient implements InvocationHandler {
@@ -149,7 +148,8 @@ public class HttpClient implements InvocationHandler {
         final Observable<HttpClientResponse<ByteBuf>> resp = fullReq
             .submit(rxClient)
             .timeout(timeout, timeoutUnit)
-            .switchIfEmpty(retry(fullReq, rxClient, true));
+            //Forcing the stream to be not empty. If empty then it will be retried through the standard retry logic
+            .single();
 
         Observable<?> output = null;
         if (expectsRawResponse(method)) {
@@ -193,45 +193,6 @@ public class HttpClient implements InvocationHandler {
             .flatMap(str -> deserialize(method, str));
     }
 
-    /**
-     * Retries the request if not a post.
-     *
-     * @param request      original request
-     * @param rxClient     original rxClient
-     * @param retryOnFailure true if we should retry if this requests fails as well. False if we should not retry anymore
-     * @return Observable of HttpClientResponse
-     */
-    private Observable<HttpClientResponse<ByteBuf>> retry(RequestBuilder request,
-        io.reactivex.netty.protocol.http.client.HttpClient<ByteBuf, ByteBuf> rxClient,
-        boolean retryOnFailure
-    ) {
-        return defer(() -> {
-
-            // Don't retry if it was a POST, as it is not idempotent and the request
-            // might have ended up at the server
-            if (POST.equals(request.getHttpMethod())) {
-                LOG.info("Won't retry POST on {} ", request.getUri());
-                return empty();
-            }
-
-            LOG.info("Got empty when doing a {} on {}, will retry again...", request.getHttpMethod().toString(), request.getUri());
-
-            return request
-                .submit(rxClient)
-                .timeout(timeout, timeoutUnit)
-                .switchIfEmpty(defer(() -> {
-
-                    if (retryOnFailure) {
-                        LOG.warn("Got empty the second time as well. Giving it a third try");
-                        return retry(request, rxClient, false);
-                    }
-
-                    LOG.warn("Got empty the third time, giving up now on trying {} on {}", request.getHttpMethod(), request.getUri());
-                    return empty();
-                }));
-        });
-    }
-
     private boolean expectsByteArrayResponse(Method method) {
         Type type = ReflectionUtil.getTypeOfObservable(method);
         return type.equals(BYTEARRAY_TYPE);
@@ -269,6 +230,11 @@ public class HttpClient implements InvocationHandler {
                     return false;
                 }
                 if (!(throwable instanceof WebException)) {
+                    // Don't retry posts when a NoSuchElementException is raised since the request might have ended up at the server the first time
+                    if (throwable instanceof NoSuchElementException && POST.equals(fullReq.getHttpMethod())) {
+                        return false;
+                    }
+
                     // Retry on system error of some kind, like IO
                     return true;
                 }

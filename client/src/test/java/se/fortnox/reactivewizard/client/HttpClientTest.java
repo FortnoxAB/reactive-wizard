@@ -31,7 +31,6 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.Mockito;
 import rx.Observable;
-import rx.Observer;
 import rx.Single;
 import rx.functions.Func0;
 import rx.functions.Func1;
@@ -169,8 +168,8 @@ public class HttpClientTest {
             public io.reactivex.netty.protocol.http.client.HttpClient<ByteBuf, ByteBuf> clientFor(InetSocketAddress serverInfo) {
                 io.reactivex.netty.protocol.http.client.HttpClient mock = mock(io.reactivex.netty.protocol.http.client.HttpClient.class);
                 when(mock.createRequest(any(), anyString())).thenAnswer(invocation -> {
-                    callCounter.incrementAndGet();
-                    return new EmptyReturningHttpClientRequest();
+                    //callCounter.incrementAndGet();
+                    return new EmptyReturningHttpClientRequest(callCounter);
                 });
                 return mock;
             }
@@ -266,25 +265,25 @@ public class HttpClientTest {
     @Test
     public void shouldRetryIfEmptyReturnedOnGet() {
 
-            AtomicInteger callCount = new AtomicInteger();
+        AtomicInteger callCount = new AtomicInteger();
+        try {
             TestResource resource = getHttpProxyWithClientReturningEmpty(callCount);
             resource.getHello().toBlocking().singleOrDefault(null);
-            assertThat(callCount.get()).isEqualTo(3);
-
+        } catch (Exception expected) {
+            assertThat(callCount.get()).isEqualTo(4);
+        }
     }
 
     @Test
     public void shouldNotRetryIfEmptyReturnedOnPost() {
 
+        AtomicInteger callCount = new AtomicInteger();
         try {
 
-            AtomicInteger callCount = new AtomicInteger();
             TestResource resource = getHttpProxyWithClientReturningEmpty(callCount);
             resource.postHello().toBlocking().singleOrDefault(null);
-            assertThat(callCount.get()).isEqualTo(1);
-
         } catch (Exception e) {
-            Assert.fail("Should not give exception");
+            assertThat(callCount.get()).isEqualTo(1);
         }
     }
 
@@ -1228,8 +1227,11 @@ public class HttpClientTest {
 
     class EmptyReturningHttpClientRequest extends HttpClientRequest<ByteBuf, ByteBuf> {
 
-        protected EmptyReturningHttpClientRequest() {
-            super(Observer::onCompleted);
+        public EmptyReturningHttpClientRequest(AtomicInteger callCounter) {
+            super(subscriber -> {
+                callCounter.incrementAndGet();
+                subscriber.onCompleted();
+            });
         }
 
         @Override
