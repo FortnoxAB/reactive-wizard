@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import io.netty.buffer.ByteBuf;
-import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.reactivex.netty.protocol.http.client.HttpClientResponse;
 import org.slf4j.Logger;
@@ -49,15 +48,15 @@ import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import static io.netty.handler.codec.http.HttpMethod.POST;
 import static java.lang.String.format;
 import static java.util.Collections.emptySet;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
-import static rx.Observable.defer;
-import static rx.Observable.empty;
 import static rx.Observable.just;
 
 public class HttpClient implements InvocationHandler {
@@ -149,7 +148,8 @@ public class HttpClient implements InvocationHandler {
         final Observable<HttpClientResponse<ByteBuf>> resp = fullReq
             .submit(rxClient)
             .timeout(timeout, timeoutUnit)
-            .switchIfEmpty(logEmptyResponse(fullReq));
+            //Forcing the stream to be not empty. If empty then it will be retried through the standard retry logic
+            .single();
 
         Observable<?> output = null;
         if (expectsRawResponse(method)) {
@@ -193,15 +193,6 @@ public class HttpClient implements InvocationHandler {
             .flatMap(str -> deserialize(method, str));
     }
 
-    private Observable<HttpClientResponse<ByteBuf>> logEmptyResponse(RequestBuilder request) {
-        return defer(() -> {
-
-            LOG.warn(request + " with headers " + request.getHeaders().entrySet() + " got empty response from submit");
-
-            return empty();
-        });
-    }
-
     private boolean expectsByteArrayResponse(Method method) {
         Type type = ReflectionUtil.getTypeOfObservable(method);
         return type.equals(BYTEARRAY_TYPE);
@@ -239,10 +230,15 @@ public class HttpClient implements InvocationHandler {
                     return false;
                 }
                 if (!(throwable instanceof WebException)) {
+                    // Don't retry posts when a NoSuchElementException is raised since the request might have ended up at the server the first time
+                    if (throwable instanceof NoSuchElementException && POST.equals(fullReq.getHttpMethod())) {
+                        return false;
+                    }
+
                     // Retry on system error of some kind, like IO
                     return true;
                 }
-                if (fullReq.getHttpMethod().equals(HttpMethod.POST)) {
+                if (fullReq.getHttpMethod().equals(POST)) {
                     // Don't retry if it was a POST, as it is not idempotent
                     return false;
                 }

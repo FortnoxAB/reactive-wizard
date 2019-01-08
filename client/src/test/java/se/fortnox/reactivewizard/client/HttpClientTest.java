@@ -8,6 +8,9 @@ import com.google.inject.Injector;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.codec.http.HttpVersion;
+import io.netty.handler.codec.http.cookie.Cookie;
+import io.reactivex.netty.channel.AllocatingTransformer;
 import io.reactivex.netty.channel.Connection;
 import io.reactivex.netty.client.ConnectionProvider;
 import io.reactivex.netty.client.ConnectionProviderFactory;
@@ -16,9 +19,12 @@ import io.reactivex.netty.client.internal.SingleHostConnectionProvider;
 import io.reactivex.netty.client.pool.PoolConfig;
 import io.reactivex.netty.client.pool.PoolExhaustedException;
 import io.reactivex.netty.client.pool.PooledConnectionProvider;
+import io.reactivex.netty.protocol.http.TrailingHeaders;
+import io.reactivex.netty.protocol.http.client.HttpClientRequest;
 import io.reactivex.netty.protocol.http.client.HttpClientResponse;
 import io.reactivex.netty.protocol.http.server.HttpServer;
 import io.reactivex.netty.protocol.http.server.HttpServerRequest;
+import io.reactivex.netty.protocol.http.ws.client.WebSocketRequest;
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 import org.junit.Assert;
@@ -26,6 +32,10 @@ import org.junit.Test;
 import org.mockito.Mockito;
 import rx.Observable;
 import rx.Single;
+import rx.functions.Func0;
+import rx.functions.Func1;
+import rx.functions.Func2;
+import rx.observers.AssertableSubscriber;
 import se.fortnox.reactivewizard.config.TestInjector;
 import se.fortnox.reactivewizard.jaxrs.ByteBufCollector;
 import se.fortnox.reactivewizard.jaxrs.JaxRsMeta;
@@ -60,10 +70,14 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -75,12 +89,16 @@ import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static java.lang.String.format;
 import static org.fest.assertions.Assertions.assertThat;
 import static org.fest.assertions.Fail.fail;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static rx.Observable.defer;
 import static rx.Observable.empty;
+import static rx.Observable.error;
 import static rx.Observable.just;
 import static se.fortnox.reactivewizard.test.TestUtil.matches;
 
@@ -136,6 +154,30 @@ public class HttpClientTest {
         return client.create(TestResource.class);
     }
 
+    private TestResource getHttpProxyWithClientReturningEmpty(AtomicInteger callCounter) {
+        HttpClientConfig config = null;
+        try {
+            config = new HttpClientConfig("localhost:8080");
+        } catch (URISyntaxException e) {
+            Assert.fail("Could not create httpClientConfig");
+        }
+
+        HttpClient client = new HttpClient(config, new RxClientProvider(config, healthRecorder) {
+            @Override
+            @SuppressWarnings("unchecked")
+            public io.reactivex.netty.protocol.http.client.HttpClient<ByteBuf, ByteBuf> clientFor(InetSocketAddress serverInfo) {
+                io.reactivex.netty.protocol.http.client.HttpClient mock = mock(io.reactivex.netty.protocol.http.client.HttpClient.class);
+                when(mock.createRequest(any(), anyString())).thenAnswer(invocation -> {
+                    //callCounter.incrementAndGet();
+                    return new EmptyReturningHttpClientRequest(callCounter);
+                });
+                return mock;
+            }
+
+        }, new ObjectMapper(), new RequestParameterSerializers(), Collections.emptySet());
+        return client.create(TestResource.class);
+    }
+
     protected void withServer(Consumer<HttpServer<ByteBuf, ByteBuf>> serverConsumer) {
         final HttpServer<ByteBuf, ByteBuf> server = startServer(HttpResponseStatus.OK, "\"OK\"");
 
@@ -178,6 +220,70 @@ public class HttpClientTest {
                 assertThat(duration).isGreaterThan(1000);
             }
         });
+    }
+
+    //@Test
+    /**
+     * This test will fail occationally and is therefore commented out.
+     * This should be used to try to pin down the bug probably residing in rxnetty
+     */
+    public void shouldNotSometimesDropItems() {
+
+        withServer(server -> {
+
+                try {
+                HttpClientConfig config = new HttpClientConfig("127.0.0.1:" + server.getServerPort());
+                config.setRetryCount(1);
+                config.setRetryDelayMs(1000);
+                config.setMaxConnections(1000);
+
+                TestResource resource = getHttpProxy(config);
+
+
+                for(int j = 0; j < 300; j++) {
+                    List<Observable<String>> results = new ArrayList<>();
+
+                    Thread.sleep(100);
+                    int  numberOfRequests = 10;
+                    for (int i = 0; i < numberOfRequests; i++) {
+                        results.add(resource
+                            .getHello()
+                            .switchIfEmpty(
+                                error(new RuntimeException("Did not expect empty"))));
+                    }
+                    AssertableSubscriber<String> test = Observable.merge(results).test();
+                    test.awaitTerminalEvent();
+                    test.assertNoErrors();
+                }
+
+            } catch (Exception ignore) {}
+
+        });
+    }
+
+    @Test
+    public void shouldRetryIfEmptyReturnedOnGet() {
+
+        AtomicInteger callCount = new AtomicInteger();
+        try {
+            TestResource resource = getHttpProxyWithClientReturningEmpty(callCount);
+            resource.getHello().toBlocking().singleOrDefault(null);
+        } catch (Exception expected) {
+            assertThat(callCount.get()).isEqualTo(4);
+        }
+    }
+
+    @Test
+    public void shouldNotRetryIfEmptyReturnedOnPost() {
+
+        AtomicInteger callCount = new AtomicInteger();
+        try {
+
+            TestResource resource = getHttpProxyWithClientReturningEmpty(callCount);
+            resource.postHello().toBlocking().singleOrDefault(null);
+        } catch (Exception e) {
+            assertThat(callCount.get()).isEqualTo(1);
+        }
     }
 
     @Test
@@ -1115,6 +1221,259 @@ public class HttpClientTest {
 
         public void setName(String name) {
             this.name = name;
+        }
+    }
+
+    class EmptyReturningHttpClientRequest extends HttpClientRequest<ByteBuf, ByteBuf> {
+
+        public EmptyReturningHttpClientRequest(AtomicInteger callCounter) {
+            super(subscriber -> {
+                callCounter.incrementAndGet();
+                subscriber.onCompleted();
+            });
+        }
+
+        @Override
+        public Observable<HttpClientResponse<ByteBuf>> writeContent(Observable<ByteBuf> contentSource) {
+            return empty();
+        }
+
+        @Override
+        public Observable<HttpClientResponse<ByteBuf>> writeContent(Observable<ByteBuf> contentSource, Func1<ByteBuf, Boolean> flushSelector
+        ) {
+            return empty();
+        }
+
+        @Override
+        public <T extends TrailingHeaders> Observable<HttpClientResponse<ByteBuf>> writeContent(Observable<ByteBuf> contentSource,
+            Func0<T> trailerFactory,
+            Func2<T, ByteBuf, T> trailerMutator
+        ) {
+            return empty();
+        }
+
+        @Override
+        public <T extends TrailingHeaders> Observable<HttpClientResponse<ByteBuf>> writeContent(Observable<ByteBuf> contentSource,
+            Func0<T> trailerFactory,
+            Func2<T, ByteBuf, T> trailerMutator,
+            Func1<ByteBuf, Boolean> flushSelector
+        ) {
+            return empty();
+        }
+
+        @Override
+        public Observable<HttpClientResponse<ByteBuf>> writeContentAndFlushOnEach(Observable<ByteBuf> contentSource) {
+            return empty();
+        }
+
+        @Override
+        public Observable<HttpClientResponse<ByteBuf>> writeStringContent(Observable<String> contentSource) {
+            return empty();
+        }
+
+        @Override
+        public Observable<HttpClientResponse<ByteBuf>> writeStringContent(Observable<String> contentSource, Func1<String, Boolean> flushSelector
+        ) {
+            return empty();
+        }
+
+        @Override
+        public <T extends TrailingHeaders> Observable<HttpClientResponse<ByteBuf>> writeStringContent(Observable<String> contentSource,
+            Func0<T> trailerFactory,
+            Func2<T, String, T> trailerMutator
+        ) {
+            return empty();
+        }
+
+        @Override
+        public <T extends TrailingHeaders> Observable<HttpClientResponse<ByteBuf>> writeStringContent(Observable<String> contentSource,
+            Func0<T> trailerFactory,
+            Func2<T, String, T> trailerMutator,
+            Func1<String, Boolean> flushSelector
+        ) {
+            return empty();
+        }
+
+        @Override
+        public Observable<HttpClientResponse<ByteBuf>> writeBytesContent(Observable<byte[]> contentSource) {
+            return empty();
+        }
+
+        @Override
+        public Observable<HttpClientResponse<ByteBuf>> writeBytesContent(Observable<byte[]> contentSource, Func1<byte[], Boolean> flushSelector) {
+            return empty();
+        }
+
+        @Override
+        public <T extends TrailingHeaders> Observable<HttpClientResponse<ByteBuf>> writeBytesContent(Observable<byte[]> contentSource,
+            Func0<T> trailerFactory,
+            Func2<T, byte[], T> trailerMutator
+        ) {
+            return empty();
+        }
+
+        @Override
+        public <T extends TrailingHeaders> Observable<HttpClientResponse<ByteBuf>> writeBytesContent(Observable<byte[]> contentSource,
+            Func0<T> trailerFactory,
+            Func2<T, byte[], T> trailerMutator,
+            Func1<byte[], Boolean> flushSelector
+        ) {
+            return empty();
+        }
+
+        @Override
+        public HttpClientRequest<ByteBuf, ByteBuf> readTimeOut(int timeOut, TimeUnit timeUnit) {
+            return this;
+        }
+
+        @Override
+        public HttpClientRequest<ByteBuf, ByteBuf> followRedirects(int maxRedirects) {
+            return this;
+        }
+
+        @Override
+        public HttpClientRequest<ByteBuf, ByteBuf> followRedirects(boolean follow) {
+            return this;
+        }
+
+        @Override
+        public HttpClientRequest<ByteBuf, ByteBuf> setMethod(HttpMethod method) {
+            return this;
+        }
+
+        @Override
+        public HttpClientRequest<ByteBuf, ByteBuf> setUri(String newUri) {
+            return this;
+        }
+
+        @Override
+        public HttpClientRequest<ByteBuf, ByteBuf> addHeader(CharSequence name, Object value) {
+            return this;
+        }
+
+        @Override
+        public HttpClientRequest<ByteBuf, ByteBuf> addHeaders(Map<? extends CharSequence, ? extends Iterable<Object>> headers) {
+            return this;
+        }
+
+        @Override
+        public HttpClientRequest<ByteBuf, ByteBuf> addCookie(Cookie cookie) {
+            return this;
+        }
+
+        @Override
+        public HttpClientRequest<ByteBuf, ByteBuf> addDateHeader(CharSequence name, Date value) {
+            return this;
+        }
+
+        @Override
+        public HttpClientRequest<ByteBuf, ByteBuf> addDateHeader(CharSequence name, Iterable<Date> values) {
+            return this;
+        }
+
+        @Override
+        public HttpClientRequest<ByteBuf, ByteBuf> addHeaderValues(CharSequence name, Iterable<Object> values) {
+            return this;
+        }
+
+        @Override
+        public HttpClientRequest<ByteBuf, ByteBuf> setDateHeader(CharSequence name, Date value) {
+            return this;
+        }
+
+        @Override
+        public HttpClientRequest<ByteBuf, ByteBuf> setDateHeader(CharSequence name, Iterable<Date> values) {
+            return this;
+        }
+
+        @Override
+        public HttpClientRequest<ByteBuf, ByteBuf> setHeader(CharSequence name, Object value) {
+            return this;
+        }
+
+        @Override
+        public HttpClientRequest<ByteBuf, ByteBuf> setHeaders(Map<? extends CharSequence, ? extends Iterable<Object>> headers) {
+            return this;
+        }
+
+        @Override
+        public HttpClientRequest<ByteBuf, ByteBuf> setHeaderValues(CharSequence name, Iterable<Object> values) {
+            return this;
+        }
+
+        @Override
+        public HttpClientRequest<ByteBuf, ByteBuf> removeHeader(CharSequence name) {
+            return this;
+        }
+
+        @Override
+        public HttpClientRequest<ByteBuf, ByteBuf> setKeepAlive(boolean keepAlive) {
+            return this;
+        }
+
+        @Override
+        public HttpClientRequest<ByteBuf, ByteBuf> setTransferEncodingChunked() {
+            return this;
+        }
+
+        @Override
+        public <II> HttpClientRequest<II, ByteBuf> transformContent(AllocatingTransformer<II, ByteBuf> transformer) {
+            return null;
+        }
+
+        @Override
+        public <OO> HttpClientRequest<ByteBuf, OO> transformResponseContent(Transformer<ByteBuf, OO> transformer) {
+            return null;
+        }
+
+        @Override
+        public WebSocketRequest<ByteBuf> requestWebSocketUpgrade() {
+            return null;
+        }
+
+        @Override
+        public boolean containsHeader(CharSequence name) {
+            return false;
+        }
+
+        @Override
+        public boolean containsHeaderWithValue(CharSequence name, CharSequence value, boolean caseInsensitiveValueMatch) {
+            return false;
+        }
+
+        @Override
+        public String getHeader(CharSequence name) {
+            return null;
+        }
+
+        @Override
+        public List<String> getAllHeaders(CharSequence name) {
+            return null;
+        }
+
+        @Override
+        public Iterator<Map.Entry<CharSequence, CharSequence>> headerIterator() {
+            return null;
+        }
+
+        @Override
+        public Set<String> getHeaderNames() {
+            return null;
+        }
+
+        @Override
+        public HttpVersion getHttpVersion() {
+            return null;
+        }
+
+        @Override
+        public HttpMethod getMethod() {
+            return null;
+        }
+
+        @Override
+        public String getUri() {
+            return "";
         }
     }
 }
