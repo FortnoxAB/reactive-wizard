@@ -70,6 +70,11 @@ Create a new Maven project and add Reactive Wizard to the dependencies section o
             <version>${reactivewizard.version}</version>
         </dependency>
         <dependency>
+            <groupId>se.fortnox.reactivewizard</groupId>
+            <artifactId>reactivewizard-dbmigrate</artifactId>
+            <version>${reactivewizard.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-log4j12</artifactId>
             <version>${slf4j.version}</version>
