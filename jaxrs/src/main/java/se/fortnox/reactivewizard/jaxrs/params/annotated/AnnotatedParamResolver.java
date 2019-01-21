@@ -19,10 +19,10 @@ abstract class AnnotatedParamResolver<T> implements ParamResolver<T> {
     private final   Deserializer<T> deserializer;
     private final   String          defaultValue;
 
-    public AnnotatedParamResolver(Deserializer<T> deserializer, String parameterName, DefaultValue defaultValueAnnotation) {
+    public AnnotatedParamResolver(Deserializer<T> deserializer, String parameterName, String defaultValue) {
         this.deserializer = deserializer;
         this.parameterName = parameterName;
-        this.defaultValue = defaultValueAnnotation != null ? defaultValueAnnotation.value() : null;
+        this.defaultValue = defaultValue;
     }
 
     protected abstract String getValue(JaxRsRequest request);
