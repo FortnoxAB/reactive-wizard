@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * Creates deserializers from Strings to a given type.
@@ -83,7 +84,7 @@ public class DeserializerFactory {
             return new ArrayDeserializer(elementDeserializer, paramCls.getComponentType());
         }
 
-        return null;
+        throw new RuntimeException("Field of type " + paramType.getType() + " is not allowed to be used in query/form/header");
     }
 
     public <T> BodyDeserializer<T> getBodyDeserializer(TypeReference<T> paramType, String[] consumes) {

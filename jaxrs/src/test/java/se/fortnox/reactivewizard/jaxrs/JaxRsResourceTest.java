@@ -28,6 +28,7 @@ import se.fortnox.reactivewizard.jaxrs.response.ResultTransformerFactories;
 import se.fortnox.reactivewizard.mocks.MockHttpServerResponse;
 import se.fortnox.reactivewizard.utils.JaxRsTestUtil;
 
+import javax.ws.rs.BeanParam;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.CookieParam;
 import javax.ws.rs.DELETE;
@@ -698,6 +699,11 @@ public class JaxRsResourceTest {
         assertThat(get(service, "/test/acceptsQueryListWithEnum?EnumList=ONE,TWO,THREE").getOutp()).isEqualTo("3");
     }
 
+    @Test
+    public void shouldAcceptBeanParam() {
+        assertThat(get(service, "/test/acceptsBeanParam?name=foo&age=3").getOutp()).isEqualTo("\"foo - 3\"");
+    }
+
 
     @Path("test")
     class Testresource {
@@ -1005,6 +1011,10 @@ public class JaxRsResourceTest {
         @Path("acceptsHeadersOnImplementation")
         @GET
         Observable<String> acceptsHeadersOnImplementation();
+
+        @Path("acceptsBeanParam")
+        @GET
+        Observable<String> acceptsBeanParam(@BeanParam ParamEntity beanParam);
     }
 
         class TestresourceImpl implements TestresourceInterface {
@@ -1285,6 +1295,11 @@ public class JaxRsResourceTest {
         @Headers("Content-Disposition: attachment; filename=auditlog.csv")
         public Observable<String> acceptsHeadersOnImplementation() {
             return just("");
+        }
+
+        @Override
+        public Observable<String> acceptsBeanParam(ParamEntity beanParam) {
+            return just(String.format("%s - %d", beanParam.getName(), beanParam.getAge()));
         }
 
         @Override
