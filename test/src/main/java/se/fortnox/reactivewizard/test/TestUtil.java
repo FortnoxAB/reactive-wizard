@@ -25,9 +25,9 @@ public final class TestUtil {
      * Example:
      * </p>
      * <pre>
-     * verify(assignmentDao).createAssignment(matches((ass -&gt; {
-     *  assertThat(ass.getTitle()).isEqualTo(&quot;Ass 1&quot;);
-     *  assertThat(ass.getClientId()).isEqualTo(&quot;501780&quot;);
+     * verify(assignmentDao).createAssignment(matches((assignment -&gt; {
+     *     assertThat(assignment.getTitle()).isEqualTo(&quot;Assignment 1&quot;);
+     *     assertThat(assignment.getClientId()).isEqualTo(&quot;501780&quot;);
      * })));
      * </pre>
      *
@@ -70,8 +70,8 @@ public final class TestUtil {
     public static <T extends Throwable> ThrowableAssert assertException(Throwable throwable, Class<T> type) {
         while (!type.isAssignableFrom(throwable.getClass())) {
             Throwable cause = throwable.getCause();
-            if (cause == throwable) {
-                fail("wrong type of exception");
+            if (cause == throwable || cause == null) {
+                fail("Expected exception of type " + type.getCanonicalName());
             }
             throwable = cause;
         }
