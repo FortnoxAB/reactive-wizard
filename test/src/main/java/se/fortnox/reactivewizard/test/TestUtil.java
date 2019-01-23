@@ -14,7 +14,6 @@ import static org.fest.assertions.Fail.fail;
  * Utility functions for building tests.
  */
 public final class TestUtil {
-
     private TestUtil() {
 
     }
