@@ -15,3 +15,5 @@ after_success:
 addons:
   sonarcloud:
     organization: "fortnoxab"
+    token:
+      secure: $SONAR_TOKEN
