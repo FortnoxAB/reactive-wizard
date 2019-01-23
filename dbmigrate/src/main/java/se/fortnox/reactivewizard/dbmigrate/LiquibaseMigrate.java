@@ -132,8 +132,7 @@ public class LiquibaseMigrate {
         }
 
         @Override
-        public Set<InputStream> getResourcesAsStream(String path)
-            throws IOException {
+        public Set<InputStream> getResourcesAsStream(String path) throws IOException {
             if (realFileName.endsWith(path)) {
                 path = realFileName;
             }
