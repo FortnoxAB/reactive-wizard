@@ -10,6 +10,7 @@ import se.fortnox.reactivewizard.binding.AutoBindModules;
 import se.fortnox.reactivewizard.server.ServerConfig;
 
 import static org.fest.assertions.Assertions.assertThat;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -18,7 +19,7 @@ import static org.mockito.Mockito.when;
 
 public class LiquibaseAutoBindModuleTest {
     @Test
-    public void testOnlyRunForDbArgument() throws LiquibaseException {
+    public void shouldOnlyRun() throws LiquibaseException {
         LiquibaseMigrate liquibaseMigrateMock = getInjectedLiquibaseMock("run");
 
         verify(liquibaseMigrateMock, never()).drop();
@@ -27,7 +28,7 @@ public class LiquibaseAutoBindModuleTest {
     }
 
     @Test
-    public void testDropMigrate() throws LiquibaseException {
+    public void shouldDropMigrateAndExit() throws LiquibaseException {
         LiquibaseMigrate liquibaseMigrateMock = getInjectedLiquibaseMock("db-drop-migrate");
 
         verify(liquibaseMigrateMock).drop();
@@ -36,7 +37,7 @@ public class LiquibaseAutoBindModuleTest {
     }
 
     @Test
-    public void testRunningNothing() throws LiquibaseException {
+    public void shouldNotExecuteLiquibase() throws LiquibaseException {
         LiquibaseMigrate liquibaseMigrateMock = getInjectedLiquibaseMock("db-run");
 
         verify(liquibaseMigrateMock, never()).drop();
@@ -45,7 +46,7 @@ public class LiquibaseAutoBindModuleTest {
     }
 
     @Test
-    public void testContinueEvenIfDropThrowsException() throws LiquibaseException {
+    public void shouldContinueRunningAfterDropThrowsException() throws LiquibaseException {
         LiquibaseMigrate liquibaseMigrateMock = mock(LiquibaseMigrate.class);
         doThrow(new DatabaseException()).when(liquibaseMigrateMock).drop();
 
@@ -57,12 +58,13 @@ public class LiquibaseAutoBindModuleTest {
     }
 
     @Test
-    public void testRunThrowsException() throws LiquibaseException {
+    public void shouldAbortIfRunThrowsException() throws LiquibaseException {
         LiquibaseMigrate liquibaseMigrateMock = mock(LiquibaseMigrate.class);
         doThrow(new LiquibaseException()).when(liquibaseMigrateMock).run();
 
         try {
             getInjectedLiquibaseMock(liquibaseMigrateMock, "db-drop-migrate");
+            fail("Expected CreationException, but none was thrown");
         } catch (CreationException e ) {
             assertThat(e.getCause()).isInstanceOf(RuntimeException.class);
             assertThat(e.getCause().getCause()).isInstanceOf(LiquibaseException.class);
@@ -76,7 +78,7 @@ public class LiquibaseAutoBindModuleTest {
 
 
     @Test
-    public void testSkipWhenArgumentIsNull() throws LiquibaseException {
+    public void shouldNotRunLiquibaseWhenArgumentsAreNull() throws LiquibaseException {
         LiquibaseMigrate liquibaseMigrateMock = mock(LiquibaseMigrate.class);
         Guice.createInjector(new AutoBindModules(binder -> {
             binder.bind(ServerConfig.class).toInstance(new ServerConfig() {{
