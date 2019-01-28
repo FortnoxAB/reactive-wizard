@@ -25,11 +25,13 @@ import io.reactivex.netty.protocol.http.client.HttpClientResponse;
 import io.reactivex.netty.protocol.http.server.HttpServer;
 import io.reactivex.netty.protocol.http.server.HttpServerRequest;
 import io.reactivex.netty.protocol.http.ws.client.WebSocketRequest;
+import org.apache.log4j.Appender;
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.Mockito;
+import org.slf4j.event.LoggingEvent;
 import rx.Observable;
 import rx.Single;
 import rx.functions.Func0;
@@ -43,6 +45,7 @@ import se.fortnox.reactivewizard.jaxrs.PATCH;
 import se.fortnox.reactivewizard.jaxrs.WebException;
 import se.fortnox.reactivewizard.metrics.HealthRecorder;
 import se.fortnox.reactivewizard.server.ServerConfig;
+import se.fortnox.reactivewizard.test.LoggingMockUtil;
 import se.fortnox.reactivewizard.test.TestUtil;
 import se.fortnox.reactivewizard.util.rx.RetryWithDelay;
 
@@ -464,9 +467,32 @@ public class HttpClientTest {
 
     @Test
     public void shouldHandleLargeResponses() {
-        final HttpServer<ByteBuf, ByteBuf> server   = startServer(HttpResponseStatus.OK, generate10MbString());
+        final HttpServer<ByteBuf, ByteBuf> server   = startServer(HttpResponseStatus.OK, generateLargeString(10));
         TestResource                       resource = getHttpProxy(server.getServerPort());
         resource.getHello().toBlocking().single();
+
+        server.shutdown();
+    }
+
+    @Test
+    public void shouldLogErrorOnTooLargeResponse() throws NoSuchFieldException, IllegalAccessException {
+        Appender mockAppender = LoggingMockUtil.createMockedLogAppender(HttpClient.class);
+        final HttpServer<ByteBuf, ByteBuf> server   = startServer(HttpResponseStatus.OK, generateLargeString(11));
+        TestResource                       resource = getHttpProxy(server.getServerPort());
+        WebException e = null;
+        try {
+            resource.getHello().toBlocking().single();
+        } catch (WebException we) {
+            e = we;
+        }
+
+        assertThat(e).isNotNull();
+        assertThat(e.getStatus()).isEqualTo(BAD_REQUEST);
+        assertThat(e.getError()).isEqualTo("too.large.input");
+
+        verify(mockAppender).doAppend(matches(log -> {
+            assertThat(log.getMessage()).isEqualTo("Failed request. Url: localhost:" + server.getServerPort() + "/hello, headers: []");
+        }));
 
         server.shutdown();
     }
@@ -1114,8 +1140,8 @@ public class HttpClientTest {
             .singleOrDefault(null);
     }
 
-    private String generate10MbString() {
-        char[] resp = new char[10 * 1024 * 1024];
+    private String generateLargeString(int sizeInMB) {
+        char[] resp = new char[sizeInMB * 1024 * 1024];
         for (int i = 0; i < resp.length; i++) {
             resp[i] = 'a';
         }
