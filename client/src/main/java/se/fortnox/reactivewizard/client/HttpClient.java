@@ -170,11 +170,7 @@ public class HttpClient implements InvocationHandler {
     }
 
     private void logFailedRequest(RequestBuilder fullReq, Throwable throwable) {
-        if (throwable instanceof WebException && ((WebException)throwable).getStatus().code() < 500) {
-            // Don't log 400 bad request and similar
-            return;
-        }
-        LOG.warn("Failed " + fullReq, throwable);
+        LOG.warn("Failed request. Url: {}, headers: {}", fullReq.getFullUrl(), fullReq.getHeaders().entrySet(), throwable);
     }
 
     protected Observable<?> parseResponse(Method method, RequestBuilder request, HttpClientResponse<ByteBuf> response) {
