@@ -701,7 +701,7 @@ public class JaxRsResourceTest {
 
     @Test
     public void shouldAcceptBeanParam() {
-        assertThat(get(service, "/test/acceptsBeanParam?name=foo&age=3").getOutp()).isEqualTo("\"foo - 3\"");
+        assertThat(get(service, "/test/acceptsBeanParam?name=foo&age=3&items=1,2").getOutp()).isEqualTo("\"foo - 3 2\"");
     }
 
 
@@ -1299,7 +1299,7 @@ public class JaxRsResourceTest {
 
         @Override
         public Observable<String> acceptsBeanParam(ParamEntity beanParam) {
-            return just(String.format("%s - %d", beanParam.getName(), beanParam.getAge()));
+            return just(String.format("%s - %d %d", beanParam.getName(), beanParam.getAge(), beanParam.getItems().size()));
         }
 
         @Override
