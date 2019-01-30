@@ -1,5 +1,6 @@
 package se.fortnox.reactivewizard.dbmigrate;
 
+import com.google.common.collect.Sets;
 import liquibase.CatalogAndSchema;
 import liquibase.Contexts;
 import liquibase.LabelExpression;
@@ -25,7 +26,6 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Enumeration;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -137,14 +137,12 @@ public class LiquibaseMigrate {
             }
 
             if (path.startsWith("file:") || path.startsWith("jar:file:")) {
-                URL              url              = new URL(path);
-                Set<InputStream> returnSet        = new HashSet<>();
-                InputStream      resourceAsStream = url.openStream();
-                if (resourceAsStream != null) {
-                    returnSet.add(resourceAsStream);
-                }
-                return returnSet;
+                URL         url              = new URL(path);
+                InputStream resourceAsStream = url.openStream();
+
+                return Sets.newHashSet(resourceAsStream);
             }
+
             return super.getResourcesAsStream(path);
         }
     }
