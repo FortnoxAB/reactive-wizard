@@ -22,7 +22,7 @@ import static org.mockito.Mockito.when;
 public class LiquibaseAutoBindModuleTest {
     @Test
     public void shouldOnlyRun() throws LiquibaseException {
-        LiquibaseMigrate liquibaseMigrateMock = getInjectedLiquibaseMock("run");
+        LiquibaseMigrate liquibaseMigrateMock = getInjectedLiquibaseMock("run", "config.yml");
 
         verify(liquibaseMigrateMock, never()).drop();
         verify(liquibaseMigrateMock, never()).run();
@@ -31,7 +31,7 @@ public class LiquibaseAutoBindModuleTest {
 
     @Test
     public void shouldDropMigrateAndExit() throws LiquibaseException {
-        LiquibaseMigrate liquibaseMigrateMock = getInjectedLiquibaseMock("db-drop-migrate", null);
+        LiquibaseMigrate liquibaseMigrateMock = getInjectedLiquibaseMock("db-drop-migrate", "config.yml");
 
         verify(liquibaseMigrateMock).drop();
         verify(liquibaseMigrateMock).run();
@@ -47,12 +47,22 @@ public class LiquibaseAutoBindModuleTest {
         verify(liquibaseMigrateMock, never()).exit();
     }
 
+
+    @Test
+    public void shouldJustDrop() throws LiquibaseException {
+        LiquibaseMigrate liquibaseMigrateMock = getInjectedLiquibaseMock("db-drop-run", "config.yml");
+
+        verify(liquibaseMigrateMock).drop();
+        verify(liquibaseMigrateMock, never()).run();
+        verify(liquibaseMigrateMock, never()).exit();
+    }
+
     @Test
     public void shouldContinueRunningAfterDropThrowsException() throws LiquibaseException {
         LiquibaseMigrate liquibaseMigrateMock = mock(LiquibaseMigrate.class);
         doThrow(new DatabaseException()).when(liquibaseMigrateMock).drop();
 
-        getInjectedLiquibaseMock(liquibaseMigrateMock, "db-drop-migrate", null);
+        getInjectedLiquibaseMock(liquibaseMigrateMock, "db-drop-migrate", "config.yml");
 
         verify(liquibaseMigrateMock).drop();
         verify(liquibaseMigrateMock).run();
@@ -65,20 +75,20 @@ public class LiquibaseAutoBindModuleTest {
         doThrow(new LiquibaseException()).when(liquibaseMigrateMock).run();
 
         try {
-            getInjectedLiquibaseMock(liquibaseMigrateMock, "db-drop-migrate", null);
+            getInjectedLiquibaseMock(liquibaseMigrateMock, "db-migrate", "config.yml");
             fail("Expected CreationException, but none was thrown");
         } catch (CreationException e) {
             assertThat(e.getCause()).isInstanceOf(RuntimeException.class);
             assertThat(e.getCause().getCause()).isInstanceOf(LiquibaseException.class);
         }
 
-        verify(liquibaseMigrateMock).drop();
+        verify(liquibaseMigrateMock, never()).drop();
         verify(liquibaseMigrateMock).run();
         verify(liquibaseMigrateMock, never()).exit();
     }
 
     @Test
-    public void shouldNotRunLiquibaseWhenArgCountIsOne() throws LiquibaseException {
+    public void shouldNotRunLiquibaseWhenOnlyConfigIsPassed() throws LiquibaseException {
         LiquibaseMigrate liquibaseMigrateMock = mock(LiquibaseMigrate.class);
         getInjectedLiquibaseMock(liquibaseMigrateMock, "config.yml");
 
@@ -87,8 +97,9 @@ public class LiquibaseAutoBindModuleTest {
         verify(liquibaseMigrateMock, never()).exit();
     }
 
-    private LiquibaseMigrate getInjectedLiquibaseMock(String... arg) {
+    private LiquibaseMigrate getInjectedLiquibaseMock(String...arg) {
         LiquibaseMigrate liquibaseMigrateMock = mock(LiquibaseMigrate.class);
+
         return getInjectedLiquibaseMock(liquibaseMigrateMock, arg);
     }
 
