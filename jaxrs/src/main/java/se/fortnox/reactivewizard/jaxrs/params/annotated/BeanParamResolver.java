@@ -70,7 +70,7 @@ public class BeanParamResolver<T> extends AnnotatedParamResolver<T> {
                         TypeReference<T> fieldType = new TypeReference<T>() {
                             @Override
                             public Type getType() {
-                                return field.getType();
+                                return field.getGenericType();
                             }
                         };
                         String defaultFieldValue = ParamResolverFactories.findDefaultValue(asList(fieldAnnotations));
