@@ -10,7 +10,6 @@ import liquibase.database.DatabaseFactory;
 import liquibase.database.jvm.JdbcConnection;
 import liquibase.exception.DatabaseException;
 import liquibase.exception.LiquibaseException;
-import liquibase.exception.LockException;
 import liquibase.executor.ExecutorService;
 import liquibase.ext.TimeoutLockService;
 import liquibase.lockservice.LockServiceFactory;

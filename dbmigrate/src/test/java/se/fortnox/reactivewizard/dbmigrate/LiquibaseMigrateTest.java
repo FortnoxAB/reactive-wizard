@@ -11,6 +11,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 import static org.fest.assertions.Assertions.assertThat;
+import static org.fest.assertions.Fail.fail;
 
 public class LiquibaseMigrateTest {
 
@@ -28,7 +29,7 @@ public class LiquibaseMigrateTest {
     }
 
     @Test
-    public void test() throws LiquibaseException, SQLException {
+    public void shouldMigrate() throws LiquibaseException, SQLException {
         liquibaseMigrate.run();
         Connection connection = getConnection(liquibaseConfig);
         try {
@@ -59,10 +60,22 @@ public class LiquibaseMigrateTest {
         liquibaseMigrate.run();
     }
 
+    @Test
+    public void shouldThrowExceptionWhenMissingMigrationsFile() throws IOException, LiquibaseException {
+        LiquibaseConfig localConfig = liquibaseConfig;
+        localConfig.setMigrationsFile("notfound.xml");
+        try {
+            new LiquibaseMigrate(localConfig);
+            fail("Expected RuntimeException, but none was thrown");
+        } catch (RuntimeException expectedException) {
+            assertThat(expectedException.getMessage()).isEqualTo("Could not find migrations file notfound.xml");
+        }
+    }
+
     private void ensureNotLocked(LiquibaseConfig liquibaseConfig) throws SQLException {
         Connection connection = getConnection(liquibaseConfig);
         try {
-            ResultSet resultSet = connection.createStatement().executeQuery("select locked from TESTSCHEMA.databasechangeloglock");
+            ResultSet resultSet = connection.createStatement().executeQuery("SELECT locked FROM TESTSCHEMA.databasechangeloglock");
             resultSet.next();
             assertThat(resultSet.getBoolean(1)).isFalse();
         } finally {
@@ -74,7 +87,7 @@ public class LiquibaseMigrateTest {
     private void simulateLock(LiquibaseConfig liquibaseConfig) throws SQLException {
         Connection connection = getConnection(liquibaseConfig);
         try {
-            connection.createStatement().executeUpdate("update TESTSCHEMA.databasechangeloglock set locked=true");
+            connection.createStatement().executeUpdate("UPDATE TESTSCHEMA.databasechangeloglock SET locked=true");
         } finally {
             connection.close();
         }

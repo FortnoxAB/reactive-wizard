@@ -24,8 +24,8 @@ public class LiquibaseAutoBindModule implements AutoBindModule {
     private final LiquibaseMigrate liquibaseMigrate;
 
     @Inject
-    public LiquibaseAutoBindModule(@Named("args") String[] args, LiquibaseMigrate liquibaseMigrate) {
-        this.liquibaseMigrate = liquibaseMigrate;
+    public LiquibaseAutoBindModule(@Named("args") String[] args, LiquibaseMigrateProvider liquibaseMigrateProvider) {
+        this.liquibaseMigrate = liquibaseMigrateProvider.get();
         if (args == null || args.length < 2) {
             this.startCommand = "";
         } else {

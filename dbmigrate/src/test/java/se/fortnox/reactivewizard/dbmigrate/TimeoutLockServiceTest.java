@@ -17,16 +17,21 @@ import java.util.Date;
 
 import static org.fest.assertions.Assertions.assertThat;
 import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.after;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class TimeoutLockServiceTest {
-    MockDatabase database = new MockDatabase();
-    Executor executor = mock(Executor.class);
-    TimeoutLockService timeoutLockService = new TimeoutLockService(10);
-    ArgumentCaptor<SqlStatement> argument = ArgumentCaptor.forClass(SqlStatement.class);
+    private MockDatabase                 database           = new MockDatabase();
+    private Executor                     executor           = mock(Executor.class);
+    private TimeoutLockService           timeoutLockService = new TimeoutLockService(10);
+    private ArgumentCaptor<SqlStatement> argument           = ArgumentCaptor.forClass(SqlStatement.class);
 
     @Test
-    public void shouldRenewLockWhenProcessingTakesLongTime() throws LockException, DatabaseException, InterruptedException {
+    public void shouldRenewLockWhenProcessingTakesLongTime() throws LockException, DatabaseException {
         // When we aquire a lock
         timeoutLockService.acquireLock();
 
@@ -38,7 +43,7 @@ public class TimeoutLockServiceTest {
 
         // And then there should be a renewal
         assertThat(argument.getAllValues().get(1)).isInstanceOf(UpdateStatement.class);
-        UpdateStatement renewalStatement = (UpdateStatement) argument.getAllValues().get(1);
+        UpdateStatement renewalStatement = (UpdateStatement)argument.getAllValues().get(1);
         assertThat(renewalStatement.getNewColumnValues().get("LOCKGRANTED")).isInstanceOf(Date.class);
 
         // When we release the lock....
