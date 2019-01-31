@@ -10,6 +10,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class LoggingMockUtil {
+    private LoggingMockUtil() {
+
+    }
+
     public static Appender createMockedLogAppender(Class cls) throws NoSuchFieldException, IllegalAccessException {
         Logger   logger       = LoggingMockUtil.getLogger(cls);
         Appender mockAppender = mock(Appender.class);
@@ -19,7 +23,7 @@ public class LoggingMockUtil {
     }
 
     public static void destroyMockedAppender(Appender appender, Class cls) throws NoSuchFieldException, IllegalAccessException {
-        Logger   logger       = LoggingMockUtil.getLogger(cls);
+        Logger logger = LoggingMockUtil.getLogger(cls);
         appender.close();
         logger.removeAppender(appender);
     }

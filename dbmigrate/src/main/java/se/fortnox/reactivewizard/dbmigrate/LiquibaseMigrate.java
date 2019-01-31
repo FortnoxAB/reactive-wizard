@@ -1,6 +1,6 @@
 package se.fortnox.reactivewizard.dbmigrate;
 
-import se.fortnox.reactivewizard.db.DbDriver;
+import com.google.common.collect.Sets;
 import liquibase.CatalogAndSchema;
 import liquibase.Contexts;
 import liquibase.LabelExpression;
@@ -11,12 +11,13 @@ import liquibase.database.DatabaseFactory;
 import liquibase.database.jvm.JdbcConnection;
 import liquibase.exception.DatabaseException;
 import liquibase.exception.LiquibaseException;
-import liquibase.exception.LockException;
 import liquibase.executor.ExecutorService;
 import liquibase.ext.TimeoutLockService;
 import liquibase.lockservice.LockServiceFactory;
 import liquibase.resource.ClassLoaderResourceAccessor;
+import se.fortnox.reactivewizard.db.DbDriver;
 
+import javax.inject.Inject;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -25,7 +26,6 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Enumeration;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -37,28 +37,27 @@ public class LiquibaseMigrate {
 
     private List<Liquibase> liquibaseList;
 
-    public LiquibaseMigrate(LiquibaseConfig conf) throws LiquibaseException, IOException {
-        JdbcConnection conn = new JdbcConnection(getConnection(conf));
+    @Inject
+    public LiquibaseMigrate(LiquibaseConfig liquibaseConfig) throws LiquibaseException, IOException {
+        JdbcConnection conn = new JdbcConnection(getConnection(liquibaseConfig));
 
         Enumeration<URL> resources = this.getClass()
-                .getClassLoader()
-                .getResources(conf.getMigrationsFile());
+            .getClassLoader()
+            .getResources(liquibaseConfig.getMigrationsFile());
         if (!resources.hasMoreElements()) {
-            throw new RuntimeException("Could not find migrations file " + conf.getMigrationsFile());
+            throw new RuntimeException("Could not find migrations file " + liquibaseConfig.getMigrationsFile());
         }
 
-        TimeoutLockService.setRenewalConnectionCreator(() -> createDatabaseConnectionFromConfiguration(conf));
+        TimeoutLockService.setRenewalConnectionCreator(() -> createDatabaseConnectionFromConfiguration(liquibaseConfig));
 
         liquibaseList = new ArrayList<>();
         while (resources.hasMoreElements()) {
-            URL url = resources.nextElement();
-            String file = url.toExternalForm();
-            int jarFileSep = file.lastIndexOf('!');
-            String loggedFileName = file.substring(jarFileSep + 1);
-            Liquibase liquibase = new Liquibase(loggedFileName,
-                    new UrlAwareClassLoaderResourceAccessor(file),
-                    conn);
-            liquibase.getDatabase().setDefaultSchemaName(conf.getSchema());
+            URL       url            = resources.nextElement();
+            String    file           = url.toExternalForm();
+            int       jarFileSep     = file.lastIndexOf('!');
+            String    loggedFileName = file.substring(jarFileSep + 1);
+            Liquibase liquibase      = new Liquibase(loggedFileName, new UrlAwareClassLoaderResourceAccessor(file), conn);
+            liquibase.getDatabase().setDefaultSchemaName(liquibaseConfig.getSchema());
 
             liquibaseList.add(liquibase);
         }
@@ -87,11 +86,11 @@ public class LiquibaseMigrate {
 
     public void run() throws LiquibaseException {
         for (Liquibase liquibase : liquibaseList) {
-            liquibase.update((String) null);
+            liquibase.update((String)null);
         }
     }
 
-    public void drop() throws DatabaseException, LockException {
+    public void drop() throws DatabaseException {
         for (Liquibase liquibase : liquibaseList) {
             liquibase.dropAll();
             break;
@@ -99,10 +98,10 @@ public class LiquibaseMigrate {
         LockServiceFactory.getInstance().resetAll();
     }
 
-    public void forceDrop() throws DatabaseException, LockException {
+    public void forceDrop() throws DatabaseException {
         for (Liquibase liquibase : liquibaseList) {
-            Database database = liquibase.getDatabase();
-            CatalogAndSchema schema = new CatalogAndSchema(database.getDefaultCatalogName(), database.getDefaultSchemaName());
+            Database         database = liquibase.getDatabase();
+            CatalogAndSchema schema   = new CatalogAndSchema(database.getDefaultCatalogName(), database.getDefaultSchemaName());
             try {
                 liquibase.checkLiquibaseTables(false, null, new Contexts(), new LabelExpression());
                 database.dropDatabaseObjects(schema);
@@ -120,6 +119,10 @@ public class LiquibaseMigrate {
         }
     }
 
+    void exit() {
+        System.exit(0);
+    }
+
     class UrlAwareClassLoaderResourceAccessor extends ClassLoaderResourceAccessor {
         private String realFileName;
 
@@ -128,21 +131,18 @@ public class LiquibaseMigrate {
         }
 
         @Override
-        public Set<InputStream> getResourcesAsStream(String path)
-                throws IOException {
+        public Set<InputStream> getResourcesAsStream(String path) throws IOException {
             if (realFileName.endsWith(path)) {
                 path = realFileName;
             }
 
             if (path.startsWith("file:") || path.startsWith("jar:file:")) {
-                URL url = new URL(path);
-                Set<InputStream> returnSet = new HashSet<InputStream>();
+                URL         url              = new URL(path);
                 InputStream resourceAsStream = url.openStream();
-                if (resourceAsStream != null) {
-                    returnSet.add(resourceAsStream);
-                }
-                return returnSet;
+
+                return Sets.newHashSet(resourceAsStream);
             }
+
             return super.getResourcesAsStream(path);
         }
     }

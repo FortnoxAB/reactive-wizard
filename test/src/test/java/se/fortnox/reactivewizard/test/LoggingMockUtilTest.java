@@ -8,7 +8,6 @@ import org.slf4j.LoggerFactory;
 import static org.fest.assertions.Assertions.assertThat;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
-import static se.fortnox.reactivewizard.test.LoggingMockUtil.destroyMockedAppender;
 import static se.fortnox.reactivewizard.test.TestUtil.matches;
 
 public class LoggingMockUtilTest {
