@@ -10,7 +10,9 @@ branches:
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
-  - sonar-scanner
+
+script:
+  - mvn org.jacoco:jacoco-maven-plugin:prepare-agent install sonar:sonar
 
 addons:
   sonarcloud:
