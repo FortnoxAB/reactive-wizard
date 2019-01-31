@@ -87,6 +87,9 @@
         <blitz4j.version>1.37.2</blitz4j.version>
         <servocore.version>0.12.17</servocore.version>
         <jacoco.version>0.8.2</jacoco.version>
+
+        <sonar.host.url>https://sonarcloud.io</sonar.host.url>
+        <sonar.organization>fortnoxab</sonar.organization>
     </properties>
 
     <profiles>
@@ -246,7 +249,10 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
-                <version>3.0.0</version>
+                <version>3.0.1</version>
+                <configuration>
+                    <source>8</source>
+                </configuration>
                 <executions>
                     <execution>
                         <id>attach-javadocs</id>
