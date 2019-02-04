@@ -10,3 +10,12 @@ branches:
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
+
+script:
+  - mvn install sonar:sonar
+
+addons:
+  sonarcloud:
+    organization: "fortnoxab"
+    token:
+      secure: "oqzws9A1lUYsFLvh9UV7PwkEa3xEano2JWF5CUMtq6QOx33R7nMr5mYxEPxiImOkAsPWUZUcTP1SlxmZJq333z75sF7o3Ha8er6iHNAh1BfXXSJWNOjt+xnmhVFDA6PTmwiy22R/jZyBV4fe0IgwTXC9xLhsh7ftPPi25td+DCkI3jyaSY0EFd3kWURxUKD1ogDCNciiPXtIPRC2fbthKqlNcZwakUJ/tFnha7ptEN5dBqZ1fjR8NMcVmqNyATRf+1efRYiKOXyyEWYkMt39HCudTP0ahRNJjBgTyfoFm+qvApo46acBmElwY/vmBEp6UP1sw6lImfqUFoiSHUyWZ5FNoDH20Jg00vL8lz3/SPJo88A/l0xacAzPttUBtlyCtzDxafLdlva4wHDRdl6uyr4++umGB+3Fy96+si4lT/ToL91gzkHMPNaTM541DeMAk1ibkvv/3iaRte/iDa1mqaM0TBT8I45GRkGlCkKK3P2RVxQcORrtD0IvXqRfoNGO1oVL4WMsV/uwZu9CTrRSgV13/h1WVZs73NjD4j3xuJ9ZqUqHVMWS3D1GNzKi4r3VVvoNGq+LoP/3R8VMPh/ii5E+7xihPdnSjlzlOmSwVk5KrdOOwF+qA+seDtYv50wLQSSJLtw9042gNUe1f/fFE02ZFJBgD3RF1JHc86OTVaI="

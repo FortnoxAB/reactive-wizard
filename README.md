@@ -70,6 +70,11 @@ Create a new Maven project and add Reactive Wizard to the dependencies section o
             <version>${reactivewizard.version}</version>
         </dependency>
         <dependency>
+            <groupId>se.fortnox.reactivewizard</groupId>
+            <artifactId>reactivewizard-dbmigrate</artifactId>
+            <version>${reactivewizard.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-log4j12</artifactId>
             <version>${slf4j.version}</version>
@@ -307,6 +312,7 @@ Or, if you want to run the system after migration instead of quitting:
 java -jar myapplication.jar db-migrate-run config.yml
 ```
 
+If you have migrations in multiple modules, use the XmlAppendingTransformer with the shade plugin when building your fatjar.
 ## Database transactions
 
 You create and run a transaction like this:

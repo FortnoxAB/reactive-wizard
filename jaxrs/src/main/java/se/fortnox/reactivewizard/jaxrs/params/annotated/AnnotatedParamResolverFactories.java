@@ -1,5 +1,9 @@
 package se.fortnox.reactivewizard.jaxrs.params.annotated;
 
+import se.fortnox.reactivewizard.jaxrs.params.deserializing.DeserializerFactory;
+
+import javax.inject.Inject;
+import javax.ws.rs.BeanParam;
 import javax.ws.rs.CookieParam;
 import javax.ws.rs.FormParam;
 import javax.ws.rs.HeaderParam;
@@ -12,13 +16,19 @@ import java.util.Map;
 public class AnnotatedParamResolverFactories {
     private final Map<Class<? extends Annotation>, AnnotatedParamResolverFactory> paramExtractorFactories;
 
-    public AnnotatedParamResolverFactories() {
+    @Inject
+    public AnnotatedParamResolverFactories(DeserializerFactory deserializerFactory) {
         paramExtractorFactories = new HashMap<>();
-        paramExtractorFactories.put(QueryParam.class, QueryParamResolver::new);
-        paramExtractorFactories.put(PathParam.class, PathParamResolver::new);
-        paramExtractorFactories.put(HeaderParam.class, HeaderParamResolver::new);
-        paramExtractorFactories.put(FormParam.class, FormParamResolver::new);
-        paramExtractorFactories.put(CookieParam.class, CookieParamResolver::new);
+        paramExtractorFactories.put(QueryParam.class, new QueryParamResolver.Factory(deserializerFactory));
+        paramExtractorFactories.put(PathParam.class, new PathParamResolver.Factory(deserializerFactory));
+        paramExtractorFactories.put(HeaderParam.class, new HeaderParamResolver.Factory(deserializerFactory));
+        paramExtractorFactories.put(FormParam.class, new FormParamResolver.Factory(deserializerFactory));
+        paramExtractorFactories.put(CookieParam.class, new CookieParamResolver.Factory(deserializerFactory));
+        paramExtractorFactories.put(BeanParam.class, new BeanParamResolver.Factory(this));
+    }
+
+    public AnnotatedParamResolverFactories() {
+        this(new DeserializerFactory());
     }
 
     public AnnotatedParamResolverFactory get(Class<? extends Annotation> annotationClass) {

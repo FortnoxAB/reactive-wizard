@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import io.netty.buffer.ByteBuf;
-import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.reactivex.netty.protocol.http.client.HttpClientResponse;
 import org.slf4j.Logger;
@@ -49,10 +48,12 @@ import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import static io.netty.handler.codec.http.HttpMethod.POST;
 import static java.lang.String.format;
 import static java.util.Collections.emptySet;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
@@ -144,7 +145,11 @@ public class HttpClient implements InvocationHandler {
             LOG.debug(fullReq + " with headers " + fullReq.getHeaders().entrySet());
         }
 
-        final Observable<HttpClientResponse<ByteBuf>> resp = fullReq.submit(rxClient).timeout(timeout, timeoutUnit);
+        final Observable<HttpClientResponse<ByteBuf>> resp = fullReq
+            .submit(rxClient)
+            .timeout(timeout, timeoutUnit)
+            //Forcing the stream to be not empty. If empty then it will be retried through the standard retry logic
+            .single();
 
         Observable<?> output = null;
         if (expectsRawResponse(method)) {
@@ -165,11 +170,7 @@ public class HttpClient implements InvocationHandler {
     }
 
     private void logFailedRequest(RequestBuilder fullReq, Throwable throwable) {
-        if (throwable instanceof WebException && ((WebException)throwable).getStatus().code() < 500) {
-            // Don't log 400 bad request and similar
-            return;
-        }
-        LOG.warn("Failed " + fullReq, throwable);
+        LOG.warn("Failed request. Url: {}, headers: {}", fullReq.getFullUrl(), fullReq.getHeaders().entrySet(), throwable);
     }
 
     protected Observable<?> parseResponse(Method method, RequestBuilder request, HttpClientResponse<ByteBuf> response) {
@@ -225,10 +226,15 @@ public class HttpClient implements InvocationHandler {
                     return false;
                 }
                 if (!(throwable instanceof WebException)) {
+                    // Don't retry posts when a NoSuchElementException is raised since the request might have ended up at the server the first time
+                    if (throwable instanceof NoSuchElementException && POST.equals(fullReq.getHttpMethod())) {
+                        return false;
+                    }
+
                     // Retry on system error of some kind, like IO
                     return true;
                 }
-                if (fullReq.getHttpMethod().equals(HttpMethod.POST)) {
+                if (fullReq.getHttpMethod().equals(POST)) {
                     // Don't retry if it was a POST, as it is not idempotent
                     return false;
                 }

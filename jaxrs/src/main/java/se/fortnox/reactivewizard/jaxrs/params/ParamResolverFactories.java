@@ -70,11 +70,11 @@ public class ParamResolverFactories {
         List<Annotation> parameterAnnotations,
         String[] consumesAnnotation
     ) {
-        for (Annotation a : parameterAnnotations) {
-            AnnotatedParamResolverFactory paramResolverFactory = annotatedParamResolverFactories.get(a.annotationType());
+        for (Annotation annotation : parameterAnnotations) {
+            AnnotatedParamResolverFactory paramResolverFactory = annotatedParamResolverFactories.get(annotation.annotationType());
             if (paramResolverFactory != null) {
-                Deserializer<T> deserializer = getDeserializer(paramType);
-                return paramResolverFactory.create(a, deserializer, findDefaultValueAnnotation(parameterAnnotations));
+                String defaultValue = findDefaultValue(parameterAnnotations);
+                return paramResolverFactory.create(paramType, annotation, defaultValue);
             }
         }
         ParamResolverFactory<T> paramResolverFactory = paramResolvers.get((Class<T>)ReflectionUtil.getRawType(paramType.getType()));
@@ -93,7 +93,15 @@ public class ParamResolverFactories {
         throw new RuntimeException("Could not find any deserializer for param of type " + paramType);
     }
 
-    private DefaultValue findDefaultValueAnnotation(List<Annotation> parameterAnnotations) {
+    public static String findDefaultValue(List<Annotation> parameterAnnotations) {
+        DefaultValue defaultValueAnnotation = findDefaultValueAnnotation(parameterAnnotations);
+        if (defaultValueAnnotation == null) {
+            return null;
+        }
+        return defaultValueAnnotation.value();
+    }
+
+    public static DefaultValue findDefaultValueAnnotation(List<Annotation> parameterAnnotations) {
         for (Annotation annotation : parameterAnnotations) {
             if (DefaultValue.class == annotation.annotationType()) {
                 return (DefaultValue)annotation;
@@ -108,13 +116,5 @@ public class ParamResolverFactories {
         } catch (DeserializerException deserializerException) {
             throw new WebException(HttpResponseStatus.BAD_REQUEST, deserializerException.getMessage());
         }
-    }
-
-    private <T> Deserializer<T> getDeserializer(TypeReference<T> paramType) {
-        Deserializer<T> parser = deserializerFactory.getParamDeserializer(paramType);
-        if (parser == null) {
-            throw new RuntimeException("Field of type " + paramType.getType() + " is not allowed to be used in query/form/header");
-        }
-        return parser;
     }
 }

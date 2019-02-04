@@ -28,6 +28,7 @@ import se.fortnox.reactivewizard.jaxrs.response.ResultTransformerFactories;
 import se.fortnox.reactivewizard.mocks.MockHttpServerResponse;
 import se.fortnox.reactivewizard.utils.JaxRsTestUtil;
 
+import javax.ws.rs.BeanParam;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.CookieParam;
 import javax.ws.rs.DELETE;
@@ -650,22 +651,22 @@ public class JaxRsResourceTest {
 
     @Test
     public void shouldAcceptBodyForPut() throws Exception {
-        assertThat(body(put(service, "/test/acceptBodyPut", "{\"name\":\"test\"}"))).isEqualTo("{\"name\":\"test\",\"age\":0}");
+        assertThat(body(put(service, "/test/acceptBodyPut", "{\"name\":\"test\"}"))).isEqualTo("{\"name\":\"test\",\"age\":0,\"items\":null}");
     }
 
     @Test
     public void shouldAcceptBodyForPost() throws Exception {
-        assertThat(body(post(service, "/test/acceptBodyPost", "{\"name\":\"test\"}"))).isEqualTo("{\"name\":\"test\",\"age\":0}");
+        assertThat(body(post(service, "/test/acceptBodyPost", "{\"name\":\"test\"}"))).isEqualTo("{\"name\":\"test\",\"age\":0,\"items\":null}");
     }
 
     @Test
     public void shouldAcceptBodyForPatch() throws Exception {
-        assertThat(body(patch(service, "/test/acceptBodyPatch", "{\"name\":\"test\"}"))).isEqualTo("{\"name\":\"test\",\"age\":0}");
+        assertThat(body(patch(service, "/test/acceptBodyPatch", "{\"name\":\"test\"}"))).isEqualTo("{\"name\":\"test\",\"age\":0,\"items\":null}");
     }
 
     @Test
     public void shouldAcceptBodyForDelete() throws Exception {
-        assertThat(body(delete(service, "/test/acceptBodyDelete", "{\"name\":\"test\"}"))).isEqualTo("{\"name\":\"test\",\"age\":0}");
+        assertThat(body(delete(service, "/test/acceptBodyDelete", "{\"name\":\"test\"}"))).isEqualTo("{\"name\":\"test\",\"age\":0,\"items\":null}");
     }
 
     @Test
@@ -696,6 +697,11 @@ public class JaxRsResourceTest {
     @Test
     public void shouldAcceptQueryParamListWithEnumValues() {
         assertThat(get(service, "/test/acceptsQueryListWithEnum?EnumList=ONE,TWO,THREE").getOutp()).isEqualTo("3");
+    }
+
+    @Test
+    public void shouldAcceptBeanParam() {
+        assertThat(get(service, "/test/acceptsBeanParam?name=foo&age=3&items=1,2").getOutp()).isEqualTo("\"foo - 3 2\"");
     }
 
 
@@ -1005,6 +1011,10 @@ public class JaxRsResourceTest {
         @Path("acceptsHeadersOnImplementation")
         @GET
         Observable<String> acceptsHeadersOnImplementation();
+
+        @Path("acceptsBeanParam")
+        @GET
+        Observable<String> acceptsBeanParam(@BeanParam ParamEntity beanParam);
     }
 
         class TestresourceImpl implements TestresourceInterface {
@@ -1285,6 +1295,11 @@ public class JaxRsResourceTest {
         @Headers("Content-Disposition: attachment; filename=auditlog.csv")
         public Observable<String> acceptsHeadersOnImplementation() {
             return just("");
+        }
+
+        @Override
+        public Observable<String> acceptsBeanParam(ParamEntity beanParam) {
+            return just(String.format("%s - %d %d", beanParam.getName(), beanParam.getAge(), beanParam.getItems().size()));
         }
 
         @Override
