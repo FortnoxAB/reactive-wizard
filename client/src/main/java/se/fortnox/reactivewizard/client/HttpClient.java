@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.timeout.ReadTimeoutException;
 import io.reactivex.netty.protocol.http.client.HttpClientResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,6 +20,7 @@ import se.fortnox.reactivewizard.jaxrs.WebException;
 import se.fortnox.reactivewizard.logging.LoggingContext;
 import se.fortnox.reactivewizard.metrics.HealthRecorder;
 import se.fortnox.reactivewizard.metrics.Metrics;
+import se.fortnox.reactivewizard.util.JustMessageException;
 import se.fortnox.reactivewizard.util.ReflectionUtil;
 import se.fortnox.reactivewizard.util.rx.RetryWithDelay;
 
@@ -54,9 +56,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import static io.netty.handler.codec.http.HttpMethod.POST;
+import static io.netty.handler.codec.http.HttpResponseStatus.GATEWAY_TIMEOUT;
+import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static java.lang.String.format;
 import static java.util.Collections.emptySet;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
+import static rx.Observable.error;
 import static rx.Observable.just;
 
 public class HttpClient implements InvocationHandler {
@@ -158,7 +163,7 @@ public class HttpClient implements InvocationHandler {
             output = resp.flatMap(r -> parseResponse(method, fullReq, r));
         }
 
-        output = withRetry(fullReq, output).doOnError(e -> logFailedRequest(fullReq, e));
+        output = withRetry(fullReq, output).onErrorResumeNext(e -> convertError(fullReq, e));
         output = LoggingContext.transfer(output);
         output = measure(fullReq, output);
 
@@ -169,8 +174,17 @@ public class HttpClient implements InvocationHandler {
         }
     }
 
-    private void logFailedRequest(RequestBuilder fullReq, Throwable throwable) {
-        LOG.warn("Failed request. Url: {}, headers: {}", fullReq.getFullUrl(), fullReq.getHeaders().entrySet(), throwable);
+    private <T> Observable<T> convertError(RequestBuilder fullReq, Throwable throwable) {
+        String request = format("%s, headers: %s", fullReq.getFullUrl(), fullReq.getHeaders().entrySet());
+        LOG.warn("Failed request. Url: {}", request, throwable);
+        if (throwable instanceof TimeoutException || throwable instanceof ReadTimeoutException) {
+            String message = format("Timeout after %d ms calling %s", timeoutUnit.toMillis(timeout), request);
+            return error(new WebException(GATEWAY_TIMEOUT, new JustMessageException(message), false));
+        } else if (!(throwable instanceof WebException)) {
+            String message = format("Error calling %s", timeoutUnit.toMillis(timeout), request);
+            return error(new WebException(INTERNAL_SERVER_ERROR, new JustMessageException(message, throwable), false));
+        }
+        return error(throwable);
     }
 
     protected Observable<?> parseResponse(Method method, RequestBuilder request, HttpClientResponse<ByteBuf> response) {

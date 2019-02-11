@@ -62,6 +62,11 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
+import java.io.ByteArrayOutputStream;
+import java.io.OutputStream;
+import java.io.PrintStream;
+import java.io.StringWriter;
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Method;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
@@ -85,10 +90,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
-import static io.netty.handler.codec.http.HttpResponseStatus.BAD_REQUEST;
-import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
-import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
-import static io.netty.handler.codec.http.HttpResponseStatus.OK;
+import static io.netty.handler.codec.http.HttpResponseStatus.*;
 import static java.lang.String.format;
 import static org.fest.assertions.Assertions.assertThat;
 import static org.fest.assertions.Fail.fail;
@@ -218,7 +220,7 @@ public class HttpClientTest {
             } catch (Exception e) {
                 long duration = System.currentTimeMillis() - start;
 
-                assertThat(e.getCause().getClass()).isEqualTo(PoolExhaustedException.class);
+                assertThat(e.getCause().getCause().getClass()).isEqualTo(PoolExhaustedException.class);
 
                 assertThat(duration).isGreaterThan(1000);
             }
@@ -324,7 +326,7 @@ public class HttpClientTest {
                 Assert.fail("Expected exception");
             } catch (Exception e) {
 
-                assertThat(e.getCause().getClass()).isEqualTo(PoolExhaustedException.class);
+                assertThat(e.getCause().getCause().getClass()).isEqualTo(PoolExhaustedException.class);
 
                 assertThat(wasUnhealthy.get()).isTrue();
             }
@@ -366,7 +368,7 @@ public class HttpClientTest {
         } catch (Exception e) {
             long duration = System.currentTimeMillis() - start;
 
-            assertThat(e.getCause()).isInstanceOf(ConnectException.class);
+            assertThat(e.getCause().getCause()).isInstanceOf(ConnectException.class);
 
             assertThat(duration).isGreaterThan(100);
         }
@@ -569,7 +571,7 @@ public class HttpClientTest {
             resource.getWrappedPojo().toBlocking().singleOrDefault(null);
             fail("expected exception");
         } catch (Exception e) {
-            assertThat(e.getCause()).isInstanceOf(JsonMappingException.class);
+            assertThat(e.getCause().getCause().getCause()).isInstanceOf(JsonMappingException.class);
         }
         assertThat(callCount.get()).isEqualTo(1);
 
@@ -594,8 +596,8 @@ public class HttpClientTest {
         try {
             resource.getHello().toBlocking().singleOrDefault(null);
             fail("expected exception");
-        } catch (RuntimeException e) {
-            assertThat(e.getCause()).isInstanceOf(TimeoutException.class);
+        } catch (WebException e) {
+            assertThat(e.getStatus()).isEqualTo(GATEWAY_TIMEOUT);
         }
         assertThat(callCount.get()).isEqualTo(1);
 
@@ -619,8 +621,8 @@ public class HttpClientTest {
         try {
             resource.getHello().toBlocking().singleOrDefault(null);
             fail("expected exception");
-        } catch (RuntimeException e) {
-            assertThat(e.getCause()).isInstanceOf(TimeoutException.class);
+        } catch (WebException e) {
+            assertThat(e.getStatus()).isEqualTo(GATEWAY_TIMEOUT);
         }
 
         server.shutdown();
@@ -644,8 +646,8 @@ public class HttpClientTest {
         try {
             resource.getHello().toBlocking().singleOrDefault(null);
             fail("expected exception");
-        } catch (RuntimeException e) {
-            assertThat(e).isInstanceOf(io.netty.handler.timeout.TimeoutException.class);
+        } catch (WebException e) {
+            assertThat(e.getStatus()).isEqualTo(GATEWAY_TIMEOUT);
         }
 
         server.shutdown();
@@ -707,8 +709,8 @@ public class HttpClientTest {
                 .toBlocking()
                 .last();
             fail("Expected exception, but none was thrown");
-        } catch (Exception e) {
-            assertThat(e.getCause()).isInstanceOf(TimeoutException.class);
+        } catch (WebException e) {
+            assertThat(e.getStatus()).isEqualTo(GATEWAY_TIMEOUT);
         }
 
         verify(serverLog, times(6)).accept("/hello/servertest/slowHeaders");
@@ -746,8 +748,8 @@ public class HttpClientTest {
                 .retry(5)
                 .toBlocking().last();
             fail("expected exception");
-        } catch (Exception e) {
-            assertThat(e.getCause()).isInstanceOf(TimeoutException.class);
+        } catch (WebException e) {
+            assertThat(e.getStatus()).isEqualTo(GATEWAY_TIMEOUT);
         }
         assertThat(connectionsRequested.get()).isEqualTo(6);
     }
@@ -844,8 +846,8 @@ public class HttpClientTest {
             try {
                 resource.getHello().toBlocking().singleOrDefault(null);
                 fail("expected exception");
-            } catch (Exception e) {
-                assertThat(e.getCause()).isInstanceOf(TimeoutException.class);
+            } catch (WebException e) {
+                assertThat(e.getStatus()).isEqualTo(GATEWAY_TIMEOUT);
             }
         }
 
@@ -1139,6 +1141,26 @@ public class HttpClientTest {
             .toBlocking()
             .singleOrDefault(null);
     }
+
+    @Test
+    public void shouldLogRequestDetailsOnTimeout() {
+        HttpServer<ByteBuf, ByteBuf> server   = startServer(OK, Observable.never(), r->{});
+
+        try {
+            TestResource resource = getHttpProxy(server.getServerPort());
+            HttpClient.setTimeout(resource, 10, TimeUnit.MILLISECONDS);
+            resource.servertest("mode").toBlocking().single();
+            fail("expected timeout");
+        } catch (Exception e) {
+            OutputStream baos = new ByteArrayOutputStream();
+            PrintStream stream = new PrintStream(baos, true);
+            e.printStackTrace(stream);
+            assertThat(baos.toString()).contains("/servertest/mode");
+        } finally {
+            server.shutdown();
+        }
+    }
+
 
     private String generateLargeString(int sizeInMB) {
         char[] resp = new char[sizeInMB * 1024 * 1024];
