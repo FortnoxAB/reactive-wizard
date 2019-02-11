@@ -181,7 +181,7 @@ public class HttpClient implements InvocationHandler {
             String message = format("Timeout after %d ms calling %s", timeoutUnit.toMillis(timeout), request);
             return error(new WebException(GATEWAY_TIMEOUT, new JustMessageException(message), false));
         } else if (!(throwable instanceof WebException)) {
-            String message = format("Error calling %s", timeoutUnit.toMillis(timeout), request);
+            String message = format("Error calling %s", request);
             return error(new WebException(INTERNAL_SERVER_ERROR, new JustMessageException(message, throwable), false));
         }
         return error(throwable);
