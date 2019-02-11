@@ -1155,7 +1155,7 @@ public class HttpClientTest {
             OutputStream baos = new ByteArrayOutputStream();
             PrintStream stream = new PrintStream(baos, true);
             e.printStackTrace(stream);
-            assertThat(baos.toString()).contains("/servertest/mode");
+            assertThat(baos.toString()).contains("Timeout after 10 ms calling localhost:"+server.getServerPort()+"/hello/servertest/mode");
         } finally {
             server.shutdown();
         }
