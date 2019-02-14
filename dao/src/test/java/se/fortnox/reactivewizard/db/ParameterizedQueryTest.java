@@ -11,6 +11,7 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import static org.fest.assertions.Assertions.assertThat;
 import static org.mockito.Matchers.any;
@@ -182,6 +183,22 @@ public class ParameterizedQueryTest {
         verify(db.getConnection()).prepareStatement("SELECT x FROM y WHERE z =ANY(?)");
     }
 
+    @Test
+    public void shouldHandleInClauseWithUUIDs() throws SQLException {
+        // Given
+        UUID uuid1 = UUID.randomUUID();
+        UUID uuid2 = UUID.randomUUID();
+        List<UUID> param = Lists.newArrayList(uuid1, uuid2);
+        when(db.getConnection().createArrayOf(any(), any())).thenReturn(mock(Array.class));
+
+        // When
+        dao.inClauseUuid(param).toBlocking().singleOrDefault(null);
+
+        // Then
+        verify(db.getConnection()).prepareStatement("SELECT x FROM y WHERE z =ANY(?)");
+        verify(db.getConnection()).createArrayOf("uuid", new Object[]{uuid1, uuid2});
+    }
+
     @Test(expected = UnsupportedOperationException.class)
     public void shouldThrowIfUnsupportedArrayType() throws SQLException {
         List<Boolean> param = Lists.newArrayList(true, false);
@@ -234,6 +251,9 @@ public class ParameterizedQueryTest {
 
         @Query("SELECT x FROM y WHERE z IN(:param)")
         Observable<String> inClauseVarcharNoSpace(List<String> param);
+
+        @Query("SELECT x FROM y WHERE z IN (:param)")
+        Observable<String> inClauseUuid(List<UUID> param);
 
         @Query("SELECT x FROM y WHERE z IN (:param)")
         Observable<String> unsupportedArrayType(List<Boolean> param);

@@ -14,6 +14,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.function.Function;
 
 public class ParamQueryPart implements DynamicQueryPart {
@@ -115,9 +116,11 @@ public class ParamQueryPart implements DynamicQueryPart {
             return "varchar";
         } else if (genericParam.equals(Long.class)) {
             return "bigint";
+        } else if (genericParam.equals(UUID.class)) {
+            return "uuid";
         } else {
             throw new UnsupportedOperationException(
-                "Only arrays of type Long and String are supported.");
+                "Only arrays of type Long, UUID and String as well as Enums are supported.");
         }
     }
 
