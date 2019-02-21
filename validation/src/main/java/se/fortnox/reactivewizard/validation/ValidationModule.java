@@ -56,4 +56,13 @@ public class ValidationModule implements AutoBindModule {
     private <T> Provider<T> validatingProvider(Class<T> iface, Provider<T> wrappedProvider, Provider<ValidatorUtil> validatorUtilProvider) {
         return () -> ValidatingProxy.create(iface, wrappedProvider.get(), validatorUtilProvider.get());
     }
+
+    /**
+     * Shall be executed before the @{@link se.fortnox.reactivewizard.config.ConfigAutoBindModule}
+     * @return
+     */
+    @Override
+    public Integer getPrio() {
+        return 99;
+    }
 }
