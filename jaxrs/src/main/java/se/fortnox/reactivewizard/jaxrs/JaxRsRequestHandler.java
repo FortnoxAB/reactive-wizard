@@ -66,15 +66,12 @@ public class JaxRsRequestHandler implements RequestHandler<ByteBuf, ByteBuf> {
         }
 
         long requestStartTime = System.currentTimeMillis();
-        return handleJaxRsRequest(resource, jaxRsRequest)
+
+        return resource.call(jaxRsRequest)
+            .singleOrDefault(null)
             .flatMap(result -> writeResult(response, result))
             .onErrorResumeNext(e -> exceptionHandler.handleException(request, response, e))
             .doAfterTerminate(() -> resource.log(request, response, requestStartTime));
-    }
-
-    Observable<? extends JaxRsResult<?>> handleJaxRsRequest(JaxRsResource<?> resource, JaxRsRequest request) {
-        return resource.call(request)
-            .singleOrDefault(null);
     }
 
     private Observable<Void> writeResult(HttpServerResponse<ByteBuf> response, JaxRsResult<?> result) {
