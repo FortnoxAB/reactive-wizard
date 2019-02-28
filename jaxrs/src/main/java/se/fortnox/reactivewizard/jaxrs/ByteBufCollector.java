@@ -13,6 +13,10 @@ public class ByteBufCollector {
 
     private final int maxReqSize;
 
+    public ByteBufCollector() {
+        this.maxReqSize = 10 * 1024 * 1024;
+    }
+
     public ByteBufCollector(int maxReqSize) {
         this.maxReqSize = maxReqSize;
     }

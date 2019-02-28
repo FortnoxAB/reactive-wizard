@@ -27,7 +27,7 @@ public class StatusTest {
             new Object[]{new TestresourceImpl()},
             new JaxRsResourceFactory(),
             exceptionHandler,
-            new ByteBufCollector(10*1024*1024),
+            new ByteBufCollector(),
             false
     );
 

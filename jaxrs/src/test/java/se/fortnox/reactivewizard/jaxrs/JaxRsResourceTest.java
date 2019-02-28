@@ -76,7 +76,7 @@ public class JaxRsResourceTest {
     @Test
     public void shouldConcatPaths() throws InvocationTargetException, IllegalAccessException {
         JaxRsResources resources    = new JaxRsResources(new Object[]{new Testresource()}, new JaxRsResourceFactory(), false);
-        JaxRsRequest   jaxRsRequest = new JaxRsRequest(new MockHttpServerRequest("/test/acceptsString"), new ByteBufCollector(10*1024*1024));
+        JaxRsRequest   jaxRsRequest = new JaxRsRequest(new MockHttpServerRequest("/test/acceptsString"), new ByteBufCollector());
         assertThat(resources.findResource(jaxRsRequest).call(jaxRsRequest)).isNotNull();
     }
 
@@ -136,7 +136,7 @@ public class JaxRsResourceTest {
                 new JaxRsResultFactoryFactory(),
                 new BlockingResourceScheduler()),
             false);
-        JaxRsRequest                         jaxRsRequest = new JaxRsRequest(req, new ByteBufCollector(10*1024*1024));
+        JaxRsRequest                         jaxRsRequest = new JaxRsRequest(req, new ByteBufCollector());
         Observable<? extends JaxRsResult<?>> result       = jaxRsResources.findResource(jaxRsRequest).call(jaxRsRequest);
 
         MockHttpServerResponse response = new MockHttpServerResponse();
@@ -425,7 +425,7 @@ public class JaxRsResourceTest {
             protected void configure() {
                 bind(DateFormat.class).toProvider(() -> new CustomDateFormat());
                 bind(JaxRsResourcesProvider.class).toInstance(() -> new Object[]{service});
-                bind(ByteBufCollector.class).toInstance(new ByteBufCollector(10*1024*1024));
+                bind(ByteBufCollector.class).toInstance(new ByteBufCollector());
                 bind(new TypeLiteral<Set<ParamResolver>>() {{
                 }}).toInstance(Collections.EMPTY_SET);
                 bind(new TypeLiteral<Set<ParamResolverFactory>>() {{

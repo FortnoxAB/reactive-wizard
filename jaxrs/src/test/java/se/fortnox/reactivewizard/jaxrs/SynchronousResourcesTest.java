@@ -32,7 +32,7 @@ public class SynchronousResourcesTest {
                 new Object[]{new TestRes()},
                 new JaxRsResourceFactory(new ParamResolverFactories(), new JaxRsResultFactoryFactory(), new BlockingResourceScheduler(scheduler)),
                 new ExceptionHandler(),
-                new ByteBufCollector(10*1024*1024),
+                new ByteBufCollector(),
                 false
         );
         JaxRsTestUtil.TestServer testServer = new JaxRsTestUtil.TestServer(handler);

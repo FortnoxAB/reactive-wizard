@@ -10,6 +10,8 @@ import org.junit.Test;
 import rx.subjects.UnicastSubject;
 
 import java.nio.charset.Charset;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static org.fest.assertions.Assertions.assertThat;
 
@@ -22,7 +24,7 @@ public class JaxRsRequestTest {
         content.onNext(Unpooled.wrappedBuffer(new byte[]{byteArray[1]}));
         content.onCompleted();
         HttpServerRequest<ByteBuf> serverReq = new MockHttpServerRequest("/", HttpMethod.POST, content);
-        JaxRsRequest               req       = new JaxRsRequest(serverReq, new ByteBufCollector(10*1024*1024));
+        JaxRsRequest               req       = new JaxRsRequest(serverReq, new ByteBufCollector());
         String                     body      = new String(req.loadBody().toBlocking().single().getBody());
         assertThat(body).isEqualTo("ö");
     }
@@ -30,7 +32,7 @@ public class JaxRsRequestTest {
     @Test
     public void shouldDecodeSingleChunkBody() {
         HttpServerRequest<ByteBuf> serverReq = new MockHttpServerRequest("/", HttpMethod.POST, "ö");
-        JaxRsRequest               req       = new JaxRsRequest(serverReq, new ByteBufCollector(10*1024*1024));
+        JaxRsRequest               req       = new JaxRsRequest(serverReq, new ByteBufCollector());
         String                     body      = new String(req.loadBody().toBlocking().single().getBody());
         assertThat(body).isEqualTo("ö");
     }
@@ -38,7 +40,7 @@ public class JaxRsRequestTest {
     @Test
     public void shouldDecodeBodyForDeleteRequests() {
         HttpServerRequest<ByteBuf> serverReq = new MockHttpServerRequest("/", HttpMethod.DELETE, "test");
-        JaxRsRequest               req       = new JaxRsRequest(serverReq, new ByteBufCollector(10*1024*1024));
+        JaxRsRequest               req       = new JaxRsRequest(serverReq, new ByteBufCollector());
         String                     body      = new String(req.loadBody().toBlocking().single().getBody());
         assertThat(body).isEqualTo("test");
     }
@@ -47,7 +49,7 @@ public class JaxRsRequestTest {
     public void shouldDecodeBodyOfSpecifiedSize() {
         String input = generateLargeString(5);
         HttpServerRequest<ByteBuf> serverReq = new MockHttpServerRequest("/", HttpMethod.DELETE, input);
-        JaxRsRequest               req       = new JaxRsRequest(serverReq, new ByteBufCollector(5*1024*1024));
+        JaxRsRequest               req       = new JaxRsRequest(serverReq, new ByteBufCollector(5 * 1024 * 1024));
         String                     body      = new String(req.loadBody().toBlocking().single().getBody());
         assertThat(body).isEqualTo(input);
     }
@@ -56,7 +58,7 @@ public class JaxRsRequestTest {
     public void shouldFailWhenDecodingTooLargeBody() {
         String input = generateLargeString(6);
         HttpServerRequest<ByteBuf> serverReq = new MockHttpServerRequest("/", HttpMethod.DELETE, input);
-        JaxRsRequest               req       = new JaxRsRequest(serverReq, new ByteBufCollector(5*1024*1024));
+        JaxRsRequest               req       = new JaxRsRequest(serverReq, new ByteBufCollector(5 * 1024 * 1024));
         try {
             req.loadBody().toBlocking().single();
             Assert.fail("Should throw exception");
@@ -68,7 +70,7 @@ public class JaxRsRequestTest {
     @Test
     public void testParams() throws Exception {
         MockHttpServerRequest serverReq = new MockHttpServerRequest("/");
-        JaxRsRequest          req       = new JaxRsRequest(serverReq, null, new byte[0], new ByteBufCollector(10*1024*1024));
+        JaxRsRequest          req       = new JaxRsRequest(serverReq, null, new byte[0], new ByteBufCollector());
         assertThat(req.getPathParam("path")).isNull();
         assertThat(req.getQueryParam("query")).isNull();
         assertThat(req.getFormParam("form")).isNull();
@@ -78,12 +80,13 @@ public class JaxRsRequestTest {
 
 
     private String generateLargeString(int sizeInMB) {
-        char[] resp = new char[sizeInMB * 1024 * 1024];
-        for (int i = 0; i < resp.length; i++) {
-            resp[i] = 'b';
-        }
-        resp[0] = '\"';
-        resp[resp.length - 1] = '\"';
-        return new String(resp);
+        String largeString = IntStream.range(1, sizeInMB * 1024 * 1024 - 1)
+            .mapToObj(i -> "a")
+            .collect(Collectors.joining());
+
+        System.out.println(largeString.getBytes().length);
+
+        return "\"" + largeString + "\"";
     }
+
 }

@@ -18,9 +18,9 @@ import javax.inject.Singleton;
 @Singleton
 public class JaxRsRequestHandler implements RequestHandler<ByteBuf, ByteBuf> {
 
-    private JaxRsResources   resources;
-    private ExceptionHandler exceptionHandler;
-    private ByteBufCollector collector;
+    private final JaxRsResources   resources;
+    private final ExceptionHandler exceptionHandler;
+    private final ByteBufCollector collector;
 
     @Inject
     public JaxRsRequestHandler(JaxRsResourcesProvider services,
@@ -36,7 +36,7 @@ public class JaxRsRequestHandler implements RequestHandler<ByteBuf, ByteBuf> {
     }
 
     public JaxRsRequestHandler(Object... services) {
-        this(services, new JaxRsResourceFactory(), new ExceptionHandler(), new ByteBufCollector(10*1024*1024), null);
+        this(services, new JaxRsResourceFactory(), new ExceptionHandler(), new ByteBufCollector(), null);
     }
 
     public JaxRsRequestHandler(Object[] services,

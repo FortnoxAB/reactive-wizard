@@ -61,7 +61,7 @@ public class WrappedParamTest {
                 new Object[]{service},
                 new JaxRsResourceFactory(),
                 new ExceptionHandler(),
-                new ByteBufCollector(10*1024*1024),
+                new ByteBufCollector(),
                 false
         );
     }

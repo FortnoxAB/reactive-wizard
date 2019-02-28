@@ -79,7 +79,7 @@ public class JaxRsTestUtil {
                 services,
                 new JaxRsResourceFactory(new ParamResolverFactories(), new JaxRsResultFactoryFactory(), new BlockingResourceScheduler()),
                 new ExceptionHandler(),
-                new ByteBufCollector(10*1024*1024),
+                new ByteBufCollector(),
                 false
         );
     }
