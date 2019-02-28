@@ -15,7 +15,7 @@ public class ServerConfigTest {
         assertThat(serverConfig.getMaxHeaderSize()).isEqualTo(20480);
         assertThat(serverConfig.getShutdownTimeoutSeconds()).isEqualTo(20);
         assertThat(serverConfig.getMaxInitialLineLengthDefault()).isEqualTo(4096);
-
+        assertThat(serverConfig.getMaxRequestSize()).isEqualTo(10*1024*1024);
     }
 
     @Test
@@ -25,12 +25,14 @@ public class ServerConfigTest {
         serverConfig.setMaxHeaderSize(123);
         serverConfig.setShutdownTimeoutMs(4344);
         serverConfig.setMaxInitialLineLengthDefault(1344);
+        serverConfig.setMaxRequestSize(314159);
 
         assertThat(serverConfig.isEnabled()).isFalse();
         assertThat(serverConfig.getPort()).isEqualTo(1337);
         assertThat(serverConfig.getMaxHeaderSize()).isEqualTo(123);
         assertThat(serverConfig.getShutdownTimeoutSeconds()).isEqualTo(4344);
         assertThat(serverConfig.getMaxInitialLineLengthDefault()).isEqualTo(1344);
+        assertThat(serverConfig.getMaxRequestSize()).isEqualTo(314159);
     }
 
 }

@@ -23,10 +23,13 @@ import static rx.Observable.just;
 public class StatusTest {
 
     ExceptionHandler    exceptionHandler = new ExceptionHandler();
-    JaxRsRequestHandler handler          = new JaxRsRequestHandler(new Object[]{new TestresourceImpl()},
-        new JaxRsResourceFactory(),
-        exceptionHandler,
-        false);
+    JaxRsRequestHandler handler          = new JaxRsRequestHandler(
+            new Object[]{new TestresourceImpl()},
+            new JaxRsResourceFactory(),
+            exceptionHandler,
+            new ByteBufCollector(10*1024*1024),
+            false
+    );
 
     @Test
     public void shouldReturn200ForGetPutPatch() {

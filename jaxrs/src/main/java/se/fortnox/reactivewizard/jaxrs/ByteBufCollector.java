@@ -2,7 +2,6 @@ package se.fortnox.reactivewizard.jaxrs;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpResponseStatus;
-import io.reactivex.netty.channel.ContentSource;
 import rx.Observable;
 
 import java.io.ByteArrayOutputStream;

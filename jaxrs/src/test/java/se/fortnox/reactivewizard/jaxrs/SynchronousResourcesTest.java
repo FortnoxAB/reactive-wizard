@@ -29,10 +29,12 @@ public class SynchronousResourcesTest {
     public void shouldRunOnConfiguredScheduler() {
         Scheduler scheduler = Schedulers.from(Executors.newSingleThreadExecutor(runnable -> new Thread(runnable, "customthread")));
         final RequestHandler handler = new JaxRsRequestHandler(
-            new Object[]{new TestRes()},
-            new JaxRsResourceFactory(new ParamResolverFactories(), new JaxRsResultFactoryFactory(), new BlockingResourceScheduler(scheduler)),
-            new ExceptionHandler(),
-            false);
+                new Object[]{new TestRes()},
+                new JaxRsResourceFactory(new ParamResolverFactories(), new JaxRsResultFactoryFactory(), new BlockingResourceScheduler(scheduler)),
+                new ExceptionHandler(),
+                new ByteBufCollector(10*1024*1024),
+                false
+        );
         JaxRsTestUtil.TestServer testServer = new JaxRsTestUtil.TestServer(handler);
         assertThat(testServer.get("/threadname"))
             .isEqualTo("\"customthread\"");

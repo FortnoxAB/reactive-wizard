@@ -57,10 +57,13 @@ public class WrappedParamTest {
     }
 
     private JaxRsRequestHandler createHandler(Object service) {
-        return new JaxRsRequestHandler(new Object[]{service},
-            new JaxRsResourceFactory(),
-            new ExceptionHandler(),
-            false);
+        return new JaxRsRequestHandler(
+                new Object[]{service},
+                new JaxRsResourceFactory(),
+                new ExceptionHandler(),
+                new ByteBufCollector(10*1024*1024),
+                false
+        );
     }
 
     @Path("")

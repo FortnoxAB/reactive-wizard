@@ -18,30 +18,34 @@ import javax.inject.Singleton;
 @Singleton
 public class JaxRsRequestHandler implements RequestHandler<ByteBuf, ByteBuf> {
 
-    private JaxRsResources resources;
-
+    private JaxRsResources   resources;
     private ExceptionHandler exceptionHandler;
+    private ByteBufCollector collector;
 
     @Inject
     public JaxRsRequestHandler(JaxRsResourcesProvider services,
-        JaxRsResourceFactory jaxRsResourceFactory,
-        ExceptionHandler exceptionHandler
+                               JaxRsResourceFactory jaxRsResourceFactory,
+                               ExceptionHandler exceptionHandler,
+                               ByteBufCollector collector
     ) {
         this(services.getResources(),
             jaxRsResourceFactory,
             exceptionHandler,
+            collector,
             null);
     }
 
     public JaxRsRequestHandler(Object... services) {
-        this(services, new JaxRsResourceFactory(), new ExceptionHandler(), null);
+        this(services, new JaxRsResourceFactory(), new ExceptionHandler(), new ByteBufCollector(10*1024*1024), null);
     }
 
     public JaxRsRequestHandler(Object[] services,
         JaxRsResourceFactory jaxRsResourceFactory,
         ExceptionHandler exceptionHandler,
+        ByteBufCollector collector,
         Boolean classReloading
     ) {
+        this.collector = collector;
         this.exceptionHandler = exceptionHandler;
         if (classReloading == null) {
             classReloading = DebugUtil.IS_DEBUG;
@@ -58,7 +62,7 @@ public class JaxRsRequestHandler implements RequestHandler<ByteBuf, ByteBuf> {
      */
     @Override
     public Observable<Void> handle(HttpServerRequest<ByteBuf> request, HttpServerResponse<ByteBuf> response) {
-        JaxRsRequest     jaxRsRequest = new JaxRsRequest(request);
+        JaxRsRequest     jaxRsRequest = new JaxRsRequest(request, collector);
         JaxRsResource<?> resource     = resources.findResource(jaxRsRequest);
 
         if (resource == null) {
