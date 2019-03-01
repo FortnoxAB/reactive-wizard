@@ -61,7 +61,7 @@ public class JaxRsRequest {
             return collector.collectBytes(req.getContent()
                 .doOnError(e -> LOG.error("Error reading data for request " + httpMethod + " " + req.getUri(), e)))
                 .lastOrDefault(null)
-                .map(body -> create(req, matcher, body, collector));
+                .map(reqBody -> create(req, matcher, reqBody, collector));
         }
         return just(this);
     }

@@ -76,6 +76,8 @@ public class JaxRsRequestTest {
         assertThat(req.getFormParam("form")).isNull();
         assertThat(req.getHeader("header")).isNull();
         assertThat(req.getCookie("cookie")).isNull();
+        assertThat(req.getCookieValue("test")).isNull();
+        assertThat(req.getCookieValue("test", "default")).isEqualTo("default");
     }
 
 

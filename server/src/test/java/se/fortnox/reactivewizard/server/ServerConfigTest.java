@@ -34,5 +34,4 @@ public class ServerConfigTest {
         assertThat(serverConfig.getMaxInitialLineLengthDefault()).isEqualTo(1344);
         assertThat(serverConfig.getMaxRequestSize()).isEqualTo(314159);
     }
-
 }
