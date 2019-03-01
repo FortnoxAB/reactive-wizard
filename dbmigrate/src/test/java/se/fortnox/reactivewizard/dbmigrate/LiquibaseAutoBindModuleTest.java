@@ -8,6 +8,7 @@ import liquibase.exception.LiquibaseException;
 import org.junit.Test;
 import se.fortnox.reactivewizard.binding.AutoBindModules;
 import se.fortnox.reactivewizard.config.ConfigFactory;
+import se.fortnox.reactivewizard.config.MockConfigFactory;
 import se.fortnox.reactivewizard.server.ServerConfig;
 
 import static org.fest.assertions.Assertions.assertThat;
@@ -105,14 +106,17 @@ public class LiquibaseAutoBindModuleTest {
 
     private LiquibaseMigrate getInjectedLiquibaseMock(LiquibaseMigrate liquibaseMigrateMock, String... arg) {
         Guice.createInjector(new AutoBindModules(binder -> {
-            binder.bind(ServerConfig.class).toInstance(new ServerConfig() {{
+            ConfigFactory configFactory = mock(ConfigFactory.class);
+
+            ServerConfig serverConfig = new ServerConfig() {{
                 setEnabled(false);
-            }});
+            }};
+            when(configFactory.get(eq(ServerConfig.class))).thenReturn(serverConfig);
+            binder.bind(ServerConfig.class).toInstance(serverConfig);
 
             LiquibaseConfig liquibaseConfig = new LiquibaseConfig();
             liquibaseConfig.setUrl("jdbc:h2:mem:test");
 
-            ConfigFactory configFactory = mock(ConfigFactory.class);
             when(configFactory.get(eq(LiquibaseConfig.class))).thenReturn(liquibaseConfig);
             binder.bind(ConfigFactory.class).toInstance(configFactory);
 
