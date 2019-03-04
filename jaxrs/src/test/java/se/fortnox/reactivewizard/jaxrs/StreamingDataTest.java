@@ -19,6 +19,7 @@ import java.util.List;
 import static com.google.common.collect.ImmutableMap.of;
 import static java.util.Collections.singletonMap;
 import static org.fest.assertions.Assertions.assertThat;
+import static rx.Observable.empty;
 import static rx.Observable.error;
 import static rx.Observable.just;
 import static se.fortnox.reactivewizard.jaxrs.response.ResponseDecorator.withHeaders;
@@ -106,6 +107,26 @@ public class StreamingDataTest {
         }
     }
 
+    @Test
+    public void shouldHandleStreamingResultEmpty() {
+        HttpServer<ByteBuf, ByteBuf> server   = testServer(streamingResource).getServer();
+        try {
+            HttpClient<ByteBuf, ByteBuf> client = HttpClient.newClient("localhost", server.getServerPort());
+            HttpClientResponse<ByteBuf> response = client.createGet("/stream/emptyStream").toBlocking().single();
+
+            assertThat(response.getStatus()).isEqualTo(HttpResponseStatus.NO_CONTENT);
+
+            String single = response.getContent().map(byteBuf -> byteBuf.toString(Charset.defaultCharset()))
+                .toBlocking()
+                .singleOrDefault(null);
+
+            assertThat(single).isNull();
+
+        } finally {
+            server.shutdown();
+        }
+    }
+
     /**
      * Here the implementing class has annotated its method with stream. That should work
      */
@@ -134,6 +155,11 @@ public class StreamingDataTest {
         @Produces(MediaType.TEXT_PLAIN)
         @Path("withHeadersAndError")
         Observable<String> streamWithUnexpectedError();
+
+        @GET
+        @Produces(MediaType.TEXT_PLAIN)
+        @Path("emptyStream")
+        Observable<String> emptyStream();
     }
 
     /**
@@ -177,6 +203,12 @@ public class StreamingDataTest {
             return withHeaders(just("a", "b"), new HashMap<String, String>(){{
                 put("my-header", "my-value");
             }});
+        }
+
+        @Override
+        @Stream
+        public Observable<String> emptyStream() {
+            return empty();
         }
     }
 
