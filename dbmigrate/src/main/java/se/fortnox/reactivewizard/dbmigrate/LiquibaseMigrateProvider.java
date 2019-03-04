@@ -5,17 +5,25 @@ import liquibase.exception.LiquibaseException;
 import se.fortnox.reactivewizard.config.ConfigFactory;
 
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class LiquibaseMigrateProvider {
-    private final LiquibaseMigrate liquibaseMigrate;
+    private final AtomicReference<LiquibaseMigrate> liquibaseMigrate = new AtomicReference<>();
+    private final LiquibaseConfig liquibaseConfig;
 
     @Inject
-    public LiquibaseMigrateProvider(ConfigFactory configFactory) throws IOException, LiquibaseException {
-        LiquibaseConfig liquibaseConfig = configFactory.get(LiquibaseConfig.class);
-        liquibaseMigrate = new LiquibaseMigrate(liquibaseConfig);
+    public LiquibaseMigrateProvider(ConfigFactory configFactory) {
+        liquibaseConfig = configFactory.get(LiquibaseConfig.class);
     }
 
     public LiquibaseMigrate get() {
-        return liquibaseMigrate;
+        if (liquibaseMigrate.get() == null) {
+            try {
+                liquibaseMigrate.set(new LiquibaseMigrate(liquibaseConfig));
+            } catch (LiquibaseException | IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return liquibaseMigrate.get();
     }
 }
