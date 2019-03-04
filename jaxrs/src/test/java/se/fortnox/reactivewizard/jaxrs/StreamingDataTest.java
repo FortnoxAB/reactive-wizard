@@ -1,6 +1,7 @@
 package se.fortnox.reactivewizard.jaxrs;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import io.reactivex.netty.protocol.http.client.HttpClient;
 import io.reactivex.netty.protocol.http.client.HttpClientResponse;
 import io.reactivex.netty.protocol.http.server.HttpServer;
@@ -15,7 +16,10 @@ import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.List;
 
+import static com.google.common.collect.ImmutableMap.of;
+import static java.util.Collections.singletonMap;
 import static org.fest.assertions.Assertions.assertThat;
+import static rx.Observable.error;
 import static rx.Observable.just;
 import static se.fortnox.reactivewizard.jaxrs.response.ResponseDecorator.withHeaders;
 import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.body;
@@ -82,6 +86,26 @@ public class StreamingDataTest {
         }
     }
 
+    @Test
+    public void shouldHandleStreamingResultWithHeadersAndErrors() {
+        HttpServer<ByteBuf, ByteBuf> server   = testServer(streamingResource).getServer();
+        try {
+            HttpClient<ByteBuf, ByteBuf> client = HttpClient.newClient("localhost", server.getServerPort());
+            HttpClientResponse<ByteBuf> response = client.createGet("/stream/withHeadersAndError").toBlocking().single();
+
+            assertThat(response.getStatus()).isEqualTo(HttpResponseStatus.BAD_REQUEST);
+            assertThat(response.getHeader("header1")).isEqualTo("value1");
+            String single = response.getContent().map(byteBuf -> byteBuf.toString(Charset.defaultCharset()))
+                .toBlocking()
+                .single();
+
+            assertThat(single.contains("badrequest"));
+
+        } finally {
+            server.shutdown();
+        }
+    }
+
     /**
      * Here the implementing class has annotated its method with stream. That should work
      */
@@ -100,6 +124,16 @@ public class StreamingDataTest {
         @Produces(MediaType.TEXT_PLAIN)
         @Path("withHeaders")
         Observable<String> streamWithHeaders();
+
+        @GET
+        @Produces(MediaType.TEXT_PLAIN)
+        @Path("withHeadersAndError")
+        Observable<String> streamWithBadRequest();
+
+        @GET
+        @Produces(MediaType.TEXT_PLAIN)
+        @Path("withHeadersAndError")
+        Observable<String> streamWithUnexpectedError();
     }
 
     /**
@@ -119,6 +153,17 @@ public class StreamingDataTest {
         @Stream
         public Observable<String> streamOfStrings() {
             return just("a", "b");
+        }
+
+        @Override
+        @Stream
+        public Observable<String> streamWithBadRequest() {
+            return withHeaders(error(new WebException(HttpResponseStatus.BAD_REQUEST, new RuntimeException("poff"))), singletonMap("header1", "value1"));
+        }
+
+        @Override
+        public Observable<String> streamWithUnexpectedError() {
+            return withHeaders(error(new RuntimeException("just some random error")), of());
         }
 
         @Override
