@@ -21,7 +21,7 @@ public class LiquibaseMigrateProvider {
             try {
                 liquibaseMigrate.set(new LiquibaseMigrate(liquibaseConfig));
             } catch (LiquibaseException | IOException e) {
-                throw new RuntimeException(e);
+                throw new IllegalStateException(e);
             }
         }
         return liquibaseMigrate.get();
