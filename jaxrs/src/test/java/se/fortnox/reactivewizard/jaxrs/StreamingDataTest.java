@@ -100,7 +100,7 @@ public class StreamingDataTest {
                 .toBlocking()
                 .single();
 
-            assertThat(single.contains("badrequest"));
+            assertThat(single.contains("badrequest")).isTrue();
 
         } finally {
             server.shutdown();
