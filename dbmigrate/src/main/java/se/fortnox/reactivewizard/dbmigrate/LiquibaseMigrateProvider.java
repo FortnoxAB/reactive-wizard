@@ -1,6 +1,7 @@
 package se.fortnox.reactivewizard.dbmigrate;
 
 import com.google.inject.Inject;
+import com.google.inject.Provider;
 import com.google.inject.Singleton;
 import liquibase.exception.LiquibaseException;
 import se.fortnox.reactivewizard.config.ConfigFactory;
@@ -8,7 +9,7 @@ import se.fortnox.reactivewizard.config.ConfigFactory;
 import java.io.IOException;
 
 @Singleton
-public class LiquibaseMigrateProvider {
+public class LiquibaseMigrateProvider implements Provider<LiquibaseMigrate> {
     private LiquibaseMigrate liquibaseMigrate;
     private final LiquibaseConfig liquibaseConfig;
 

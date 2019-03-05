@@ -78,6 +78,7 @@ public class LiquibaseAutoBindModuleTest {
             getInjectedLiquibaseMock(liquibaseMigrateMock, "db-migrate", "config.yml");
             fail("Expected CreationException, but none was thrown");
         } catch (CreationException e) {
+            e.printStackTrace();
             assertThat(e.getCause()).isInstanceOf(RuntimeException.class);
             assertThat(e.getCause().getCause()).isInstanceOf(LiquibaseException.class);
         }
@@ -122,7 +123,7 @@ public class LiquibaseAutoBindModuleTest {
 
             LiquibaseMigrateProvider liquibaseMigrateProvider = mock(LiquibaseMigrateProvider.class);
             when(liquibaseMigrateProvider.get()).thenReturn(liquibaseMigrateMock);
-            binder.bind(LiquibaseMigrateProvider.class).toInstance(liquibaseMigrateProvider);
+            binder.bind(LiquibaseMigrate.class).toProvider(liquibaseMigrateProvider);
         }));
 
         return liquibaseMigrateMock;
