@@ -35,7 +35,7 @@ public class JaxRsRequestHandler implements RequestHandler<ByteBuf, ByteBuf> {
             null);
     }
 
-    public JaxRsRequestHandler(Object... services) {
+    public JaxRsRequestHandler(Object[] services) {
         this(services, new JaxRsResourceFactory(), new ExceptionHandler(), new ByteBufCollector(), null);
     }
 
