@@ -2,7 +2,6 @@ package se.fortnox.reactivewizard.jaxrs;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpResponseStatus;
-import io.reactivex.netty.channel.ContentSource;
 import rx.Observable;
 
 import java.io.ByteArrayOutputStream;
@@ -13,6 +12,10 @@ import java.nio.charset.Charset;
 public class ByteBufCollector {
 
     private final int maxReqSize;
+
+    public ByteBufCollector() {
+        this.maxReqSize = 10 * 1024 * 1024;
+    }
 
     public ByteBufCollector(int maxReqSize) {
         this.maxReqSize = maxReqSize;

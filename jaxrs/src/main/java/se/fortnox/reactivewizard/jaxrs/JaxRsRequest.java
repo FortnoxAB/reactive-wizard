@@ -25,24 +25,26 @@ import static rx.Observable.just;
  * Represents an incoming request. Helps with extracting different types of data from the request.
  */
 public class JaxRsRequest {
-    private static final Logger           LOG       = LoggerFactory.getLogger(JaxRsResource.class);
-    private static final ByteBufCollector collector = new ByteBufCollector(10 * 1024 * 1024); // 10 MB
+    private static final Logger LOG = LoggerFactory.getLogger(JaxRsResource.class);
+
     private final HttpServerRequest<ByteBuf> req;
     private final byte[]                     body;
     private       Matcher                    matcher;
+    private final ByteBufCollector           collector;
 
-    protected JaxRsRequest(HttpServerRequest<ByteBuf> req, Matcher matcher, byte[] body) {
-        this.req = req;
-        this.matcher = matcher;
-        this.body = body;
+    protected JaxRsRequest(HttpServerRequest<ByteBuf> req, Matcher matcher, byte[] body, ByteBufCollector collector) {
+        this.req       = req;
+        this.matcher   = matcher;
+        this.body      = body;
+        this.collector = collector; // 10 MB as default
     }
 
-    public JaxRsRequest(HttpServerRequest<ByteBuf> request) {
-        this(request, null, null);
+    public JaxRsRequest(HttpServerRequest<ByteBuf> request, ByteBufCollector collector) {
+        this(request, null, null, collector);
     }
 
-    protected JaxRsRequest create(HttpServerRequest<ByteBuf> req, Matcher matcher, byte[] body) {
-        return new JaxRsRequest(req, matcher, body);
+    protected JaxRsRequest create(HttpServerRequest<ByteBuf> req, Matcher matcher, byte[] body, ByteBufCollector collector) {
+        return new JaxRsRequest(req, matcher, body, collector);
     }
 
     public boolean hasMethod(HttpMethod httpMethod) {
@@ -59,7 +61,7 @@ public class JaxRsRequest {
             return collector.collectBytes(req.getContent()
                 .doOnError(e -> LOG.error("Error reading data for request " + httpMethod + " " + req.getUri(), e)))
                 .lastOrDefault(null)
-                .map(body -> create(req, matcher, body));
+                .map(reqBody -> create(req, matcher, reqBody, collector));
         }
         return just(this);
     }

@@ -1,10 +1,7 @@
 package se.fortnox.reactivewizard.utils;
 
 import se.fortnox.reactivewizard.ExceptionHandler;
-import se.fortnox.reactivewizard.jaxrs.BlockingResourceScheduler;
-import se.fortnox.reactivewizard.jaxrs.JaxRsRequestHandler;
-import se.fortnox.reactivewizard.jaxrs.JaxRsResourceFactory;
-import se.fortnox.reactivewizard.jaxrs.JaxRsResources;
+import se.fortnox.reactivewizard.jaxrs.*;
 import se.fortnox.reactivewizard.mocks.MockHttpServerResponse;
 import se.fortnox.reactivewizard.jaxrs.params.ParamResolverFactories;
 import se.fortnox.reactivewizard.jaxrs.response.JaxRsResultFactoryFactory;
@@ -78,10 +75,7 @@ public class JaxRsTestUtil {
     }
 
     private static JaxRsRequestHandler getJaxRsRequestHandler(Object... services) {
-        return new JaxRsRequestHandler(services,
-            new JaxRsResourceFactory(new ParamResolverFactories(), new JaxRsResultFactoryFactory(), new BlockingResourceScheduler()),
-            new ExceptionHandler(),
-            false);
+        return new JaxRsRequestHandler(services);
     }
 
     public static MockHttpServerResponse processRequestWithHandler(JaxRsRequestHandler handler, HttpServerRequest<ByteBuf> request) {

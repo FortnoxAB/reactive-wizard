@@ -8,6 +8,8 @@ import io.netty.buffer.ByteBuf;
 import io.reactivex.netty.protocol.http.server.RequestHandler;
 import se.fortnox.reactivewizard.binding.AutoBindModule;
 import se.fortnox.reactivewizard.binding.scanners.InjectAnnotatedScanner;
+import se.fortnox.reactivewizard.config.ConfigFactory;
+import se.fortnox.reactivewizard.jaxrs.ByteBufCollector;
 import se.fortnox.reactivewizard.jaxrs.JaxRsMeta;
 import se.fortnox.reactivewizard.jaxrs.JaxRsRequestHandler;
 import se.fortnox.reactivewizard.jaxrs.JaxRsResourcesProvider;
@@ -29,10 +31,12 @@ import java.util.Optional;
 public class ServerModule implements AutoBindModule {
 
     private final InjectAnnotatedScanner injectAnnotatedScanner;
+    private final ServerConfig           config;
 
     @Inject
-    public ServerModule(InjectAnnotatedScanner injectAnnotatedScanner) {
+    public ServerModule(InjectAnnotatedScanner injectAnnotatedScanner, ConfigFactory configFactory) {
         this.injectAnnotatedScanner = injectAnnotatedScanner;
+        this.config                 = configFactory.get(ServerConfig.class);
     }
 
     @Override
@@ -49,10 +53,12 @@ public class ServerModule implements AutoBindModule {
         Multibinder.newSetBinder(binder, TypeLiteral.get(ParamResolver.class));
         binder.bind(DateFormat.class).toProvider(StdDateFormat::new);
 
+        ByteBufCollector byteBufCollector = new ByteBufCollector(config.getMaxRequestSize());
+        binder.bind(ByteBufCollector.class).toInstance(byteBufCollector);
+
         JaxRsResourceRegistry jaxRsResourceRegistry = new JaxRsResourceRegistry();
         binder.bind(JaxRsResourceRegistry.class).toInstance(jaxRsResourceRegistry);
         binder.bind(JaxRsResourcesProvider.class).toInstance(jaxRsResourceRegistry);
-
 
 
         for (Class<?> cls : injectAnnotatedScanner.getClasses()) {
