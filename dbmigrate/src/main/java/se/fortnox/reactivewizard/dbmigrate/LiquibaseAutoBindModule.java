@@ -1,6 +1,7 @@
 package se.fortnox.reactivewizard.dbmigrate;
 
 import com.google.inject.Binder;
+import com.google.inject.Provider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import se.fortnox.reactivewizard.binding.AutoBindModule;
@@ -19,13 +20,12 @@ import javax.inject.Named;
  */
 public class LiquibaseAutoBindModule implements AutoBindModule {
     private static final Logger LOG = LoggerFactory.getLogger(LiquibaseAutoBindModule.class);
-
     private final String           startCommand;
-    private final LiquibaseMigrate liquibaseMigrate;
+    private final Provider<LiquibaseMigrate> liquibaseMigrateProvider;
 
     @Inject
-    public LiquibaseAutoBindModule(@Named("args") String[] args, LiquibaseMigrateProvider liquibaseMigrateProvider) {
-        this.liquibaseMigrate = liquibaseMigrateProvider.get();
+    public LiquibaseAutoBindModule(@Named("args") String[] args, Provider<LiquibaseMigrate> liquibaseMigrateProvider) {
+        this.liquibaseMigrateProvider = liquibaseMigrateProvider;
         if (args.length < 2) {
             this.startCommand = "";
         } else {
@@ -36,6 +36,7 @@ public class LiquibaseAutoBindModule implements AutoBindModule {
     @Override
     public void preBind() {
         if (startCommand.startsWith("db-")) {
+            LiquibaseMigrate liquibaseMigrate = liquibaseMigrateProvider.get();
             try {
                 if (startCommand.startsWith("db-drop")) {
                     try {

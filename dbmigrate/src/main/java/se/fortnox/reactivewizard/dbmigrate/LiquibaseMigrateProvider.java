@@ -1,21 +1,31 @@
 package se.fortnox.reactivewizard.dbmigrate;
 
 import com.google.inject.Inject;
+import com.google.inject.Provider;
+import com.google.inject.Singleton;
 import liquibase.exception.LiquibaseException;
 import se.fortnox.reactivewizard.config.ConfigFactory;
 
 import java.io.IOException;
 
-public class LiquibaseMigrateProvider {
-    private final LiquibaseMigrate liquibaseMigrate;
+@Singleton
+public class LiquibaseMigrateProvider implements Provider<LiquibaseMigrate> {
+    private LiquibaseMigrate liquibaseMigrate;
+    private final LiquibaseConfig liquibaseConfig;
 
     @Inject
-    public LiquibaseMigrateProvider(ConfigFactory configFactory) throws IOException, LiquibaseException {
-        LiquibaseConfig liquibaseConfig = configFactory.get(LiquibaseConfig.class);
-        liquibaseMigrate = new LiquibaseMigrate(liquibaseConfig);
+    public LiquibaseMigrateProvider(ConfigFactory configFactory) {
+        liquibaseConfig = configFactory.get(LiquibaseConfig.class);
     }
 
     public LiquibaseMigrate get() {
+        if (liquibaseMigrate == null) {
+            try {
+                liquibaseMigrate = new LiquibaseMigrate(liquibaseConfig);
+            } catch (LiquibaseException | IOException e) {
+                throw new IllegalStateException(e);
+            }
+        }
         return liquibaseMigrate;
     }
 }

@@ -126,7 +126,7 @@ public class LiquibaseAutoBindModuleTest {
 
             LiquibaseMigrateProvider liquibaseMigrateProvider = mock(LiquibaseMigrateProvider.class);
             when(liquibaseMigrateProvider.get()).thenReturn(liquibaseMigrateMock);
-            binder.bind(LiquibaseMigrateProvider.class).toInstance(liquibaseMigrateProvider);
+            binder.bind(LiquibaseMigrate.class).toProvider(liquibaseMigrateProvider);
         }));
 
         return liquibaseMigrateMock;
