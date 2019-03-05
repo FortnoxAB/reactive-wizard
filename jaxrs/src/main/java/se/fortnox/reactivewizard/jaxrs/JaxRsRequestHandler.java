@@ -39,7 +39,7 @@ public class JaxRsRequestHandler implements RequestHandler<ByteBuf, ByteBuf> {
      * A bit dangerous to have a constructor with varargs.
      * It is only used in test but be aware when adding new parameters to the other constructors that
      * Code using the other constructors will end up here if we don't provide overloaded constructors.
-     * @param services
+     * @param services a list of services to deploy
      */
     public JaxRsRequestHandler(Object... services) {
         this(services, new JaxRsResourceFactory(), new ExceptionHandler(), new ByteBufCollector(), null);
