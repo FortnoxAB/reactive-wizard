@@ -16,9 +16,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static io.netty.handler.codec.http.HttpMethod.DELETE;
+import static io.netty.handler.codec.http.HttpMethod.PATCH;
 import static io.netty.handler.codec.http.HttpMethod.POST;
 import static io.netty.handler.codec.http.HttpMethod.PUT;
-import static io.netty.handler.codec.http.HttpMethod.PATCH;
 import static rx.Observable.just;
 
 /**
@@ -37,6 +37,10 @@ public class JaxRsRequest {
         this.matcher   = matcher;
         this.body      = body;
         this.collector = collector; // 10 MB as default
+    }
+
+    public JaxRsRequest(HttpServerRequest<ByteBuf> request) {
+        this(request, new ByteBufCollector());
     }
 
     public JaxRsRequest(HttpServerRequest<ByteBuf> request, ByteBufCollector collector) {
