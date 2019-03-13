@@ -17,8 +17,7 @@ public class TestTestInjector {
         assertThat(injector.getInstance(ConfigFactory.class).getClass().getName()).isNotEqualTo(ConfigFactory.class.getName());
 
         String[] args = injector.getInstance(Key.get(String[].class, Names.named("args")));
-        assertThat(args.length).isEqualTo(1);
-        assertThat(args[0]).isEqualTo("");
+        assertThat(args.length).isEqualTo(0);
     }
 
     @Test
