@@ -1,6 +1,5 @@
 package se.fortnox.reactivewizard.db.deserializing;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import se.fortnox.reactivewizard.json.JsonDeserializerFactory;
@@ -63,12 +62,7 @@ class DeserializerUtil {
         BiFunction<PropertyResolver<I,?>, Deserializer, T> deserializerFactory
     ) {
         Type propertyGenericType = propertyResolver.getPropertyGenericType();
-        Function<String, ?> deserializer = JSON_DESERIALIZER_FACTORY.createDeserializer(new TypeReference<Object>() {
-            @Override
-            public Type getType() {
-                return propertyGenericType;
-            }
-        });
+        Function<String, ?> deserializer = JSON_DESERIALIZER_FACTORY.createDeserializer(propertyGenericType);
 
         return deserializerFactory.apply(propertyResolver, (rs) -> {
             String columnValue = rs.getString(columnIndex);
