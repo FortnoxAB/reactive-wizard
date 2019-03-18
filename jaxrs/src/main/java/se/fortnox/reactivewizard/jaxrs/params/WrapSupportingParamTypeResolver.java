@@ -2,10 +2,9 @@ package se.fortnox.reactivewizard.jaxrs.params;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import se.fortnox.reactivewizard.jaxrs.Wrap;
-import se.fortnox.reactivewizard.json.TypeHolder;
+import se.fortnox.reactivewizard.json.Types;
 
 import java.lang.reflect.Parameter;
-import java.lang.reflect.Type;
 
 public class WrapSupportingParamTypeResolver extends ParamTypeResolver {
 
