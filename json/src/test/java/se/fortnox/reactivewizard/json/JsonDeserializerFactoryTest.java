@@ -4,14 +4,17 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.function.Function;
 
+import static java.util.Arrays.asList;
 import static org.fest.assertions.Assertions.assertThat;
 import static org.fest.assertions.Fail.fail;
 
@@ -155,6 +158,22 @@ public class JsonDeserializerFactoryTest {
 
         assertThat(result).isEqualTo(jdk8Types);
     }
+
+    @Test
+    public void shouldDeserializeFromType() throws NoSuchMethodException {
+        Method method = this.getClass().getDeclaredMethod("methodReturningListOfString");
+        Type type = method.getGenericReturnType();
+        Function<String, List<String>> serializeList = deserializerFactory.createDeserializer(type);
+        List<String> result = serializeList.apply("[\"a\",\"b\"]");
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0)).isEqualTo("a");
+        assertThat(result.get(1)).isEqualTo("b");
+    }
+
+    private List<String> methodReturningListOfString() {
+        return asList("a", "b");
+    }
+
 
     private MutableEntity mutableEntity(String stringProperty, int intProperty) {
         MutableEntity entity = new MutableEntity();
