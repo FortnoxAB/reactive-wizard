@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ser.BeanSerializerFactory;
 import com.fasterxml.jackson.databind.ser.SerializerFactory;
 
 import javax.inject.Inject;
+import java.lang.reflect.Type;
 import java.util.function.Function;
 
 /**
@@ -36,6 +37,10 @@ public class JsonSerializerFactory {
 
     public <T> Function<T, String> createStringSerializer(Class<T> paramType) {
         return createStringSerializer(mapper.writerFor(paramType));
+    }
+
+    public <T> Function<T, String> createStringSerializer(Type type) {
+        return createStringSerializer(Types.toReference(type));
     }
 
     private <T> Function<T, String> createStringSerializer(ObjectWriter writer) {

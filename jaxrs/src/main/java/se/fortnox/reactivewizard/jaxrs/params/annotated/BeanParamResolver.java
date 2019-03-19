@@ -5,11 +5,11 @@ import rx.Observable;
 import se.fortnox.reactivewizard.jaxrs.JaxRsRequest;
 import se.fortnox.reactivewizard.jaxrs.params.ParamResolver;
 import se.fortnox.reactivewizard.jaxrs.params.ParamResolverFactories;
+import se.fortnox.reactivewizard.json.Types;
 import se.fortnox.reactivewizard.util.ReflectionUtil;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -67,12 +67,7 @@ public class BeanParamResolver<T> extends AnnotatedParamResolver<T> {
                 for (Annotation fieldAnnotation : fieldAnnotations) {
                     AnnotatedParamResolverFactory paramResolverFactory = annotatedParamResolverFactories.get(fieldAnnotation.annotationType());
                     if (paramResolverFactory != null) {
-                        TypeReference<T> fieldType = new TypeReference<T>() {
-                            @Override
-                            public Type getType() {
-                                return field.getGenericType();
-                            }
-                        };
+                        TypeReference<T> fieldType = Types.toReference(field.getGenericType());
                         String defaultFieldValue = ParamResolverFactories.findDefaultValue(asList(fieldAnnotations));
                         ParamResolver<?> fieldResolver = paramResolverFactory.create(fieldType, fieldAnnotation, defaultFieldValue);
 

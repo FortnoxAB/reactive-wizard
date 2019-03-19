@@ -3,6 +3,9 @@ package se.fortnox.reactivewizard.json;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import org.junit.Test;
 
+import java.lang.reflect.Method;
+import java.lang.reflect.Type;
+import java.util.List;
 import java.util.function.Function;
 
 import static java.util.Arrays.asList;
@@ -64,6 +67,18 @@ public class JsonSerializerFactoryTest {
 		)) {
 			assertThat(serializer.apply(null)).isNull();
 		}
+	}
+
+	@Test
+	public void shouldSerializeFromType() throws NoSuchMethodException {
+		Method method = this.getClass().getDeclaredMethod("methodReturningListOfString");
+		Type type = method.getGenericReturnType();
+		Function<List<String>, String> serializeList = serializerFactory.createStringSerializer(type);
+		assertThat(serializeList.apply(methodReturningListOfString())).isEqualTo("[\"a\",\"b\"]");
+	}
+
+	private List<String> methodReturningListOfString() {
+		return asList("a", "b");
 	}
 
 	private static class EntityThrowingOnSerialize {

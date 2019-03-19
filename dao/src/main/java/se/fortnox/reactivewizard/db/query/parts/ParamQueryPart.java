@@ -87,10 +87,15 @@ public class ParamQueryPart implements DynamicQueryPart {
                 parameters.addTimestamp(sqlTimestamp);
             };
         } else if (List.class.isAssignableFrom(rawType)) {
-            String listElementType = getListElementType(type);
+            Optional<String> listElementType = getListElementType(type);
+            if (!listElementType.isPresent()) {
+                Function<Object, String> jsonSerializer = JSON_SERIALIZER_FACTORY.createStringSerializer(type);
+                return (parameters, value) -> parameters.addObject(jsonSerializer.apply(value));
+            }
+            String elementType = listElementType.get();
             return (parameters, value) -> {
                 List<?> list = (List<?>)value;
-                parameters.addArray(listElementType, list);
+                parameters.addArray(elementType, list);
             };
         } else if (rawType.isEnum()) {
             return (parameters, value) -> {
@@ -98,29 +103,23 @@ public class ParamQueryPart implements DynamicQueryPart {
                 parameters.addObject(enumValue.name());
             };
         } else if (Map.class.isAssignableFrom(rawType)) {
-            return (parameters, value) -> {
-                Function<Map, String> jsonSerializer = JSON_SERIALIZER_FACTORY.createStringSerializer(Map.class);
-
-                parameters.addObject(jsonSerializer.apply((Map)value));
-            };
+            Function<Map, String> jsonSerializer = JSON_SERIALIZER_FACTORY.createStringSerializer(Map.class);
+            return (parameters, value) -> parameters.addObject(jsonSerializer.apply((Map)value));
         } else {
-            return (parameters, value) -> {
-                parameters.addObject(value);
-            };
+            return (parameters, value) -> parameters.addObject(value);
         }
     }
 
-    private String getListElementType(Type type) {
+    private Optional<String> getListElementType(Type type) {
         Class genericParam = ReflectionUtil.getGenericParameter(type);
         if (genericParam.equals(String.class) || genericParam.isEnum()) {
-            return "varchar";
+            return Optional.of("varchar");
         } else if (genericParam.equals(Long.class)) {
-            return "bigint";
+            return Optional.of("bigint");
         } else if (genericParam.equals(UUID.class)) {
-            return "uuid";
+            return Optional.of("uuid");
         } else {
-            throw new UnsupportedOperationException(
-                "Only arrays of type Long, UUID and String as well as Enums are supported.");
+            return Optional.empty();
         }
     }
 
