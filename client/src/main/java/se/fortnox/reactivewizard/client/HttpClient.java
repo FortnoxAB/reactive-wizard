@@ -420,6 +420,10 @@ public class HttpClient implements InvocationHandler {
                 }
             }
         }
+
+        if (!request.getHeaders().containsKey("Host") || request.getHeaders().containsKey("Host") && request.getHeaders().get("Host").isEmpty()) {
+            request.addHeader("Host", this.config.getHost());
+        }
     }
 
     protected Observable<Object> deserialize(Method method, String string) {

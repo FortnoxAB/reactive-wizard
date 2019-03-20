@@ -30,6 +30,7 @@ import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 import org.junit.Assert;
 import org.junit.Test;
+import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.slf4j.event.LoggingEvent;
 import rx.Observable;
@@ -493,7 +494,7 @@ public class HttpClientTest {
         assertThat(e.getError()).isEqualTo("too.large.input");
 
         verify(mockAppender).doAppend(matches(log -> {
-            assertThat(log.getMessage()).isEqualTo("Failed request. Url: localhost:" + server.getServerPort() + "/hello, headers: []");
+            assertThat(log.getMessage()).isEqualTo("Failed request. Url: localhost:" + server.getServerPort() + "/hello, headers: [Host=localhost]");
         }));
 
         server.shutdown();
@@ -1181,6 +1182,40 @@ public class HttpClientTest {
         });
     }
 
+    @Test
+    public void assertRequestContainsHost() {
+        Consumer<HttpServerRequest<ByteBuf>> reqLog = mock(Consumer.class);
+        HttpServer<ByteBuf, ByteBuf>         server = startServer(OK, "", reqLog::accept);
+
+        String host = "localhost";
+
+        getHttpProxy(server.getServerPort()).getHello().toBlocking().singleOrDefault(null);
+
+        verify(reqLog).accept(matches(req -> {
+            assertThat(req.headerIterator()).isNotEmpty();
+            assertThat(req.getHeader("Host")).isEqualTo(host);
+        }));
+
+        server.shutdown();
+    }
+
+    @Test
+    public void assertRequestContainsHostFromHeaderParam() {
+        Consumer<HttpServerRequest<ByteBuf>> reqLog = mock(Consumer.class);
+        HttpServer<ByteBuf, ByteBuf>         server = startServer(OK, "", reqLog::accept);
+
+        String host = "globalhost";
+
+        getHttpProxy(server.getServerPort()).withHostHeaderParam(host).toBlocking().singleOrDefault(null);
+
+        verify(reqLog).accept(matches(req -> {
+            assertThat(req.headerIterator()).isNotEmpty();
+            assertThat(req.getHeader("Host")).isEqualTo(host);
+        }));
+
+        server.shutdown();
+    }
+
     @Path("/hello")
     interface TestResource {
         @GET
@@ -1204,6 +1239,10 @@ public class HttpClientTest {
         @GET
         @Path("/multicookie")
         Observable<byte[]> withMultipleCookies(@CookieParam("cookie1") String param1, @CookieParam("cookie2") String param2);
+
+        @GET
+        @Path("/hostheaderparam")
+        Observable<byte[]> withHostHeaderParam(@HeaderParam("Host") String host);
 
         @GET
         Observable<String> withCookie(@CookieParam("cookie") String param);
