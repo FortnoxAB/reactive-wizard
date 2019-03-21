@@ -516,7 +516,7 @@ public class HttpClient implements InvocationHandler {
     }
     
     protected boolean isNullOrEmpty(String string) {
-        return string == null || str.isEmpty();
+        return string == null || string.isEmpty();
     }
 
     public static class DetailedError extends Throwable {
