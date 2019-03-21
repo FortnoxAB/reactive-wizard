@@ -422,9 +422,9 @@ public class HttpClient implements InvocationHandler {
             }
         }
         
-        if (Strings.isNullOrEmpty(request.getHeaders().get("Host"))) {
+       if (isNullOrEmpty(request.getHeaders().get("Host"))) {
             request.addHeader("Host", this.config.getHost());
-        }
+       }
     }
 
     protected Observable<Object> deserialize(Method method, String string) {
@@ -513,6 +513,10 @@ public class HttpClient implements InvocationHandler {
             return stringBuilder.toString();
         }
         return value.toString();
+    }
+    
+    protected boolean isNullOrEmpty(String string) {
+        return string == null || str.isEmpty();
     }
 
     public static class DetailedError extends Throwable {
