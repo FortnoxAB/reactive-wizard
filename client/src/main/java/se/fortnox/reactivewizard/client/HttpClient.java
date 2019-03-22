@@ -422,9 +422,9 @@ public class HttpClient implements InvocationHandler {
             }
         }
         
-       if (isNullOrEmpty(request.getHeaders().get("Host"))) {
+        if (isNullOrEmpty(request.getHeaders().get("Host"))) {
             request.addHeader("Host", this.config.getHost());
-       }
+        }
     }
 
     protected Observable<Object> deserialize(Method method, String string) {
