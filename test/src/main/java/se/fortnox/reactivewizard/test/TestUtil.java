@@ -1,5 +1,6 @@
 package se.fortnox.reactivewizard.test;
 
+import org.assertj.core.api.AbstractThrowableAssert;
 import org.fest.assertions.ThrowableAssert;
 import org.hamcrest.Description;
 import org.mockito.ArgumentMatcher;
@@ -7,8 +8,7 @@ import org.mockito.Mockito;
 
 import java.util.function.Consumer;
 
-import static org.fest.assertions.Assertions.assertThat;
-import static org.fest.assertions.Fail.fail;
+import static org.assertj.core.api.Assertions.fail;
 
 /**
  * Utility functions for building tests.
@@ -61,12 +61,13 @@ public final class TestUtil {
     /**
      * Assert the type of an exception.
      *
+     * @param <T> The type of the expected exception
      * @param throwable The exception to apply assertion on
      * @param type Expected type of exception
-     * @param <T> The type of the expected exception
      * @return The assertion for further assertion chaining
      */
     public static <T extends Throwable> ThrowableAssert assertException(Throwable throwable, Class<T> type) {
+
         while (!type.isAssignableFrom(throwable.getClass())) {
             Throwable cause = throwable.getCause();
             if (cause == throwable || cause == null) {
@@ -74,7 +75,6 @@ public final class TestUtil {
             }
             throwable = cause;
         }
-        return assertThat(throwable);
+        return org.fest.assertions.Assertions.assertThat(throwable);
     }
-
 }

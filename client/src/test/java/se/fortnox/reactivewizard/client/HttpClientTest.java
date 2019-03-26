@@ -92,8 +92,8 @@ import java.util.function.Consumer;
 
 import static io.netty.handler.codec.http.HttpResponseStatus.*;
 import static java.lang.String.format;
-import static org.fest.assertions.Assertions.assertThat;
-import static org.fest.assertions.Fail.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;

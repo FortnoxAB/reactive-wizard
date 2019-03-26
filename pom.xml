@@ -81,8 +81,8 @@
         <guava.version>27.0.1-jre</guava.version>
 
         <junit.version>4.12</junit.version>
-        <fest.version>1.4</fest.version>
         <fest-assert.version>1.4</fest-assert.version>
+        <assertj.version>3.11.1</assertj.version>
         <mockito.version>1.10.16</mockito.version>
         <blitz4j.version>1.37.2</blitz4j.version>
         <servocore.version>0.12.17</servocore.version>

@@ -6,7 +6,7 @@ import se.fortnox.reactivewizard.json.JsonSerializerFactory;
 
 import java.util.function.Function;
 
-import static org.fest.assertions.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class LambdaWriterTest {
 	@Test

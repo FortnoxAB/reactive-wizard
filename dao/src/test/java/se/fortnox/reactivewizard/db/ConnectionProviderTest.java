@@ -3,7 +3,7 @@ package se.fortnox.reactivewizard.db;
 import org.junit.Test;
 import se.fortnox.reactivewizard.db.config.DatabaseConfig;
 
-import static org.fest.assertions.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class ConnectionProviderTest {
 

@@ -60,8 +60,8 @@ import java.util.UUID;
 
 import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.*;
 import static java.util.Arrays.asList;
-import static org.fest.assertions.Assertions.assertThat;
-import static org.fest.assertions.Fail.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.Mockito.when;
 import static rx.Observable.just;
 

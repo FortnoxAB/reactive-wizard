@@ -6,8 +6,8 @@ import org.junit.Test;
 import java.io.IOException;
 import java.sql.SQLException;
 
-import static org.fest.assertions.Assertions.assertThat;
-import static org.fest.assertions.Fail.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static se.fortnox.reactivewizard.test.TestUtil.assertException;
@@ -33,9 +33,9 @@ public class TestUtilTest {
             verify(testClass).doNothing(matches(string -> assertThat(string).isEqualTo("expected")));
             fail("Expected ComparisonFailure, but none was thrown");
         } catch (ComparisonFailure comparisonFailure) {
-            assertThat(comparisonFailure.getActual()).isEqualTo("'unexpected'");
-            assertThat(comparisonFailure.getExpected()).isEqualTo("'expected'");
-            assertThat(comparisonFailure.getMessage()).isEqualTo("expected:<'[]expected'> but was:<'[un]expected'>");
+            assertThat(comparisonFailure.getActual()).isEqualTo("\"unexpected\"");
+            assertThat(comparisonFailure.getExpected()).isEqualTo("\"expected\"");
+            assertThat(comparisonFailure.getMessage()).isEqualTo("expected:<\"[]expected\"> but was:<\"[un]expected\">");
         }
     }
 

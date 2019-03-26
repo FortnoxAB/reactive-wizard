@@ -7,7 +7,7 @@ import rx.Observable;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static org.fest.assertions.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static rx.Observable.empty;
 
 public class FieldGetterTest extends AccessorTest {

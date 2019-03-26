@@ -5,7 +5,7 @@ import org.junit.Test;
 
 import java.util.stream.Stream;
 
-import static org.fest.assertions.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class MethodGetterTest extends AccessorTest {
     private Getter value;

@@ -6,7 +6,7 @@ import org.mockito.Mockito;
 import java.net.MalformedURLException;
 import java.net.URL;
 
-import static org.fest.assertions.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.when;
 

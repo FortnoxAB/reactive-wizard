@@ -12,8 +12,8 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.function.Function;
 
-import static org.fest.assertions.Assertions.assertThat;
-import static org.fest.assertions.Fail.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 public class JsonDeserializerFactoryTest {
     private JsonSerializerFactory   serializerFactory;

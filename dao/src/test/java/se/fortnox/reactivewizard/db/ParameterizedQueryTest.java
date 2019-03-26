@@ -2,7 +2,6 @@ package se.fortnox.reactivewizard.db;
 
 import se.fortnox.reactivewizard.db.config.DatabaseConfig;
 import com.google.common.collect.Lists;
-import org.fest.assertions.Fail;
 import org.junit.Test;
 import rx.Observable;
 
@@ -13,7 +12,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import static org.fest.assertions.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
@@ -57,7 +57,7 @@ public class ParameterizedQueryTest {
     public void shouldThrowExceptionIfUnnamedParamsUsedInQuery() {
         try {
             dao.unnamedParameters("myid", "myname").toBlocking().singleOrDefault(null);
-            Fail.fail("Exptected exception");
+            fail("Exptected exception");
         } catch (Exception e) {
             assertThat(e.getMessage())
                 .isEqualTo("Unnamed parameters are not supported: SELECT * FROM foo WHERE id=? AND name=?");
@@ -68,7 +68,7 @@ public class ParameterizedQueryTest {
     public void shouldThrowExceptionIfNotAllParametersAreFound() {
         try {
             dao.missingParamName("myid", "myname").toBlocking().singleOrDefault(null);
-            Fail.fail("Exptected exception");
+            fail("Exptected exception");
         } catch (Exception e) {
             assertThat(e.getMessage()).isEqualTo(
                 "Query contains placeholder \"name\" but method noes not have such argument");

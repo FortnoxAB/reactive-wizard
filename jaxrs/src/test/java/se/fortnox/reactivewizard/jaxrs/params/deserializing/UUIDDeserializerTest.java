@@ -4,8 +4,8 @@ import org.junit.Test;
 
 import java.util.UUID;
 
-import static org.fest.assertions.Assertions.assertThat;
-import static org.fest.assertions.Fail.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 public class UUIDDeserializerTest {
     private final static Deserializer<UUID> DESERIALIZER = new UUIDDeserializer();
