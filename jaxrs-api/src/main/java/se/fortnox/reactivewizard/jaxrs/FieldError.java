@@ -3,10 +3,9 @@ package se.fortnox.reactivewizard.jaxrs;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
-import java.io.Serializable;
 import java.util.Map;
 
-public class FieldError implements Serializable {
+public class FieldError {
 
     protected static final String VALIDATION = "validation.";
     private String              field;
