@@ -41,4 +41,12 @@ public class FieldErrorTest {
         assertThat(fieldError.getField()).isEqualTo("username");
         assertThat(fieldError.getErrorParams()).includes(MapAssert.entry("name", "a"));
     }
+
+    @Test
+    public void shouldNotInitializeValues() {
+        FieldError fieldError = new FieldError();
+        assertThat(fieldError.getError()).isNull();
+        assertThat(fieldError.getField()).isNull();
+        assertThat(fieldError.getErrorParams()).isNull();
+    }
 }

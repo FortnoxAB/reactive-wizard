@@ -8,9 +8,12 @@ import java.util.Map;
 public class FieldError {
 
     protected static final String VALIDATION = "validation.";
-    private final String              field;
-    private final String              error;
-    private final Map<String, Object> errorParams;
+    private String              field;
+    private String              error;
+    private Map<String, Object> errorParams;
+
+    public FieldError() {
+    }
 
     public FieldError(String field, String validationErrorCode) {
         this(field, validationErrorCode, null);

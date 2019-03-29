@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Single;
 import se.fortnox.reactivewizard.jaxrs.ByteBufCollector;
+import se.fortnox.reactivewizard.jaxrs.FieldError;
 import se.fortnox.reactivewizard.jaxrs.JaxRsMeta;
 import se.fortnox.reactivewizard.jaxrs.WebException;
 import se.fortnox.reactivewizard.logging.LoggingContext;
@@ -420,7 +421,7 @@ public class HttpClient implements InvocationHandler {
                 }
             }
         }
-        
+
         if (isNullOrEmpty(request.getHeaders().get("Host"))) {
             request.addHeader("Host", this.config.getHost());
         }
@@ -513,15 +514,16 @@ public class HttpClient implements InvocationHandler {
         }
         return value.toString();
     }
-    
+
     protected boolean isNullOrEmpty(String string) {
         return string == null || string.isEmpty();
     }
 
     public static class DetailedError extends Throwable {
-        private int    code;
-        private String error;
-        private String message;
+        private int          code;
+        private String       error;
+        private String       message;
+        private FieldError[] fields;
 
         public DetailedError() {
             this(null);
@@ -561,6 +563,14 @@ public class HttpClient implements InvocationHandler {
 
         public boolean hasReason() {
             return code == 0 && error != null;
+        }
+
+        public FieldError[] getFields() {
+            return fields;
+        }
+
+        public void setFields(FieldError[] fields) {
+            this.fields = fields;
         }
     }
 

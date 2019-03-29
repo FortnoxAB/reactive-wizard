@@ -1,5 +1,6 @@
 package se.fortnox.reactivewizard.client;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
@@ -40,10 +41,7 @@ import rx.functions.Func1;
 import rx.functions.Func2;
 import rx.observers.AssertableSubscriber;
 import se.fortnox.reactivewizard.config.TestInjector;
-import se.fortnox.reactivewizard.jaxrs.ByteBufCollector;
-import se.fortnox.reactivewizard.jaxrs.JaxRsMeta;
-import se.fortnox.reactivewizard.jaxrs.PATCH;
-import se.fortnox.reactivewizard.jaxrs.WebException;
+import se.fortnox.reactivewizard.jaxrs.*;
 import se.fortnox.reactivewizard.metrics.HealthRecorder;
 import se.fortnox.reactivewizard.server.ServerConfig;
 import se.fortnox.reactivewizard.test.LoggingMockUtil;
@@ -156,7 +154,9 @@ public class HttpClientTest {
     }
 
     private TestResource getHttpProxy(HttpClientConfig config) {
-        HttpClient client = new HttpClient(config, new RxClientProvider(config, healthRecorder), new ObjectMapper(), new RequestParameterSerializers(), Collections.emptySet());
+        ObjectMapper mapper = new ObjectMapper().findAndRegisterModules()
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        HttpClient client = new HttpClient(config, new RxClientProvider(config, healthRecorder), mapper, new RequestParameterSerializers(), Collections.emptySet());
         return client.create(TestResource.class);
     }
 
@@ -576,6 +576,31 @@ public class HttpClientTest {
         }
         assertThat(callCount.get()).isEqualTo(1);
 
+        server.shutdown();
+    }
+
+    @Test
+    public void shouldParseWebExceptions() {
+        AtomicLong                   callCount = new AtomicLong();
+        HttpServer<ByteBuf, ByteBuf> server    = startServer(BAD_REQUEST,
+            "{\"id\":\"f3872d6a-43b9-41c2-a302-f1fc89621f68\",\"error\":\"validation\",\"fields\":[{\"field\":\"phoneNumber\",\"error\":\"validation.invalid.phone.number\"}]}",
+            r -> callCount.incrementAndGet());
+
+        TestResource resource = getHttpProxy(server.getServerPort());
+        try {
+            resource.getWrappedPojo().toBlocking().singleOrDefault(null);
+            fail("expected exception");
+        } catch (WebException e) {
+            assertThat(e.getError()).isEqualTo("validation");
+            HttpClient.DetailedError cause = (HttpClient.DetailedError) e.getCause();
+            assertThat(cause.getFields()).isNotNull();
+            assertThat(cause.getFields()).hasSize(1);
+            FieldError error = cause.getFields()[0];
+            assertThat(error.getError()).isEqualTo("validation.invalid.phone.number");
+            assertThat(error.getField()).isEqualTo("phoneNumber");
+        }
+
+        assertThat(callCount.get()).isEqualTo(1);
         server.shutdown();
     }
 
