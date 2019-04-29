@@ -47,6 +47,10 @@
                     <groupId>com.netflix.servo</groupId>
                     <artifactId>servo-core</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                    <artifactId>jackson-core</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
 
