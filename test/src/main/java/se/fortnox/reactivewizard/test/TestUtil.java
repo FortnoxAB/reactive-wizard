@@ -52,7 +52,7 @@ public final class TestUtil {
             @Override
             public void describeTo(Description description) {
                 if (error != null) {
-                    throw error;
+                    description.appendText(error.getMessage());
                 }
             }
         });
