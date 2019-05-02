@@ -2,6 +2,7 @@ package se.fortnox.reactivewizard.test;
 
 import org.junit.ComparisonFailure;
 import org.junit.Test;
+import org.mockito.exceptions.verification.junit.ArgumentsAreDifferent;
 
 import java.io.IOException;
 import java.sql.SQLException;
@@ -32,10 +33,24 @@ public class TestUtilTest {
         try {
             verify(testClass).doNothing(matches(string -> assertThat(string).isEqualTo("expected")));
             fail("Expected ComparisonFailure, but none was thrown");
-        } catch (ComparisonFailure comparisonFailure) {
-            assertThat(comparisonFailure.getActual()).isEqualTo("'unexpected'");
-            assertThat(comparisonFailure.getExpected()).isEqualTo("'expected'");
-            assertThat(comparisonFailure.getMessage()).isEqualTo("expected:<'[]expected'> but was:<'[un]expected'>");
+        } catch (ArgumentsAreDifferent comparisonFailure) {
+            assertThat(comparisonFailure.getActual()).isEqualTo("testClass.doNothing(\n" +
+                    "    \"unexpected\"\n" +
+                    ");");
+            assertThat(comparisonFailure.getExpected()).isEqualTo("testClass.doNothing(\n" +
+                    "    expected:<'[]expected'> but was:<'[un]expected'>\n" +
+                    ");");
+            assertThat(comparisonFailure.getMessage()).isEqualTo("\n" +
+                    "Argument(s) are different! Wanted:\n" +
+                    "testClass.doNothing(\n" +
+                    "    expected:<'[]expected'> but was:<'[un]expected'>\n" +
+                    ");\n" +
+                    "-> at se.fortnox.reactivewizard.test.TestUtilTest.testMatchesFailure(TestUtilTest.java:34)\n" +
+                    "Actual invocation has different arguments:\n" +
+                    "testClass.doNothing(\n" +
+                    "    \"unexpected\"\n" +
+                    ");\n" +
+                    "-> at se.fortnox.reactivewizard.test.TestUtilTest.testMatchesFailure(TestUtilTest.java:31)\n");
         }
     }
 
