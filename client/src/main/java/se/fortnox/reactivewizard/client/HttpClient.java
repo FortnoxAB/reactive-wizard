@@ -254,6 +254,10 @@ public class HttpClient implements InvocationHandler {
                     return false;
                 }
                 if (((WebException)throwable).getStatus().code() >= 500) {
+
+                    // Log the error on every retry.
+                    LOG.info("Will retry because an error occurred", throwable);
+
                     // Retry if it's 500+ error
                     return true;
                 }
