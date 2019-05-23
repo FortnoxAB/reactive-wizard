@@ -48,7 +48,9 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Date;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -141,17 +143,18 @@ public class HttpClient implements InvocationHandler {
             arguments = new Object[0];
         }
 
-        RequestBuilder fullReq = createRequest(method, arguments);
+        RequestBuilder request = createRequest(method, arguments);
 
-        addDevOverrides(fullReq);
+        addDevOverrides(request);
+        addAuthenticationHeaders(request);
 
-        final io.reactivex.netty.protocol.http.client.HttpClient<ByteBuf, ByteBuf> rxClient = clientProvider.clientFor(fullReq.getServerInfo());
+        final io.reactivex.netty.protocol.http.client.HttpClient<ByteBuf, ByteBuf> rxClient = clientProvider.clientFor(request.getServerInfo());
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug(fullReq + " with headers " + fullReq.getHeaders().entrySet());
+            LOG.debug(request + " with headers " + request.getHeaders().entrySet());
         }
 
-        final Observable<HttpClientResponse<ByteBuf>> resp = fullReq
+        final Observable<HttpClientResponse<ByteBuf>> resp = request
             .submit(rxClient)
             .timeout(timeout, timeoutUnit)
             //Forcing the stream to be not empty. If empty then it will be retried through the standard retry logic
@@ -161,12 +164,12 @@ public class HttpClient implements InvocationHandler {
         if (expectsRawResponse(method)) {
             output = resp;
         } else {
-            output = resp.flatMap(r -> parseResponse(method, fullReq, r));
+            output = resp.flatMap(r -> parseResponse(method, request, r));
         }
 
-        output = withRetry(fullReq, output).onErrorResumeNext(e -> convertError(fullReq, e));
+        output = withRetry(request, output).onErrorResumeNext(e -> convertError(request, e));
         output = LoggingContext.transfer(output);
-        output = measure(fullReq, output);
+        output = measure(request, output);
 
         if (Single.class.isAssignableFrom(method.getReturnType())) {
             return output.toSingle();
@@ -223,6 +226,28 @@ public class HttpClient implements InvocationHandler {
         if (config.getDevHeaders() != null && config.getDevHeaders() != null) {
             config.getDevHeaders().forEach(fullRequest::addHeader);
         }
+    }
+
+    /**
+     * Add Authorization-headers if the config contains username and password.
+     */
+    private void addAuthenticationHeaders(RequestBuilder request) {
+        if (config.getBasicAuth() == null) {
+            return;
+        }
+
+        String basicAuthString = createBasicAuthString();
+        request.addHeader("Authorization", basicAuthString);
+    }
+
+    /**
+     * @return Basic auth string based on config
+     */
+    private String createBasicAuthString() {
+        Charset charset     = StandardCharsets.ISO_8859_1;
+        String  authString  = config.getBasicAuth().getUsername() + ":" + config.getBasicAuth().getPassword();
+        byte[]  encodedAuth = Base64.getEncoder().encode(authString.getBytes(charset));
+        return "Basic " + new String(encodedAuth);
     }
 
     protected <T> Observable<T> measure(RequestBuilder fullRequest, Observable<T> output) {

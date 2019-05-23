@@ -51,6 +51,8 @@ public class HttpClientConfig {
     @JsonProperty("validateCertificates")
     private boolean isValidateCertificates = true;
 
+    private BasicAuthConfig basicAuth;
+
     public HttpClientConfig() {
     }
 
@@ -173,4 +175,19 @@ public class HttpClientConfig {
     public void setValidateCertificates(boolean value) {
         isValidateCertificates = value;
     }
+
+    public BasicAuthConfig getBasicAuth() {
+        return basicAuth;
+    }
+
+    public void setBasicAuth(BasicAuthConfig basicAuth) {
+        this.basicAuth = basicAuth;
+    }
+
+    public void setBasicAuth(String username, String password) {
+        this.basicAuth = new BasicAuthConfig()
+            .setUsername(username)
+            .setPassword(password);
+    }
+
 }
