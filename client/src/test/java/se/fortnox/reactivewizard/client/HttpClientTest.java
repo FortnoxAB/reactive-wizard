@@ -47,6 +47,7 @@ import se.fortnox.reactivewizard.test.TestUtil;
 import se.fortnox.reactivewizard.util.rx.RetryWithDelay;
 
 import javax.net.ssl.SSLHandshakeException;
+import javax.ws.rs.BeanParam;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.CookieParam;
 import javax.ws.rs.DELETE;
@@ -453,6 +454,17 @@ public class HttpClientTest {
         Method     method = TestResource.class.getMethod("withPathAndQueryParam", String.class, String.class);
         String     path   = client.getPath(method, new Object[]{"path:param", "query-param-with:colon"}, new JaxRsMeta(method, null));
         assertThat(path).isEqualTo("/hello/{fid}/path%3Aparam?value=query-param-with%3Acolon");
+    }
+
+    @Test
+    public void shouldSupportBeanParam() throws Exception {
+        HttpClient client = new HttpClient(new HttpClientConfig("localhost"));
+        Method     method = TestResource.class.getMethod("withBeanParam", TestResource.Filters.class);
+        TestResource.Filters filters = new TestResource.Filters();
+        filters.setFilter1("a");
+        filters.setFilter2("b");
+        String     path   = client.getPath(method, new Object[]{filters}, new JaxRsMeta(method, null));
+        assertThat(path).isEqualTo("/hello/beanParam?filter1=a&filter2=b");
     }
 
     @Test
@@ -1269,6 +1281,31 @@ public class HttpClientTest {
 
     @Path("/hello")
     interface TestResource {
+
+        class Filters {
+            @QueryParam("filter1")
+            private String filter1;
+
+            @QueryParam("filter2")
+            private String filter2;
+
+            public String getFilter1() {
+                return filter1;
+            }
+
+            public void setFilter1(String filter1) {
+                this.filter1 = filter1;
+            }
+
+            public String getFilter2() {
+                return filter2;
+            }
+
+            public void setFilter2(String filter2) {
+                this.filter2 = filter2;
+            }
+        }
+
         @GET
         Single<String> getSingle();
 
@@ -1286,6 +1323,9 @@ public class HttpClientTest {
 
         @Path("{fid}/{key:.*}")
         Observable<String> withRegExpPathAndQueryParam(@PathParam("key") String key, @QueryParam("value") String value);
+
+        @Path("beanParam")
+        Observable<String> withBeanParam(@BeanParam Filters filters);
 
         @GET
         @Path("/multicookie")
