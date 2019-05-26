@@ -526,8 +526,11 @@ public class HttpClient implements InvocationHandler {
                     beanParamCache
                         .computeIfAbsent(types[i], this::getBeanParamGetters)
                         .forEach(v -> {
-                            args.add(v.getValue1().apply(value));
-                            argumentAnnotations.add(v.getValue2());
+                            Function<Object, Object> beanPropertyGetter = v.getValue1();
+                            Object beanPropertyValue = beanPropertyGetter.apply(value);
+                            Annotation[] annotations = v.getValue2();
+                            args.add(beanPropertyValue);
+                            argumentAnnotations.add(annotations);
                         });
                 }
             }
