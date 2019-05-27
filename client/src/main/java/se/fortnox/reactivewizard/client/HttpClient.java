@@ -23,7 +23,6 @@ import se.fortnox.reactivewizard.metrics.HealthRecorder;
 import se.fortnox.reactivewizard.metrics.Metrics;
 import se.fortnox.reactivewizard.util.JustMessageException;
 import se.fortnox.reactivewizard.util.ReflectionUtil;
-import se.fortnox.reactivewizard.util.Tuple;
 import se.fortnox.reactivewizard.util.rx.RetryWithDelay;
 
 import javax.inject.Inject;
@@ -88,7 +87,7 @@ public class HttpClient implements InvocationHandler {
     private         ObjectMapper                objectMapper;
     private         int                         timeout = 10;
     private         TimeUnit                    timeoutUnit = TimeUnit.SECONDS;
-    private final Map<Class<?>, List<Tuple<Function<Object, Object>, Annotation[]>>> beanParamCache = new HashMap<>();
+    private final Map<Class<?>, List<BeanParamProperty>> beanParamCache = new HashMap<>();
 
     @Inject
     public HttpClient(HttpClientConfig config,
@@ -525,12 +524,9 @@ public class HttpClient implements InvocationHandler {
                     }
                     beanParamCache
                         .computeIfAbsent(types[i], this::getBeanParamGetters)
-                        .forEach(v -> {
-                            Function<Object, Object> beanPropertyGetter = v.getValue1();
-                            Object beanPropertyValue = beanPropertyGetter.apply(value);
-                            Annotation[] annotations = v.getValue2();
-                            args.add(beanPropertyValue);
-                            argumentAnnotations.add(annotations);
+                        .forEach(beanParamProperty -> {
+                            args.add(beanParamProperty.getter.apply(value));
+                            argumentAnnotations.add(beanParamProperty.annotations);
                         });
                 }
             }
@@ -541,12 +537,12 @@ public class HttpClient implements InvocationHandler {
         return path;
     }
 
-    private List<Tuple<Function<Object, Object>, Annotation[]>> getBeanParamGetters(Class beanParamType) {
-        List<Tuple<Function<Object, Object>, Annotation[]>> result = new ArrayList<>();
+    private List<BeanParamProperty> getBeanParamGetters(Class beanParamType) {
+        List<BeanParamProperty> result = new ArrayList<>();
         for (Field field : beanParamType.getDeclaredFields()) {
             Optional<Function<Object, Object>> getter = ReflectionUtil.getter(beanParamType, field.getName());
             if (getter.isPresent()) {
-                result.add(new Tuple<>(
+                result.add(new BeanParamProperty(
                     getter.get(),
                     field.getAnnotations()
                 ));
@@ -639,6 +635,16 @@ public class HttpClient implements InvocationHandler {
     public static class ThrowableWithoutStack extends Throwable {
         public ThrowableWithoutStack(String message) {
             super(message, null, false, false);
+        }
+    }
+
+    private static class BeanParamProperty {
+        final Function<Object, Object> getter;
+        final Annotation[] annotations;
+
+        public BeanParamProperty(Function<Object, Object> getter, Annotation[] annotations) {
+            this.getter = getter;
+            this.annotations = annotations;
         }
     }
 }
