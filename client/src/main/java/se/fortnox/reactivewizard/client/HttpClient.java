@@ -26,6 +26,7 @@ import se.fortnox.reactivewizard.util.ReflectionUtil;
 import se.fortnox.reactivewizard.util.rx.RetryWithDelay;
 
 import javax.inject.Inject;
+import javax.ws.rs.BeanParam;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.CookieParam;
 import javax.ws.rs.FormParam;
@@ -36,6 +37,7 @@ import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
@@ -49,19 +51,24 @@ import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Function;
 
 import static io.netty.handler.codec.http.HttpMethod.POST;
 import static io.netty.handler.codec.http.HttpResponseStatus.GATEWAY_TIMEOUT;
 import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static java.lang.String.format;
+import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static rx.Observable.error;
@@ -80,6 +87,7 @@ public class HttpClient implements InvocationHandler {
     private         ObjectMapper                objectMapper;
     private         int                         timeout = 10;
     private         TimeUnit                    timeoutUnit = TimeUnit.SECONDS;
+    private final Map<Class<?>, List<BeanParamProperty>> beanParamCache = new HashMap<>();
 
     @Inject
     public HttpClient(HttpClientConfig config,
@@ -487,10 +495,11 @@ public class HttpClient implements InvocationHandler {
 
         StringBuilder  query       = null;
         Class<?>[]     types       = method.getParameterTypes();
-        Annotation[][] annotations = method.getParameterAnnotations();
-        for (int i = 0; i < types.length; i++) {
-            Object value = arguments[i];
-            for (Annotation annotation : annotations[i]) {
+        List<Object> args = new ArrayList<>(asList(arguments));
+        List<Annotation[]> argumentAnnotations = new ArrayList<>(asList(method.getParameterAnnotations()));
+        for (int i = 0; i < args.size(); i++) {
+            Object value = args.get(i);
+            for (Annotation annotation : argumentAnnotations.get(i)) {
                 if (annotation instanceof QueryParam) {
                     if (value == null) {
                         continue;
@@ -509,6 +518,16 @@ public class HttpClient implements InvocationHandler {
                     } else {
                         path = path.replaceAll("\\{" + ((PathParam)annotation).value() + "\\}", this.urlEncode(this.serialize(value)));
                     }
+                } else if (annotation instanceof BeanParam) {
+                    if (value == null) {
+                        continue;
+                    }
+                    beanParamCache
+                        .computeIfAbsent(types[i], this::getBeanParamGetters)
+                        .forEach(beanParamProperty -> {
+                            args.add(beanParamProperty.getter.apply(value));
+                            argumentAnnotations.add(beanParamProperty.annotations);
+                        });
                 }
             }
         }
@@ -518,12 +537,26 @@ public class HttpClient implements InvocationHandler {
         return path;
     }
 
+    private List<BeanParamProperty> getBeanParamGetters(Class beanParamType) {
+        List<BeanParamProperty> result = new ArrayList<>();
+        for (Field field : beanParamType.getDeclaredFields()) {
+            Optional<Function<Object, Object>> getter = ReflectionUtil.getter(beanParamType, field.getName());
+            if (getter.isPresent()) {
+                result.add(new BeanParamProperty(
+                    getter.get(),
+                    field.getAnnotations()
+                ));
+            }
+        }
+        return result;
+    }
+
     protected String serialize(Object value) {
         if (value instanceof Date) {
             return String.valueOf(((Date)value).getTime());
         }
         if (value.getClass().isArray()) {
-            value = Arrays.asList((Object[])value);
+            value = asList((Object[])value);
         }
         if (value instanceof List) {
             StringBuilder stringBuilder     = new StringBuilder();
@@ -602,6 +635,16 @@ public class HttpClient implements InvocationHandler {
     public static class ThrowableWithoutStack extends Throwable {
         public ThrowableWithoutStack(String message) {
             super(message, null, false, false);
+        }
+    }
+
+    private static class BeanParamProperty {
+        final Function<Object, Object> getter;
+        final Annotation[] annotations;
+
+        public BeanParamProperty(Function<Object, Object> getter, Annotation[] annotations) {
+            this.getter = getter;
+            this.annotations = annotations;
         }
     }
 }
