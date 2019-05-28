@@ -31,9 +31,7 @@ import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 import org.junit.Assert;
 import org.junit.Test;
-import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.slf4j.event.LoggingEvent;
 import rx.Observable;
 import rx.Single;
 import rx.functions.Func0;
@@ -49,6 +47,7 @@ import se.fortnox.reactivewizard.test.TestUtil;
 import se.fortnox.reactivewizard.util.rx.RetryWithDelay;
 
 import javax.net.ssl.SSLHandshakeException;
+import javax.ws.rs.BeanParam;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.CookieParam;
 import javax.ws.rs.DELETE;
@@ -64,8 +63,6 @@ import javax.ws.rs.core.MediaType;
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
-import java.io.StringWriter;
-import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Method;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
@@ -229,6 +226,7 @@ public class HttpClientTest {
     }
 
     //@Test
+
     /**
      * This test will fail occationally and is therefore commented out.
      * This should be used to try to pin down the bug probably residing in rxnetty
@@ -237,7 +235,7 @@ public class HttpClientTest {
 
         withServer(server -> {
 
-                try {
+            try {
                 HttpClientConfig config = new HttpClientConfig("127.0.0.1:" + server.getServerPort());
                 config.setRetryCount(1);
                 config.setRetryDelayMs(1000);
@@ -245,12 +243,11 @@ public class HttpClientTest {
 
                 TestResource resource = getHttpProxy(config);
 
-
-                for(int j = 0; j < 300; j++) {
+                for (int j = 0; j < 300; j++) {
                     List<Observable<String>> results = new ArrayList<>();
 
                     Thread.sleep(100);
-                    int  numberOfRequests = 10;
+                    int numberOfRequests = 10;
                     for (int i = 0; i < numberOfRequests; i++) {
                         results.add(resource
                             .getHello()
@@ -262,7 +259,8 @@ public class HttpClientTest {
                     test.assertNoErrors();
                 }
 
-            } catch (Exception ignore) {}
+            } catch (Exception ignore) {
+            }
 
         });
     }
@@ -459,6 +457,17 @@ public class HttpClientTest {
     }
 
     @Test
+    public void shouldSupportBeanParam() throws Exception {
+        HttpClient client = new HttpClient(new HttpClientConfig("localhost"));
+        Method     method = TestResource.class.getMethod("withBeanParam", TestResource.Filters.class);
+        TestResource.Filters filters = new TestResource.Filters();
+        filters.setFilter1("a");
+        filters.setFilter2("b");
+        String     path   = client.getPath(method, new Object[]{filters}, new JaxRsMeta(method, null));
+        assertThat(path).isEqualTo("/hello/beanParam?filter1=a&filter2=b");
+    }
+
+    @Test
     public void shouldSupportSingleSource() {
         HttpServer<ByteBuf, ByteBuf> server = startServer(HttpResponseStatus.OK, "\"OK\"");
 
@@ -479,10 +488,10 @@ public class HttpClientTest {
 
     @Test
     public void shouldLogErrorOnTooLargeResponse() throws NoSuchFieldException, IllegalAccessException {
-        Appender mockAppender = LoggingMockUtil.createMockedLogAppender(HttpClient.class);
-        final HttpServer<ByteBuf, ByteBuf> server   = startServer(HttpResponseStatus.OK, generateLargeString(11));
-        TestResource                       resource = getHttpProxy(server.getServerPort());
-        WebException e = null;
+        Appender                           mockAppender = LoggingMockUtil.createMockedLogAppender(HttpClient.class);
+        final HttpServer<ByteBuf, ByteBuf> server       = startServer(HttpResponseStatus.OK, generateLargeString(11));
+        TestResource                       resource     = getHttpProxy(server.getServerPort());
+        WebException                       e            = null;
         try {
             resource.getHello().toBlocking().single();
         } catch (WebException we) {
@@ -502,10 +511,10 @@ public class HttpClientTest {
 
     @Test
     public void shouldReturnBadRequestOnTooLargeResponses() throws URISyntaxException {
-        final HttpServer<ByteBuf, ByteBuf> server   = startServer(HttpResponseStatus.OK, "\"derp\"");
-        HttpClientConfig config                     = new HttpClientConfig("127.0.0.1:" + server.getServerPort());
+        final HttpServer<ByteBuf, ByteBuf> server = startServer(HttpResponseStatus.OK, "\"derp\"");
+        HttpClientConfig                   config = new HttpClientConfig("127.0.0.1:" + server.getServerPort());
         config.setMaxResponseSize(5);
-        TestResource                       resource = getHttpProxy(config);
+        TestResource resource = getHttpProxy(config);
         try {
             resource.getHello().toBlocking().single();
             fail("expected exception");
@@ -581,8 +590,8 @@ public class HttpClientTest {
 
     @Test
     public void shouldParseWebExceptions() {
-        AtomicLong                   callCount = new AtomicLong();
-        HttpServer<ByteBuf, ByteBuf> server    = startServer(BAD_REQUEST,
+        AtomicLong callCount = new AtomicLong();
+        HttpServer<ByteBuf, ByteBuf> server = startServer(BAD_REQUEST,
             "{\"id\":\"f3872d6a-43b9-41c2-a302-f1fc89621f68\",\"error\":\"validation\",\"fields\":[{\"field\":\"phoneNumber\",\"error\":\"validation.invalid.phone.number\"}]}",
             r -> callCount.incrementAndGet());
 
@@ -592,7 +601,7 @@ public class HttpClientTest {
             fail("expected exception");
         } catch (WebException e) {
             assertThat(e.getError()).isEqualTo("validation");
-            HttpClient.DetailedError cause = (HttpClient.DetailedError) e.getCause();
+            HttpClient.DetailedError cause = (HttpClient.DetailedError)e.getCause();
             assertThat(cause.getFields()).isNotNull();
             assertThat(cause.getFields()).hasSize(1);
             FieldError error = cause.getFields()[0];
@@ -975,6 +984,38 @@ public class HttpClientTest {
         server.shutdown();
     }
 
+    @Test
+    public void shouldSendBasicAuthHeaderIfConfigured() throws URISyntaxException {
+        AtomicReference<HttpServerRequest<ByteBuf>> recordedRequest = new AtomicReference<>();
+        HttpServer<ByteBuf, ByteBuf>                server          = startServer(OK, "", recordedRequest::set);
+
+        HttpClientConfig httpClientConfig = new HttpClientConfig("localhost:" + server.getServerPort());
+        httpClientConfig.setBasicAuth("root", "hunter2");
+
+        TestResource resource = getHttpProxy(httpClientConfig);
+        resource.getHello().test().awaitTerminalEvent();
+
+        assertThat(recordedRequest.get().containsHeader("Authorization")).isTrue();
+        assertThat(recordedRequest.get().getHeader("Authorization")).isEqualTo("Basic cm9vdDpodW50ZXIy");
+
+        server.shutdown();
+    }
+
+
+    @Test
+    public void shouldNotSendAuthorizationHeadersUnlessConfigured() throws URISyntaxException {
+        AtomicReference<HttpServerRequest<ByteBuf>> recordedRequest = new AtomicReference<>();
+        HttpServer<ByteBuf, ByteBuf>                server          = startServer(OK, "", recordedRequest::set);
+
+        HttpClientConfig httpClientConfig = new HttpClientConfig("localhost:" + server.getServerPort());
+
+        TestResource resource = getHttpProxy(httpClientConfig);
+        resource.getHello().test().awaitTerminalEvent();
+
+        assertThat(recordedRequest.get().containsHeader("Authorization")).isFalse();
+
+        server.shutdown();
+    }
 
     @Test
     public void shouldSetDevParams() throws URISyntaxException {
@@ -1020,11 +1061,9 @@ public class HttpClientTest {
         assertThat(recordedRequestBody.get()).isEqualTo("\"test\"");
         assertThat(recordedRequest.get().getHttpMethod()).isEqualTo(HttpMethod.DELETE);
 
-
         resource.put("test").toBlocking().lastOrDefault(null);
         assertThat(recordedRequestBody.get()).isEqualTo("\"test\"");
         assertThat(recordedRequest.get().getHttpMethod()).isEqualTo(HttpMethod.PUT);
-
 
         resource.post("test").toBlocking().lastOrDefault(null);
         assertThat(recordedRequestBody.get()).isEqualTo("\"test\"");
@@ -1066,12 +1105,11 @@ public class HttpClientTest {
         server.shutdown();
     }
 
-
     @Test
     public void shouldHandleSimpleGetRequests() {
-        HttpServer<ByteBuf, ByteBuf> server   = startServer(OK, "this is my response");
+        HttpServer<ByteBuf, ByteBuf> server = startServer(OK, "this is my response");
 
-        String url = "http://localhost:" + server.getServerPort();
+        String url      = "http://localhost:" + server.getServerPort();
         String response = HttpClient.get(url).toBlocking().single();
 
         assertThat(response).isEqualTo("this is my response");
@@ -1081,7 +1119,7 @@ public class HttpClientTest {
 
     @Test
     public void shouldErrorHandleSimpleGetRequestsWithBadUrl() {
-        HttpServer<ByteBuf, ByteBuf> server   = startServer(OK, "this is my response");
+        HttpServer<ByteBuf, ByteBuf> server = startServer(OK, "this is my response");
 
         String url = "htp://localhost:" + server.getServerPort();
 
@@ -1137,7 +1175,7 @@ public class HttpClientTest {
     @Test
     public void shouldErrorOnUntrustedHost() throws URISyntaxException {
         HttpClientConfig httpClientConfig = new HttpClientConfig("https://untrusted-root.badssl.com");
-        Injector injector = injectorWithProgrammaticHttpClientConfig(httpClientConfig);
+        Injector         injector         = injectorWithProgrammaticHttpClientConfig(httpClientConfig);
         RxClientProvider rxClientProvider = injector.getInstance(RxClientProvider.class);
 
         try {
@@ -1157,7 +1195,7 @@ public class HttpClientTest {
     public void shouldHandleUnsafeSecureOnUntrustedHost() throws URISyntaxException {
         HttpClientConfig httpClientConfig = new HttpClientConfig("https://untrusted-root.badssl.com");
         httpClientConfig.setValidateCertificates(false);
-        Injector injector = injectorWithProgrammaticHttpClientConfig(httpClientConfig);
+        Injector         injector         = injectorWithProgrammaticHttpClientConfig(httpClientConfig);
         RxClientProvider rxClientProvider = injector.getInstance(RxClientProvider.class);
 
         rxClientProvider
@@ -1170,7 +1208,8 @@ public class HttpClientTest {
 
     @Test
     public void shouldLogRequestDetailsOnTimeout() {
-        HttpServer<ByteBuf, ByteBuf> server   = startServer(OK, Observable.never(), r->{});
+        HttpServer<ByteBuf, ByteBuf> server = startServer(OK, Observable.never(), r -> {
+        });
 
         try {
             TestResource resource = getHttpProxy(server.getServerPort());
@@ -1178,15 +1217,14 @@ public class HttpClientTest {
             resource.servertest("mode").toBlocking().single();
             fail("expected timeout");
         } catch (Exception e) {
-            OutputStream baos = new ByteArrayOutputStream();
-            PrintStream stream = new PrintStream(baos, true);
+            OutputStream baos   = new ByteArrayOutputStream();
+            PrintStream  stream = new PrintStream(baos, true);
             e.printStackTrace(stream);
-            assertThat(baos.toString()).contains("Timeout after 10 ms calling localhost:"+server.getServerPort()+"/hello/servertest/mode");
+            assertThat(baos.toString()).contains("Timeout after 10 ms calling localhost:" + server.getServerPort() + "/hello/servertest/mode");
         } finally {
             server.shutdown();
         }
     }
-
 
     private String generateLargeString(int sizeInMB) {
         char[] resp = new char[sizeInMB * 1024 * 1024];
@@ -1243,6 +1281,31 @@ public class HttpClientTest {
 
     @Path("/hello")
     interface TestResource {
+
+        class Filters {
+            @QueryParam("filter1")
+            private String filter1;
+
+            @QueryParam("filter2")
+            private String filter2;
+
+            public String getFilter1() {
+                return filter1;
+            }
+
+            public void setFilter1(String filter1) {
+                this.filter1 = filter1;
+            }
+
+            public String getFilter2() {
+                return filter2;
+            }
+
+            public void setFilter2(String filter2) {
+                this.filter2 = filter2;
+            }
+        }
+
         @GET
         Single<String> getSingle();
 
@@ -1260,6 +1323,9 @@ public class HttpClientTest {
 
         @Path("{fid}/{key:.*}")
         Observable<String> withRegExpPathAndQueryParam(@PathParam("key") String key, @QueryParam("value") String value);
+
+        @Path("beanParam")
+        Observable<String> withBeanParam(@BeanParam Filters filters);
 
         @GET
         @Path("/multicookie")
