@@ -1,1 +1,7 @@
 httpClient: https://localhost:443/
+
+customHttpClient:
+    url: http://localhost:8080
+
+test:
+    user: dbuser

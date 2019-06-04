@@ -39,7 +39,11 @@ import rx.functions.Func1;
 import rx.functions.Func2;
 import rx.observers.AssertableSubscriber;
 import se.fortnox.reactivewizard.config.TestInjector;
-import se.fortnox.reactivewizard.jaxrs.*;
+import se.fortnox.reactivewizard.jaxrs.ByteBufCollector;
+import se.fortnox.reactivewizard.jaxrs.FieldError;
+import se.fortnox.reactivewizard.jaxrs.JaxRsMeta;
+import se.fortnox.reactivewizard.jaxrs.PATCH;
+import se.fortnox.reactivewizard.jaxrs.WebException;
 import se.fortnox.reactivewizard.metrics.HealthRecorder;
 import se.fortnox.reactivewizard.server.ServerConfig;
 import se.fortnox.reactivewizard.test.LoggingMockUtil;
@@ -86,7 +90,11 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
-import static io.netty.handler.codec.http.HttpResponseStatus.*;
+import static io.netty.handler.codec.http.HttpResponseStatus.BAD_REQUEST;
+import static io.netty.handler.codec.http.HttpResponseStatus.GATEWAY_TIMEOUT;
+import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
+import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
+import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static java.lang.String.format;
 import static org.fest.assertions.Assertions.assertThat;
 import static org.fest.assertions.Fail.fail;
@@ -1083,7 +1091,12 @@ public class HttpClientTest {
             binder.bind(ServerConfig.class).toInstance(new ServerConfig() {{
                 setEnabled(false);
             }});
-            binder.bind(HttpClient.class).toInstance(mockClient);
+
+            HttpClientProvider httpClientProvider = Mockito.mock(HttpClientProvider.class);
+            when(httpClientProvider.createClient(any())).thenReturn(mockClient);
+
+            binder.bind(HttpClientConfig.class).toInstance(httpClientConfig);
+            binder.bind(HttpClientProvider.class).toInstance(httpClientProvider);
         });
 
         TestResource testResource = injector.getInstance(TestResource.class);
