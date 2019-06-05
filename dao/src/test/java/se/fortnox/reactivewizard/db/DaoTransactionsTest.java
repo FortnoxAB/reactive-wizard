@@ -32,7 +32,6 @@ import static org.mockito.Mockito.when;
 import static se.fortnox.reactivewizard.test.TestUtil.assertNestedException;
 
 /**
- *
  */
 public class DaoTransactionsTest {
     private MockDb             db                 = new MockDb();
