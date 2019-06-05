@@ -11,7 +11,7 @@ public class DebugUtil {
      * @param classLoader to use for the check
      */
     static boolean isIdePresent(ClassLoader classLoader) {
-        return false;
+        return classLoader.getResource("com/intellij") != null;
     }
 
     static boolean isMavenDebug() {

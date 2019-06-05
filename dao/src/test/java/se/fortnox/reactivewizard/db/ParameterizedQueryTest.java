@@ -7,6 +7,7 @@ import rx.Observable;
 
 import java.sql.Array;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -115,6 +116,21 @@ public class ParameterizedQueryTest {
     }
 
     @Test
+    public void shouldSendListsOfObjectsAsJson() throws SQLException {
+        TestObject myobj = new TestObject();
+        List<MyTestParam> list = new ArrayList<>();
+        list.add(new MyTestParam());
+        list.add(new MyTestParam());
+        myobj.setList(list);
+
+        dao.listParam(myobj).toBlocking().singleOrDefault(null);
+
+        verify(db.getConnection()).prepareStatement(
+                "INSERT INTO a (a) VALUES (?)");
+        verify(db.getPreparedStatement()).setObject(1, "[{\"name\":\"testName\"},{\"name\":\"testName\"}]");
+    }
+
+    @Test
     public void shouldSendMapTypesAsStringsAsLastArg() throws SQLException {
         TestObject myobj = new TestObject();
         myobj.setFinished(false);
@@ -199,15 +215,6 @@ public class ParameterizedQueryTest {
         verify(db.getConnection()).createArrayOf("uuid", new Object[]{uuid1, uuid2});
     }
 
-    @Test(expected = UnsupportedOperationException.class)
-    public void shouldThrowIfUnsupportedArrayType() throws SQLException {
-        List<Boolean> param = Lists.newArrayList(true, false);
-
-        when(db.getConnection().createArrayOf(any(), any())).thenReturn(mock(Array.class));
-
-        dao.unsupportedArrayType(param).toBlocking().singleOrDefault(null);
-    }
-
     enum TestEnum {
         T1, T2, T3
     }
@@ -243,6 +250,9 @@ public class ParameterizedQueryTest {
         @Query("INSERT INTO a (a, b, c) VALUES ( :testObject.finished, :testObject.map::json, \"a\")")
         Observable<String> mapParamMiddle(TestObject testObject);
 
+        @Query("INSERT INTO a (a) VALUES (:testObject.list)")
+        Observable<String> listParam(TestObject testObject);
+
         @Query("SELECT a FROM b WHERE c NOT IN (:param)")
         Observable<String> notInClauseBigint(List<Long> param);
 
@@ -263,6 +273,7 @@ public class ParameterizedQueryTest {
         TestEnum            myEnum;
         boolean             finished;
         Map<String, String> map;
+        List<MyTestParam>   list;
 
         public TestEnum getMyEnum() {
             return myEnum;
@@ -288,6 +299,13 @@ public class ParameterizedQueryTest {
             this.map = map;
         }
 
+        public List<MyTestParam> getList() {
+            return list;
+        }
+
+        public void setList(List<MyTestParam> list) {
+            this.list = list;
+        }
     }
 
     public class MyTestParam {

@@ -5,10 +5,11 @@ import com.google.inject.Guice;
 import com.google.inject.name.Names;
 import liquibase.exception.DatabaseException;
 import liquibase.exception.LiquibaseException;
+import org.junit.Assert;
 import org.junit.Test;
 import se.fortnox.reactivewizard.binding.AutoBindModules;
 import se.fortnox.reactivewizard.config.ConfigFactory;
-import se.fortnox.reactivewizard.config.MockConfigFactory;
+import se.fortnox.reactivewizard.config.TestInjector;
 import se.fortnox.reactivewizard.server.ServerConfig;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -98,6 +99,18 @@ public class LiquibaseAutoBindModuleTest {
         verify(liquibaseMigrateMock, never()).exit();
     }
 
+    @Test
+    public void shouldBeAbleToRunLiquibaseMigrationsOnStartup() {
+
+        try {
+            TestInjector.create(binder -> {
+            }, "test.bind.yml", new String[]{"db-migrate-run"});
+        } catch (Exception e) {
+            Assert.fail("Running liquibase migrations from file should not fail:" + e.getMessage());
+        }
+
+    }
+
     private LiquibaseMigrate getInjectedLiquibaseMock(String...arg) {
         LiquibaseMigrate liquibaseMigrateMock = mock(LiquibaseMigrate.class);
 
@@ -126,10 +139,9 @@ public class LiquibaseAutoBindModuleTest {
 
             LiquibaseMigrateProvider liquibaseMigrateProvider = mock(LiquibaseMigrateProvider.class);
             when(liquibaseMigrateProvider.get()).thenReturn(liquibaseMigrateMock);
-            binder.bind(LiquibaseMigrate.class).toProvider(liquibaseMigrateProvider);
+            binder.bind(LiquibaseMigrateProvider.class).toInstance(liquibaseMigrateProvider);
         }));
 
         return liquibaseMigrateMock;
     }
-
 }

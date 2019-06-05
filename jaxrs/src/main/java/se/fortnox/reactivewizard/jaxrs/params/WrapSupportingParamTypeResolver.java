@@ -2,9 +2,9 @@ package se.fortnox.reactivewizard.jaxrs.params;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import se.fortnox.reactivewizard.jaxrs.Wrap;
+import se.fortnox.reactivewizard.json.Types;
 
 import java.lang.reflect.Parameter;
-import java.lang.reflect.Type;
 
 public class WrapSupportingParamTypeResolver extends ParamTypeResolver {
 
@@ -17,12 +17,7 @@ public class WrapSupportingParamTypeResolver extends ParamTypeResolver {
                 throw new RuntimeException("Wrapper for " + instanceParameter.getDeclaringExecutable() + " not correct. "
                     + wrapperType + " must be subclass of " + instanceParameter.getType());
             }
-            return new TypeReference<T>() {
-                @Override
-                public Type getType() {
-                    return wrapperType;
-                }
-            };
+            return Types.toReference(wrapperType);
         }
         return super.resolveParamType(instanceParameter, interfaceParameter);
     }

@@ -14,7 +14,8 @@ public class DebugUtilTest {
 
     @Test
     public void testIsDebug() {
-        assertThat(DebugUtil.IS_DEBUG).isNotNull(); // will be true if running from Intellij IDEA and false from command line
+        // will be true if running from Intellij IDEA and false from command line
+        assertThat(DebugUtil.IS_DEBUG).isNotNull();
     }
 
     @Test

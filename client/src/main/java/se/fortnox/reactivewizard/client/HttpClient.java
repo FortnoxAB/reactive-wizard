@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Single;
 import se.fortnox.reactivewizard.jaxrs.ByteBufCollector;
+import se.fortnox.reactivewizard.jaxrs.FieldError;
 import se.fortnox.reactivewizard.jaxrs.JaxRsMeta;
 import se.fortnox.reactivewizard.jaxrs.WebException;
 import se.fortnox.reactivewizard.logging.LoggingContext;
@@ -25,6 +26,7 @@ import se.fortnox.reactivewizard.util.ReflectionUtil;
 import se.fortnox.reactivewizard.util.rx.RetryWithDelay;
 
 import javax.inject.Inject;
+import javax.ws.rs.BeanParam;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.CookieParam;
 import javax.ws.rs.FormParam;
@@ -35,6 +37,7 @@ import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
@@ -47,18 +50,25 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
-import java.util.Arrays;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Function;
 
 import static io.netty.handler.codec.http.HttpMethod.POST;
 import static io.netty.handler.codec.http.HttpResponseStatus.GATEWAY_TIMEOUT;
 import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static java.lang.String.format;
+import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static rx.Observable.error;
@@ -77,6 +87,7 @@ public class HttpClient implements InvocationHandler {
     private         ObjectMapper                objectMapper;
     private         int                         timeout = 10;
     private         TimeUnit                    timeoutUnit = TimeUnit.SECONDS;
+    private final Map<Class<?>, List<BeanParamProperty>> beanParamCache = new HashMap<>();
 
     @Inject
     public HttpClient(HttpClientConfig config,
@@ -140,17 +151,18 @@ public class HttpClient implements InvocationHandler {
             arguments = new Object[0];
         }
 
-        RequestBuilder fullReq = createRequest(method, arguments);
+        RequestBuilder request = createRequest(method, arguments);
 
-        addDevOverrides(fullReq);
+        addDevOverrides(request);
+        addAuthenticationHeaders(request);
 
-        final io.reactivex.netty.protocol.http.client.HttpClient<ByteBuf, ByteBuf> rxClient = clientProvider.clientFor(fullReq.getServerInfo());
+        final io.reactivex.netty.protocol.http.client.HttpClient<ByteBuf, ByteBuf> rxClient = clientProvider.clientFor(request.getServerInfo());
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug(fullReq + " with headers " + fullReq.getHeaders().entrySet());
+            LOG.debug(request + " with headers " + request.getHeaders().entrySet());
         }
 
-        final Observable<HttpClientResponse<ByteBuf>> resp = fullReq
+        final Observable<HttpClientResponse<ByteBuf>> resp = request
             .submit(rxClient)
             .timeout(timeout, timeoutUnit)
             //Forcing the stream to be not empty. If empty then it will be retried through the standard retry logic
@@ -160,12 +172,12 @@ public class HttpClient implements InvocationHandler {
         if (expectsRawResponse(method)) {
             output = resp;
         } else {
-            output = resp.flatMap(r -> parseResponse(method, fullReq, r));
+            output = resp.flatMap(r -> parseResponse(method, request, r));
         }
 
-        output = withRetry(fullReq, output).onErrorResumeNext(e -> convertError(fullReq, e));
+        output = withRetry(request, output).onErrorResumeNext(e -> convertError(request, e));
         output = LoggingContext.transfer(output);
-        output = measure(fullReq, output);
+        output = measure(request, output);
 
         if (Single.class.isAssignableFrom(method.getReturnType())) {
             return output.toSingle();
@@ -222,6 +234,28 @@ public class HttpClient implements InvocationHandler {
         if (config.getDevHeaders() != null && config.getDevHeaders() != null) {
             config.getDevHeaders().forEach(fullRequest::addHeader);
         }
+    }
+
+    /**
+     * Add Authorization-headers if the config contains username and password.
+     */
+    private void addAuthenticationHeaders(RequestBuilder request) {
+        if (config.getBasicAuth() == null) {
+            return;
+        }
+
+        String basicAuthString = createBasicAuthString();
+        request.addHeader("Authorization", basicAuthString);
+    }
+
+    /**
+     * @return Basic auth string based on config
+     */
+    private String createBasicAuthString() {
+        Charset charset     = StandardCharsets.ISO_8859_1;
+        String  authString  = config.getBasicAuth().getUsername() + ":" + config.getBasicAuth().getPassword();
+        byte[]  encodedAuth = Base64.getEncoder().encode(authString.getBytes(charset));
+        return "Basic " + new String(encodedAuth);
     }
 
     protected <T> Observable<T> measure(RequestBuilder fullRequest, Observable<T> output) {
@@ -420,6 +454,10 @@ public class HttpClient implements InvocationHandler {
                 }
             }
         }
+
+        if (isNullOrEmpty(request.getHeaders().get("Host"))) {
+            request.addHeader("Host", this.config.getHost());
+        }
     }
 
     protected Observable<Object> deserialize(Method method, String string) {
@@ -457,10 +495,11 @@ public class HttpClient implements InvocationHandler {
 
         StringBuilder  query       = null;
         Class<?>[]     types       = method.getParameterTypes();
-        Annotation[][] annotations = method.getParameterAnnotations();
-        for (int i = 0; i < types.length; i++) {
-            Object value = arguments[i];
-            for (Annotation annotation : annotations[i]) {
+        List<Object> args = new ArrayList<>(asList(arguments));
+        List<Annotation[]> argumentAnnotations = new ArrayList<>(asList(method.getParameterAnnotations()));
+        for (int i = 0; i < args.size(); i++) {
+            Object value = args.get(i);
+            for (Annotation annotation : argumentAnnotations.get(i)) {
                 if (annotation instanceof QueryParam) {
                     if (value == null) {
                         continue;
@@ -479,6 +518,16 @@ public class HttpClient implements InvocationHandler {
                     } else {
                         path = path.replaceAll("\\{" + ((PathParam)annotation).value() + "\\}", this.urlEncode(this.serialize(value)));
                     }
+                } else if (annotation instanceof BeanParam) {
+                    if (value == null) {
+                        continue;
+                    }
+                    beanParamCache
+                        .computeIfAbsent(types[i], this::getBeanParamGetters)
+                        .forEach(beanParamProperty -> {
+                            args.add(beanParamProperty.getter.apply(value));
+                            argumentAnnotations.add(beanParamProperty.annotations);
+                        });
                 }
             }
         }
@@ -488,12 +537,26 @@ public class HttpClient implements InvocationHandler {
         return path;
     }
 
+    private List<BeanParamProperty> getBeanParamGetters(Class beanParamType) {
+        List<BeanParamProperty> result = new ArrayList<>();
+        for (Field field : beanParamType.getDeclaredFields()) {
+            Optional<Function<Object, Object>> getter = ReflectionUtil.getter(beanParamType, field.getName());
+            if (getter.isPresent()) {
+                result.add(new BeanParamProperty(
+                    getter.get(),
+                    field.getAnnotations()
+                ));
+            }
+        }
+        return result;
+    }
+
     protected String serialize(Object value) {
         if (value instanceof Date) {
             return String.valueOf(((Date)value).getTime());
         }
         if (value.getClass().isArray()) {
-            value = Arrays.asList((Object[])value);
+            value = asList((Object[])value);
         }
         if (value instanceof List) {
             StringBuilder stringBuilder     = new StringBuilder();
@@ -510,10 +573,15 @@ public class HttpClient implements InvocationHandler {
         return value.toString();
     }
 
+    protected boolean isNullOrEmpty(String string) {
+        return string == null || string.isEmpty();
+    }
+
     public static class DetailedError extends Throwable {
-        private int    code;
-        private String error;
-        private String message;
+        private int          code;
+        private String       error;
+        private String       message;
+        private FieldError[] fields;
 
         public DetailedError() {
             this(null);
@@ -554,11 +622,29 @@ public class HttpClient implements InvocationHandler {
         public boolean hasReason() {
             return code == 0 && error != null;
         }
+
+        public FieldError[] getFields() {
+            return fields;
+        }
+
+        public void setFields(FieldError[] fields) {
+            this.fields = fields;
+        }
     }
 
     public static class ThrowableWithoutStack extends Throwable {
         public ThrowableWithoutStack(String message) {
             super(message, null, false, false);
+        }
+    }
+
+    private static class BeanParamProperty {
+        final Function<Object, Object> getter;
+        final Annotation[] annotations;
+
+        public BeanParamProperty(Function<Object, Object> getter, Annotation[] annotations) {
+            this.getter = getter;
+            this.annotations = annotations;
         }
     }
 }

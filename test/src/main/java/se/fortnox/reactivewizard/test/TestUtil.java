@@ -8,6 +8,7 @@ import org.mockito.Mockito;
 
 import java.util.function.Consumer;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
 /**
@@ -31,7 +32,7 @@ public final class TestUtil {
      * </pre>
      *
      * @param asserter a lambda expression doing assertions
-     * @param <T> is the type of consumer value
+     * @param <T>      is the type of consumer value
      */
     public static <T> T matches(Consumer<T> asserter) {
         return Mockito.argThat(new ArgumentMatcher<T>() {
@@ -52,7 +53,7 @@ public final class TestUtil {
             @Override
             public void describeTo(Description description) {
                 if (error != null) {
-                    throw error;
+                    description.appendText(error.getMessage());
                 }
             }
         });
@@ -60,14 +61,34 @@ public final class TestUtil {
 
     /**
      * Assert the type of an exception.
+     * This method does not with AssertJ.
      *
-     * @param <T> The type of the expected exception
      * @param throwable The exception to apply assertion on
-     * @param type Expected type of exception
+     * @param type      Expected type of exception
+     * @param <T>       The type of the expected exception
      * @return The assertion for further assertion chaining
+     * @deprecated Use AssertJ and {@link #assertNestedException assertNestedException} instead
      */
     public static <T extends Throwable> ThrowableAssert assertException(Throwable throwable, Class<T> type) {
+        while (!type.isAssignableFrom(throwable.getClass())) {
+            Throwable cause = throwable.getCause();
+            if (cause == throwable || cause == null) {
+                org.fest.assertions.Fail.fail("Expected exception of type " + type.getCanonicalName());
+            }
+            throwable = cause;
+        }
+        return org.fest.assertions.Assertions.assertThat(throwable);
+    }
 
+    /**
+     * Assert the type of an exception.
+     *
+     * @param <T>       The type of the expected exception
+     * @param throwable The exception to apply assertion on
+     * @param type      Expected type of exception
+     * @return The assertion for further assertion chaining
+     */
+    public static <T extends Throwable> AbstractThrowableAssert assertNestedException(Throwable throwable, Class<T> type) {
         while (!type.isAssignableFrom(throwable.getClass())) {
             Throwable cause = throwable.getCause();
             if (cause == throwable || cause == null) {
@@ -75,6 +96,6 @@ public final class TestUtil {
             }
             throwable = cause;
         }
-        return org.fest.assertions.Assertions.assertThat(throwable);
+        return assertThat(throwable);
     }
 }

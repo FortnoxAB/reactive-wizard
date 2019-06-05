@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 
 import javax.inject.Inject;
+import java.lang.reflect.Type;
 import java.util.function.Function;
 
 /**
@@ -28,6 +29,10 @@ public class JsonDeserializerFactory {
 
     public <T> Function<String, T> createDeserializer(TypeReference<T> typeReference) {
         return createDeserializer(mapper.readerFor(typeReference));
+    }
+
+    public <T> Function<String, T> createDeserializer(Type type) {
+        return createDeserializer(Types.toReference(type));
     }
 
     public <T> Function<String, T> createDeserializer(Class<T> paramType) {
