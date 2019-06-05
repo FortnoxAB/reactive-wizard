@@ -1,26 +1,19 @@
 package se.fortnox.reactivewizard.client;
 
 import com.google.inject.Binder;
-import com.google.inject.CreationException;
 import com.google.inject.Injector;
-import com.google.inject.ProvisionException;
-import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.Mockito;
 import rx.Observable;
-import se.fortnox.reactivewizard.UseHttpClientConfig;
 import se.fortnox.reactivewizard.binding.scanners.JaxRsClassScanner;
 import se.fortnox.reactivewizard.config.TestInjector;
 import se.fortnox.reactivewizard.server.ServerConfig;
-import se.fortnox.reactivewizard.validation.ValidationFailedException;
 
 import javax.ws.rs.GET;
-import java.net.URISyntaxException;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.google.common.collect.ImmutableSet.of;
-import static org.fest.assertions.Assertions.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
@@ -33,10 +26,9 @@ public class RestClientFactoryTest {
 
     private static final String SRC_TEST_RESOURCES = "src/test/resources/";
     private static final String HTTPCONFIG_URL_YML = SRC_TEST_RESOURCES + "httpconfig_url.yml";
-    private static final String HTTPCONFIG_YML     = SRC_TEST_RESOURCES + "httpconfig.yml";
 
     @Test
-    public void shouldProxyResourceInterfacesToHttpClient() throws URISyntaxException {
+    public void shouldProxyResourceInterfacesToHttpClient() {
 
         AtomicReference<HttpClient> httpClientSpy = new AtomicReference<>();
 
@@ -69,7 +61,7 @@ public class RestClientFactoryTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldUseCustomHttpClientConfigWhenRequested() throws URISyntaxException {
+    public void shouldUseCustomHttpClientConfigWhenRequested() {
         AtomicReference<HttpClient> mockClient = new AtomicReference<>(Mockito.mock(HttpClient.class));
         AtomicReference<HttpClient> mockCustomClient = new AtomicReference<>();
 
@@ -78,7 +70,7 @@ public class RestClientFactoryTest {
                 setEnabled(false);
             }});
 
-            mockResourcesOnClassPath(binder, of(TestResource.class, CustomTestResource.class, CustomTestNoConfigValueResource.class));
+            mockResourcesOnClassPath(binder, of(TestResource.class, CustomTestResource.class));
 
             HttpClientProvider httpClientProvider = Mockito.mock(HttpClientProvider.class);
 
@@ -119,69 +111,12 @@ public class RestClientFactoryTest {
         verifyZeroInteractions(mockCustomClient.get());
 
         reset(mockClient.get());
-
-        CustomTestNoConfigValueResource testResourceNoConfigValue = injector.getInstance(CustomTestNoConfigValueResource.class);
-        verify(mockClient.get(), times(1)).create(any());
-
-        testResourceNoConfigValue.testCall();
-        verify(mockClient.get(), times(1)).invoke(any(), any(), any());
-        verifyZeroInteractions(mockCustomClient.get());
     }
 
     private void mockResourcesOnClassPath(Binder binder, Set<Class<?>> classes) {
         JaxRsClassScanner mock = Mockito.mock(JaxRsClassScanner.class);
         when(mock.getClasses()).thenReturn(classes);
         binder.bind(JaxRsClassScanner.class).toInstance(mock);
-    }
-
-    @Test
-    public void testThatStartupFailsWhenUseHttpClientConfigPointsToNonHttpClientConfig() {
-        try {
-            TestInjector.create(binder -> {
-                binder.bind(ServerConfig.class).toInstance(new ServerConfig() {{
-                    setEnabled(false);
-                }});
-                mockResourcesOnClassPath(binder, of(TestResource.class, CustomTestResource.class, CustomTestNoConfigValueResource.class, CustomDatabaseConfigValueResource.class));
-            }, HTTPCONFIG_URL_YML);
-            Assert.fail("Should throw exception");
-        } catch (CreationException creationException) {
-            assertThat(creationException.getCause()).isInstanceOf(IllegalArgumentException.class);
-            assertThat(creationException.getCause().getMessage()).isEqualTo("Illegal argument in UseHttpClientConfig annotation. Configpath test is of class se.fortnox.reactivewizard.client.TestConfig but must be subclass of HttpClientConfig");
-        }
-    }
-
-    @Test
-    public void testThatStartupFailsWhenUseHttpClientConfigPointsToNonExistingYmlConfig() {
-        try {
-            TestInjector.create(binder -> {
-                binder.bind(ServerConfig.class).toInstance(new ServerConfig() {{
-                    setEnabled(false);
-                }});
-                mockResourcesOnClassPath(binder, of(TestResource.class, CustomTestResource.class));
-            }, HTTPCONFIG_YML).getInstance(CustomTestResource.class);
-
-            Assert.fail("Should throw exception");
-        } catch (ProvisionException provisionException) {
-            assertThat(provisionException.getCause()).isInstanceOf(ValidationFailedException.class);
-            assertThat(((ValidationFailedException)provisionException.getCause()).getFields()[0].getField()).isEqualTo("host");
-            assertThat(((ValidationFailedException)provisionException.getCause()).getFields()[0].getError()).isEqualTo("validation.notnull");
-        }
-    }
-
-    @Test
-    public void testThatStartupFailsWhenUseHttpClientConfigPointsToNonExistingConfigClass() {
-        try {
-            TestInjector.create(binder -> {
-                binder.bind(ServerConfig.class).toInstance(new ServerConfig() {{
-                    setEnabled(false);
-                }});
-                mockResourcesOnClassPath(binder, of(TestResource.class, CustomTestResource.class, CustomTestNoConfigValueResource.class, CustomNotFoundConfigValueResource.class));
-            }, HTTPCONFIG_YML);
-            Assert.fail("Should throw exception");
-        } catch (CreationException creationException) {
-            assertThat(creationException.getCause()).isInstanceOf(IllegalArgumentException.class);
-            assertThat(creationException.getCause().getMessage()).isEqualTo("No config class found for config not_found");
-        }
     }
 }
 
@@ -190,26 +125,7 @@ interface TestResource {
     Observable<String> testCall();
 }
 
-@UseHttpClientConfig("customHttpClient")
 interface CustomTestResource {
-    @GET
-    Observable<String> testCall();
-}
-
-@UseHttpClientConfig
-interface CustomTestNoConfigValueResource {
-    @GET
-    Observable<String> testCall();
-}
-
-@UseHttpClientConfig("test")
-interface CustomDatabaseConfigValueResource {
-    @GET
-    Observable<String> testCall();
-}
-
-@UseHttpClientConfig("not_found")
-interface CustomNotFoundConfigValueResource {
     @GET
     Observable<String> testCall();
 }
