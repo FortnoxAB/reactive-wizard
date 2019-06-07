@@ -9,7 +9,7 @@ import java.util.Map;
 public class FileServerConfig {
 
     private String path;
-    private Map<String, String> headers	= new HashMap<String, String>();
+    private Map<String, String> headers = new HashMap<String, String>();
     private String indexFile;
     private String pathPrefix;
 

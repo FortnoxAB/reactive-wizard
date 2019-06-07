@@ -22,7 +22,7 @@ import static rx.Observable.merge;
 import static se.fortnox.reactivewizard.fileserver.ContentTypeDetector.getContentType;
 
 /**
- * Serves files from file system as defined by {@link FileServerConfig}
+ * Serves files from file system as defined by {@link FileServerConfig}.
  */
 public class FileServerRequestHandler implements RequestHandler<ByteBuf, ByteBuf> {
 
