@@ -18,7 +18,6 @@ public class TestUtilTest {
     @Test
     public void testMatchesAsExpected() {
         TestClass testClass = mock(TestClass.class);
-
         testClass.doNothing("expected");
 
         verify(testClass).doNothing(matches(string -> assertThat(string).isEqualTo("expected")));
@@ -27,7 +26,6 @@ public class TestUtilTest {
     @Test
     public void testMatchesFailure() {
         TestClass testClass = mock(TestClass.class);
-
         testClass.doNothing("unexpected");
 
         try {
@@ -45,26 +43,29 @@ public class TestUtilTest {
                     "testClass.doNothing(\n" +
                     "    expected:<\"[]expected\"> but was:<\"[un]expected\">\n" +
                     ");\n" +
-                    "-> at se.fortnox.reactivewizard.test.TestUtilTest.testMatchesFailure(TestUtilTest.java:34)\n" +
+                    "-> at se.fortnox.reactivewizard.test.TestUtilTest.testMatchesFailure(TestUtilTest.java:32)\n" +
                     "Actual invocation has different arguments:\n" +
                     "testClass.doNothing(\n" +
                     "    \"unexpected\"\n" +
                     ");\n" +
-                    "-> at se.fortnox.reactivewizard.test.TestUtilTest.testMatchesFailure(TestUtilTest.java:31)\n");
+                    "-> at se.fortnox.reactivewizard.test.TestUtilTest.testMatchesFailure(TestUtilTest.java:29)\n");
         }
     }
 
     @Test
     public void testAssertTypeOfExceptionFest() {
         TestException exception = new TestException();
-
         assertException(exception, TestException.class);
+    }
+
+    @Test
+    public void testAssertExceptionHandlingNullFest() {
+        assertException(null, TestException.class);
     }
 
     @Test
     public void testAssertTypeOfCauseFest() {
         TestException exception = new TestException(new SQLException());
-
         assertException(exception, SQLException.class);
     }
 
@@ -84,14 +85,17 @@ public class TestUtilTest {
     @Test
     public void testAssertTypeOfException() {
         TestException exception = new TestException();
-
         assertNestedException(exception, TestException.class);
+    }
+
+    @Test
+    public void testAssertExceptionHandlingNull() {
+        assertNestedException(null, TestException.class);
     }
 
     @Test
     public void testAssertTypeOfCause() {
         TestException exception = new TestException(new SQLException());
-
         assertNestedException(exception, SQLException.class);
     }
 

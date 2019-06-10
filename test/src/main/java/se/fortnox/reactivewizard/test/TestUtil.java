@@ -69,8 +69,9 @@ public final class TestUtil {
      * @return The assertion for further assertion chaining
      * @deprecated Use AssertJ and {@link #assertNestedException assertNestedException} instead
      */
+    @Deprecated
     public static <T extends Throwable> ThrowableAssert assertException(Throwable throwable, Class<T> type) {
-        while (!type.isAssignableFrom(throwable.getClass())) {
+        while (throwable != null && !type.isAssignableFrom(throwable.getClass())) {
             Throwable cause = throwable.getCause();
             if (cause == throwable || cause == null) {
                 org.fest.assertions.Fail.fail("Expected exception of type " + type.getCanonicalName());
@@ -89,7 +90,7 @@ public final class TestUtil {
      * @return The assertion for further assertion chaining
      */
     public static <T extends Throwable> AbstractThrowableAssert assertNestedException(Throwable throwable, Class<T> type) {
-        while (!type.isAssignableFrom(throwable.getClass())) {
+        while (throwable != null && !type.isAssignableFrom(throwable.getClass())) {
             Throwable cause = throwable.getCause();
             if (cause == throwable || cause == null) {
                 fail("Expected exception of type " + type.getCanonicalName());
