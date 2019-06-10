@@ -900,7 +900,7 @@ public class HttpClientTest {
         getHttpProxy(server.getServerPort()).withMultipleCookies(cookie1Value, cookie2Value).toBlocking().single();
 
         verify(reqLog).accept(matches(req -> {
-            assertThat(req.headerIterator()).isNotEmpty();
+            assertThat(req.headerIterator()).toIterable().isNotEmpty();
             assertThat(req.getHeader("Cookie")).isEqualTo(cookieHeader);
         }));
 
@@ -1255,7 +1255,7 @@ public class HttpClientTest {
         getHttpProxy(server.getServerPort()).getHello().toBlocking().singleOrDefault(null);
 
         verify(reqLog).accept(matches(req -> {
-            assertThat(req.headerIterator()).isNotEmpty();
+            assertThat(req.headerIterator()).toIterable().isNotEmpty();
             assertThat(req.getHeader("Host")).isEqualTo(host);
         }));
 
@@ -1272,7 +1272,7 @@ public class HttpClientTest {
         getHttpProxy(server.getServerPort()).withHostHeaderParam(host).toBlocking().singleOrDefault(null);
 
         verify(reqLog).accept(matches(req -> {
-            assertThat(req.headerIterator()).isNotEmpty();
+            assertThat(req.headerIterator()).toIterable().isNotEmpty();
             assertThat(req.getHeader("Host")).isEqualTo(host);
         }));
 
