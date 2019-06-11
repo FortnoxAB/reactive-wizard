@@ -15,6 +15,8 @@ import java.lang.reflect.Proxy;
 import java.util.HashMap;
 import java.util.Map;
 
+import static java.lang.String.format;
+
 public class RestClientFactory implements AutoBindModule {
 
     private static final Logger                 LOG = LoggerFactory.getLogger(RestClientFactory.class);
@@ -56,8 +58,7 @@ public class RestClientFactory implements AutoBindModule {
                 if (configClass.isAnnotationPresent(UseInResource.class)) {
                     for (Class resource : configClass.getAnnotation(UseInResource.class).value()) {
                         if (!resource.isInterface()) {
-                            LOG.warn("{} pointed out in UseInResource must be an interface", resource);
-                            continue;
+                            throw new IllegalArgumentException(format("%s pointed out in UseInResource annotation must be an interface", resource));
                         }
                         httpClientConfigByResource.put(resource, configClass);
                     }

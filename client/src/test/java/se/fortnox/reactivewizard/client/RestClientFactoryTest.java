@@ -2,9 +2,11 @@ package se.fortnox.reactivewizard.client;
 
 import com.google.inject.Binder;
 import com.google.inject.Injector;
+import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.Mockito;
 import rx.Observable;
+import se.fortnox.reactivewizard.binding.scanners.HttpConfigClassScanner;
 import se.fortnox.reactivewizard.binding.scanners.JaxRsClassScanner;
 import se.fortnox.reactivewizard.config.TestInjector;
 import se.fortnox.reactivewizard.server.ServerConfig;
@@ -14,6 +16,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.google.common.collect.ImmutableSet.of;
+import static org.fest.assertions.Assertions.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
@@ -113,10 +116,41 @@ public class RestClientFactoryTest {
         reset(mockClient.get());
     }
 
+    @Test
+    public void shouldThrowExceptionWhenPointedOutClassIsNotInterface() {
+        try {
+            TestInjector.create(binder -> {
+                binder.bind(ServerConfig.class).toInstance(new ServerConfig() {{
+                    setEnabled(false);
+                }});
+
+                mockConfigsOnClassPath(binder, of(TestConfig.class));
+
+                HttpClientProvider httpClientProvider = Mockito.mock(HttpClientProvider.class);
+
+                when(httpClientProvider.createClient(any())).thenReturn(Mockito.mock(HttpClient.class));
+
+                binder.bind(HttpClientProvider.class).toInstance(httpClientProvider);
+
+            }, HTTPCONFIG_URL_YML);
+            Assert.fail("Should throw exception when class is not an interface");
+        } catch (Exception e) {
+            assertThat(e.getCause()).isInstanceOf(IllegalArgumentException.class);
+            assertThat(e.getCause().getMessage()).isEqualTo("class se.fortnox.reactivewizard.client.RestClientFactoryTest pointed out in UseInResource annotation must be an interface");
+        }
+    }
+
+
     private void mockResourcesOnClassPath(Binder binder, Set<Class<?>> classes) {
         JaxRsClassScanner mock = Mockito.mock(JaxRsClassScanner.class);
         when(mock.getClasses()).thenReturn(classes);
         binder.bind(JaxRsClassScanner.class).toInstance(mock);
+    }
+
+    private void mockConfigsOnClassPath(Binder binder, Set<Class<?>> classes) {
+        HttpConfigClassScanner mock = Mockito.mock(HttpConfigClassScanner.class);
+        when(mock.getClasses()).thenReturn(classes);
+        binder.bind(HttpConfigClassScanner.class).toInstance(mock);
     }
 }
 
@@ -130,4 +164,7 @@ interface CustomTestResource {
     Observable<String> testCall();
 }
 
+@UseInResource(RestClientFactoryTest.class)
+class TestConfig {
 
+}
