@@ -17,7 +17,7 @@ public class HttpClientProvider {
     private final ObjectMapper                            objectMapper;
     private final RequestParameterSerializers             requestParameterSerializers;
     private final Set<PreRequestHook>                     preRequestHooks;
-    private final Map<HttpClientConfig, RxClientProvider> rxClientProviderCache = new HashMap<>();
+    private final Map<Class<? extends HttpClientConfig>, RxClientProvider> rxClientProviderCache = new HashMap<>();
 
     @Inject
     public HttpClientProvider(HealthRecorder healthRecorder,
@@ -34,9 +34,9 @@ public class HttpClientProvider {
     public HttpClient createClient(HttpClientConfig httpClientConfig) {
 
         //Fill up cache with RxClientProviders
-        rxClientProviderCache.computeIfAbsent(httpClientConfig, config -> new RxClientProvider(config, healthRecorder));
+        RxClientProvider rxClientProvider = rxClientProviderCache.computeIfAbsent(httpClientConfig.getClass(), config -> new RxClientProvider(httpClientConfig, healthRecorder));
 
         //Create client
-        return new HttpClient(httpClientConfig, rxClientProviderCache.get(httpClientConfig), objectMapper, requestParameterSerializers, preRequestHooks);
+        return new HttpClient(httpClientConfig, rxClientProvider, objectMapper, requestParameterSerializers, preRequestHooks);
     }
 }

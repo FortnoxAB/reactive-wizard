@@ -14,7 +14,6 @@ import java.net.UnknownHostException;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import static java.util.Objects.hash;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
 @Config("httpClient")
@@ -189,23 +188,5 @@ public class HttpClientConfig {
         this.basicAuth = new BasicAuthConfig()
             .setUsername(username)
             .setPassword(password);
-    }
-
-    @Override
-    public boolean equals(Object object) {
-        if (this == object) {
-            return true;
-        }
-        if (!(object instanceof HttpClientConfig)) {
-            return false;
-        }
-
-        HttpClientConfig that = (HttpClientConfig) object;
-        return port == that.port && host.equals(that.host);
-    }
-
-    @Override
-    public int hashCode() {
-        return hash(port, host);
     }
 }
