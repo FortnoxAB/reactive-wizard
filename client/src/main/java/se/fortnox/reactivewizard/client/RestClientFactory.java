@@ -4,29 +4,41 @@ import com.google.inject.Binder;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.Scopes;
-import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import se.fortnox.reactivewizard.binding.AutoBindModule;
+import se.fortnox.reactivewizard.binding.scanners.HttpConfigClassScanner;
 import se.fortnox.reactivewizard.binding.scanners.JaxRsClassScanner;
 
 import java.lang.reflect.Proxy;
+import java.util.HashMap;
+import java.util.Map;
+
+import static java.lang.String.format;
 
 public class RestClientFactory implements AutoBindModule {
 
-    private static final Logger            log = LoggerFactory.getLogger(RestClientFactory.class);
-    private final        JaxRsClassScanner jaxRsClassScanner;
+    private static final Logger                 LOG = LoggerFactory.getLogger(RestClientFactory.class);
+    private final        JaxRsClassScanner      jaxRsClassScanner;
+    private final        HttpConfigClassScanner httpConfigClassScanner;
 
     @Inject
-    public RestClientFactory(JaxRsClassScanner jaxRsClassScanner) {
+    public RestClientFactory(JaxRsClassScanner jaxRsClassScanner, HttpConfigClassScanner httpConfigClassScanner) {
         this.jaxRsClassScanner = jaxRsClassScanner;
+        this.httpConfigClassScanner = httpConfigClassScanner;
     }
 
-    private <T> Provider<T> provider(Class<T> iface, Provider<HttpClient> httpClientProvider) {
+    private <T> Provider<T> provider(Class<T> iface,
+        Provider<HttpClientProvider> httpClientProvider, Provider<? extends HttpClientConfig> httpClientConfigProvider) {
         return () -> {
-            T httpProxy = httpClientProvider.get().create(iface);
-            log.debug("Created {} for {}", Proxy.getInvocationHandler(httpProxy), iface.getName());
+
+            HttpClientConfig httpClientConfig = httpClientConfigProvider.get();
+
+            //Create client based on config and create proxy
+            T httpProxy = httpClientProvider.get().createClient(httpClientConfig).create(iface);
+
+            LOG.debug("Created {} for {} with custom httpClient: {}", Proxy.getInvocationHandler(httpProxy), iface.getName(), httpClientConfig);
             return httpProxy;
         };
     }
@@ -34,11 +46,32 @@ public class RestClientFactory implements AutoBindModule {
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Override
     public void configure(Binder binder) {
-        Multibinder.newSetBinder(binder, TypeLiteral.get(PreRequestHook.class));
-        Multibinder.newSetBinder(binder, TypeLiteral.get(RequestParameterSerializer.class));
-        Provider<HttpClient> httpClientProvider = binder.getProvider(HttpClient.class);
+        Multibinder.newSetBinder(binder, PreRequestHook.class);
+        Multibinder.newSetBinder(binder, RequestParameterSerializer.class);
+        Provider<HttpClientProvider> httpClientProvider = binder.getProvider(HttpClientProvider.class);
+
+        Map<Class, Class<?>> httpClientConfigByResource = new HashMap<>();
+
+        httpConfigClassScanner
+            .getClasses()
+            .forEach(configClass -> {
+                if (configClass.isAnnotationPresent(UseInResource.class)) {
+                    for (Class resource : configClass.getAnnotation(UseInResource.class).value()) {
+                        if (!resource.isInterface()) {
+                            throw new IllegalArgumentException(format("%s pointed out in UseInResource annotation must be an interface", resource));
+                        }
+                        httpClientConfigByResource.put(resource, configClass);
+                    }
+                }
+            });
+
         jaxRsClassScanner.getClasses().forEach(cls -> {
-            Provider<?> jaxRsClientProvider = provider(cls, httpClientProvider);
+
+            Class httpClientConfigClass = httpClientConfigByResource.getOrDefault(cls, HttpClientConfig.class);
+
+            Provider<? extends HttpClientConfig> httpClientConfigProvider = binder.getProvider(httpClientConfigClass);
+
+            Provider<?> jaxRsClientProvider = provider(cls, httpClientProvider, httpClientConfigProvider);
             binder.bind((Class)cls)
                 .toProvider(jaxRsClientProvider)
                 .in(Scopes.SINGLETON);

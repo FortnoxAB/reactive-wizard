@@ -4,17 +4,22 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import se.fortnox.reactivewizard.metrics.HealthRecorder;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 /**
  * Handles creation of HttpClients from a given config, for easy creation of custom clients.
  */
+@Singleton
 public class HttpClientProvider {
 
-    private final HealthRecorder              healthRecorder;
-    private final ObjectMapper                objectMapper;
-    private final RequestParameterSerializers requestParameterSerializers;
-    private final Set<PreRequestHook>         preRequestHooks;
+    private final HealthRecorder                          healthRecorder;
+    private final ObjectMapper                            objectMapper;
+    private final RequestParameterSerializers             requestParameterSerializers;
+    private final Set<PreRequestHook>                     preRequestHooks;
+    private final Map<Class<? extends HttpClientConfig>, RxClientProvider> rxClientProviderCache = new HashMap<>();
 
     @Inject
     public HttpClientProvider(HealthRecorder healthRecorder,
@@ -28,7 +33,13 @@ public class HttpClientProvider {
         this.preRequestHooks = preRequestHooks;
     }
 
-    public HttpClient createClient(HttpClientConfig config) {
-        return new HttpClient(config, new RxClientProvider(config, healthRecorder), objectMapper, requestParameterSerializers, preRequestHooks);
+    public HttpClient createClient(HttpClientConfig httpClientConfig) {
+
+        //Fill up cache with RxClientProviders
+        RxClientProvider rxClientProvider =
+            rxClientProviderCache.computeIfAbsent(httpClientConfig.getClass(), config -> new RxClientProvider(httpClientConfig, healthRecorder));
+
+        //Create client
+        return new HttpClient(httpClientConfig, rxClientProvider, objectMapper, requestParameterSerializers, preRequestHooks);
     }
 }

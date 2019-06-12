@@ -189,5 +189,4 @@ public class HttpClientConfig {
             .setUsername(username)
             .setPassword(password);
     }
-
 }
