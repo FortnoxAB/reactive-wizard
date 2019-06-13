@@ -287,6 +287,12 @@ public class HttpClient implements InvocationHandler {
                     return false;
                 }
                 if (((WebException)throwable).getStatus().code() >= 500) {
+
+                    // Log the error on every retry.
+                    LOG.info(format("Will retry because an error occurred. %s, headers: %s",
+                        fullReq.getFullUrl(),
+                        fullReq.getHeaders().entrySet()), throwable);
+
                     // Retry if it's 500+ error
                     return true;
                 }
