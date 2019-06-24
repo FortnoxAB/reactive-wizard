@@ -34,12 +34,16 @@ public class HttpClientProvider {
     }
 
     public HttpClient createClient(HttpClientConfig httpClientConfig) {
+        return instantiateClient(httpClientConfig, getRxClientProvider(httpClientConfig), objectMapper, requestParameterSerializers, preRequestHooks);
+    }
 
-        //Fill up cache with RxClientProviders
-        RxClientProvider rxClientProvider =
-            rxClientProviderCache.computeIfAbsent(httpClientConfig.getClass(), config -> new RxClientProvider(httpClientConfig, healthRecorder));
-
+    protected HttpClient instantiateClient(HttpClientConfig httpClientConfig, RxClientProvider rxClientProvider,
+        ObjectMapper objectMapper, RequestParameterSerializers requestParameterSerializers, Set<PreRequestHook> preRequestHooks) {
         //Create client
         return new HttpClient(httpClientConfig, rxClientProvider, objectMapper, requestParameterSerializers, preRequestHooks);
+    }
+
+    private RxClientProvider getRxClientProvider(HttpClientConfig httpClientConfig) {
+        return rxClientProviderCache.computeIfAbsent(httpClientConfig.getClass(), config -> new RxClientProvider(httpClientConfig, healthRecorder));
     }
 }
