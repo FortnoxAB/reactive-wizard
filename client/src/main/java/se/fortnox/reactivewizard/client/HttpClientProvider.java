@@ -15,10 +15,10 @@ import java.util.Set;
 @Singleton
 public class HttpClientProvider {
 
-    private final HealthRecorder                          healthRecorder;
-    private final ObjectMapper                            objectMapper;
-    private final RequestParameterSerializers             requestParameterSerializers;
-    private final Set<PreRequestHook>                     preRequestHooks;
+    protected final HealthRecorder                          healthRecorder;
+    protected final ObjectMapper                            objectMapper;
+    protected final RequestParameterSerializers             requestParameterSerializers;
+    protected final Set<PreRequestHook>                     preRequestHooks;
     private final Map<Class<? extends HttpClientConfig>, RxClientProvider> rxClientProviderCache = new HashMap<>();
 
     @Inject
@@ -33,13 +33,15 @@ public class HttpClientProvider {
         this.preRequestHooks = preRequestHooks;
     }
 
-    public HttpClient createClient(HttpClientConfig httpClientConfig) {
+    private RxClientProvider getRxClientProvider(HttpClientConfig httpClientConfig) {
+        return rxClientProviderCache.computeIfAbsent(httpClientConfig.getClass(), config -> new RxClientProvider(httpClientConfig, healthRecorder));
+    }
 
-        //Fill up cache with RxClientProviders
-        RxClientProvider rxClientProvider =
-            rxClientProviderCache.computeIfAbsent(httpClientConfig.getClass(), config -> new RxClientProvider(httpClientConfig, healthRecorder));
-
-        //Create client
+    protected HttpClient instantiateClient(HttpClientConfig httpClientConfig, RxClientProvider rxClientProvider) {
         return new HttpClient(httpClientConfig, rxClientProvider, objectMapper, requestParameterSerializers, preRequestHooks);
+    }
+
+    public HttpClient createClient(HttpClientConfig httpClientConfig) {
+        return instantiateClient(httpClientConfig, getRxClientProvider(httpClientConfig));
     }
 }
