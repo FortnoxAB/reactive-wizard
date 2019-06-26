@@ -26,7 +26,7 @@ public class AutoBindModules implements Module {
      * These are packages that are not part of the application code and where there is no point to scan for classes.
      * We only want to find classes defined by our platform and user code.
      */
-    private static final String[] PACKAGE_BLACKLIST = {
+    public static final String[] PACKAGE_BLACKLIST = {
         "-com.google",
         "-liquibase",
         "-io.netty",

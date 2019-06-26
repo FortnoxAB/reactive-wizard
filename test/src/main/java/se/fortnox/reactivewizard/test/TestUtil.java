@@ -32,6 +32,8 @@ public final class TestUtil {
      *
      * @param asserter a lambda expression doing assertions
      * @param <T> is the type of consumer value
+     *
+     * @return matcher
      */
     public static <T> T matches(Consumer<T> asserter) {
         return Mockito.argThat(new ArgumentMatcher<T>() {

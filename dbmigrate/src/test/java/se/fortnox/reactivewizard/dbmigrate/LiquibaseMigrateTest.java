@@ -2,7 +2,9 @@ package se.fortnox.reactivewizard.dbmigrate;
 
 import liquibase.exception.LiquibaseException;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.testcontainers.containers.PostgreSQLContainer;
 
 import java.io.IOException;
 import java.sql.Connection;
@@ -15,16 +17,18 @@ import static org.fest.assertions.Fail.fail;
 
 public class LiquibaseMigrateTest {
 
-    private LiquibaseConfig  liquibaseConfig;
-    private LiquibaseMigrate liquibaseMigrate;
+    @ClassRule
+    public static PostgreSQLContainer postgreSQLContainer = new PostgreSQLContainer();
+
+    private       LiquibaseConfig     liquibaseConfig;
+    private       LiquibaseMigrate    liquibaseMigrate;
 
     @Before
     public void setup() throws IOException, LiquibaseException {
         liquibaseConfig = new LiquibaseConfig();
-        liquibaseConfig.setUrl("jdbc:h2:mem:testliquibase;INIT=CREATE SCHEMA IF NOT EXISTS TESTSCHEMA AUTHORIZATION SA");
-        liquibaseConfig.setUser("sa");
-        liquibaseConfig.setSchema("TESTSCHEMA");
-        liquibaseConfig.setMigrationsFile("migrations.xml");
+        liquibaseConfig.setUrl(postgreSQLContainer.getJdbcUrl());
+        liquibaseConfig.setUser(postgreSQLContainer.getUsername());
+        liquibaseConfig.setPassword(postgreSQLContainer.getPassword());
         liquibaseMigrate = new LiquibaseMigrate(liquibaseConfig);
     }
 
@@ -33,7 +37,7 @@ public class LiquibaseMigrateTest {
         liquibaseMigrate.run();
         Connection connection = getConnection(liquibaseConfig);
         try {
-            ResultSet resultSet = connection.createStatement().executeQuery("select * from TESTSCHEMA.test");
+            ResultSet resultSet = connection.createStatement().executeQuery("select * from test");
             resultSet.next();
             assertThat(resultSet.getInt(1)).isEqualTo(4);
         } finally {
@@ -75,7 +79,7 @@ public class LiquibaseMigrateTest {
     private void ensureNotLocked(LiquibaseConfig liquibaseConfig) throws SQLException {
         Connection connection = getConnection(liquibaseConfig);
         try {
-            ResultSet resultSet = connection.createStatement().executeQuery("SELECT locked FROM TESTSCHEMA.databasechangeloglock");
+            ResultSet resultSet = connection.createStatement().executeQuery("SELECT locked FROM databasechangeloglock");
             resultSet.next();
             assertThat(resultSet.getBoolean(1)).isFalse();
         } finally {
@@ -87,7 +91,7 @@ public class LiquibaseMigrateTest {
     private void simulateLock(LiquibaseConfig liquibaseConfig) throws SQLException {
         Connection connection = getConnection(liquibaseConfig);
         try {
-            connection.createStatement().executeUpdate("UPDATE TESTSCHEMA.databasechangeloglock SET locked=true");
+            connection.createStatement().executeUpdate("UPDATE databasechangeloglock SET locked=true");
         } finally {
             connection.close();
         }

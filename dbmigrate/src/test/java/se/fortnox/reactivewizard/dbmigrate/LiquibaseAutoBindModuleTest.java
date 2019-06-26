@@ -6,10 +6,14 @@ import com.google.inject.name.Names;
 import liquibase.exception.DatabaseException;
 import liquibase.exception.LiquibaseException;
 import org.junit.Assert;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.testcontainers.containers.PostgreSQLContainer;
 import se.fortnox.reactivewizard.binding.AutoBindModules;
 import se.fortnox.reactivewizard.config.ConfigFactory;
+import se.fortnox.reactivewizard.config.MockConfigFactory;
 import se.fortnox.reactivewizard.config.TestInjector;
+import se.fortnox.reactivewizard.db.config.DatabaseConfig;
 import se.fortnox.reactivewizard.server.ServerConfig;
 
 import static org.fest.assertions.Assertions.assertThat;
@@ -22,6 +26,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class LiquibaseAutoBindModuleTest {
+
+    @ClassRule
+    public static PostgreSQLContainer postgreSQLContainer = new PostgreSQLContainer();
+
     @Test
     public void shouldOnlyRun() throws LiquibaseException {
         LiquibaseMigrate liquibaseMigrateMock = getInjectedLiquibaseMock("run", "config.yml");
@@ -104,11 +112,20 @@ public class LiquibaseAutoBindModuleTest {
 
         try {
             TestInjector.create(binder -> {
-            }, "test.bind.yml", new String[]{"db-migrate-run"});
+                LiquibaseConfig liquibaseConfig = new LiquibaseConfig();
+                liquibaseConfig.setUrl(postgreSQLContainer.getJdbcUrl());
+                liquibaseConfig.setUser(postgreSQLContainer.getUsername());
+                liquibaseConfig.setPassword(postgreSQLContainer.getPassword());
+
+                ConfigFactory configFactory = MockConfigFactory.create();
+                when(configFactory.get(LiquibaseConfig.class)).thenReturn(liquibaseConfig);
+                when(configFactory.get(DatabaseConfig.class)).thenReturn(liquibaseConfig);
+
+                binder.bind(ConfigFactory.class).toInstance(configFactory);
+            }, "derp.yml", new String[]{"db-migrate-run"});
         } catch (Exception e) {
             Assert.fail("Running liquibase migrations from file should not fail:" + e.getMessage());
         }
-
     }
 
     private LiquibaseMigrate getInjectedLiquibaseMock(String...arg) {
