@@ -1,39 +1,30 @@
 package se.fortnox.reactivewizard.validation;
 
-import static java.util.Arrays.asList;
-import static org.fest.assertions.Assertions.assertThat;
-import static org.fest.assertions.Fail.fail;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.*;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.Test;
+import org.slf4j.event.Level;
+import rx.Observable;
+import se.fortnox.reactivewizard.jaxrs.FieldError;
+import se.fortnox.reactivewizard.jaxrs.WebException;
+import se.fortnox.reactivewizard.jaxrs.Wrap;
 
-import java.lang.annotation.Documented;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.function.Consumer;
-
-import javax.validation.Constraint;
-import javax.validation.Payload;
 import javax.validation.Valid;
 import javax.validation.constraints.Future;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
+import java.text.ParseException;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.function.Consumer;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.After;
-import se.fortnox.reactivewizard.jaxrs.Wrap;
-import se.fortnox.reactivewizard.jaxrs.FieldError;
-import se.fortnox.reactivewizard.jaxrs.WebException;
-import org.junit.Test;
-import rx.Observable;
+import static org.fest.assertions.Assertions.assertThat;
+import static org.fest.assertions.Fail.fail;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 
 /**
@@ -398,6 +389,7 @@ public class ValidationExamples {
         assertValidationException(runnable, e->{
             try {
                 assertThat(new ObjectMapper().writeValueAsString(e)).matches(pattern);
+                assertThat(e.getLogLevel().equals(Level.INFO)).isTrue();
             } catch (JsonProcessingException e1) {
                 throw new RuntimeException(e1);
             }

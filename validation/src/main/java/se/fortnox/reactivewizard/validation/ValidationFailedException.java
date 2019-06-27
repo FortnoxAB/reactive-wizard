@@ -1,17 +1,15 @@
 package se.fortnox.reactivewizard.validation;
 
+import io.netty.handler.codec.http.HttpResponseStatus;
+import org.slf4j.event.Level;
+import se.fortnox.reactivewizard.jaxrs.WebException;
+
+import javax.validation.ConstraintViolation;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import javax.validation.ConstraintViolation;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import se.fortnox.reactivewizard.jaxrs.WebException;
-
-import io.netty.handler.codec.http.HttpResponseStatus;
 
 @SuppressWarnings("serial")
 public class ValidationFailedException extends WebException {
@@ -20,7 +18,7 @@ public class ValidationFailedException extends WebException {
 
     public ValidationFailedException(Set<ConstraintViolation<Object>> result) {
         super(HttpResponseStatus.BAD_REQUEST, ValidationFieldError.from(result));
-
+        this.logLevel = Level.INFO;
         this.result = result;
     }
 

@@ -13,13 +13,13 @@ import java.util.UUID;
 @JsonIgnoreProperties({"cause", "stackTrace", "localizedMessage", "suppressed", "logLevel"})
 public class WebException extends RuntimeException {
 
-    private String             id;
-    private String             error;
-    private FieldError[]       fields;
-    private Object[]           errorParams;
-    private HttpResponseStatus status;
-    private String             message;
-    private Level              logLevel = Level.ERROR;
+    private   String             id;
+    private   String             error;
+    private   FieldError[]       fields;
+    private   Object[]           errorParams;
+    private   HttpResponseStatus status;
+    private   String             message;
+    protected Level              logLevel;
 
     public WebException(HttpResponseStatus httpStatus, Throwable throwable, boolean stacktrace) {
         super(null, throwable, false, stacktrace);
@@ -56,6 +56,9 @@ public class WebException extends RuntimeException {
 
     public WebException(FieldError... fieldErrors) {
         this(HttpResponseStatus.BAD_REQUEST, fieldErrors);
+
+        //Since this exception is thrown due to one or many field errors we set the log level to INFO
+        this.logLevel = Level.INFO;
     }
 
     public WebException(HttpResponseStatus httpStatus, String errorCode, String userMessage) {
