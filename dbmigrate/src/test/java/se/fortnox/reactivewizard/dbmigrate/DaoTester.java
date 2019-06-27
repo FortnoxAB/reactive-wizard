@@ -32,7 +32,7 @@ import static se.fortnox.reactivewizard.test.TypeRandomizer.getRandomizedType;
  * Sublass this class and create a single test calling the method DaoTester#testDaoClasses
  * Then that test will scan your module and find any dao class specified and test all the sql-syntax
  */
-public abstract class DaoTester {
+public class DaoTester {
 
     private static Logger              LOG                 = LoggerFactory.getLogger(DaoTester.class);
 
@@ -125,7 +125,7 @@ public abstract class DaoTester {
      * @return all dao classes
      */
     private Iterable<Class<?>> getClasses() {
-        FastClasspathScanner fastClasspathScanner = new FastClasspathScanner(AutoBindModules.PACKAGE_BLACKLIST);
+        FastClasspathScanner fastClasspathScanner = new FastClasspathScanner(AutoBindModules.PACKAGE_BLACKLIST.toArray(new String[0]));
         DaoClassScanner daoClassScanner = new DaoClassScanner();
 
         daoClassScanner.visit(fastClasspathScanner);

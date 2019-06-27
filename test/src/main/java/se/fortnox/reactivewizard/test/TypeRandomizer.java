@@ -8,12 +8,16 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
 
-public class TypeRandomizer {
+public abstract class TypeRandomizer {
+    private TypeRandomizer() {}
+
     private static final Random random = new Random();
 
     public static Object getRandomizedType(Class<?> type) throws Exception {
@@ -21,31 +25,60 @@ public class TypeRandomizer {
         if (type.isEnum()) {
             Object[] enumValues = type.getEnumConstants();
             return enumValues[random.nextInt(enumValues.length)];
-        } else if (type.equals(Integer.TYPE) || type.equals(Integer.class)) {
+        }
+
+        if (type.equals(Integer.TYPE) || type.equals(Integer.class)) {
             return random.nextInt(10);
-        } else if (type.equals(Long.TYPE) || type.equals(Long.class)) {
+        }
+
+        if (type.equals(Long.TYPE) || type.equals(Long.class)) {
             return (long)random.nextInt(10);
-        } else if (type.equals(Double.TYPE) || type.equals(Double.class)) {
+        }
+
+        if (type.equals(Double.TYPE) || type.equals(Double.class)) {
             return random.nextDouble();
-        } else if (type.equals(Float.TYPE) || type.equals(Float.class)) {
+        }
+
+        if (type.equals(Float.TYPE) || type.equals(Float.class)) {
             return random.nextFloat();
-        } else if (type.equals(Boolean.TYPE) || type.equals(Boolean.class)) {
+        }
+
+        if (type.equals(Boolean.TYPE) || type.equals(Boolean.class)) {
             return random.nextBoolean();
-        } else if (type.equals(String.class)) {
+        }
+
+        if (type.equals(String.class)) {
             return UUID.randomUUID().toString().substring(0,5);
-        } else if (type.equals(UUID.class)) {
+        }
+
+        if (type.equals(UUID.class)) {
             return UUID.randomUUID();
-        } else if (type.equals(BigInteger.class)) {
+        }
+
+        if (type.equals(BigInteger.class)) {
             return BigInteger.valueOf(random.nextInt(10));
-        } else if (type.equals(LocalDateTime.class)) {
+        }
+
+        if (type.equals(LocalDateTime.class)) {
             return LocalDateTime.now();
-        } else if (type.equals(LocalDate.class)) {
+        }
+
+        if (type.equals(LocalDate.class)) {
             return LocalDate.now();
-        } else if (type.equals(OffsetDateTime.class)) {
+        }
+        if (type.equals(OffsetDateTime.class)) {
             return OffsetDateTime.now();
-        } else if (type.equals(List.class)) {
+        }
+
+        if (type.equals(List.class)) {
             return new ArrayList<>();
-        } else if (type.equals(Map.class)) {
+        }
+
+        if (type.equals(Set.class)) {
+            return new HashSet<>();
+        }
+
+        if (type.equals(Map.class)) {
             return new HashMap<>();
         }
 
