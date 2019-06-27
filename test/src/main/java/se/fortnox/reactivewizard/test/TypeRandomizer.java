@@ -48,7 +48,6 @@ public class TypeRandomizer {
 
     @SuppressWarnings("unchecked")
     public static <T> T getType(Class<T> type) {
-        System.out.println("Creating class:" + type);
         if (type.isEnum()) {
             T[] enumValues = type.getEnumConstants();
             return enumValues[random.nextInt(enumValues.length)];
