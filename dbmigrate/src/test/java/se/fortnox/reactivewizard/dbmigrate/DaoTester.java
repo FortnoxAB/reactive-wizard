@@ -26,7 +26,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Enumeration;
 
-import static se.fortnox.reactivewizard.test.TypeRandomizer.getRandomizedType;
+import static se.fortnox.reactivewizard.test.TypeRandomizer.getType;
 
 /**
  * Sublass this class and create a single test calling the method DaoTester#testDaoClasses
@@ -117,7 +117,7 @@ public class DaoTester {
      * @return randomized value
      */
     protected Object getRandomValue(Object daoClass, Method method, int index, Class<?> type) throws Exception {
-        return getRandomizedType(type);
+        return getType(type);
     }
 
     /**
