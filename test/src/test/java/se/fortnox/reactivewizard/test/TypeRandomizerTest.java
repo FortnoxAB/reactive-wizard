@@ -8,9 +8,6 @@ import java.lang.reflect.Method;
 import static org.fest.assertions.Assertions.assertThat;
 
 public class TypeRandomizerTest {
-    enum TestEnum {
-        TEST1, TEST2
-    }
 
     @Test(expected = RuntimeException.class)
     public void testTypeRandomizerThrowsExceptionWhenClassCanNotBeInstantiated() {
@@ -22,10 +19,16 @@ public class TypeRandomizerTest {
         TestPojo testPojo = TypeRandomizer.getType(TestPojo.class);
 
         for (Method declaredMethod : TestPojo.class.getDeclaredMethods()) {
+            if (declaredMethod.getName().startsWith("$")) {
+                continue;
+            }
             assertThat(declaredMethod.invoke(testPojo)).isNotNull();
         }
 
         for (Method declaredMethod : TestPojo.class.getSuperclass().getDeclaredMethods()) {
+            if (declaredMethod.getName().startsWith("$")) {
+                continue;
+            }
             assertThat(declaredMethod.invoke(testPojo)).isNotNull();
         }
     }

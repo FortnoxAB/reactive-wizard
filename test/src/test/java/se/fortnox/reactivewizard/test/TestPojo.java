@@ -10,7 +10,8 @@ import java.util.Set;
 import java.util.UUID;
 
 class TestPojo extends PrimitivePojo {
-    private TypeRandomizerTest.TestEnum testEnum;
+
+    private TestEnum testEnum;
     private Float floatClass;
     private Integer integerClass;
     private Long longClass;
@@ -27,7 +28,7 @@ class TestPojo extends PrimitivePojo {
     private Map            map;
     private Set            set;
 
-    public TypeRandomizerTest.TestEnum getTestEnum() {
+    public TestEnum getTestEnum() {
         return testEnum;
     }
 

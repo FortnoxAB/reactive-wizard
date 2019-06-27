@@ -1,29 +1,29 @@
 package se.fortnox.reactivewizard.test;
 
-class PrimitivePojo {
+public class PrimitivePojo {
     private float floatPrimitive;
     private int intPrimitive;
     private long longPrimitive;
     private double doublePrimitive;
     private boolean booleanPrimitive;
 
-    public float getFloatPrimitive() {
+    public Float getFloatPrimitive() {
         return floatPrimitive;
     }
 
-    public int getIntPrimitive() {
+    public Integer getIntPrimitive() {
         return intPrimitive;
     }
 
-    public long getLongPrimitive() {
+    public Long getLongPrimitive() {
         return longPrimitive;
     }
 
-    public double getDoublePrimitive() {
+    public Double getDoublePrimitive() {
         return doublePrimitive;
     }
 
-    public boolean isBooleanPrimitive() {
+    public Boolean isBooleanPrimitive() {
         return booleanPrimitive;
     }
 }

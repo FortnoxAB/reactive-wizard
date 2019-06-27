@@ -44,6 +44,12 @@
             <groupId>com.netflix.servo</groupId>
             <artifactId>servo-core</artifactId>
             <version>${servocore.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.google.guava</groupId>
+                    <artifactId>guava</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>

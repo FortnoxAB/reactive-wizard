@@ -1,5 +1,7 @@
 package se.fortnox.reactivewizard.test;
 
+import com.google.common.collect.ImmutableMap;
+
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -15,73 +17,45 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Supplier;
 
-public abstract class TypeRandomizer {
-    private TypeRandomizer() {}
+public class TypeRandomizer {
 
     private static final Random random = new Random();
+    private static Map<Class<?>, Supplier<?>>  suppliers = ImmutableMap.<Class<?>, Supplier<?>>builder()
+        .put(Integer.TYPE, () -> random.nextInt(10))
+        .put(Integer.class, () -> random.nextInt(10))
+        .put(Float.TYPE, random::nextFloat)
+        .put(Float.class, random::nextFloat)
+        .put(Long.TYPE, random::nextLong)
+        .put(Long.class, random::nextLong)
+        .put(Double.TYPE, random::nextDouble)
+        .put(Double.class, random::nextDouble)
+        .put(Boolean.TYPE, random::nextBoolean)
+        .put(Boolean.class, random::nextBoolean)
+        .put(String.class, () -> UUID.randomUUID().toString().substring(0,5))
+        .put(UUID.class, UUID::randomUUID)
+        .put(BigInteger.class, () -> BigInteger.valueOf(random.nextInt(10)))
+        .put(LocalDateTime.class, LocalDateTime::now)
+        .put(LocalDate.class, LocalDate::now)
+        .put(OffsetDateTime.class, OffsetDateTime::now)
+        .put(List.class, ArrayList::new)
+        .put(Map.class, HashMap::new)
+        .put(Set.class, HashSet::new)
+        .build();
+
+
 
     @SuppressWarnings("unchecked")
     public static <T> T getType(Class<T> type) {
-
+        System.out.println("Creating class:" + type);
         if (type.isEnum()) {
             T[] enumValues = type.getEnumConstants();
             return enumValues[random.nextInt(enumValues.length)];
         }
 
-        if (type.equals(Integer.TYPE) || type.equals(Integer.class)) {
-            return (T)Integer.valueOf(random.nextInt(10));
-        }
-
-        if (type.equals(Long.TYPE) || type.equals(Long.class)) {
-            return (T)Long.valueOf((long)random.nextInt(10));
-        }
-
-        if (type.equals(Double.TYPE) || type.equals(Double.class)) {
-            return (T)Double.valueOf(random.nextDouble());
-        }
-
-        if (type.equals(Float.TYPE) || type.equals(Float.class)) {
-            return (T)Float.valueOf(random.nextFloat());
-        }
-
-        if (type.equals(Boolean.TYPE) || type.equals(Boolean.class)) {
-            return (T)Boolean.valueOf(random.nextBoolean());
-        }
-
-        if (type.equals(String.class)) {
-            return (T)UUID.randomUUID().toString().substring(0,5);
-        }
-
-        if (type.equals(UUID.class)) {
-            return (T)UUID.randomUUID();
-        }
-
-        if (type.equals(BigInteger.class)) {
-            return (T)BigInteger.valueOf(random.nextInt(10));
-        }
-
-        if (type.equals(LocalDateTime.class)) {
-            return (T)LocalDateTime.now();
-        }
-
-        if (type.equals(LocalDate.class)) {
-            return (T)LocalDate.now();
-        }
-        if (type.equals(OffsetDateTime.class)) {
-            return (T)OffsetDateTime.now();
-        }
-
-        if (type.equals(List.class)) {
-            return (T)new ArrayList();
-        }
-
-        if (type.equals(Set.class)) {
-            return (T)new HashSet();
-        }
-
-        if (type.equals(Map.class)) {
-            return (T) new HashMap();
+        if (suppliers.containsKey(type)) {
+            return (T)suppliers.get(type).get();
         }
 
         return createAndFill(type);
@@ -94,23 +68,29 @@ public abstract class TypeRandomizer {
             T instance = declaredConstructor.newInstance();
 
             for (Field field: clazz.getDeclaredFields()) {
-                field.setAccessible(true);
-                Object value = getType(field.getType());
-                field.set(instance, value);
+                handleField(instance, field);
             }
 
             //Superclass with values? Yes, could do a recursive function to support extends of extends but, nah
             if (clazz.getSuperclass() != Object.class) {
                 for (Field field : clazz.getSuperclass().getDeclaredFields()) {
-                    field.setAccessible(true);
-                    Object value = getType(field.getType());
-                    field.set(instance, value);
+                    handleField(instance, field);
                 }
             }
 
             return instance;
         } catch (NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e) {
-            throw new RuntimeException("Could not instantiate class: " + clazz + " " + e.getMessage());
+            throw new IllegalArgumentException("Could not instantiate class: " + clazz + " " + e.getMessage());
         }
+    }
+
+    private static <T> void handleField(T instance, Field field) throws IllegalAccessException {
+        if (field.getName().startsWith("$")) {
+            return;
+        }
+
+        field.setAccessible(true);
+        Object value = getType(field.getType());
+        field.set(instance, value);
     }
 }

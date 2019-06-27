@@ -1,4 +1,5 @@
 package se.fortnox.reactivewizard.test;
 
-abstract class AbstractPojo {
+interface AbstractPojo {
+    String get();
 }
