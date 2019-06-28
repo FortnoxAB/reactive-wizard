@@ -25,12 +25,10 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
-import static org.fest.assertions.Assertions.assertThat;
-import static org.fest.assertions.Fail.fail;
-import static se.fortnox.reactivewizard.test.TestUtil.assertException;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 public class ConfigReaderTest {
     /**
@@ -158,7 +156,7 @@ public class ConfigReaderTest {
             ConfigReader.fromFile("src/test/resources/testconfig-invalid.yml", EmptyConfig.class);
             fail("Expected exception, but none was thrown");
         } catch (RuntimeException exception) {
-            assertException(exception, MarkedYAMLException.class);
+            assertThat(exception).hasRootCauseInstanceOf(MarkedYAMLException.class);
         }
     }
 }

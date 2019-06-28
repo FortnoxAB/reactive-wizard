@@ -1,7 +1,6 @@
 package se.fortnox.reactivewizard.client;
 
 import com.google.inject.Injector;
-import org.fest.assertions.MapAssert;
 import org.junit.Test;
 import se.fortnox.reactivewizard.config.TestInjector;
 import se.fortnox.reactivewizard.server.ServerConfig;
@@ -10,7 +9,8 @@ import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 import java.util.Date;
 
-import static org.fest.assertions.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 
 public class HttpClientConfigTest {
 
@@ -36,7 +36,7 @@ public class HttpClientConfigTest {
         assertThat(config.getDevCookie()).isEqualTo("TEST=123");
         assertThat(config.getDevServerInfo().getHostString()).isEqualTo("mymachine");
         assertThat(config.getDevServerInfo().getPort()).isEqualTo(9090);
-        assertThat(config.getDevHeaders()).includes(MapAssert.entry("Host", "localhost"));
+        assertThat(config.getDevHeaders()).contains(entry("Host", "localhost"));
     }
 
     @Test

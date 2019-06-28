@@ -2,7 +2,7 @@ package se.fortnox.reactivewizard.jaxrs.params.deserializing;
 
 import org.junit.Test;
 
-import static org.fest.assertions.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class BooleanDeserializerTest {
     private final static Deserializer<Boolean> DESERIALIZER = new BooleanDeserializer();

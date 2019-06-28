@@ -8,7 +8,7 @@ import javax.ws.rs.Path;
 
 import java.util.Optional;
 
-import static org.fest.assertions.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class JaxRsMetaTest {
 

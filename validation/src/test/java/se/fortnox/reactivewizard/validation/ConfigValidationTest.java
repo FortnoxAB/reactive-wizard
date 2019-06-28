@@ -8,8 +8,8 @@ import se.fortnox.reactivewizard.config.TestInjector;
 
 import javax.validation.constraints.NotEmpty;
 
-import static org.fest.assertions.Assertions.assertThat;
-import static org.fest.assertions.Fail.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 public class ConfigValidationTest {
 

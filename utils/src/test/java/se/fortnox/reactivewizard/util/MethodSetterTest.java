@@ -6,7 +6,7 @@ import rx.Observable;
 
 import java.util.stream.Stream;
 
-import static org.fest.assertions.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class MethodSetterTest extends AccessorTest {
     private Setter value;

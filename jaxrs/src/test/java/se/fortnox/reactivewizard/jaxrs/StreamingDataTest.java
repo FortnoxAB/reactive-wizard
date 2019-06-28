@@ -15,7 +15,7 @@ import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.List;
 
-import static org.fest.assertions.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static rx.Observable.just;
 import static se.fortnox.reactivewizard.jaxrs.response.ResponseDecorator.withHeaders;
 import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.body;

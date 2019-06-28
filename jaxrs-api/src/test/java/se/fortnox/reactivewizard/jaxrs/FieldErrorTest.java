@@ -1,12 +1,12 @@
 package se.fortnox.reactivewizard.jaxrs;
 
-import org.fest.assertions.MapAssert;
 import org.junit.Test;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.fest.assertions.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 
 public class FieldErrorTest {
 
@@ -39,7 +39,7 @@ public class FieldErrorTest {
         FieldError fieldError = new FieldError("username", "validation.too.short", errorParams);
         assertThat(fieldError.getError()).isEqualTo("validation.too.short");
         assertThat(fieldError.getField()).isEqualTo("username");
-        assertThat(fieldError.getErrorParams()).includes(MapAssert.entry("name", "a"));
+        assertThat(fieldError.getErrorParams()).contains(entry("name", "a"));
     }
 
     @Test
