@@ -13,7 +13,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import java.util.concurrent.Executors;
 
-import static org.fest.assertions.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.testServer;
 
 public class SynchronousResourcesTest {

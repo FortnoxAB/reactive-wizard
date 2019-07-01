@@ -5,7 +5,7 @@ import se.fortnox.reactivewizard.util.ReflectionUtil;
 
 import java.sql.SQLException;
 
-import static org.fest.assertions.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.fail;
 
 public class ParamQueryPartTest {

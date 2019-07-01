@@ -13,7 +13,7 @@ import java.nio.charset.Charset;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static org.fest.assertions.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class JaxRsRequestTest {
     @Test

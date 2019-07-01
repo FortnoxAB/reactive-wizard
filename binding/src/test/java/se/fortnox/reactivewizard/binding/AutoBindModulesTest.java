@@ -5,7 +5,7 @@ import com.google.inject.Injector;
 import com.other.vendor.*;
 import org.junit.Test;
 
-import static org.fest.assertions.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class AutoBindModulesTest {
 

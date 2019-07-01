@@ -5,7 +5,7 @@ import rx.Observable;
 
 import java.util.function.Consumer;
 
-import static org.fest.assertions.Fail.fail;
+import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;

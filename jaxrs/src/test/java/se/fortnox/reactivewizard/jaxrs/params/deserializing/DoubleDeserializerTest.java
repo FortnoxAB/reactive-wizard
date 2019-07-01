@@ -2,8 +2,8 @@ package se.fortnox.reactivewizard.jaxrs.params.deserializing;
 
 import org.junit.Test;
 
-import static org.fest.assertions.Assertions.assertThat;
-import static org.fest.assertions.Fail.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 public class DoubleDeserializerTest {
     private final static Deserializer<Double> DESERIALIZER = new DoubleDeserializer();

@@ -7,7 +7,7 @@ import se.fortnox.reactivewizard.server.ServerConfig;
 
 import java.net.URISyntaxException;
 
-import static org.fest.assertions.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class HttpClientProviderTest {
 

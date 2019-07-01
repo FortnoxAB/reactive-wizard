@@ -6,8 +6,8 @@ import org.junit.Test;
 import java.lang.reflect.Type;
 import java.time.LocalDate;
 
-import static org.fest.assertions.Assertions.assertThat;
-import static org.fest.assertions.Fail.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 public class LocalDateDeserializerTest {
     private final static Deserializer<LocalDate> DESERIALIZER = new LocalDateDeserializer();
