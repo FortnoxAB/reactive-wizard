@@ -1,5 +1,6 @@
 package se.fortnox.reactivewizard.test;
 
+import org.assertj.core.api.AbstractThrowableAssert;
 import org.fest.assertions.ThrowableAssert;
 import org.hamcrest.Description;
 import org.mockito.ArgumentMatcher;
@@ -7,8 +8,8 @@ import org.mockito.Mockito;
 
 import java.util.function.Consumer;
 
-import static org.fest.assertions.Assertions.assertThat;
-import static org.fest.assertions.Fail.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 /**
  * Utility functions for building tests.
@@ -62,14 +63,36 @@ public final class TestUtil {
 
     /**
      * Assert the type of an exception.
+     * This method does not with AssertJ.
      *
      * @param throwable The exception to apply assertion on
-     * @param type Expected type of exception
-     * @param <T> The type of the expected exception
+     * @param type      Expected type of exception
+     * @param <T>       The type of the expected exception
+     * @return The assertion for further assertion chaining
+     * @deprecated Use AssertJ and {@link #assertNestedException assertNestedException} instead
+     */
+    @Deprecated
+    public static <T extends Throwable> ThrowableAssert assertException(Throwable throwable, Class<T> type) {
+        while (throwable != null && !type.isAssignableFrom(throwable.getClass())) {
+            Throwable cause = throwable.getCause();
+            if (cause == throwable || cause == null) {
+                org.fest.assertions.Fail.fail("Expected exception of type " + type.getCanonicalName());
+            }
+            throwable = cause;
+        }
+        return org.fest.assertions.Assertions.assertThat(throwable);
+    }
+
+    /**
+     * Assert the type of an exception.
+     *
+     * @param <T>       The type of the expected exception
+     * @param throwable The exception to apply assertion on
+     * @param type      Expected type of exception
      * @return The assertion for further assertion chaining
      */
-    public static <T extends Throwable> ThrowableAssert assertException(Throwable throwable, Class<T> type) {
-        while (!type.isAssignableFrom(throwable.getClass())) {
+    public static <T extends Throwable> AbstractThrowableAssert assertNestedException(Throwable throwable, Class<T> type) {
+        while (throwable != null && !type.isAssignableFrom(throwable.getClass())) {
             Throwable cause = throwable.getCause();
             if (cause == throwable || cause == null) {
                 fail("Expected exception of type " + type.getCanonicalName());
@@ -78,5 +101,4 @@ public final class TestUtil {
         }
         return assertThat(throwable);
     }
-
 }

@@ -6,7 +6,7 @@ import org.mockito.Mockito;
 import java.net.MalformedURLException;
 import java.net.URL;
 
-import static org.fest.assertions.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.when;
 
@@ -14,7 +14,8 @@ public class DebugUtilTest {
 
     @Test
     public void testIsDebug() {
-        assertThat(DebugUtil.IS_DEBUG).isNotNull(); // will be true if running from Intellij IDEA and false from command line
+        // will be true if running from Intellij IDEA and false from command line
+        assertThat(DebugUtil.IS_DEBUG).isNotNull();
     }
 
     @Test

@@ -96,8 +96,8 @@ import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERR
 import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static java.lang.String.format;
-import static org.fest.assertions.Assertions.assertThat;
-import static org.fest.assertions.Fail.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
@@ -908,7 +908,7 @@ public class HttpClientTest {
         getHttpProxy(server.getServerPort()).withMultipleCookies(cookie1Value, cookie2Value).toBlocking().single();
 
         verify(reqLog).accept(matches(req -> {
-            assertThat(req.headerIterator()).isNotEmpty();
+            assertThat(req.headerIterator()).toIterable().isNotEmpty();
             assertThat(req.getHeader("Cookie")).isEqualTo(cookieHeader);
         }));
 
@@ -1268,7 +1268,7 @@ public class HttpClientTest {
         getHttpProxy(server.getServerPort()).getHello().toBlocking().singleOrDefault(null);
 
         verify(reqLog).accept(matches(req -> {
-            assertThat(req.headerIterator()).isNotEmpty();
+            assertThat(req.headerIterator()).toIterable().isNotEmpty();
             assertThat(req.getHeader("Host")).isEqualTo(host);
         }));
 
@@ -1285,7 +1285,7 @@ public class HttpClientTest {
         getHttpProxy(server.getServerPort()).withHostHeaderParam(host).toBlocking().singleOrDefault(null);
 
         verify(reqLog).accept(matches(req -> {
-            assertThat(req.headerIterator()).isNotEmpty();
+            assertThat(req.headerIterator()).toIterable().isNotEmpty();
             assertThat(req.getHeader("Host")).isEqualTo(host);
         }));
 

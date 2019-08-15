@@ -8,7 +8,7 @@ import se.fortnox.reactivewizard.db.Update;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.fest.assertions.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class DaoClassScannerTest {
 

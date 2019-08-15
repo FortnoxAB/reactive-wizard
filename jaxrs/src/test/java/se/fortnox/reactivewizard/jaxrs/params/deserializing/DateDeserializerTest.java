@@ -9,8 +9,8 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
 
-import static org.fest.assertions.Assertions.assertThat;
-import static org.fest.assertions.Fail.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 public class DateDeserializerTest {
     private final static Deserializer<Date> DESERIALIZER = new DateDeserializer(StdDateFormat::new);

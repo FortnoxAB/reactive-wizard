@@ -5,7 +5,6 @@ import org.junit.Test;
 import org.mockito.InOrder;
 import rx.Observable;
 import rx.Observer;
-import rx.observers.AssertableSubscriber;
 import se.fortnox.reactivewizard.db.config.DatabaseConfig;
 import se.fortnox.reactivewizard.db.statement.MinimumAffectedRowsException;
 import se.fortnox.reactivewizard.db.transactions.DaoObservable;
@@ -20,8 +19,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import static org.fest.assertions.Assertions.assertThat;
-import static org.fest.assertions.Fail.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -30,16 +29,16 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static se.fortnox.reactivewizard.test.TestUtil.assertException;
+import static se.fortnox.reactivewizard.test.TestUtil.assertNestedException;
 
 /**
  */
 public class DaoTransactionsTest {
-    MockDb             db                 = new MockDb();
-    ConnectionProvider connectionProvider = db.getConnectionProvider();
-    DbProxy            dbProxy            = new DbProxy(new DatabaseConfig(), connectionProvider);
-    TestDao            dao                = dbProxy.create(TestDao.class);
-    DaoTransactions    daoTransactions    = new DaoTransactionsImpl();
+    private MockDb             db                 = new MockDb();
+    private ConnectionProvider connectionProvider = db.getConnectionProvider();
+    private DbProxy            dbProxy            = new DbProxy(new DatabaseConfig(), connectionProvider);
+    private TestDao            dao                = dbProxy.create(TestDao.class);
+    private DaoTransactions    daoTransactions    = new DaoTransactionsImpl();
 
     @Test
     public void shouldRunTwoQueriesInOneTransaction() throws SQLException {
@@ -101,8 +100,9 @@ public class DaoTransactionsTest {
         Observable<String> find1 = dao.find();
         Observable<String> find2 = dao.find();
 
-        when(db.getPreparedStatement().executeQuery()).thenReturn(db.getResultSet()).thenThrow(new SQLException(
-            "error"));
+        when(db.getPreparedStatement().executeQuery())
+            .thenReturn(db.getResultSet())
+            .thenThrow(new SQLException("error"));
 
         daoTransactions.createTransaction(find1, find2);
 
@@ -120,7 +120,11 @@ public class DaoTransactionsTest {
             assertThat(e.getCause().getMessage()).isEqualTo("error");
         }
 
-        verify(find1Observer).onError(TestUtil.matches(e -> assertException(e, SQLException.class).hasMessage("error")));
+        verify(find1Observer).onError(TestUtil.matches(e -> {
+            System.out.println(e.getMessage());
+            assertNestedException(e, SQLException.class)
+                .hasMessage("error");
+        }));
         verify(find1Observer, times(0)).onCompleted();
         verify(find1Observer, times(1)).onNext(any());
 
@@ -214,7 +218,8 @@ public class DaoTransactionsTest {
             update.toBlocking().single();
             fail("expected exception");
         } catch (Exception e) {
-            assertException(e, TransactionAlreadyExecutedException.class).hasMessage("Transaction already executed. You cannot subscribe multiple times to an Observable that is part of a transaction.");
+            assertNestedException(e, TransactionAlreadyExecutedException.class)
+                .hasMessage("Transaction already executed. You cannot subscribe multiple times to an Observable that is part of a transaction.");
         }
 
         Connection conn = db.getConnection();
@@ -232,9 +237,7 @@ public class DaoTransactionsTest {
         final Observable<Integer> update = dao.updateFail();
 
         daoTransactions.createTransaction(update);
-        daoTransactions.executeTransaction(
-            update
-        ).retry(3).test().awaitTerminalEvent();
+        daoTransactions.executeTransaction(update).retry(3).test().awaitTerminalEvent();
 
         Connection conn = db.getConnection();
         verify(conn, times(4)).rollback();
@@ -273,7 +276,9 @@ public class DaoTransactionsTest {
             if (e.getCause() != null) {
                 e = (Exception)e.getCause();
             }
-            assertException(e, RuntimeException.class).hasMessage("Transaction cannot be modified after creation.");
+            assertThat(e)
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("Transaction cannot be modified after creation.");
         }
 
         Connection conn = db.getConnection();
@@ -282,6 +287,7 @@ public class DaoTransactionsTest {
         verify(conn, never()).rollback();
         verify(conn, never()).close();
     }
+
     interface TestDao {
         @Query("select * from test")
         Observable<String> find();
