@@ -83,8 +83,8 @@ public class ObservableStatementFactory {
         }
 
         result = pagingOutput.apply(result, args);
-        result = result.onBackpressureBuffer(RECORD_BUFFER_SIZE);
         result = metrics.measure(result, time -> logSlowQuery(transactionHolder.get(), time, args));
+        result = result.onBackpressureBuffer(RECORD_BUFFER_SIZE);
         result = LoggingContext.transfer(result);
         result = result.subscribeOn(scheduler);
 
