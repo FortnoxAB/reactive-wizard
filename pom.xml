@@ -75,7 +75,8 @@
         <netty.version>4.1.19.Final</netty.version>
         <rxnetty.version>0.5.3</rxnetty.version>
         <rxjava.version>1.2.10</rxjava.version>
-        <jackson.version>2.8.8</jackson.version>
+        <jackson.version>2.9.9</jackson.version>
+        <jackson-databind.version>2.9.9.3</jackson-databind.version>
         <slf4j.version>1.7.25</slf4j.version>
         <guice.version>4.2.2</guice.version>
         <guava.version>27.0.1-jre</guava.version>

@@ -68,48 +68,52 @@ public class LambdaWriter extends BeanPropertyWriter {
         } else if (this._accessorMethod == null) {
             value = this._field.get(bean);
         } else {
-            value = this._accessorMethod.invoke(bean);
+            value = this._accessorMethod.invoke(bean, (Object[]) null);
         }
 
         ////////////////////////////////
-        // BEGIN COPY & PASTE
+        // BEGIN COPY & PASTE Jackson 2.9.9.3
 
+        // Null handling is bit different, check that first
         if (value == null) {
-            if (this._nullSerializer != null) {
-                gen.writeFieldName(this._name);
-                this._nullSerializer.serialize((Object)null, gen, prov);
+            if (_nullSerializer != null) {
+                gen.writeFieldName(_name);
+                _nullSerializer.serialize(null, gen, prov);
             }
-
-        } else {
-            JsonSerializer<Object> ser = this._serializer;
+            return;
+        }
+        // then find serializer to use
+        JsonSerializer<Object> ser = _serializer;
+        if (ser == null) {
+            Class<?> cls = value.getClass();
+            PropertySerializerMap m = _dynamicSerializers;
+            ser = m.serializerFor(cls);
             if (ser == null) {
-                Class<?> cls = value.getClass();
-                PropertySerializerMap m = this._dynamicSerializers;
-                ser = m.serializerFor(cls);
-                if (ser == null) {
-                    ser = this._findAndAddDynamic(m, cls, prov);
-                }
+                ser = _findAndAddDynamic(m, cls, prov);
             }
-
-            if (this._suppressableValue != null) {
-                if (MARKER_FOR_EMPTY == this._suppressableValue) {
-                    if (ser.isEmpty(prov, value)) {
-                        return;
-                    }
-                } else if (this._suppressableValue.equals(value)) {
+        }
+        // and then see if we must suppress certain values (default, empty)
+        if (_suppressableValue != null) {
+            if (MARKER_FOR_EMPTY == _suppressableValue) {
+                if (ser.isEmpty(prov, value)) {
                     return;
                 }
+            } else if (_suppressableValue.equals(value)) {
+                return;
             }
-
-            if (value != bean || !this._handleSelfReference(bean, gen, prov, ser)) {
-                gen.writeFieldName(this._name);
-                if (this._typeSerializer == null) {
-                    ser.serialize(value, gen, prov);
-                } else {
-                    ser.serializeWithType(value, gen, prov, this._typeSerializer);
-                }
-
+        }
+        // For non-nulls: simple check for direct cycles
+        if (value == bean) {
+            // three choices: exception; handled by call; or pass-through
+            if (_handleSelfReference(bean, gen, prov, ser)) {
+                return;
             }
+        }
+        gen.writeFieldName(_name);
+        if (_typeSerializer == null) {
+            ser.serialize(value, gen, prov);
+        } else {
+            ser.serializeWithType(value, gen, prov, _typeSerializer);
         }
 
         // END COPY & PASTE
@@ -125,50 +129,55 @@ public class LambdaWriter extends BeanPropertyWriter {
         } else if (this._accessorMethod == null) {
             value = this._field.get(bean);
         } else {
-            value = this._accessorMethod.invoke(bean);
+            value = this._accessorMethod.invoke(bean, (Object[]) null);
         }
 
         ////////////////////////////////
-        // BEGIN COPY & PASTE
+        // BEGIN COPY & PASTE  Jackson 2.9.9.3
 
-        if (value == null) {
-            if (this._nullSerializer != null) {
-                this._nullSerializer.serialize((Object)null, gen, prov);
-            } else {
+        if (value == null) { // nulls need specialized handling
+            if (_nullSerializer != null) {
+                _nullSerializer.serialize(null, gen, prov);
+            } else { // can NOT suppress entries in tabular output
                 gen.writeNull();
             }
-
-        } else {
-            JsonSerializer<Object> ser = this._serializer;
+            return;
+        }
+        // otherwise find serializer to use
+        JsonSerializer<Object> ser = _serializer;
+        if (ser == null) {
+            Class<?> cls = value.getClass();
+            PropertySerializerMap map = _dynamicSerializers;
+            ser = map.serializerFor(cls);
             if (ser == null) {
-                Class<?> cls = value.getClass();
-                PropertySerializerMap map = this._dynamicSerializers;
-                ser = map.serializerFor(cls);
-                if (ser == null) {
-                    ser = this._findAndAddDynamic(map, cls, prov);
-                }
+                ser = _findAndAddDynamic(map, cls, prov);
             }
-
-            if (this._suppressableValue != null) {
-                if (MARKER_FOR_EMPTY == this._suppressableValue) {
-                    if (ser.isEmpty(prov, value)) {
-                        this.serializeAsPlaceholder(bean, gen, prov);
-                        return;
-                    }
-                } else if (this._suppressableValue.equals(value)) {
-                    this.serializeAsPlaceholder(bean, gen, prov);
+        }
+        // and then see if we must suppress certain values (default, empty)
+        if (_suppressableValue != null) {
+            if (MARKER_FOR_EMPTY == _suppressableValue) {
+                if (ser.isEmpty(prov, value)) { // can NOT suppress entries in
+                    // tabular output
+                    serializeAsPlaceholder(bean, gen, prov);
                     return;
                 }
+            } else if (_suppressableValue.equals(value)) { // can NOT suppress
+                // entries in tabular
+                // output
+                serializeAsPlaceholder(bean, gen, prov);
+                return;
             }
-
-            if (value != bean || !this._handleSelfReference(bean, gen, prov, ser)) {
-                if (this._typeSerializer == null) {
-                    ser.serialize(value, gen, prov);
-                } else {
-                    ser.serializeWithType(value, gen, prov, this._typeSerializer);
-                }
-
+        }
+        // For non-nulls: simple check for direct cycles
+        if (value == bean) {
+            if (_handleSelfReference(bean, gen, prov, ser)) {
+                return;
             }
+        }
+        if (_typeSerializer == null) {
+            ser.serialize(value, gen, prov);
+        } else {
+            ser.serializeWithType(value, gen, prov, _typeSerializer);
         }
 
         // END COPY & PASTE
