@@ -12,6 +12,7 @@ import se.fortnox.reactivewizard.test.LoggingMockUtil;
 
 import java.sql.SQLException;
 import java.util.SortedMap;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
@@ -67,6 +68,31 @@ public class LoggingTest {
                 "args: \\[\"hej\"\\]\n" +
                 "time: \\d+")
         ));
+        verifyNoMoreInteractions(mockAppender);
+        LoggingMockUtil.destroyMockedAppender(mockAppender, ObservableStatementFactory.class);
+    }
+
+    @Test
+    public void shouldNotLogSlowQueriesWhenQueryIsFastButBackpressureIsSlow() throws SQLException, NoSuchFieldException, IllegalAccessException {
+        databaseConfig.setSlowQueryLogThreshold(100);
+
+        // Given
+        Appender mockAppender = createMockedLogAppender(ObservableStatementFactory.class);
+        mockDb.addRowColumn(1, 1, "testdata", Integer.class, 3);
+        mockDb.addRowColumn(2, 1, "testdata", Integer.class, 3);
+        mockDb.addRowColumn(3, 1, "testdata", Integer.class, 3);
+        mockDb.addRowColumn(4, 1, "testdata", Integer.class, 3);
+
+        // When
+        loggingDao.doSomething("hej")
+            // concatMap here will give backpressure in dao
+            .concatMap(i->Observable.fromCallable(()->1).delay(200, TimeUnit.MILLISECONDS))
+            .count()
+            .toBlocking()
+            .singleOrDefault(null);
+
+        // Then
+        verify(mockAppender, never()).doAppend(any());
         verifyNoMoreInteractions(mockAppender);
         LoggingMockUtil.destroyMockedAppender(mockAppender, ObservableStatementFactory.class);
     }

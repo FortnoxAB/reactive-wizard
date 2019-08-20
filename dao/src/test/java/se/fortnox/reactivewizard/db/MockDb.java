@@ -106,6 +106,8 @@ public class MockDb {
             when(rs.getString(column)).thenReturn((String)value);
         } else if (type.equals(Long.class)) {
             when(rs.getLong(column)).thenReturn((Long)value);
+        } else if (type.equals(Integer.class)) {
+            when(rs.getInt(column)).thenReturn((Integer)value);
         } else {
             throw new RuntimeException("Unsupported type " + type);
         }
