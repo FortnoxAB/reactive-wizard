@@ -1292,6 +1292,81 @@ public class HttpClientTest {
         server.shutdown();
     }
 
+    @Test
+    public void shouldSupportSendingXml() {
+        AtomicReference<HttpServerRequest<ByteBuf>> recordedRequest     = new AtomicReference<>();
+        AtomicReference<String>                     recordedRequestBody = new AtomicReference<>();
+
+        HttpServer<ByteBuf, ByteBuf> server = HttpServer.newServer(0).start((request, response) -> {
+            recordedRequest.set(request);
+            response.setStatus(HttpResponseStatus.NO_CONTENT);
+            return request.getContent().flatMap(buf -> {
+                recordedRequestBody.set(buf.toString(Charset.defaultCharset()));
+                return Observable.empty();
+            });
+        });
+
+        TestResource resource = getHttpProxy(server.getServerPort());
+
+        resource.sendXml("<xml></xml>").toBlocking().lastOrDefault(null);
+        assertThat(recordedRequestBody.get()).isEqualTo("<xml></xml>");
+        assertThat(recordedRequest.get().getHttpMethod()).isEqualTo(HttpMethod.POST);
+        assertThat(recordedRequest.get().getHeader("Content-Type")).isEqualTo("application/xml");
+
+        server.shutdown();
+    }
+
+
+    @Test
+    public void shouldSupportSendingXmlAsBytes() {
+        AtomicReference<HttpServerRequest<ByteBuf>> recordedRequest     = new AtomicReference<>();
+        AtomicReference<String>                     recordedRequestBody = new AtomicReference<>();
+
+        HttpServer<ByteBuf, ByteBuf> server = HttpServer.newServer(0).start((request, response) -> {
+            recordedRequest.set(request);
+            response.setStatus(HttpResponseStatus.NO_CONTENT);
+            return request.getContent().flatMap(buf -> {
+                recordedRequestBody.set(buf.toString(Charset.defaultCharset()));
+                return Observable.empty();
+            });
+        });
+
+        TestResource resource = getHttpProxy(server.getServerPort());
+
+        resource.sendXml("<xml></xml>".getBytes(Charset.defaultCharset())).toBlocking().lastOrDefault(null);
+        assertThat(recordedRequestBody.get()).isEqualTo("<xml></xml>");
+        assertThat(recordedRequest.get().getHttpMethod()).isEqualTo(HttpMethod.POST);
+        assertThat(recordedRequest.get().getHeader("Content-Type")).isEqualTo("application/xml");
+
+        server.shutdown();
+    }
+
+    @Test
+    public void shouldFailIfBodyIsNotStringOrBytes() {
+        AtomicReference<HttpServerRequest<ByteBuf>> recordedRequest     = new AtomicReference<>();
+        AtomicReference<String>                     recordedRequestBody = new AtomicReference<>();
+
+        HttpServer<ByteBuf, ByteBuf> server = HttpServer.newServer(0).start((request, response) -> {
+            recordedRequest.set(request);
+            response.setStatus(HttpResponseStatus.NO_CONTENT);
+            return request.getContent().flatMap(buf -> {
+                recordedRequestBody.set(buf.toString(Charset.defaultCharset()));
+                return Observable.empty();
+            });
+        });
+
+        TestResource resource = getHttpProxy(server.getServerPort());
+
+        try {
+            resource.sendXml(new Pojo()).toBlocking().lastOrDefault(null);
+            fail("expected exception");
+        } catch (IllegalArgumentException e) {
+            assertThat(e).hasMessage("When content type is not application/json the body param must be String or byte[], but was class se.fortnox.reactivewizard.client.HttpClientTest$Pojo");
+        }
+
+        server.shutdown();
+    }
+
     @Path("/hello")
     interface TestResource {
 
@@ -1389,6 +1464,18 @@ public class HttpClientTest {
 
         @GET
         Observable<Wrapper> getWrappedPojo();
+
+        @POST
+        @Consumes("application/xml")
+        Observable<Void> sendXml(String xml);
+
+        @POST
+        @Consumes("application/xml")
+        Observable<Void> sendXml(byte[] xml);
+
+        @POST
+        @Consumes("application/xml")
+        Observable<Void> sendXml(Pojo pojo);
     }
 
     class Wrapper {

@@ -328,7 +328,19 @@ public class HttpClient implements InvocationHandler {
                     if (!requestBuilder.getHeaders().containsKey(CONTENT_TYPE)) {
                         requestBuilder.getHeaders().put(CONTENT_TYPE, MediaType.APPLICATION_JSON);
                     }
-                    requestBuilder.setContent(objectMapper.writeValueAsBytes(value));
+                    if (requestBuilder.getHeaders().get(CONTENT_TYPE).startsWith(MediaType.APPLICATION_JSON)) {
+                        requestBuilder.setContent(objectMapper.writeValueAsBytes(value));
+                    } else {
+                        if (value instanceof String) {
+                            requestBuilder.setContent((String)value);
+                            return;
+                        } else if (value instanceof byte[]) {
+                            requestBuilder.setContent((byte[])value);
+                            return;
+                        }
+                        throw new IllegalArgumentException("When content type is not " + MediaType.APPLICATION_JSON
+                            + " the body param must be String or byte[], but was " + value.getClass());
+                    }
                     return;
                 } catch (JsonProcessingException e) {
                     throw new RuntimeException(e);
