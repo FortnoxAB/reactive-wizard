@@ -8,7 +8,7 @@ import com.google.inject.Module;
 public interface AutoBindModule extends Module, Comparable<AutoBindModule> {
     /**
      * Priority of this module. Used to determine what module overrides another module.
-     * @return
+     * @return a priority, higher priority module will overwrite lower priority modules
      */
     default Integer getPrio() {
         return 100;

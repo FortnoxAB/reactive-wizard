@@ -19,7 +19,8 @@ public class InjectAnnotatedScanner extends AbstractClassScanner {
     private void classFound(ClassInfo classInfo) {
         if (classInfo.getConstructorInfo()
                 .stream()
-                .anyMatch(mi->mi.hasAnnotation(javax.inject.Inject.class.getName()) || mi.hasAnnotation(com.google.inject.Inject.class.getName()))) {
+                .anyMatch(mi -> mi.hasAnnotation(javax.inject.Inject.class.getName())
+                        || mi.hasAnnotation(com.google.inject.Inject.class.getName()))) {
             add(classInfo.loadClass());
         }
     }
