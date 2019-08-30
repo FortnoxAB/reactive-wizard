@@ -42,12 +42,12 @@ public class RxNettyServer extends Thread {
     }
 
     private static HttpServer<ByteBuf, ByteBuf> createHttpServer(ServerConfig config) {
-        return HttpServer.newServer(config.getPort())
+        return config.isEnabled() ? HttpServer.newServer(config.getPort())
             .<ByteBuf, ByteBuf>pipelineConfigurator(
                 new NoContentFixConfigurator(
                     config.getMaxInitialLineLengthDefault(),
                     MAX_CHUNK_SIZE_DEFAULT,
-                    config.getMaxHeaderSize()));
+                    config.getMaxHeaderSize())) : null;
     }
 
     /**
