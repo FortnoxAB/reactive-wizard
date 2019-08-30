@@ -59,6 +59,7 @@ public class AutoBindModules implements Module {
         "jar:idea_rt.jar"
     };
     private              Module   bootstrapBindings;
+    private static List<AutoBindModule> autoBindModules;
 
     public AutoBindModules() {
         this(binder -> {
@@ -97,20 +98,25 @@ public class AutoBindModules implements Module {
     }
 
     private List<AutoBindModule> createAutoBindModules(Injector bootstrapInjector) {
-        List<AbstractClassScanner> scanners = createScanners(bootstrapInjector);
+        if (autoBindModules == null) {
+            // We cache the auto bind modules in a static variable, since they will not change during execution, as they
+            // are a result of the current class path.
+            List<Class<? extends AutoBindModule>> autoBindModuleClasses = new ArrayList<>();
+            List<AbstractClassScanner> scanners = createScanners(bootstrapInjector);
 
-        ClassGraph classGraph      = new ClassGraph()
-            .blacklistPackages(PACKAGE_BLACKLIST)
-            .enableMethodInfo()
-            .enableAnnotationInfo();
-        List<Class<? extends AutoBindModule>> autoBindModuleClasses = new ArrayList<>();
-        try (ScanResult scanResult = classGraph.scan()) {
-            scanners.forEach(scanner -> scanner.visit(scanResult));
-            scanResult.getClassesImplementing(AutoBindModule.class.getName()).stream()
-                .map(ci -> ci.loadClass(AutoBindModule.class))
-                .forEach(autoBindModuleClasses::add);
+            ClassGraph classGraph      = new ClassGraph()
+                .blacklistPackages(PACKAGE_BLACKLIST)
+                .enableMethodInfo()
+                .enableAnnotationInfo();
+            try (ScanResult scanResult = classGraph.scan()) {
+                scanners.forEach(scanner -> scanner.visit(scanResult));
+                scanResult.getClassesImplementing(AutoBindModule.class.getName()).stream()
+                    .map(ci -> ci.loadClass(AutoBindModule.class))
+                    .forEach(autoBindModuleClasses::add);
+            }
+            autoBindModules = autoBindModuleClasses.stream().map(bootstrapInjector::getInstance).collect(Collectors.toList());
         }
-        return autoBindModuleClasses.stream().map(bootstrapInjector::getInstance).collect(Collectors.toList());
+        return autoBindModules;
     }
 
     private List<AbstractClassScanner> createScanners(Injector factoryInjector) {
