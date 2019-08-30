@@ -1,6 +1,7 @@
 package se.fortnox.reactivewizard.binding.scanners;
 
-import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner;
+import io.github.classgraph.ClassInfo;
+import io.github.classgraph.ScanResult;
 
 import javax.inject.Singleton;
 import javax.ws.rs.Path;
@@ -8,11 +9,11 @@ import javax.ws.rs.Path;
 @Singleton
 public class JaxRsClassScanner extends AbstractClassScanner {
     @Override
-    public void visit(FastClasspathScanner fastClasspathScanner) {
-        fastClasspathScanner.matchClassesWithAnnotation(Path.class, cls -> {
-            if (cls.isInterface()) {
-                add(cls);
-            }
-        });
+    public void visit(ScanResult scanResult) {
+        scanResult.getClassesWithAnnotation(Path.class.getName())
+                .stream()
+                .filter(ClassInfo::isInterface)
+                .map(ClassInfo::loadClass)
+                .forEach(this::add);
     }
 }

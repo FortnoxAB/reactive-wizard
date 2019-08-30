@@ -1,6 +1,6 @@
 package se.fortnox.reactivewizard.binding.scanners;
 
-import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner;
+import io.github.classgraph.ScanResult;
 import se.fortnox.reactivewizard.client.HttpClientConfig;
 import se.fortnox.reactivewizard.config.Config;
 
@@ -12,10 +12,11 @@ import javax.inject.Singleton;
  */
 public class HttpConfigClassScanner extends AbstractClassScanner {
     @Override
-    public void visit(FastClasspathScanner classpathScanner) {
-        classpathScanner.matchClassesWithAnnotation(Config.class, classWithAnnotation -> {
-            if (HttpClientConfig.class.isAssignableFrom(classWithAnnotation)) {
-                this.add(classWithAnnotation);
+    public void visit(ScanResult scanResult) {
+        scanResult.getClassesWithAnnotation(Config.class.getName()).forEach(classInfo -> {
+            Class<?> cls = classInfo.loadClass();
+            if (HttpClientConfig.class.isAssignableFrom(cls)) {
+                this.add(cls);
             }
         });
     }

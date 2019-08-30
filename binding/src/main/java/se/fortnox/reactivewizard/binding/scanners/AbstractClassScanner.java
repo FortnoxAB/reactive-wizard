@@ -1,6 +1,6 @@
 package se.fortnox.reactivewizard.binding.scanners;
 
-import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner;
+import io.github.classgraph.ScanResult;
 
 import java.util.Set;
 import java.util.TreeSet;
@@ -18,7 +18,7 @@ public abstract class AbstractClassScanner {
         return cls1.getName().compareTo(cls2.getName());
     }
 
-    public abstract void visit(FastClasspathScanner classpathScanner);
+    public abstract void visit(ScanResult scanResult);
 
     public void add(Class<?> cls) {
         classes.add(cls);

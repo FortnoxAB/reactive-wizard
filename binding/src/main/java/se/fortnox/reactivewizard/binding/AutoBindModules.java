@@ -5,7 +5,8 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.util.Modules;
-import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner;
+import io.github.classgraph.ClassGraph;
+import io.github.classgraph.ScanResult;
 import se.fortnox.reactivewizard.binding.scanners.AbstractClassScanner;
 
 import java.util.ArrayList;
@@ -27,35 +28,35 @@ public class AutoBindModules implements Module {
      * We only want to find classes defined by our platform and user code.
      */
     private static final String[] PACKAGE_BLACKLIST = {
-        "-com.google",
-        "-liquibase",
-        "-io.netty",
-        "-org.yaml",
-        "-com.fasterxml",
-        "-org.postgresql",
-        "-org.apache",
-        "-org.hibernate",
-        "-rx",
-        "-org.jetbrains",
-        "-com.intellij",
-        "-com.netflix",
-        "-io.reactivex",
-        "-com.sun",
-        "-com.codahale",
-        "-com.zaxxer",
-        "-io.github.lukehutch",
-        "-io.prometheus",
-        "-org.jboss",
-        "-org.aopalliance",
-        "-redis",
-        "-net.minidev",
-        "-org.slf4j",
-        "-com.ryantenney",
-        "-net.logstash",
-        "-META-INF",
-        "-jar:java-atk-wrapper.jar",
-        "-jar:rt.jar",
-        "-jar:idea_rt.jar"
+        "com.google",
+        "liquibase",
+        "io.netty",
+        "org.yaml",
+        "com.fasterxml",
+        "org.postgresql",
+        "org.apache",
+        "org.hibernate",
+        "rx",
+        "org.jetbrains",
+        "com.intellij",
+        "com.netflix",
+        "io.reactivex",
+        "com.sun",
+        "com.codahale",
+        "com.zaxxer",
+        "io.github.lukehutch",
+        "io.prometheus",
+        "org.jboss",
+        "org.aopalliance",
+        "redis",
+        "net.minidev",
+        "org.slf4j",
+        "com.ryantenney",
+        "net.logstash",
+        "META-INF",
+        "jar:java-atk-wrapper.jar",
+        "jar:rt.jar",
+        "jar:idea_rt.jar"
     };
     private              Module   bootstrapBindings;
 
@@ -98,19 +99,28 @@ public class AutoBindModules implements Module {
     private List<AutoBindModule> createAutoBindModules(Injector bootstrapInjector) {
         List<AbstractClassScanner> scanners = createScanners(bootstrapInjector);
 
-        FastClasspathScanner                  classpathScanner      = new FastClasspathScanner(PACKAGE_BLACKLIST);
+        ClassGraph classGraph      = new ClassGraph()
+            .blacklistPackages(PACKAGE_BLACKLIST)
+            .enableMethodInfo()
+            .enableAnnotationInfo();
         List<Class<? extends AutoBindModule>> autoBindModuleClasses = new ArrayList<>();
-        scanners.forEach(scanner -> scanner.visit(classpathScanner));
-        classpathScanner.matchClassesImplementing(AutoBindModule.class, autoBindModuleClasses::add);
-        classpathScanner.scan();
+        try (ScanResult scanResult = classGraph.scan()) {
+            scanners.forEach(scanner -> scanner.visit(scanResult));
+            scanResult.getClassesImplementing(AutoBindModule.class.getName()).stream()
+                .map(ci -> ci.loadClass(AutoBindModule.class))
+                .forEach(autoBindModuleClasses::add);
+        }
         return autoBindModuleClasses.stream().map(bootstrapInjector::getInstance).collect(Collectors.toList());
     }
 
     private List<AbstractClassScanner> createScanners(Injector factoryInjector) {
-        FastClasspathScanner                        classpathScanner = new FastClasspathScanner(AbstractClassScanner.class.getPackage().getName());
-        List<Class<? extends AbstractClassScanner>> scanners         = new ArrayList<>();
-        classpathScanner.matchSubclassesOf(AbstractClassScanner.class, scanners::add);
-        classpathScanner.scan();
+        ClassGraph classGraph = new ClassGraph().whitelistPackages(AbstractClassScanner.class.getPackage().getName());
+        List<Class<? extends AbstractClassScanner>> scanners = new ArrayList<>();
+        try (ScanResult scanResult = classGraph.scan()) {
+            scanResult.getSubclasses(AbstractClassScanner.class.getName()).stream()
+                .map(ci -> ci.loadClass(AbstractClassScanner.class))
+                .forEach(scanners::add);
+        }
         return scanners.stream().map(factoryInjector::getInstance).collect(Collectors.toList());
     }
 }

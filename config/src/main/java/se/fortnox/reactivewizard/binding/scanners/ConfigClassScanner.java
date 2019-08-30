@@ -1,6 +1,6 @@
 package se.fortnox.reactivewizard.binding.scanners;
 
-import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner;
+import io.github.classgraph.ScanResult;
 import se.fortnox.reactivewizard.config.Config;
 
 import javax.inject.Singleton;
@@ -11,7 +11,7 @@ import javax.inject.Singleton;
 @Singleton
 public class ConfigClassScanner extends AbstractClassScanner {
     @Override
-    public void visit(FastClasspathScanner fastClasspathScanner) {
-        fastClasspathScanner.matchClassesWithAnnotation(Config.class, this::add);
+    public void visit(ScanResult scanResult) {
+        scanResult.getClassesWithAnnotation(Config.class.getName()).loadClasses().forEach(this::add);
     }
 }

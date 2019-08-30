@@ -1,10 +1,9 @@
 package se.fortnox.reactivewizard.binding.scanners;
 
-import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner;
+import io.github.classgraph.ClassInfo;
+import io.github.classgraph.ScanResult;
 
 import javax.inject.Singleton;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Executable;
 
 /**
  * Finds all classes with @Inject annotated constructors.
@@ -12,14 +11,16 @@ import java.lang.reflect.Executable;
 @Singleton
 public class InjectAnnotatedScanner extends AbstractClassScanner {
     @Override
-    public void visit(FastClasspathScanner fastClasspathScanner) {
-        fastClasspathScanner.matchClassesWithMethodAnnotation(javax.inject.Inject.class, this::classFound);
-        fastClasspathScanner.matchClassesWithMethodAnnotation(com.google.inject.Inject.class, this::classFound);
+    public void visit(ScanResult scanResult) {
+        scanResult.getClassesWithMethodAnnotation(javax.inject.Inject.class.getName()).forEach(this::classFound);
+        scanResult.getClassesWithMethodAnnotation(com.google.inject.Inject.class.getName()).forEach(this::classFound);
     }
 
-    private void classFound(Class<?> cls, Executable executable) {
-        if (executable instanceof Constructor) {
-            add(cls);
+    private void classFound(ClassInfo classInfo) {
+        if (classInfo.getConstructorInfo()
+                .stream()
+                .anyMatch(mi->mi.hasAnnotation(javax.inject.Inject.class.getName()) || mi.hasAnnotation(com.google.inject.Inject.class.getName()))) {
+            add(classInfo.loadClass());
         }
     }
 }
