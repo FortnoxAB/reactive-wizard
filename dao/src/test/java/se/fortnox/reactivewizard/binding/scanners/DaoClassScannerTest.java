@@ -3,6 +3,7 @@ package se.fortnox.reactivewizard.binding.scanners;
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ScanResult;
 import org.junit.Test;
+import se.fortnox.reactivewizard.binding.ClassScannerImpl;
 import se.fortnox.reactivewizard.db.Query;
 import se.fortnox.reactivewizard.db.Update;
 
@@ -22,7 +23,7 @@ public class DaoClassScannerTest {
                 .enableAllInfo();
         DaoClassScanner daoClassScanner = new DaoClassScanner();
         try (ScanResult scanResult = classGraph.scan()) {
-            daoClassScanner.visit(scanResult);
+            daoClassScanner.visit(new ClassScannerImpl(scanResult));
         }
 
         Set<Class<?>> classes = daoClassScanner.getClasses();

@@ -12,9 +12,8 @@ import javax.inject.Singleton;
  */
 public class HttpConfigClassScanner extends AbstractClassScanner {
     @Override
-    public void visit(ScanResult scanResult) {
-        scanResult.getClassesWithAnnotation(Config.class.getName()).forEach(classInfo -> {
-            Class<?> cls = classInfo.loadClass();
+    public void visit(ClassScanner classScanner) {
+        classScanner.findClassesAnnotatedWith(Config.class).forEach(cls -> {
             if (HttpClientConfig.class.isAssignableFrom(cls)) {
                 this.add(cls);
             }

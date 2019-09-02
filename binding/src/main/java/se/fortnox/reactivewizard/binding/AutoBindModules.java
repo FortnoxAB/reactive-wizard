@@ -8,6 +8,7 @@ import com.google.inject.util.Modules;
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ScanResult;
 import se.fortnox.reactivewizard.binding.scanners.AbstractClassScanner;
+import se.fortnox.reactivewizard.binding.scanners.ClassScanner;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -109,7 +110,8 @@ public class AutoBindModules implements Module {
                 .enableMethodInfo()
                 .enableAnnotationInfo();
             try (ScanResult scanResult = classGraph.scan()) {
-                scanners.forEach(scanner -> scanner.visit(scanResult));
+                ClassScanner classScanner = new ClassScannerImpl(scanResult);
+                scanners.forEach(scanner -> scanner.visit(classScanner));
                 scanResult.getClassesImplementing(AutoBindModule.class.getName()).stream()
                     .map(classInfo -> classInfo.loadClass(AutoBindModule.class))
                     .forEach(autoBindModuleClasses::add);
