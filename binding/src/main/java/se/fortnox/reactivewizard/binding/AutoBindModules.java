@@ -111,7 +111,7 @@ public class AutoBindModules implements Module {
             try (ScanResult scanResult = classGraph.scan()) {
                 scanners.forEach(scanner -> scanner.visit(scanResult));
                 scanResult.getClassesImplementing(AutoBindModule.class.getName()).stream()
-                    .map(ci -> ci.loadClass(AutoBindModule.class))
+                    .map(classInfo -> classInfo.loadClass(AutoBindModule.class))
                     .forEach(autoBindModuleClasses::add);
             }
             autoBindModules = autoBindModuleClasses.stream().map(bootstrapInjector::getInstance).collect(Collectors.toList());
@@ -124,7 +124,7 @@ public class AutoBindModules implements Module {
         List<Class<? extends AbstractClassScanner>> scanners = new ArrayList<>();
         try (ScanResult scanResult = classGraph.scan()) {
             scanResult.getSubclasses(AbstractClassScanner.class.getName()).stream()
-                .map(ci -> ci.loadClass(AbstractClassScanner.class))
+                .map(classInfo -> classInfo.loadClass(AbstractClassScanner.class))
                 .forEach(scanners::add);
         }
         return scanners.stream().map(factoryInjector::getInstance).collect(Collectors.toList());
