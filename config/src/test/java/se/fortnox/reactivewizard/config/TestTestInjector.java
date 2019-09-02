@@ -13,7 +13,6 @@ public class TestTestInjector {
     @Test
     public void testCreateWithOutConfigFile() {
         Injector injector = TestInjector.create();
-        assertThat(injector.getInstance(ConfigAutoBindModule.class).getClass().getName()).isEqualToIgnoringCase("se.fortnox.reactivewizard.config.TestInjector$MockConfigAutoBindModule");
         assertThat(injector.getInstance(ConfigFactory.class).getClass().getName()).isNotEqualTo(ConfigFactory.class.getName());
 
         String[] args = injector.getInstance(Key.get(String[].class, Names.named("args")));
