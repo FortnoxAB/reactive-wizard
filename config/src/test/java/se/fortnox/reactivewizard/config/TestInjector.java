@@ -38,9 +38,7 @@ public class TestInjector {
                 if (configFile == null) {
                     bind(ConfigFactory.class).toInstance(MockConfigFactory.create());
                     bind(String[].class).annotatedWith(Names.named("args")).toInstance(args);
-                    bind(ConfigAutoBindModule.class).to(MockConfigAutoBindModule.class);
                 } else {
-
                     bind(String[].class).annotatedWith(Names.named("args")).toInstance((String[])ArrayUtils.addAll(args, new String[]{configFile}));
                 }
 
@@ -49,16 +47,5 @@ public class TestInjector {
         };
 
         return Guice.createInjector(new AutoBindModules(module));
-    }
-
-    private static final class MockConfigAutoBindModule extends ConfigAutoBindModule {
-
-        public MockConfigAutoBindModule() {
-            super(null);
-        }
-
-        @Override
-        public void configure(Binder binder) {
-        }
     }
 }

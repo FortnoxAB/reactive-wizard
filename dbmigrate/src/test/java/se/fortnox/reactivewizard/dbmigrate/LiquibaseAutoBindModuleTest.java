@@ -1,8 +1,10 @@
 package se.fortnox.reactivewizard.dbmigrate;
 
+import com.google.inject.AbstractModule;
 import com.google.inject.CreationException;
 import com.google.inject.Guice;
 import com.google.inject.name.Names;
+import com.google.inject.util.Modules;
 import liquibase.exception.DatabaseException;
 import liquibase.exception.LiquibaseException;
 import org.junit.Assert;
@@ -79,9 +81,8 @@ public class LiquibaseAutoBindModuleTest {
         try {
             getInjectedLiquibaseMock(liquibaseMigrateMock, "db-migrate", "config.yml");
             fail("Expected CreationException, but none was thrown");
-        } catch (CreationException e) {
-            assertThat(e.getCause()).isInstanceOf(RuntimeException.class);
-            assertThat(e.getCause().getCause()).isInstanceOf(LiquibaseException.class);
+        } catch (RuntimeException e) {
+            assertThat(e.getCause()).isInstanceOf(LiquibaseException.class);
         }
 
         verify(liquibaseMigrateMock, never()).drop();
@@ -118,29 +119,36 @@ public class LiquibaseAutoBindModuleTest {
     }
 
     private LiquibaseMigrate getInjectedLiquibaseMock(LiquibaseMigrate liquibaseMigrateMock, String... arg) {
-        Guice.createInjector(new AutoBindModules(binder -> {
-            ConfigFactory configFactory = mock(ConfigFactory.class);
+        LiquibaseMigrateProvider liquibaseMigrateProvider = mock(LiquibaseMigrateProvider.class);
+        when(liquibaseMigrateProvider.get()).thenReturn(liquibaseMigrateMock);
 
-            ServerConfig serverConfig = new ServerConfig() {{
-                setEnabled(false);
-            }};
-            when(configFactory.get(eq(ServerConfig.class))).thenReturn(serverConfig);
-            binder.bind(ServerConfig.class).toInstance(serverConfig);
+        AbstractModule module = new AbstractModule(){
+            @Override
+            protected void configure() {
+                ConfigFactory configFactory = mock(ConfigFactory.class);
 
-            LiquibaseConfig liquibaseConfig = new LiquibaseConfig();
-            liquibaseConfig.setUrl("jdbc:h2:mem:test");
+                ServerConfig serverConfig = new ServerConfig() {{
+                    setEnabled(false);
+                }};
+                when(configFactory.get(eq(ServerConfig.class))).thenReturn(serverConfig);
+                bind(ServerConfig.class).toInstance(serverConfig);
 
-            when(configFactory.get(eq(LiquibaseConfig.class))).thenReturn(liquibaseConfig);
-            binder.bind(ConfigFactory.class).toInstance(configFactory);
+                LiquibaseConfig liquibaseConfig = new LiquibaseConfig();
+                liquibaseConfig.setUrl("jdbc:h2:mem:test");
 
-            binder.bind(String[].class)
-                .annotatedWith(Names.named("args"))
-                .toInstance(arg);
+                when(configFactory.get(eq(LiquibaseConfig.class))).thenReturn(liquibaseConfig);
+                bind(ConfigFactory.class).toInstance(configFactory);
 
-            LiquibaseMigrateProvider liquibaseMigrateProvider = mock(LiquibaseMigrateProvider.class);
-            when(liquibaseMigrateProvider.get()).thenReturn(liquibaseMigrateMock);
-            binder.bind(LiquibaseMigrateProvider.class).toInstance(liquibaseMigrateProvider);
-        }));
+                bind(String[].class)
+                    .annotatedWith(Names.named("args"))
+                    .toInstance(arg);
+
+                bind(LiquibaseMigrateProvider.class).toInstance(liquibaseMigrateProvider);
+            }
+        };
+        LiquibaseAutoBindModule liquibaseAutoBindModule = new LiquibaseAutoBindModule(arg, liquibaseMigrateProvider);
+        liquibaseAutoBindModule.preBind();
+        Guice.createInjector(new AutoBindModules(Modules.override(module).with(liquibaseAutoBindModule)));
 
         return liquibaseMigrateMock;
     }

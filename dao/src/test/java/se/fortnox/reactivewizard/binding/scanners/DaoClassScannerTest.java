@@ -1,7 +1,9 @@
 package se.fortnox.reactivewizard.binding.scanners;
 
-import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner;
+import io.github.classgraph.ClassGraph;
+import io.github.classgraph.ScanResult;
 import org.junit.Test;
+import se.fortnox.reactivewizard.binding.ClassScannerImpl;
 import se.fortnox.reactivewizard.db.Query;
 import se.fortnox.reactivewizard.db.Update;
 
@@ -14,10 +16,15 @@ public class DaoClassScannerTest {
 
     @Test
     public void testDaoClassScanner() {
-        FastClasspathScanner classpathScanner = new FastClasspathScanner("se.fortnox.reactivewizard.binding.scanners");
-        DaoClassScanner      daoClassScanner  = new DaoClassScanner();
-        daoClassScanner.visit(classpathScanner);
-        classpathScanner.scan();
+        ClassGraph classGraph = new ClassGraph()
+                .whitelistPackages("se.fortnox.reactivewizard.binding.scanners")
+                .enableAnnotationInfo()
+                .enableMethodInfo()
+                .enableAllInfo();
+        DaoClassScanner daoClassScanner = new DaoClassScanner();
+        try (ScanResult scanResult = classGraph.scan()) {
+            daoClassScanner.visit(new ClassScannerImpl(scanResult));
+        }
 
         Set<Class<?>> classes = daoClassScanner.getClasses();
 

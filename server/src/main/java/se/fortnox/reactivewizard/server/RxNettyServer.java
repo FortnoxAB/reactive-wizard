@@ -42,6 +42,9 @@ public class RxNettyServer extends Thread {
     }
 
     private static HttpServer<ByteBuf, ByteBuf> createHttpServer(ServerConfig config) {
+        if (!config.isEnabled()) {
+            return null;
+        }
         return HttpServer.newServer(config.getPort())
             .<ByteBuf, ByteBuf>pipelineConfigurator(
                 new NoContentFixConfigurator(

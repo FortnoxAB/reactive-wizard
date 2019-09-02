@@ -1,21 +1,19 @@
 package se.fortnox.reactivewizard.binding.scanners;
 
-import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner;
 import se.fortnox.reactivewizard.db.Query;
 import se.fortnox.reactivewizard.db.Update;
 
 import javax.inject.Singleton;
-import java.lang.reflect.Executable;
 
 @Singleton
 public class DaoClassScanner extends AbstractClassScanner {
     @Override
-    public void visit(FastClasspathScanner fastClasspathScanner) {
-        fastClasspathScanner.matchClassesWithMethodAnnotation(Query.class, this::addIfInteface);
-        fastClasspathScanner.matchClassesWithMethodAnnotation(Update.class, this::addIfInteface);
+    public void visit(ClassScanner classScanner) {
+        classScanner.findClassesWithMethodAnnotation(Query.class).forEach(this::addIfInterface);
+        classScanner.findClassesWithMethodAnnotation(Update.class).forEach(this::addIfInterface);
     }
 
-    private void addIfInteface(Class<?> cls, Executable executable) {
+    private void addIfInterface(Class cls) {
         if (cls.isInterface()) {
             this.add(cls);
         }

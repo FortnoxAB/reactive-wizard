@@ -5,8 +5,10 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.util.Modules;
-import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner;
+import io.github.classgraph.ClassGraph;
+import io.github.classgraph.ScanResult;
 import se.fortnox.reactivewizard.binding.scanners.AbstractClassScanner;
+import se.fortnox.reactivewizard.binding.scanners.ClassScanner;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -27,37 +29,38 @@ public class AutoBindModules implements Module {
      * We only want to find classes defined by our platform and user code.
      */
     private static final String[] PACKAGE_BLACKLIST = {
-        "-com.google",
-        "-liquibase",
-        "-io.netty",
-        "-org.yaml",
-        "-com.fasterxml",
-        "-org.postgresql",
-        "-org.apache",
-        "-org.hibernate",
-        "-rx",
-        "-org.jetbrains",
-        "-com.intellij",
-        "-com.netflix",
-        "-io.reactivex",
-        "-com.sun",
-        "-com.codahale",
-        "-com.zaxxer",
-        "-io.github.lukehutch",
-        "-io.prometheus",
-        "-org.jboss",
-        "-org.aopalliance",
-        "-redis",
-        "-net.minidev",
-        "-org.slf4j",
-        "-com.ryantenney",
-        "-net.logstash",
-        "-META-INF",
-        "-jar:java-atk-wrapper.jar",
-        "-jar:rt.jar",
-        "-jar:idea_rt.jar"
+        "com.google",
+        "liquibase",
+        "io.netty",
+        "org.yaml",
+        "com.fasterxml",
+        "org.postgresql",
+        "org.apache",
+        "org.hibernate",
+        "rx",
+        "org.jetbrains",
+        "com.intellij",
+        "com.netflix",
+        "io.reactivex",
+        "com.sun",
+        "com.codahale",
+        "com.zaxxer",
+        "io.github.classgraph",
+        "io.prometheus",
+        "org.jboss",
+        "org.aopalliance",
+        "redis",
+        "net.minidev",
+        "org.slf4j",
+        "com.ryantenney",
+        "net.logstash",
+        "META-INF",
+        "jar:java-atk-wrapper.jar",
+        "jar:rt.jar",
+        "jar:idea_rt.jar"
     };
     private              Module   bootstrapBindings;
+    private static List<AutoBindModule> autoBindModules;
 
     public AutoBindModules() {
         this(binder -> {
@@ -96,21 +99,36 @@ public class AutoBindModules implements Module {
     }
 
     private List<AutoBindModule> createAutoBindModules(Injector bootstrapInjector) {
-        List<AbstractClassScanner> scanners = createScanners(bootstrapInjector);
+        if (autoBindModules == null) {
+            // We cache the auto bind modules in a static variable, since they will not change during execution, as they
+            // are a result of the current class path.
+            List<Class<? extends AutoBindModule>> autoBindModuleClasses = new ArrayList<>();
+            List<AbstractClassScanner> scanners = createScanners(bootstrapInjector);
 
-        FastClasspathScanner                  classpathScanner      = new FastClasspathScanner(PACKAGE_BLACKLIST);
-        List<Class<? extends AutoBindModule>> autoBindModuleClasses = new ArrayList<>();
-        scanners.forEach(scanner -> scanner.visit(classpathScanner));
-        classpathScanner.matchClassesImplementing(AutoBindModule.class, autoBindModuleClasses::add);
-        classpathScanner.scan();
-        return autoBindModuleClasses.stream().map(bootstrapInjector::getInstance).collect(Collectors.toList());
+            ClassGraph classGraph      = new ClassGraph()
+                .blacklistPackages(PACKAGE_BLACKLIST)
+                .enableMethodInfo()
+                .enableAnnotationInfo();
+            try (ScanResult scanResult = classGraph.scan()) {
+                ClassScanner classScanner = new ClassScannerImpl(scanResult);
+                scanners.forEach(scanner -> scanner.visit(classScanner));
+                scanResult.getClassesImplementing(AutoBindModule.class.getName()).stream()
+                    .map(classInfo -> classInfo.loadClass(AutoBindModule.class))
+                    .forEach(autoBindModuleClasses::add);
+            }
+            autoBindModules = autoBindModuleClasses.stream().map(bootstrapInjector::getInstance).collect(Collectors.toList());
+        }
+        return autoBindModules;
     }
 
     private List<AbstractClassScanner> createScanners(Injector factoryInjector) {
-        FastClasspathScanner                        classpathScanner = new FastClasspathScanner(AbstractClassScanner.class.getPackage().getName());
-        List<Class<? extends AbstractClassScanner>> scanners         = new ArrayList<>();
-        classpathScanner.matchSubclassesOf(AbstractClassScanner.class, scanners::add);
-        classpathScanner.scan();
+        ClassGraph classGraph = new ClassGraph().whitelistPackages(AbstractClassScanner.class.getPackage().getName());
+        List<Class<? extends AbstractClassScanner>> scanners = new ArrayList<>();
+        try (ScanResult scanResult = classGraph.scan()) {
+            ClassScanner classScanner = new ClassScannerImpl(scanResult);
+            classScanner.findSubclassesOf(AbstractClassScanner.class)
+                .forEach(scanners::add);
+        }
         return scanners.stream().map(factoryInjector::getInstance).collect(Collectors.toList());
     }
 }
