@@ -20,4 +20,11 @@ public interface ClassScanner {
      * @return classes found
      */
     Iterable<Class<?>> findClassesAnnotatedWith(Class<? extends Annotation> annotation);
+
+    /**
+     * Find all classes being subclasses of the given class
+     * @param parentClass the class that is a parent of the classes to find
+     * @return classes found
+     */
+    <T> Iterable<Class<? extends T>> findSubclassesOf(Class<T> parentClass);
 }

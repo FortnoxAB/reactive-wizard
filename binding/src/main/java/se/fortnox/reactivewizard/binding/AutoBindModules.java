@@ -125,8 +125,8 @@ public class AutoBindModules implements Module {
         ClassGraph classGraph = new ClassGraph().whitelistPackages(AbstractClassScanner.class.getPackage().getName());
         List<Class<? extends AbstractClassScanner>> scanners = new ArrayList<>();
         try (ScanResult scanResult = classGraph.scan()) {
-            scanResult.getSubclasses(AbstractClassScanner.class.getName()).stream()
-                .map(classInfo -> classInfo.loadClass(AbstractClassScanner.class))
+            ClassScanner classScanner = new ClassScannerImpl(scanResult);
+            classScanner.findSubclassesOf(AbstractClassScanner.class)
                 .forEach(scanners::add);
         }
         return scanners.stream().map(factoryInjector::getInstance).collect(Collectors.toList());
