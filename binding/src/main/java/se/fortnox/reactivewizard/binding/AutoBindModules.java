@@ -44,7 +44,7 @@ public class AutoBindModules implements Module {
         "com.sun",
         "com.codahale",
         "com.zaxxer",
-        "io.github.lukehutch",
+        "io.github.classgraph",
         "io.prometheus",
         "org.jboss",
         "org.aopalliance",
