@@ -705,6 +705,11 @@ public class JaxRsResourceTest {
         assertThat(get(service, "/test/acceptsBeanParam?name=foo&age=3&items=1,2").getOutp()).isEqualTo("\"foo - 3 2\"");
     }
 
+    @Test
+    public void shouldAcceptBeanParamInherited() {
+        assertThat(get(service, "/test/acceptsBeanParamInherited?name=foo&age=3&items=1,2&inherited=YES").getOutp()).isEqualTo("\"foo - 3 2 - YES\"");
+    }
+
 
     @Path("test")
     class Testresource {
@@ -1016,6 +1021,10 @@ public class JaxRsResourceTest {
         @Path("acceptsBeanParam")
         @GET
         Observable<String> acceptsBeanParam(@BeanParam ParamEntity beanParam);
+
+        @Path("acceptsBeanParamInherited")
+        @GET
+        Observable<String> acceptsBeanParamInherited(@BeanParam InheritedParamEntity beanParam);
     }
 
         class TestresourceImpl implements TestresourceInterface {
@@ -1301,6 +1310,11 @@ public class JaxRsResourceTest {
         @Override
         public Observable<String> acceptsBeanParam(ParamEntity beanParam) {
             return just(String.format("%s - %d %d", beanParam.getName(), beanParam.getAge(), beanParam.getItems().size()));
+        }
+
+        @Override
+        public Observable<String> acceptsBeanParamInherited(InheritedParamEntity beanParam) {
+            return just(String.format("%s - %d %d - %s", beanParam.getName(), beanParam.getAge(), beanParam.getItems().size(), beanParam.getInherited()));
         }
 
         @Override

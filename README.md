@@ -196,7 +196,7 @@ public class HelloWorldResourceImpl implements HelloWorldResource {
 Now you have one java definition of your rest API, in a separate module from your implementation of it. This allows us
 to distribute the api module as a maven dependency to anyone who wants to call our service. More about that in the next section.
 
-You can use most of the JAX-RS annotations to describe your api (`@BeanParam` not implemented yet).
+You can use most of the JAX-RS annotations to describe your api.
 
 ## Calling external services
 
