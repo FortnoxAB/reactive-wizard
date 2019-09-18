@@ -1,6 +1,7 @@
 package se.fortnox.reactivewizard.db;
 
 import com.codahale.metrics.Timer;
+import io.reactiverse.reactivecontexts.core.Context;
 import org.apache.log4j.Appender;
 import org.junit.Test;
 import org.slf4j.MDC;
@@ -20,6 +21,12 @@ import static se.fortnox.reactivewizard.test.LoggingMockUtil.createMockedLogAppe
 import static se.fortnox.reactivewizard.test.TestUtil.matches;
 
 public class LoggingTest {
+
+    static {
+        // Initializing reactive contexts propagation. This is normally done in LoggingFactory.
+        Context.load();
+    }
+
     private final MockDb              mockDb          = new MockDb();
     private final DaoTransactionsImpl daoTransactions = new DaoTransactionsImpl();
     private final DatabaseConfig      databaseConfig  = new DatabaseConfig();

@@ -2,6 +2,7 @@ package se.fortnox.reactivewizard.logging;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.netflix.blitz4j.LoggingConfiguration;
+import io.reactiverse.reactivecontexts.core.Context;
 import se.fortnox.reactivewizard.config.Config;
 
 import javax.validation.Valid;
@@ -19,6 +20,11 @@ import java.util.Properties;
  */
 @Config("logging")
 public class LoggingFactory {
+
+    static {
+        // Initializing reactive contexts propagation
+        Context.load();
+    }
 
     @Valid
     @JsonProperty("appenders")

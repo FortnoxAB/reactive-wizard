@@ -79,6 +79,12 @@
         </dependency>
 
         <dependency>
+            <groupId>io.reactiverse</groupId>
+            <artifactId>reactive-contexts-propagators-rxjava1</artifactId>
+            <version>${contexts.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>se.fortnox.reactivewizard</groupId>
             <artifactId>reactivewizard-test</artifactId>
             <version>${project.version}</version>

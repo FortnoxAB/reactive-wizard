@@ -11,7 +11,6 @@ import rx.Observable;
 import se.fortnox.reactivewizard.ExceptionHandler;
 import se.fortnox.reactivewizard.jaxrs.RequestLogger;
 import se.fortnox.reactivewizard.jaxrs.WebException;
-import se.fortnox.reactivewizard.logging.LoggingContext;
 
 import javax.inject.Inject;
 import java.util.Set;
@@ -37,7 +36,6 @@ public class CompositeRequestHandler implements RequestHandler<ByteBuf,ByteBuf> 
     public Observable<Void> handle(HttpServerRequest<ByteBuf> request, HttpServerResponse<ByteBuf> response) {
         final long requestStartTime = System.currentTimeMillis();
         try {
-            LoggingContext.reset();
             for (RequestHandler<ByteBuf, ByteBuf> handler : handlers) {
                 Observable<Void> result = handler.handle(request, response);
                 if (result != null) {

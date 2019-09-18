@@ -10,11 +10,9 @@ import se.fortnox.reactivewizard.db.statement.DbStatementFactory;
 import se.fortnox.reactivewizard.db.statement.Statement;
 import se.fortnox.reactivewizard.db.transactions.DaoObservable;
 import se.fortnox.reactivewizard.db.transactions.TransactionStatement;
-import se.fortnox.reactivewizard.logging.LoggingContext;
 import se.fortnox.reactivewizard.metrics.Metrics;
 import se.fortnox.reactivewizard.util.DebugUtil;
 
-import javax.annotation.Nullable;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -85,7 +83,6 @@ public class ObservableStatementFactory {
         result = pagingOutput.apply(result, args);
         result = metrics.measure(result, time -> logSlowQuery(transactionHolder.get(), time, args));
         result = result.onBackpressureBuffer(RECORD_BUFFER_SIZE);
-        result = LoggingContext.transfer(result);
         result = result.subscribeOn(scheduler);
 
         return new DaoObservable<>(result, transactionHolder);
