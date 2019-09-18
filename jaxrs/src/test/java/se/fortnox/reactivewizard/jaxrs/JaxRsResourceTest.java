@@ -710,6 +710,16 @@ public class JaxRsResourceTest {
         assertThat(get(service, "/test/acceptsBeanParamInherited?name=foo&age=3&items=1,2&inherited=YES").getOutp()).isEqualTo("\"foo - 3 2 - YES\"");
     }
 
+    @Test
+    public void shouldGive400ErrorForUnescapedUrls() {
+        try {
+            get(service, "/test/acceptsString/77019ar2019% ");
+            fail("Expected exception");
+        } catch (WebException e) {
+            assertThat(e.getStatus().code()).isEqualTo(400);
+        }
+    }
+
 
     @Path("test")
     class Testresource {
@@ -806,6 +816,10 @@ public class JaxRsResourceTest {
         @Path("defaultQuery")
         @GET
         Observable<String> acceptDefaultQueryParam(@QueryParam("myarg") @DefaultValue("5") int myarg);
+
+        @Path("acceptsString/{myarg}")
+        @GET
+        Observable<String> acceptsStringPath(@PathParam("myarg") String myarg);
 
         @Path("acceptsBoolean/{myarg}")
         @GET
@@ -1027,7 +1041,7 @@ public class JaxRsResourceTest {
         Observable<String> acceptsBeanParamInherited(@BeanParam InheritedParamEntity beanParam);
     }
 
-        class TestresourceImpl implements TestresourceInterface {
+    class TestresourceImpl implements TestresourceInterface {
 
         @Override
         public Observable<String> acceptsString(String myarg) {
@@ -1072,6 +1086,11 @@ public class JaxRsResourceTest {
         @Override
         public Observable<String> acceptDefaultQueryParam(int myarg) {
             return just("Default: " + myarg);
+        }
+
+        @Override
+        public Observable<String> acceptsStringPath(String myarg) {
+            return just("String: "+myarg);
         }
 
         @Override
