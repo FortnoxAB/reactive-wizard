@@ -2,6 +2,7 @@ package se.fortnox.reactivewizard.jaxrs;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpMethod;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.QueryStringDecoder;
 import io.netty.handler.codec.http.cookie.Cookie;
 import io.reactivex.netty.protocol.http.server.HttpServerRequest;
@@ -29,6 +30,7 @@ public class JaxRsRequest {
 
     private final HttpServerRequest<ByteBuf> req;
     private final byte[]                     body;
+    private final String                     path;
     private       Matcher                    matcher;
     private final ByteBufCollector           collector;
 
@@ -37,6 +39,11 @@ public class JaxRsRequest {
         this.matcher   = matcher;
         this.body      = body;
         this.collector = collector; // 10 MB as default
+        try {
+            this.path = req.getDecodedPath();
+        } catch (IllegalArgumentException e) {
+            throw new WebException(HttpResponseStatus.BAD_REQUEST);
+        }
     }
 
     public JaxRsRequest(HttpServerRequest<ByteBuf> request) {
@@ -133,7 +140,7 @@ public class JaxRsRequest {
     }
 
     public String getPath() {
-        return req.getDecodedPath();
+        return path;
     }
 
     public boolean matchesPath(Pattern pathPattern) {
