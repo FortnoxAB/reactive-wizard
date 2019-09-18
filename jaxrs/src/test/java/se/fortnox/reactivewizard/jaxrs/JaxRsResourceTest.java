@@ -713,7 +713,7 @@ public class JaxRsResourceTest {
     @Test
     public void shouldGive400ErrorForUnescapedUrls() {
         try {
-            get(service, "/test/acceptsString/77019ar2019% ");
+            get(service, "/test/acceptsString/something% ");
             fail("Expected exception");
         } catch (WebException e) {
             assertThat(e.getStatus().code()).isEqualTo(400);
