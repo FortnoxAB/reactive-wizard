@@ -1,10 +1,10 @@
-package se.fortnox.reactivewizard.test;
+package se.fortnox.reactivewizard.jaxrs;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import se.fortnox.reactivewizard.jaxrs.WebException;
+import se.fortnox.reactivewixard.jaxrs.WebExceptionMatcher;
 
 import static java.util.Optional.ofNullable;
 import static org.fest.assertions.Assertions.assertThat;

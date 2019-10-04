@@ -55,6 +55,7 @@
         <module>utils</module>
         <module>json</module>
         <module>jaxrs-api</module>
+        <module>jaxrs-api-test</module>
         <module>jaxrs</module>
         <module>config</module>
         <module>logging</module>
