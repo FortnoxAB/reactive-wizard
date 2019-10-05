@@ -48,14 +48,14 @@ public class WebExceptionMatcher extends TypeSafeMatcher<WebException> {
 
     @Override
     public void describeTo(Description description) {
-       if (expectedStatus != null) {
-           description.appendText("status " + expectedStatus);
-       }
+        if (expectedStatus != null) {
+            description.appendText("status " + expectedStatus);
+        }
 
-       if (expectedErrorCode != null) {
-           String and = ofNullable(expectedStatus).map(status -> " and ").orElse(" ");
-           description.appendText(and + "error code " + expectedErrorCode);
-       }
+        if (expectedErrorCode != null) {
+            String and = ofNullable(expectedStatus).map(status -> " and ").orElse(" ");
+            description.appendText(and + "error code " + expectedErrorCode);
+        }
     }
 
     public static WebExceptionMatcher has(String errorCode) {
