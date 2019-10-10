@@ -2,6 +2,7 @@
 The Reactive Wizard project makes it easy to build performant and scalable web applications that harness the power of RxNetty (i.e., RxJava and Netty).
 
 [![Build Status](https://travis-ci.org/FortnoxAB/reactive-wizard.svg?branch=master)](https://travis-ci.org/FortnoxAB/reactive-wizard)
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2FFortnoxAB%2Freactive-wizard.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2FFortnoxAB%2Freactive-wizard?ref=badge_shield)
 
 ## TL; DR;
 
@@ -409,3 +410,6 @@ We use slf4j, which means that you can choose logging framework. We use log4j:
 
 ## Licence
 MIT
+
+
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2FFortnoxAB%2Freactive-wizard.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2FFortnoxAB%2Freactive-wizard?ref=badge_large)
