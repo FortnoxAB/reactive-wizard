@@ -54,10 +54,14 @@ public class AutoBindModules implements Module {
         "org.slf4j",
         "com.ryantenney",
         "net.logstash",
-        "META-INF",
-        "jar:java-atk-wrapper.jar",
-        "jar:rt.jar",
-        "jar:idea_rt.jar"
+    };
+    private static final String[] JAR_BLACKLIST = {
+            "java-atk-wrapper.jar",
+            "rt.jar",
+            "idea_rt.jar"
+    };
+    private static final String[] PATH_BLACKLIST = {
+            "META-INF"
     };
     private              Module   bootstrapBindings;
     private static List<AutoBindModule> autoBindModules;
@@ -103,32 +107,41 @@ public class AutoBindModules implements Module {
             // We cache the auto bind modules in a static variable, since they will not change during execution, as they
             // are a result of the current class path.
             List<Class<? extends AutoBindModule>> autoBindModuleClasses = new ArrayList<>();
-            List<AbstractClassScanner> scanners = createScanners(bootstrapInjector);
 
-            ClassGraph classGraph      = new ClassGraph()
-                .blacklistPackages(PACKAGE_BLACKLIST)
-                .enableMethodInfo()
-                .enableAnnotationInfo();
-            try (ScanResult scanResult = classGraph.scan()) {
-                ClassScanner classScanner = new ClassScannerImpl(scanResult);
+            try (ClassScanner classScanner = getClassScanner()) {
+                List<AbstractClassScanner> scanners = createScanners(classScanner, bootstrapInjector);
                 scanners.forEach(scanner -> scanner.visit(classScanner));
-                scanResult.getClassesImplementing(AutoBindModule.class.getName()).stream()
-                    .map(classInfo -> classInfo.loadClass(AutoBindModule.class))
-                    .forEach(autoBindModuleClasses::add);
+                classScanner.findClassesImplementing(AutoBindModule.class).forEach(autoBindModuleClasses::add);
             }
             autoBindModules = autoBindModuleClasses.stream().map(bootstrapInjector::getInstance).collect(Collectors.toList());
         }
         return autoBindModules;
     }
 
-    private List<AbstractClassScanner> createScanners(Injector factoryInjector) {
-        ClassGraph classGraph = new ClassGraph().whitelistPackages(AbstractClassScanner.class.getPackage().getName());
+    protected ClassScanner getClassScanner() {
+        ClassGraph classGraph      = new ClassGraph()
+                .blacklistPackages(getPackageBlacklist())
+                .blacklistJars(JAR_BLACKLIST)
+                .blacklistPaths(PATH_BLACKLIST)
+                .whitelistPackages(getPackageWhitelist())
+                .enableMethodInfo()
+                .enableAnnotationInfo();
+        ScanResult scanResult = classGraph.scan();
+        return new ClassScannerImpl(scanResult);
+    }
+
+    protected String[] getPackageWhitelist() {
+        return new String[0];
+    }
+
+    protected String[] getPackageBlacklist() {
+        return PACKAGE_BLACKLIST;
+    }
+
+    private List<AbstractClassScanner> createScanners(ClassScanner classScanner, Injector factoryInjector) {
         List<Class<? extends AbstractClassScanner>> scanners = new ArrayList<>();
-        try (ScanResult scanResult = classGraph.scan()) {
-            ClassScanner classScanner = new ClassScannerImpl(scanResult);
-            classScanner.findSubclassesOf(AbstractClassScanner.class)
-                .forEach(scanners::add);
-        }
+        classScanner.findSubclassesOf(AbstractClassScanner.class)
+            .forEach(scanners::add);
         return scanners.stream().map(factoryInjector::getInstance).collect(Collectors.toList());
     }
 }

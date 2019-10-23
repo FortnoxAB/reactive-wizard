@@ -3,6 +3,7 @@ package se.fortnox.reactivewizard.binding;
 import io.github.classgraph.ScanResult;
 import se.fortnox.reactivewizard.binding.scanners.ClassScanner;
 
+import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.util.stream.Collectors;
 
@@ -29,5 +30,18 @@ public class ClassScannerImpl implements ClassScanner {
             .stream()
             .map(classInfo -> classInfo.loadClass(parentClass))
             .collect(Collectors.toList());
+    }
+
+    @Override
+    public <T> Iterable<Class<? extends T>> findClassesImplementing(Class<T> interfaceClass) {
+        return scanResult.getClassesImplementing(interfaceClass.getName())
+            .stream()
+            .map(classInfo -> classInfo.loadClass(interfaceClass))
+            .collect(Collectors.toList());
+    }
+
+    @Override
+    public void close() {
+        scanResult.close();
     }
 }
