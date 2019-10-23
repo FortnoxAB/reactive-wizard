@@ -25,6 +25,7 @@ public interface ClassScanner extends Closeable, AutoCloseable {
     /**
      * Find all classes being subclasses of the given class
      * @param parentClass the class that is a parent of the classes to find
+     * @param <T> the parent class
      * @return classes found
      */
     <T> Iterable<Class<? extends T>> findSubclassesOf(Class<T> parentClass);
@@ -32,6 +33,7 @@ public interface ClassScanner extends Closeable, AutoCloseable {
     /**
      * Find all classes implementing the given interface
      * @param interfaceClass the interface to implement
+     * @param <T> the interface class
      * @return classes found
      */
     <T> Iterable<Class<? extends T>> findClassesImplementing(Class<T> interfaceClass);

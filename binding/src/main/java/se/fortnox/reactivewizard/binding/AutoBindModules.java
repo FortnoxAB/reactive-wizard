@@ -56,12 +56,12 @@ public class AutoBindModules implements Module {
         "net.logstash",
     };
     private static final String[] JAR_BLACKLIST = {
-            "java-atk-wrapper.jar",
-            "rt.jar",
-            "idea_rt.jar"
+        "java-atk-wrapper.jar",
+        "rt.jar",
+        "idea_rt.jar"
     };
     private static final String[] PATH_BLACKLIST = {
-            "META-INF"
+        "META-INF"
     };
     private              Module   bootstrapBindings;
     private static List<AutoBindModule> autoBindModules;
