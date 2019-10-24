@@ -3,7 +3,6 @@ package se.fortnox.reactivewizard.binding;
 import io.github.classgraph.ScanResult;
 import se.fortnox.reactivewizard.binding.scanners.ClassScanner;
 
-import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.util.stream.Collectors;
 

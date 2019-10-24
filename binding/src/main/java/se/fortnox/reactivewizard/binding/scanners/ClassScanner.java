@@ -7,7 +7,7 @@ import java.lang.annotation.Annotation;
  * Used in classes extending AbstractClassScanner, to find classes on the classpath that will be used when creating
  * bindings.
  */
-public interface ClassScanner extends Closeable, AutoCloseable {
+public interface ClassScanner extends Closeable {
     /**
      * Find all classes having a method with the given annotation
      * @param annotation the annotation that should be present on any method in the classes to find
