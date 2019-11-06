@@ -30,4 +30,17 @@ public class ClassScannerImpl implements ClassScanner {
             .map(classInfo -> classInfo.loadClass(parentClass))
             .collect(Collectors.toList());
     }
+
+    @Override
+    public <T> Iterable<Class<? extends T>> findClassesImplementing(Class<T> interfaceClass) {
+        return scanResult.getClassesImplementing(interfaceClass.getName())
+            .stream()
+            .map(classInfo -> classInfo.loadClass(interfaceClass))
+            .collect(Collectors.toList());
+    }
+
+    @Override
+    public void close() {
+        scanResult.close();
+    }
 }
