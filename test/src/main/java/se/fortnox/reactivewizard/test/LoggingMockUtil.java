@@ -17,7 +17,6 @@ public class LoggingMockUtil {
     public static Appender createMockedLogAppender(Class cls) throws NoSuchFieldException, IllegalAccessException {
         Logger   logger       = LoggingMockUtil.getLogger(cls);
         Appender mockAppender = mock(Appender.class);
-        when(mockAppender.getName()).thenReturn("mockAppender");
         logger.addAppender(mockAppender);
         return mockAppender;
     }
