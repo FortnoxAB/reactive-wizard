@@ -1,5 +1,6 @@
 package se.fortnox.reactivewizard.jaxrs;
 
+import com.codahale.metrics.Counter;
 import io.netty.buffer.ByteBuf;
 import io.reactivex.netty.protocol.http.server.HttpServerRequest;
 import io.reactivex.netty.protocol.http.server.HttpServerResponse;
@@ -7,6 +8,7 @@ import io.reactivex.netty.protocol.http.server.RequestHandler;
 import rx.Observable;
 import se.fortnox.reactivewizard.ExceptionHandler;
 import se.fortnox.reactivewizard.jaxrs.response.JaxRsResult;
+import se.fortnox.reactivewizard.metrics.Metrics;
 import se.fortnox.reactivewizard.util.DebugUtil;
 
 import javax.inject.Inject;
@@ -17,10 +19,9 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class JaxRsRequestHandler implements RequestHandler<ByteBuf, ByteBuf> {
-
-    private final JaxRsResources   resources;
-    private final ExceptionHandler exceptionHandler;
-    private final ByteBufCollector collector;
+    private final    JaxRsResources                     resources;
+    private final    ExceptionHandler                   exceptionHandler;
+    private final    ByteBufCollector                   collector;
 
     @Inject
     public JaxRsRequestHandler(JaxRsResourcesProvider services,
@@ -89,7 +90,16 @@ public class JaxRsRequestHandler implements RequestHandler<ByteBuf, ByteBuf> {
             .singleOrDefault(null)
             .flatMap(result -> writeResult(response, result))
             .onErrorResumeNext(e -> exceptionHandler.handleException(request, response, e))
-            .doAfterTerminate(() -> resource.log(request, response, requestStartTime));
+            .doAfterTerminate(() -> {
+                recordStatusMetric(response);
+                resource.log(request, response, requestStartTime);
+            });
+    }
+
+    private void recordStatusMetric(HttpServerResponse<ByteBuf> response) {
+        String  counterKey = "http_server_response_status:" + response.getStatus().code();
+        Counter counter    = Metrics.registry().counter(counterKey);
+        counter.inc();
     }
 
     private Observable<Void> writeResult(HttpServerResponse<ByteBuf> response, JaxRsResult<?> result) {
