@@ -63,7 +63,7 @@ public class MockDb {
             when(ps.getParameterMetaData()).thenReturn(parameterMetaData);
 
             Stubber answer = doAnswer(inv -> {
-                int index = inv.getArgumentAt(0, int.class);
+                int index = inv.getArgument(0, Integer.class);
                 if (index >= parameterCount) {
                     parameterCount = index;
                 }
