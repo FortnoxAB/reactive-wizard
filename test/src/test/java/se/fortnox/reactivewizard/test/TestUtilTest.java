@@ -34,7 +34,7 @@ public class TestUtilTest {
         } catch (ArgumentsAreDifferent comparisonFailure) {
             assertThat(comparisonFailure.getActual()).isEqualTo("testClass.doNothing(\n" +
                     "    \"unexpected\"\n" +
-                    ");");
+                    ");\n");
             assertThat(comparisonFailure.getExpected()).isEqualTo("testClass.doNothing(\n" +
                 "    expected:<\"[]expected\"> but was:<\"[un]expected\">\n" +
                 ");");
@@ -44,7 +44,7 @@ public class TestUtilTest {
                     "    expected:<\"[]expected\"> but was:<\"[un]expected\">\n" +
                     ");\n" +
                     "-> at se.fortnox.reactivewizard.test.TestUtilTest.testMatchesFailure(TestUtilTest.java:32)\n" +
-                    "Actual invocation has different arguments:\n" +
+                    "Actual invocations have different arguments:\n" +
                     "testClass.doNothing(\n" +
                     "    \"unexpected\"\n" +
                     ");\n" +
