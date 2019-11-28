@@ -120,8 +120,8 @@ public class ParameterizedQuery {
 
     protected String sqlPreProcess(String sqlInp) {
         return sqlInp
-            .replaceAll(" NOT IN\\s*\\(", " !=ALL\\(")
-            .replaceAll(" IN\\s*\\(", " =ANY\\(");
+            .replaceAll("(?i) NOT IN\\s*\\(", " !=ALL\\(")
+            .replaceAll("(?i) IN\\s*\\(", " =ANY\\(");
     }
 
     @Override

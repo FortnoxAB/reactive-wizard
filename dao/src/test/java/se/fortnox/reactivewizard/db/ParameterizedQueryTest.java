@@ -200,6 +200,16 @@ public class ParameterizedQueryTest {
     }
 
     @Test
+    public void shouldHandleLowerCaseInClauseInSQL() throws SQLException {
+        List<String> param = Lists.newArrayList("A", "B");
+        when(db.getConnection().createArrayOf(any(), any())).thenReturn(mock(Array.class));
+
+        dao.lowerCaseInClauseVarchar(param).toBlocking().singleOrDefault(null);
+
+        verify(db.getConnection()).prepareStatement("SELECT x FROM y WHERE z =ANY(?)");
+    }
+
+    @Test
     public void shouldHandleInClauseWithUUIDs() throws SQLException {
         // Given
         UUID uuid1 = UUID.randomUUID();
@@ -258,6 +268,9 @@ public class ParameterizedQueryTest {
 
         @Query("SELECT x FROM y WHERE z IN (:param)")
         Observable<String> inClauseVarchar(List<String> param);
+
+        @Query("SELECT x FROM y WHERE z in (:param)")
+        Observable<String> lowerCaseInClauseVarchar(List<String> param);
 
         @Query("SELECT x FROM y WHERE z IN(:param)")
         Observable<String> inClauseVarcharNoSpace(List<String> param);
