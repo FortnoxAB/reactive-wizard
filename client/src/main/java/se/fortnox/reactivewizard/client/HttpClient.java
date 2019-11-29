@@ -87,6 +87,7 @@ public class HttpClient implements InvocationHandler {
     private         int                         timeout = 10;
     private         TimeUnit                    timeoutUnit = TimeUnit.SECONDS;
     private final Map<Class<?>, List<BeanParamProperty>> beanParamCache = new HashMap<>();
+    private final Map<Method, JaxRsMeta>        jaxRsMetaMap = new HashMap<>();
 
     @Inject
     public HttpClient(HttpClientConfig config,
@@ -413,8 +414,14 @@ public class HttpClient implements InvocationHandler {
         return detailedError;
     }
 
+    protected JaxRsMeta getJaxRsMeta(Method method) {
+        jaxRsMetaMap.computeIfAbsent(method, JaxRsMeta::new);
+        return jaxRsMetaMap.get(method);
+    }
+
     protected RequestBuilder createRequest(Method method, Object[] arguments) {
-        JaxRsMeta meta = new JaxRsMeta(method);
+
+        JaxRsMeta meta = getJaxRsMeta(method);
 
         RequestBuilder request = new RequestBuilder(serverInfo, meta.getHttpMethod(), meta.getFullPath());
         request.setUri(getPath(method, arguments, meta));
