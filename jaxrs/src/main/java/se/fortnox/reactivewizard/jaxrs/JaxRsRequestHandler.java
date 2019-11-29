@@ -11,6 +11,9 @@ import se.fortnox.reactivewizard.util.DebugUtil;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.Optional;
+
+import static java.util.Optional.ofNullable;
 
 /**
  * Handles incoming requests. If the request matches a resource an Observable which completes the request is returned.
@@ -91,6 +94,12 @@ public class JaxRsRequestHandler implements RequestHandler<ByteBuf, ByteBuf> {
             .onErrorResumeNext(e -> exceptionHandler.handleException(request, response, e))
             .doAfterTerminate(() -> resource.log(request, response, requestStartTime));
     }
+
+    public Optional<String> getPathFor(JaxRsRequest jaxRsRequest) {
+        return ofNullable(resources.findResource(jaxRsRequest))
+            .map(JaxRsResource::getPath);
+    }
+
 
     private Observable<Void> writeResult(HttpServerResponse<ByteBuf> response, JaxRsResult<?> result) {
         if (result != null) {
