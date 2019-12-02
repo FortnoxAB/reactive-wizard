@@ -11,9 +11,6 @@ import se.fortnox.reactivewizard.util.DebugUtil;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.Optional;
-
-import static java.util.Optional.ofNullable;
 
 /**
  * Handles incoming requests. If the request matches a resource an Observable which completes the request is returned.
@@ -86,6 +83,8 @@ public class JaxRsRequestHandler implements RequestHandler<ByteBuf, ByteBuf> {
             return null;
         }
 
+        preHandle(request, resource);
+
         long requestStartTime = System.currentTimeMillis();
 
         return resource.call(jaxRsRequest)
@@ -95,11 +94,14 @@ public class JaxRsRequestHandler implements RequestHandler<ByteBuf, ByteBuf> {
             .doAfterTerminate(() -> resource.log(request, response, requestStartTime));
     }
 
-    public Optional<String> getPathFor(JaxRsRequest jaxRsRequest) {
-        return ofNullable(resources.findResource(jaxRsRequest))
-            .map(JaxRsResource::getPath);
+    /**
+     * Pre handling hook for classes extending this class
+     *
+     * @param request the current request
+     * @param resource the resource that will we handling the request
+     */
+    protected void preHandle(HttpServerRequest<ByteBuf> request, JaxRsResource<?> resource) {
     }
-
 
     private Observable<Void> writeResult(HttpServerResponse<ByteBuf> response, JaxRsResult<?> result) {
         if (result != null) {

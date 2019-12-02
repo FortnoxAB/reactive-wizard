@@ -74,7 +74,7 @@ public class JaxRsTestUtil {
         return processRequestWithHandler(handler, request);
     }
 
-    public static JaxRsRequestHandler getJaxRsRequestHandler(Object... services) {
+    private static JaxRsRequestHandler getJaxRsRequestHandler(Object... services) {
         return new JaxRsRequestHandler(services);
     }
 

@@ -66,7 +66,6 @@ import static rx.Observable.just;
 import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.body;
 import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.delete;
 import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.get;
-import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.getJaxRsRequestHandler;
 import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.getWithHeaders;
 import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.patch;
 import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.post;
@@ -622,22 +621,6 @@ public class JaxRsResourceTest {
     public void shouldSupportReturningNullFromResource() {
         assertThat(get(new Testresource(), "/test/returnsNull").getStatus())
             .isEqualTo(HttpResponseStatus.NO_CONTENT);
-    }
-
-    @Test
-    public void shouldReturnPathForJaxRsRequest() {
-
-        JaxRsRequestHandler jaxRsRequestHandler = getJaxRsRequestHandler(new TestresourceImpl());
-
-        MockHttpServerRequest mockHttpServerRequest = new MockHttpServerRequest("/test/acceptsString/test");
-        JaxRsRequest jaxRsRequest = new JaxRsRequest(mockHttpServerRequest);
-
-        MockHttpServerRequest notFoundRequest = new MockHttpServerRequest("/not_found");
-        JaxRsRequest notFoundJaxRsRequest = new JaxRsRequest(notFoundRequest);
-
-
-        assertThat(jaxRsRequestHandler.getPathFor(jaxRsRequest)).isPresent().hasValue("/test/acceptsString/{myarg}");
-        assertThat(jaxRsRequestHandler.getPathFor(notFoundJaxRsRequest)).isNotPresent();
     }
 
     @Test
