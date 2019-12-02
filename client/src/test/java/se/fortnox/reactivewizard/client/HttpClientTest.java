@@ -287,11 +287,16 @@ public class HttpClientTest {
         };
 
         Method getHello = TestResource.class.getMethod("getHello");
+        Method postHello = TestResource.class.getMethod("postHello");
 
         httpClient.createRequest(getHello,new Object[0]);
         httpClient.createRequest(getHello,new Object[0]);
+
+        httpClient.createRequest(postHello,new Object[0]);
+        httpClient.createRequest(postHello,new Object[0]);
 
         assertThat(jaxRsMetas.get(0)).isSameAs(jaxRsMetas.get(1));
+        assertThat(jaxRsMetas.get(2)).isSameAs(jaxRsMetas.get(3));
     }
 
     @Test
