@@ -415,8 +415,7 @@ public class HttpClient implements InvocationHandler {
     }
 
     protected JaxRsMeta getJaxRsMeta(Method method) {
-        jaxRsMetaMap.computeIfAbsent(method, JaxRsMeta::new);
-        return jaxRsMetaMap.get(method);
+        return jaxRsMetaMap.computeIfAbsent(method, JaxRsMeta::new);
     }
 
     protected RequestBuilder createRequest(Method method, Object[] arguments) {
