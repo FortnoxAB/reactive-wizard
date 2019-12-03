@@ -59,6 +59,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
@@ -87,6 +88,7 @@ public class HttpClient implements InvocationHandler {
     private         int                         timeout = 10;
     private         TimeUnit                    timeoutUnit = TimeUnit.SECONDS;
     private final Map<Class<?>, List<BeanParamProperty>> beanParamCache = new HashMap<>();
+    private final Map<Method, JaxRsMeta>        jaxRsMetaMap = new ConcurrentHashMap<>();
 
     @Inject
     public HttpClient(HttpClientConfig config,
@@ -413,8 +415,13 @@ public class HttpClient implements InvocationHandler {
         return detailedError;
     }
 
+    protected JaxRsMeta getJaxRsMeta(Method method) {
+        return jaxRsMetaMap.computeIfAbsent(method, JaxRsMeta::new);
+    }
+
     protected RequestBuilder createRequest(Method method, Object[] arguments) {
-        JaxRsMeta meta = new JaxRsMeta(method);
+
+        JaxRsMeta meta = getJaxRsMeta(method);
 
         RequestBuilder request = new RequestBuilder(serverInfo, meta.getHttpMethod(), meta.getFullPath());
         request.setUri(getPath(method, arguments, meta));

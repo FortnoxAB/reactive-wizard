@@ -30,7 +30,6 @@ import org.apache.log4j.Appender;
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mockito;
 import rx.Observable;
@@ -272,6 +271,32 @@ public class HttpClientTest {
             }
 
         });
+    }
+
+    @Test
+    public void shouldReuseJaxRsMetaObjectsToAvoidReflection() throws URISyntaxException, NoSuchMethodException {
+
+        List<JaxRsMeta> jaxRsMetas = new ArrayList<>();
+        HttpClient httpClient = new HttpClient(new HttpClientConfig("localhost")) {
+            @Override
+            protected JaxRsMeta getJaxRsMeta(Method method) {
+                JaxRsMeta jaxRsMeta = super.getJaxRsMeta(method);
+                jaxRsMetas.add(jaxRsMeta);
+                return jaxRsMeta;
+            }
+        };
+
+        Method getHello = TestResource.class.getMethod("getHello");
+        Method postHello = TestResource.class.getMethod("postHello");
+
+        httpClient.createRequest(getHello,new Object[0]);
+        httpClient.createRequest(getHello,new Object[0]);
+
+        httpClient.createRequest(postHello,new Object[0]);
+        httpClient.createRequest(postHello,new Object[0]);
+
+        assertThat(jaxRsMetas.get(0)).isSameAs(jaxRsMetas.get(1));
+        assertThat(jaxRsMetas.get(2)).isSameAs(jaxRsMetas.get(3));
     }
 
     @Test
