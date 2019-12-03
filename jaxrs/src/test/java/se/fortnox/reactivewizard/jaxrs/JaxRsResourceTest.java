@@ -58,12 +58,18 @@ import java.util.Set;
 import java.util.TimeZone;
 import java.util.UUID;
 
-import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.*;
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.Mockito.when;
 import static rx.Observable.just;
+import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.body;
+import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.delete;
+import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.get;
+import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.getWithHeaders;
+import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.patch;
+import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.post;
+import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.put;
 
 public class JaxRsResourceTest {
 
