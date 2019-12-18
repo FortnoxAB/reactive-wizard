@@ -7,9 +7,12 @@ import io.reactivex.netty.RxNetty;
 import io.reactivex.netty.protocol.http.server.HttpServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import rx.functions.Action0;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -86,18 +89,20 @@ public class RxNettyServer extends Thread {
     }
 
     static void shutdownHook(ServerConfig config, HttpServer server, EventLoopGroup eventLoopGroup, ConnectionCounter connectionCounter) {
-        LOG.info("Shutdown requested.");
-        awaitShutdownDependency();
-        LOG.info("Will wait up to {} seconds...", config.getShutdownTimeoutSeconds());
-        shutdownEventLoopGracefully(config, eventLoopGroup);
-        if (!connectionCounter.awaitZero(config.getShutdownTimeoutSeconds(), TimeUnit.SECONDS)) {
+        LOG.info("Shutdown requested. Will wait up to {} seconds...", config.getShutdownTimeoutSeconds());
+        int elapsedSeconds = measureElapsedSeconds(() ->
+            awaitShutdownDependency(config.getShutdownTimeoutSeconds())
+        );
+        int secondsLeft = Math.max(config.getShutdownTimeoutSeconds() - elapsedSeconds, 0);
+        shutdownEventLoopGracefully(secondsLeft, eventLoopGroup);
+        if (!connectionCounter.awaitZero(secondsLeft, TimeUnit.SECONDS)) {
             LOG.error("Shutdown proceeded while connection count was not zero: " + connectionCounter.getCount());
         }
         server.awaitShutdown();
         LOG.info("Shutdown complete");
     }
 
-    static void awaitShutdownDependency() {
+    static void awaitShutdownDependency(int shutdownTimeoutSeconds) {
         if (blockShutdownUntil == null) {
             return;
         }
@@ -106,19 +111,26 @@ public class RxNettyServer extends Thread {
         Thread thread = new Thread(blockShutdownUntil);
         thread.start();
         try {
-            thread.join();
+            thread.join(Duration.ofSeconds(shutdownTimeoutSeconds).toMillis());
         } catch (InterruptedException e) {
             LOG.error("Fail while waiting shutdown dependency", e);
         }
         LOG.info("Shutdown dependency completed, continue...");
     }
 
-    static void shutdownEventLoopGracefully(ServerConfig config, EventLoopGroup eventLoopGroup) {
+    static void shutdownEventLoopGracefully(int shutdownTimeoutSeconds, EventLoopGroup eventLoopGroup) {
         try {
             int shutdownQuietPeriodSeconds = 0;
-            eventLoopGroup.shutdownGracefully(shutdownQuietPeriodSeconds, config.getShutdownTimeoutSeconds(), TimeUnit.SECONDS).await();
+            eventLoopGroup.shutdownGracefully(shutdownQuietPeriodSeconds, shutdownTimeoutSeconds, TimeUnit.SECONDS).await();
         } catch (InterruptedException e) {
             LOG.error("Graceful shutdown failed" + e);
         }
+    }
+
+    static int measureElapsedSeconds(Action0 function) {
+        Instant start = Instant.now();
+        function.call();
+        Instant finish = Instant.now();
+        return (int) Duration.between(start, finish).getSeconds();
     }
 }

@@ -98,11 +98,7 @@ public class RxNettyServerTest {
         RxNettyServer.shutdownHook(new ServerConfig(), server, eventLoopGroup, connectionCounter);
 
         verify(mockAppender).doAppend(matches(log ->
-            assertThat(log.getMessage().toString()).matches("Shutdown requested.")
-        ));
-
-        verify(mockAppender).doAppend(matches(log ->
-            assertThat(log.getMessage().toString()).matches("Will wait up to 20 seconds...")
+            assertThat(log.getMessage().toString()).matches("Shutdown requested. Will wait up to 20 seconds...")
         ));
 
         verify(mockAppender).doAppend(matches(log ->
@@ -130,11 +126,7 @@ public class RxNettyServerTest {
         RxNettyServer.shutdownHook(new ServerConfig(), server, eventLoopGroup, connectionCounter);
 
         verify(mockAppender).doAppend(matches(log ->
-            assertThat(log.getMessage().toString()).matches("Shutdown requested.")
-        ));
-
-        verify(mockAppender).doAppend(matches(log ->
-            assertThat(log.getMessage().toString()).matches("Will wait up to 20 seconds...")
+            assertThat(log.getMessage().toString()).matches("Shutdown requested. Will wait up to 20 seconds...")
         ));
 
         verify(mockAppender).doAppend(matches(log ->
@@ -158,7 +150,7 @@ public class RxNettyServerTest {
     @Test
     public void shouldSkipAwaitingShutdownDependencyIfNotSet() throws NoSuchFieldException, IllegalAccessException {
         Appender mockAppender = LoggingMockUtil.createMockedLogAppender(RxNettyServer.class);
-        RxNettyServer.awaitShutdownDependency();
+        RxNettyServer.awaitShutdownDependency(new ServerConfig().getShutdownTimeoutSeconds());
         verify(mockAppender, never()).doAppend(any());
     }
 
@@ -170,7 +162,7 @@ public class RxNettyServerTest {
         RxNettyServer.registerShutdownDependency(supplier::get);
         verify(supplier, never()).get();
 
-        RxNettyServer.awaitShutdownDependency();
+        RxNettyServer.awaitShutdownDependency(new ServerConfig().getShutdownTimeoutSeconds());
 
         verify(mockAppender).doAppend(matches(log ->
             assertThat(log.getMessage().toString()).matches("Wait for completion of shutdown dependency")
