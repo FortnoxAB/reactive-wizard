@@ -1,5 +1,12 @@
 package se.fortnox.reactivewizard.util;
 
+import com.google.inject.AbstractModule;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
+import com.google.inject.matcher.Matchers;
+import org.aopalliance.intercept.Joinpoint;
+import org.aopalliance.intercept.MethodInterceptor;
+import org.aopalliance.intercept.MethodInvocation;
 import org.junit.Test;
 import rx.Observable;
 
@@ -286,6 +293,14 @@ public class ReflectionUtilTest {
         assertThat(subPath.getter().apply(entity)).isEqualTo(4);
     }
 
+    @Test
+    public void shouldSupportCglibProxiesWhenLocatingOverriddenMethods() throws Exception {
+        Injector injector = Guice.createInjector(new ProxyingModule());
+        TestResource proxiedResource = injector.getInstance(TestResource.class);
+        Method method = ReflectionUtil.getOverriddenMethod(proxiedResource.getClass().getMethod("resourceGet", String.class, String.class));
+        assertThat(method).isEqualTo(TestResource.class.getMethod("resourceGet", String.class, String.class));
+    }
+
     private static class InstanceExposingInvocationHandler implements InvocationHandler, Provider {
 
         private final Object instance;
@@ -418,4 +433,14 @@ public class ReflectionUtilTest {
             return null;
         }
     }
+
+    public static class ProxyingModule extends AbstractModule {
+        @Override
+        protected void configure() {
+            bind(TestResource.class).to(TestResourceImpl.class);
+            bindInterceptor(Matchers.identicalTo(TestResourceImpl.class),
+                Matchers.any(), Joinpoint::proceed);
+        }
+    }
+
 }
