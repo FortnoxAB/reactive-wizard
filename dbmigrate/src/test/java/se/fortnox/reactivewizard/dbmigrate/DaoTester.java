@@ -95,10 +95,7 @@ public class DaoTester {
             index++;
         }
 
-        AssertableSubscriber<?> test = ((Observable<?>)method.invoke(daoInstance, mockValues.toArray())).onErrorResumeNext(throwable -> {
-            throwable.printStackTrace();
-            return Observable.error(throwable);
-        }).test().awaitTerminalEvent();
+        AssertableSubscriber<?> test = ((Observable<?>)method.invoke(daoInstance, mockValues.toArray())).test().awaitTerminalEvent();
 
         for (Throwable onErrorEvent : test.getOnErrorEvents()) {
             if( !(onErrorEvent.getCause() instanceof MinimumAffectedRowsException)) {
