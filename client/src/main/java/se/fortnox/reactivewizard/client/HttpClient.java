@@ -18,7 +18,6 @@ import se.fortnox.reactivewizard.jaxrs.ByteBufCollector;
 import se.fortnox.reactivewizard.jaxrs.FieldError;
 import se.fortnox.reactivewizard.jaxrs.JaxRsMeta;
 import se.fortnox.reactivewizard.jaxrs.WebException;
-import se.fortnox.reactivewizard.logging.LoggingContext;
 import se.fortnox.reactivewizard.metrics.HealthRecorder;
 import se.fortnox.reactivewizard.metrics.Metrics;
 import se.fortnox.reactivewizard.util.JustMessageException;
@@ -60,6 +59,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
@@ -88,6 +88,7 @@ public class HttpClient implements InvocationHandler {
     private         int                         timeout = 10;
     private         TimeUnit                    timeoutUnit = TimeUnit.SECONDS;
     private final Map<Class<?>, List<BeanParamProperty>> beanParamCache = new HashMap<>();
+    private final Map<Method, JaxRsMeta>        jaxRsMetaMap = new ConcurrentHashMap<>();
 
     @Inject
     public HttpClient(HttpClientConfig config,
@@ -176,7 +177,6 @@ public class HttpClient implements InvocationHandler {
         }
 
         output = withRetry(request, output).onErrorResumeNext(e -> convertError(request, e));
-        output = LoggingContext.transfer(output);
         output = measure(request, output);
 
         if (Single.class.isAssignableFrom(method.getReturnType())) {
@@ -328,7 +328,19 @@ public class HttpClient implements InvocationHandler {
                     if (!requestBuilder.getHeaders().containsKey(CONTENT_TYPE)) {
                         requestBuilder.getHeaders().put(CONTENT_TYPE, MediaType.APPLICATION_JSON);
                     }
-                    requestBuilder.setContent(objectMapper.writeValueAsBytes(value));
+                    if (requestBuilder.getHeaders().get(CONTENT_TYPE).startsWith(MediaType.APPLICATION_JSON)) {
+                        requestBuilder.setContent(objectMapper.writeValueAsBytes(value));
+                    } else {
+                        if (value instanceof String) {
+                            requestBuilder.setContent((String)value);
+                            return;
+                        } else if (value instanceof byte[]) {
+                            requestBuilder.setContent((byte[])value);
+                            return;
+                        }
+                        throw new IllegalArgumentException("When content type is not " + MediaType.APPLICATION_JSON
+                            + " the body param must be String or byte[], but was " + value.getClass());
+                    }
                     return;
                 } catch (JsonProcessingException e) {
                     throw new RuntimeException(e);
@@ -403,8 +415,13 @@ public class HttpClient implements InvocationHandler {
         return detailedError;
     }
 
+    protected JaxRsMeta getJaxRsMeta(Method method) {
+        return jaxRsMetaMap.computeIfAbsent(method, JaxRsMeta::new);
+    }
+
     protected RequestBuilder createRequest(Method method, Object[] arguments) {
-        JaxRsMeta meta = new JaxRsMeta(method);
+
+        JaxRsMeta meta = getJaxRsMeta(method);
 
         RequestBuilder request = new RequestBuilder(serverInfo, meta.getHttpMethod(), meta.getFullPath());
         request.setUri(getPath(method, arguments, meta));

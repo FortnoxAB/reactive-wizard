@@ -1,10 +1,5 @@
 package se.fortnox.reactivewizard.utils;
 
-import se.fortnox.reactivewizard.ExceptionHandler;
-import se.fortnox.reactivewizard.jaxrs.*;
-import se.fortnox.reactivewizard.mocks.MockHttpServerResponse;
-import se.fortnox.reactivewizard.jaxrs.params.ParamResolverFactories;
-import se.fortnox.reactivewizard.jaxrs.response.JaxRsResultFactoryFactory;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
@@ -15,6 +10,11 @@ import io.reactivex.netty.protocol.http.server.HttpServerRequest;
 import io.reactivex.netty.protocol.http.server.MockHttpServerRequest;
 import io.reactivex.netty.protocol.http.server.RequestHandler;
 import rx.Observable;
+import se.fortnox.reactivewizard.ExceptionHandler;
+import se.fortnox.reactivewizard.jaxrs.JaxRsRequestHandler;
+import se.fortnox.reactivewizard.jaxrs.JaxRsResourceFactory;
+import se.fortnox.reactivewizard.jaxrs.JaxRsResources;
+import se.fortnox.reactivewizard.mocks.MockHttpServerResponse;
 
 import java.nio.charset.Charset;
 import java.util.List;

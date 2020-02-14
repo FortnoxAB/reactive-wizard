@@ -1,12 +1,18 @@
 package se.fortnox.reactivewizard.server;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.reactivex.netty.RxNetty;
 import io.reactivex.netty.protocol.http.server.HttpServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import rx.functions.Action0;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -19,18 +25,25 @@ public class RxNettyServer extends Thread {
     private final ServerConfig config;
     private final ConnectionCounter connectionCounter;
     public static final int MAX_CHUNK_SIZE_DEFAULT = 8192;
+    private final EventLoopGroup eventLoopGroup;
     private final HttpServer<ByteBuf, ByteBuf> server;
+    private static Runnable blockShutdownUntil;
 
     @Inject
     public RxNettyServer(ServerConfig config, CompositeRequestHandler compositeRequestHandler, ConnectionCounter connectionCounter) {
-        this(config, connectionCounter, createHttpServer(config), compositeRequestHandler);
+        this(config, compositeRequestHandler, connectionCounter, RxNetty.getRxEventLoopProvider().globalServerEventLoop(true));
+    }
+
+    RxNettyServer(ServerConfig config, CompositeRequestHandler compositeRequestHandler, ConnectionCounter connectionCounter, EventLoopGroup eventLoopGroup) {
+        this(config, connectionCounter, createHttpServer(config, eventLoopGroup), compositeRequestHandler, eventLoopGroup);
     }
 
     RxNettyServer(ServerConfig config, ConnectionCounter connectionCounter, HttpServer<ByteBuf, ByteBuf> httpServer,
-                  CompositeRequestHandler compositeRequestHandler) {
+                  CompositeRequestHandler compositeRequestHandler, EventLoopGroup eventLoopGroup) {
         super("RxNettyServerMain");
         this.config = config;
         this.connectionCounter = connectionCounter;
+        this.eventLoopGroup = eventLoopGroup;
 
         if (config.isEnabled()) {
             server = httpServer.start(compositeRequestHandler);
@@ -41,8 +54,11 @@ public class RxNettyServer extends Thread {
         }
     }
 
-    private static HttpServer<ByteBuf, ByteBuf> createHttpServer(ServerConfig config) {
-        return HttpServer.newServer(config.getPort())
+    private static HttpServer<ByteBuf, ByteBuf> createHttpServer(ServerConfig config, EventLoopGroup eventLoopGroup) {
+        if (!config.isEnabled()) {
+            return null;
+        }
+        return HttpServer.newServer(config.getPort(), eventLoopGroup, NioServerSocketChannel.class)
             .<ByteBuf, ByteBuf>pipelineConfigurator(
                 new NoContentFixConfigurator(
                     config.getMaxInitialLineLengthDefault(),
@@ -62,17 +78,59 @@ public class RxNettyServer extends Thread {
     }
 
     private void registerShutdownHook() {
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> shutdownHook(config, server, connectionCounter)));
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> shutdownHook(config, server, eventLoopGroup, connectionCounter)));
     }
 
-    static void shutdownHook(ServerConfig config, HttpServer server, ConnectionCounter connectionCounter) {
+    public static void registerShutdownDependency(Runnable blockShutdownUntil) {
+        if (RxNettyServer.blockShutdownUntil != null && blockShutdownUntil != null) {
+            throw new IllegalStateException("Shutdown dependency is already registered");
+        }
+        RxNettyServer.blockShutdownUntil = blockShutdownUntil;
+    }
+
+    static void shutdownHook(ServerConfig config, HttpServer server, EventLoopGroup eventLoopGroup, ConnectionCounter connectionCounter) {
         LOG.info("Shutdown requested. Will wait up to {} seconds...", config.getShutdownTimeoutSeconds());
-        server.shutdown();
-        if (!connectionCounter.awaitZero(config.getShutdownTimeoutSeconds(), TimeUnit.SECONDS)) {
+        int elapsedSeconds = measureElapsedSeconds(() ->
+            awaitShutdownDependency(config.getShutdownTimeoutSeconds())
+        );
+        int secondsLeft = Math.max(config.getShutdownTimeoutSeconds() - elapsedSeconds, 0);
+        shutdownEventLoopGracefully(secondsLeft, eventLoopGroup);
+        if (!connectionCounter.awaitZero(secondsLeft, TimeUnit.SECONDS)) {
             LOG.error("Shutdown proceeded while connection count was not zero: " + connectionCounter.getCount());
         }
         server.awaitShutdown();
         LOG.info("Shutdown complete");
     }
 
+    static void awaitShutdownDependency(int shutdownTimeoutSeconds) {
+        if (blockShutdownUntil == null) {
+            return;
+        }
+
+        LOG.info("Wait for completion of shutdown dependency");
+        Thread thread = new Thread(blockShutdownUntil);
+        thread.start();
+        try {
+            thread.join(Duration.ofSeconds(shutdownTimeoutSeconds).toMillis());
+        } catch (InterruptedException e) {
+            LOG.error("Fail while waiting shutdown dependency", e);
+        }
+        LOG.info("Shutdown dependency completed, continue...");
+    }
+
+    static void shutdownEventLoopGracefully(int shutdownTimeoutSeconds, EventLoopGroup eventLoopGroup) {
+        try {
+            int shutdownQuietPeriodSeconds = 0;
+            eventLoopGroup.shutdownGracefully(shutdownQuietPeriodSeconds, shutdownTimeoutSeconds, TimeUnit.SECONDS).await();
+        } catch (InterruptedException e) {
+            LOG.error("Graceful shutdown failed" + e);
+        }
+    }
+
+    static int measureElapsedSeconds(Action0 function) {
+        Instant start = Instant.now();
+        function.call();
+        Instant finish = Instant.now();
+        return (int) Duration.between(start, finish).getSeconds();
+    }
 }

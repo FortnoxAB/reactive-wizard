@@ -1,29 +1,31 @@
 package se.fortnox.reactivewizard.client;
 
+import com.google.inject.AbstractModule;
 import com.google.inject.Binder;
+import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.inject.Module;
+import com.google.inject.name.Names;
+import com.google.inject.util.Modules;
 import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.Mockito;
 import rx.Observable;
+import se.fortnox.reactivewizard.binding.AutoBindModules;
 import se.fortnox.reactivewizard.binding.scanners.HttpConfigClassScanner;
 import se.fortnox.reactivewizard.binding.scanners.JaxRsClassScanner;
 import se.fortnox.reactivewizard.config.TestInjector;
 import se.fortnox.reactivewizard.server.ServerConfig;
 
 import javax.ws.rs.GET;
+import javax.ws.rs.Path;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.google.common.collect.ImmutableSet.of;
 import static org.fest.assertions.Assertions.assertThat;
 import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.reset;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 public class RestClientFactoryTest {
 
@@ -73,13 +75,11 @@ public class RestClientFactoryTest {
                 setEnabled(false);
             }});
 
-            mockResourcesOnClassPath(binder, of(TestResource.class, CustomTestResource.class));
-
-            HttpClientProvider httpClientProvider = Mockito.mock(HttpClientProvider.class);
+            HttpClientProvider httpClientProvider = mock(HttpClientProvider.class);
 
             when(httpClientProvider.createClient(any())).thenAnswer(invocation -> {
                 HttpClientConfig httpClientConfig = invocation.getArgumentAt(0, HttpClientConfig.class);
-                HttpClient httpClient = Mockito.spy(new HttpClient(httpClientConfig));
+                HttpClient httpClient = spy(new HttpClient(httpClientConfig));
                 if (httpClientConfig instanceof CustomHttpClientConfig) {
                     mockCustomClient.set(httpClient);
                     return mockCustomClient.get();
@@ -89,7 +89,6 @@ public class RestClientFactoryTest {
             });
 
             binder.bind(HttpClientProvider.class).toInstance(httpClientProvider);
-
         }, HTTPCONFIG_URL_YML);
 
         // Verify that it creates a proxy for the resource with the customHttpClient
@@ -119,20 +118,27 @@ public class RestClientFactoryTest {
     @Test
     public void shouldThrowExceptionWhenPointedOutClassIsNotInterface() {
         try {
-            TestInjector.create(binder -> {
-                binder.bind(ServerConfig.class).toInstance(new ServerConfig() {{
-                    setEnabled(false);
-                }});
+            HttpConfigClassScanner mock = Mockito.mock(HttpConfigClassScanner.class);
+            when(mock.getClasses()).thenReturn(of(TestConfig.class));
+            RestClientFactory restClientFactory = new RestClientFactory(
+                    Mockito.mock(JaxRsClassScanner.class),
+                    mock);
 
-                mockConfigsOnClassPath(binder, of(TestConfig.class));
+            Module module = new AbstractModule() {
+                @Override
+                protected void configure() {
 
-                HttpClientProvider httpClientProvider = Mockito.mock(HttpClientProvider.class);
+                    bind(String[].class).annotatedWith(Names.named("args")).toInstance(new String[]{HTTPCONFIG_URL_YML});
+                    bind(ServerConfig.class).toInstance(new ServerConfig() {{
+                        setEnabled(false);
+                    }});
 
-                when(httpClientProvider.createClient(any())).thenReturn(Mockito.mock(HttpClient.class));
-
-                binder.bind(HttpClientProvider.class).toInstance(httpClientProvider);
-
-            }, HTTPCONFIG_URL_YML);
+                    HttpClientProvider httpClientProvider = Mockito.mock(HttpClientProvider.class);
+                    when(httpClientProvider.createClient(any())).thenReturn(Mockito.mock(HttpClient.class));
+                    bind(HttpClientProvider.class).toInstance(httpClientProvider);
+                }
+            };
+            Guice.createInjector(new AutoBindModules(Modules.override(module).with(restClientFactory)));
             Assert.fail("Should throw exception when class is not an interface");
         } catch (Exception e) {
             assertThat(e.getCause()).isInstanceOf(IllegalArgumentException.class);
@@ -147,24 +153,21 @@ public class RestClientFactoryTest {
         binder.bind(JaxRsClassScanner.class).toInstance(mock);
     }
 
-    private void mockConfigsOnClassPath(Binder binder, Set<Class<?>> classes) {
-        HttpConfigClassScanner mock = Mockito.mock(HttpConfigClassScanner.class);
-        when(mock.getClasses()).thenReturn(classes);
-        binder.bind(HttpConfigClassScanner.class).toInstance(mock);
+    @Path("")
+    public interface TestResource {
+        @GET
+        Observable<String> testCall();
     }
-}
 
-interface TestResource {
-    @GET
-    Observable<String> testCall();
-}
+    @Path("")
+    public interface CustomTestResource {
+        @GET
+        Observable<String> testCall();
+    }
 
-interface CustomTestResource {
-    @GET
-    Observable<String> testCall();
-}
+    @UseInResource(RestClientFactoryTest.class)
+    public static class TestConfig {
 
-@UseInResource(RestClientFactoryTest.class)
-class TestConfig {
+    }
 
 }

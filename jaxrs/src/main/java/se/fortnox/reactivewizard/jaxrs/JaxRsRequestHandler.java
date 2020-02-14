@@ -83,6 +83,8 @@ public class JaxRsRequestHandler implements RequestHandler<ByteBuf, ByteBuf> {
             return null;
         }
 
+        preHandle(request, resource);
+
         long requestStartTime = System.currentTimeMillis();
 
         return resource.call(jaxRsRequest)
@@ -90,6 +92,15 @@ public class JaxRsRequestHandler implements RequestHandler<ByteBuf, ByteBuf> {
             .flatMap(result -> writeResult(response, result))
             .onErrorResumeNext(e -> exceptionHandler.handleException(request, response, e))
             .doAfterTerminate(() -> resource.log(request, response, requestStartTime));
+    }
+
+    /**
+     * Pre handling hook for classes extending this class
+     *
+     * @param request the current request
+     * @param resource the resource that will we handling the request
+     */
+    protected void preHandle(HttpServerRequest<ByteBuf> request, JaxRsResource<?> resource) {
     }
 
     private Observable<Void> writeResult(HttpServerResponse<ByteBuf> response, JaxRsResult<?> result) {

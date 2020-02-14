@@ -153,7 +153,7 @@ public class CollectionOptionsTest {
     public void shouldInjectSortBeforeQueriesLastOrderBy() throws SQLException {
         CollectionOptions collectionOptions = new CollectionOptions("name", CollectionOptions.SortOrder.ASC);
         collectionOptionsDao.selectWithMultipleOrderBy(collectionOptions).toBlocking().singleOrDefault(null);
-        mockDb.verifySelect("select name, lastname from customers where name in (select first_name from persons order by first_name) order by name ASC, lastname LIMIT 101");
+        mockDb.verifySelect("select name, lastname from customers where name = ANY(select first_name from persons order by first_name) order by name ASC, lastname LIMIT 101");
     }
 
     interface CollectionOptionsDao {
@@ -178,7 +178,7 @@ public class CollectionOptionsTest {
         @Query(value = "select * from table", defaultLimit = 10)
         Observable<String> selectWithDefaultLimit10(CollectionOptions collectionOptions);
 
-        @Query(value= "select name, lastname from customers where name in (select first_name from persons order by first_name) order by lastname", allowedSortColumns = {"name"})
+        @Query(value= "select name, lastname from customers where name = ANY(select first_name from persons order by first_name) order by lastname", allowedSortColumns = {"name"})
         Observable<String> selectWithMultipleOrderBy(CollectionOptions collectionOptions);
     }
 }

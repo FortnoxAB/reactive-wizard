@@ -62,7 +62,7 @@ public class BeanParamResolver<T> extends AnnotatedParamResolver<T> {
 
             List<BiFunction<T, JaxRsRequest, Observable<T>>> fieldSetters = new ArrayList<>();
 
-            for (Field field : beanParamCls.getDeclaredFields()) {
+            for (Field field : getAllDeclaredFields(beanParamCls)) {
                 Annotation[] fieldAnnotations = field.getAnnotations();
                 for (Annotation fieldAnnotation : fieldAnnotations) {
                     AnnotatedParamResolverFactory paramResolverFactory = annotatedParamResolverFactories.get(fieldAnnotation.annotationType());
@@ -87,6 +87,14 @@ public class BeanParamResolver<T> extends AnnotatedParamResolver<T> {
                 }
             }
             return new BeanParamResolver<T>(instantiator, fieldSetters);
+        }
+
+        private static List<Field> getAllDeclaredFields(Class<?> type) {
+            List<Field> fields = new ArrayList<>();
+            for (Class<?> c = type; c != null; c = c.getSuperclass()) {
+                fields.addAll(asList(c.getDeclaredFields()));
+            }
+            return fields;
         }
     }
 }

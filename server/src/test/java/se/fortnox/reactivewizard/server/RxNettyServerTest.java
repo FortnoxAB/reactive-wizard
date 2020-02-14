@@ -1,22 +1,30 @@
 package se.fortnox.reactivewizard.server;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.EventLoopGroup;
+import io.netty.util.concurrent.Future;
 import io.reactivex.netty.protocol.http.server.HttpServer;
 import org.apache.log4j.Appender;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 import se.fortnox.reactivewizard.test.LoggingMockUtil;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.fail;
+import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyInt;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -29,6 +37,9 @@ public class RxNettyServerTest {
     HttpServer<ByteBuf, ByteBuf> server;
 
     @Mock
+    EventLoopGroup eventLoopGroup;
+
+    @Mock
     ConnectionCounter connectionCounter;
 
     @Mock
@@ -36,7 +47,10 @@ public class RxNettyServerTest {
 
     @Before
     public void before() {
+        RxNettyServer.registerShutdownDependency(null);
         when(server.start(compositeRequestHandler)).thenReturn(server);
+        Future future = Mockito.mock(Future.class);
+        when(eventLoopGroup.shutdownGracefully(anyLong(), anyLong(), any())).thenReturn(future);
     }
 
     @Test
@@ -44,7 +58,7 @@ public class RxNettyServerTest {
         ServerConfig serverConfig = new ServerConfig();
         serverConfig.setEnabled(false);
 
-        RxNettyServer rxNettyServer = new RxNettyServer(serverConfig, connectionCounter, server, compositeRequestHandler);
+        RxNettyServer rxNettyServer = new RxNettyServer(serverConfig, connectionCounter, server, compositeRequestHandler, eventLoopGroup);
         rxNettyServer.join();
 
         assertNull(rxNettyServer.getServer());
@@ -55,7 +69,7 @@ public class RxNettyServerTest {
         ServerConfig  serverConfig              = new ServerConfig();
         AtomicInteger startInvocedNumberOfTimes = new AtomicInteger(0);
 
-        RxNettyServer rxNettyServer = new RxNettyServer(serverConfig, connectionCounter, server, compositeRequestHandler) {
+        RxNettyServer rxNettyServer = new RxNettyServer(serverConfig, connectionCounter, server, compositeRequestHandler, eventLoopGroup) {
             @Override
             public void start() {
                 startInvocedNumberOfTimes.incrementAndGet();
@@ -71,7 +85,7 @@ public class RxNettyServerTest {
     public void shouldAwaitShutDown() throws InterruptedException {
         ServerConfig serverConfig = new ServerConfig();
 
-        RxNettyServer rxNettyServer = new RxNettyServer(serverConfig, connectionCounter, server, compositeRequestHandler) {};
+        RxNettyServer rxNettyServer = new RxNettyServer(serverConfig, connectionCounter, server, compositeRequestHandler, eventLoopGroup) {};
         rxNettyServer.join();
 
         verify(server, times(1)).awaitShutdown();
@@ -81,7 +95,7 @@ public class RxNettyServerTest {
     public void shouldLogThatShutDownIsRegistered() throws NoSuchFieldException, IllegalAccessException {
         Appender mockAppender = LoggingMockUtil.createMockedLogAppender(RxNettyServer.class);
 
-        RxNettyServer.shutdownHook(new ServerConfig(), server, connectionCounter);
+        RxNettyServer.shutdownHook(new ServerConfig(), server, eventLoopGroup, connectionCounter);
 
         verify(mockAppender).doAppend(matches(log ->
             assertThat(log.getMessage().toString()).matches("Shutdown requested. Will wait up to 20 seconds...")
@@ -96,9 +110,9 @@ public class RxNettyServerTest {
 
     @Test
     public void shouldCallServerShutDownWhenShutdownHookIsInvoked() {
-        RxNettyServer.shutdownHook(new ServerConfig(), server, connectionCounter);
+        RxNettyServer.shutdownHook(new ServerConfig(), server, eventLoopGroup, connectionCounter);
 
-        verify(server, times(1)).shutdown();
+        verify(eventLoopGroup, times(1)).shutdownGracefully(anyLong(), anyLong(), any());
         verify(server, times(1)).awaitShutdown();
     }
 
@@ -109,7 +123,7 @@ public class RxNettyServerTest {
         when(connectionCounter.awaitZero(anyInt(), any(TimeUnit.class))).thenReturn(false);
         when(connectionCounter.getCount()).thenReturn(4L);
 
-        RxNettyServer.shutdownHook(new ServerConfig(), server, connectionCounter);
+        RxNettyServer.shutdownHook(new ServerConfig(), server, eventLoopGroup, connectionCounter);
 
         verify(mockAppender).doAppend(matches(log ->
             assertThat(log.getMessage().toString()).matches("Shutdown requested. Will wait up to 20 seconds...")
@@ -122,4 +136,40 @@ public class RxNettyServerTest {
         LoggingMockUtil.destroyMockedAppender(mockAppender, RxNettyServer.class);
     }
 
+    @Test
+    public void shouldNotOverrideShutdownDependency() {
+        RxNettyServer.registerShutdownDependency(() -> {});
+        try {
+            RxNettyServer.registerShutdownDependency(() -> {});
+            fail();
+        } catch (IllegalStateException e) {
+            assertThat(e.getMessage()).isEqualTo("Shutdown dependency is already registered");
+        }
+    }
+
+    @Test
+    public void shouldSkipAwaitingShutdownDependencyIfNotSet() throws NoSuchFieldException, IllegalAccessException {
+        Appender mockAppender = LoggingMockUtil.createMockedLogAppender(RxNettyServer.class);
+        RxNettyServer.awaitShutdownDependency(new ServerConfig().getShutdownTimeoutSeconds());
+        verify(mockAppender, never()).doAppend(any());
+    }
+
+    @Test
+    public void shouldAwaitShutdownDependency() throws NoSuchFieldException, IllegalAccessException {
+        Appender mockAppender = LoggingMockUtil.createMockedLogAppender(RxNettyServer.class);
+        Supplier supplier = mock(Supplier.class);
+
+        RxNettyServer.registerShutdownDependency(supplier::get);
+        verify(supplier, never()).get();
+
+        RxNettyServer.awaitShutdownDependency(new ServerConfig().getShutdownTimeoutSeconds());
+
+        verify(mockAppender).doAppend(matches(log ->
+            assertThat(log.getMessage().toString()).matches("Wait for completion of shutdown dependency")
+        ));
+        verify(supplier, times(1)).get();
+        verify(mockAppender).doAppend(matches(log ->
+            assertThat(log.getMessage().toString()).matches("Shutdown dependency completed, continue...")
+        ));
+    }
 }

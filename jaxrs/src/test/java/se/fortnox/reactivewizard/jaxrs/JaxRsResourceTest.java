@@ -58,12 +58,18 @@ import java.util.Set;
 import java.util.TimeZone;
 import java.util.UUID;
 
-import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.*;
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.Mockito.when;
 import static rx.Observable.just;
+import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.body;
+import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.delete;
+import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.get;
+import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.getWithHeaders;
+import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.patch;
+import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.post;
+import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.put;
 
 public class JaxRsResourceTest {
 
@@ -705,6 +711,21 @@ public class JaxRsResourceTest {
         assertThat(get(service, "/test/acceptsBeanParam?name=foo&age=3&items=1,2").getOutp()).isEqualTo("\"foo - 3 2\"");
     }
 
+    @Test
+    public void shouldAcceptBeanParamInherited() {
+        assertThat(get(service, "/test/acceptsBeanParamInherited?name=foo&age=3&items=1,2&inherited=YES").getOutp()).isEqualTo("\"foo - 3 2 - YES\"");
+    }
+
+    @Test
+    public void shouldGive400ErrorForUnescapedUrls() {
+        try {
+            get(service, "/test/acceptsString/something% ");
+            fail("Expected exception");
+        } catch (WebException e) {
+            assertThat(e.getStatus().code()).isEqualTo(400);
+        }
+    }
+
 
     @Path("test")
     class Testresource {
@@ -801,6 +822,10 @@ public class JaxRsResourceTest {
         @Path("defaultQuery")
         @GET
         Observable<String> acceptDefaultQueryParam(@QueryParam("myarg") @DefaultValue("5") int myarg);
+
+        @Path("acceptsString/{myarg}")
+        @GET
+        Observable<String> acceptsStringPath(@PathParam("myarg") String myarg);
 
         @Path("acceptsBoolean/{myarg}")
         @GET
@@ -1016,9 +1041,13 @@ public class JaxRsResourceTest {
         @Path("acceptsBeanParam")
         @GET
         Observable<String> acceptsBeanParam(@BeanParam ParamEntity beanParam);
+
+        @Path("acceptsBeanParamInherited")
+        @GET
+        Observable<String> acceptsBeanParamInherited(@BeanParam InheritedParamEntity beanParam);
     }
 
-        class TestresourceImpl implements TestresourceInterface {
+    class TestresourceImpl implements TestresourceInterface {
 
         @Override
         public Observable<String> acceptsString(String myarg) {
@@ -1063,6 +1092,11 @@ public class JaxRsResourceTest {
         @Override
         public Observable<String> acceptDefaultQueryParam(int myarg) {
             return just("Default: " + myarg);
+        }
+
+        @Override
+        public Observable<String> acceptsStringPath(String myarg) {
+            return just("String: "+myarg);
         }
 
         @Override
@@ -1301,6 +1335,11 @@ public class JaxRsResourceTest {
         @Override
         public Observable<String> acceptsBeanParam(ParamEntity beanParam) {
             return just(String.format("%s - %d %d", beanParam.getName(), beanParam.getAge(), beanParam.getItems().size()));
+        }
+
+        @Override
+        public Observable<String> acceptsBeanParamInherited(InheritedParamEntity beanParam) {
+            return just(String.format("%s - %d %d - %s", beanParam.getName(), beanParam.getAge(), beanParam.getItems().size(), beanParam.getInherited()));
         }
 
         @Override

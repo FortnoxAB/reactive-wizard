@@ -6,7 +6,6 @@ import rx.Single;
 import javax.inject.Provider;
 import java.lang.annotation.Annotation;
 import java.lang.invoke.CallSite;
-import java.lang.invoke.LambdaConversionException;
 import java.lang.invoke.LambdaMetafactory;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -15,7 +14,6 @@ import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.ParameterizedType;
@@ -34,6 +32,8 @@ import java.util.stream.Stream;
 import static java.util.Arrays.asList;
 
 public class ReflectionUtil {
+    private static final String CGLIB_CLASS_SEPARATOR = "$$";
+
     public static Type getTypeOfObservable(Method method) {
         Type type = method.getGenericReturnType();
         if (!(type instanceof ParameterizedType)) {
@@ -80,16 +80,27 @@ public class ReflectionUtil {
     }
 
     public static Method getOverriddenMethod(Method method) {
+        Class<?> declaringClass = getUserDefinedClass(method.getDeclaringClass());
         Optional<Method> found;
-        for (Class<?> iface : method.getDeclaringClass().getInterfaces()) {
+        for (Class<?> iface : declaringClass.getInterfaces()) {
             found = findMethodInClass(method, iface);
             if (found.isPresent()) {
                 return found.get();
             }
         }
-        found = findMethodInClass(method, method.getDeclaringClass());
+        found = findMethodInClass(method, declaringClass);
         found = found.filter(m -> !m.equals(method));
         return found.orElse(null);
+    }
+
+    private static Class<?> getUserDefinedClass(Class<?> clazz) {
+        if (clazz.getName().contains(CGLIB_CLASS_SEPARATOR)) {
+            Class<?> superclass = clazz.getSuperclass();
+            if (superclass != null && superclass != Object.class) {
+                return superclass;
+            }
+        }
+        return clazz;
     }
 
     public static Optional<Method> findMethodInClass(Method method, Class<?> cls) {
