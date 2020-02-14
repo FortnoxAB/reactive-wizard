@@ -22,7 +22,7 @@ import java.util.function.Supplier;
 public class TypeRandomizer {
 
     private static final Random random = new Random();
-    private static Map<Class<?>, Supplier<?>>  suppliers = ImmutableMap.<Class<?>, Supplier<?>>builder()
+    private static final Map<Class<?>, Supplier<?>>  suppliers = ImmutableMap.<Class<?>, Supplier<?>>builder()
         .put(Integer.TYPE, () -> random.nextInt(10))
         .put(Integer.class, () -> random.nextInt(10))
         .put(Float.TYPE, random::nextFloat)
@@ -57,23 +57,23 @@ public class TypeRandomizer {
             return (T)suppliers.get(type).get();
         }
 
-        return createAndFill(type);
+        return createAndPopulateObjectWithValues(type);
     }
 
-    private static <T> T createAndFill(Class<T> clazz) {
+    private static <T> T createAndPopulateObjectWithValues(Class<T> clazz) {
         try {
             Constructor<T> declaredConstructor = clazz.getDeclaredConstructor();
             declaredConstructor.setAccessible(true);
             T instance = declaredConstructor.newInstance();
 
             for (Field field: clazz.getDeclaredFields()) {
-                handleField(instance, field);
+                setRandomValueOnField(instance, field);
             }
 
             //Superclass with values? Yes, could do a recursive function to support extends of extends but, nah
             if (clazz.getSuperclass() != Object.class) {
                 for (Field field : clazz.getSuperclass().getDeclaredFields()) {
-                    handleField(instance, field);
+                    setRandomValueOnField(instance, field);
                 }
             }
 
@@ -83,7 +83,7 @@ public class TypeRandomizer {
         }
     }
 
-    private static <T> void handleField(T instance, Field field) throws IllegalAccessException {
+    private static <T> void setRandomValueOnField(T instance, Field field) throws IllegalAccessException {
         if (field.getName().startsWith("$")) {
             return;
         }

@@ -15,7 +15,7 @@ public class TypeRandomizerTest {
     }
 
     @Test
-    public void testTypeRandomizer() throws InvocationTargetException, IllegalAccessException {
+    public void testTypeRandomizerCanGeneratePojoWithDefaultValues() throws InvocationTargetException, IllegalAccessException {
         TestPojo testPojo = TypeRandomizer.getType(TestPojo.class);
 
         for (Method declaredMethod : TestPojo.class.getDeclaredMethods()) {

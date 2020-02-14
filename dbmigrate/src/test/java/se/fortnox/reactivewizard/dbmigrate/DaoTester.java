@@ -1,6 +1,7 @@
 package se.fortnox.reactivewizard.dbmigrate;
 
-import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner;
+import io.github.classgraph.ClassGraph;
+import io.github.classgraph.ScanResult;
 import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Assert;
@@ -14,6 +15,7 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import rx.Observable;
 import rx.observers.AssertableSubscriber;
 import se.fortnox.reactivewizard.binding.AutoBindModules;
+import se.fortnox.reactivewizard.binding.ClassScannerImpl;
 import se.fortnox.reactivewizard.binding.scanners.DaoClassScanner;
 import se.fortnox.reactivewizard.db.ConnectionProviderImpl;
 import se.fortnox.reactivewizard.db.DbProxy;
@@ -26,10 +28,12 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Enumeration;
 
+import static se.fortnox.reactivewizard.binding.AutoBindModules.JAR_BLACKLIST;
+import static se.fortnox.reactivewizard.binding.AutoBindModules.PATH_BLACKLIST;
 import static se.fortnox.reactivewizard.test.TypeRandomizer.getType;
 
 /**
- * Sublass this class and create a single test calling the method DaoTester#testDaoClasses
+ * Subclass this class and create a single test calling the method DaoTester#testDaoClasses
  * Then that test will scan your module and find any dao class specified and test all the sql-syntax
  */
 public class DaoTester {
@@ -94,8 +98,8 @@ public class DaoTester {
         AssertableSubscriber<?> test = ((Observable<?>)method.invoke(daoInstance, mockValues.toArray())).onErrorResumeNext(throwable -> {
             throwable.printStackTrace();
             return Observable.error(throwable);
-        }).test();
-        test.awaitTerminalEvent();
+        }).test().awaitTerminalEvent();
+
         for (Throwable onErrorEvent : test.getOnErrorEvents()) {
             if( !(onErrorEvent.getCause() instanceof MinimumAffectedRowsException)) {
                 LOG.error("Query should not fail", onErrorEvent);
@@ -125,11 +129,18 @@ public class DaoTester {
      * @return all dao classes
      */
     private Iterable<Class<?>> getClasses() {
-        FastClasspathScanner fastClasspathScanner = new FastClasspathScanner(AutoBindModules.PACKAGE_BLACKLIST.toArray(new String[0]));
-        DaoClassScanner daoClassScanner = new DaoClassScanner();
 
-        daoClassScanner.visit(fastClasspathScanner);
-        fastClasspathScanner.scan();
+        ClassGraph classGraph      = new ClassGraph()
+            .blacklistPackages(AutoBindModules.getPackageBlacklist())
+            .blacklistJars(JAR_BLACKLIST)
+            .blacklistPaths(PATH_BLACKLIST)
+            .whitelistPackages()
+            .enableMethodInfo()
+            .enableAnnotationInfo();
+        ScanResult scanResult = classGraph.scan();
+
+        DaoClassScanner daoClassScanner = new DaoClassScanner();
+        daoClassScanner.visit(new ClassScannerImpl(scanResult));
         return daoClassScanner.getClasses();
     }
 

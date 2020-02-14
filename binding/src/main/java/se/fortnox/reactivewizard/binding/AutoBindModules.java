@@ -1,5 +1,6 @@
 package se.fortnox.reactivewizard.binding;
 
+import com.google.common.collect.ImmutableList;
 import com.google.inject.Binder;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -28,7 +29,7 @@ public class AutoBindModules implements Module {
      * These are packages that are not part of the application code and where there is no point to scan for classes.
      * We only want to find classes defined by our platform and user code.
      */
-    private static final String[] PACKAGE_BLACKLIST = {
+    public static List<String> PACKAGE_BLACKLIST = ImmutableList.of(
         "com.google",
         "liquibase",
         "io.netty",
@@ -53,14 +54,14 @@ public class AutoBindModules implements Module {
         "net.minidev",
         "org.slf4j",
         "com.ryantenney",
-        "net.logstash",
-    };
-    private static final String[] JAR_BLACKLIST = {
+        "net.logstash"
+        );
+    public static final String[] JAR_BLACKLIST = {
         "java-atk-wrapper.jar",
         "rt.jar",
         "idea_rt.jar"
     };
-    private static final String[] PATH_BLACKLIST = {
+    public static final String[] PATH_BLACKLIST = {
         "META-INF"
     };
     private              Module   bootstrapBindings;
@@ -134,8 +135,8 @@ public class AutoBindModules implements Module {
         return new String[0];
     }
 
-    protected String[] getPackageBlacklist() {
-        return PACKAGE_BLACKLIST;
+    public static String[] getPackageBlacklist() {
+        return PACKAGE_BLACKLIST.toArray(new String[0]);
     }
 
     private List<AbstractClassScanner> createScanners(ClassScanner classScanner, Injector factoryInjector) {
