@@ -30,7 +30,6 @@ import org.apache.log4j.Appender;
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mockito;
 import rx.Observable;
@@ -1232,7 +1231,6 @@ public class HttpClientTest {
     }
 
     @Test
-    @Ignore
     public void shouldHandleUnsafeSecureOnUntrustedHost() throws URISyntaxException {
         HttpClientConfig httpClientConfig = new HttpClientConfig("https://untrusted-root.badssl.com");
         httpClientConfig.setValidateCertificates(false);

@@ -29,7 +29,7 @@ public class AutoBindModules implements Module {
      * These are packages that are not part of the application code and where there is no point to scan for classes.
      * We only want to find classes defined by our platform and user code.
      */
-    public static List<String> PACKAGE_BLACKLIST = ImmutableList.of(
+    public static final List<String> PACKAGE_BLACKLIST = ImmutableList.of(
         "com.google",
         "liquibase",
         "io.netty",

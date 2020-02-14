@@ -20,6 +20,7 @@ import java.util.UUID;
 import java.util.function.Supplier;
 
 public class TypeRandomizer {
+    private TypeRandomizer() {}
 
     private static final Random random = new Random();
     private static final Map<Class<?>, Supplier<?>>  suppliers = ImmutableMap.<Class<?>, Supplier<?>>builder()
