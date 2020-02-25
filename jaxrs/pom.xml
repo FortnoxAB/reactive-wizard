@@ -72,7 +72,20 @@
 			<artifactId>guice</artifactId>
 			<version>${guice.version}</version>
 			<scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.google.guava</groupId>
+                    <artifactId>guava</artifactId>
+                </exclusion>
+            </exclusions>
 		</dependency>
+
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>${guava.version}</version>
+            <scope>test</scope>
+        </dependency>
 
 		<dependency>
 			<groupId>io.netty</groupId>

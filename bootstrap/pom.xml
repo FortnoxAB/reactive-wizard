@@ -17,6 +17,12 @@
 			<version>${guice.version}</version>
 		</dependency>
 
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>${guava.version}</version>
+        </dependency>
+
 		<dependency>
 			<groupId>se.fortnox.reactivewizard</groupId>
 			<artifactId>reactivewizard-binding</artifactId>
