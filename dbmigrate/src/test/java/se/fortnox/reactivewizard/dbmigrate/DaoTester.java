@@ -64,7 +64,7 @@ public class DaoTester {
     public void testDaoClasses() throws Exception {
         DatabaseConfig databaseConfig = setupDatabaseConfig(postgreSQLContainer);
 
-        DbProxy         dbProxy        = new DbProxy(databaseConfig, new ConnectionProviderImpl(databaseConfig));
+        DbProxy dbProxy = new DbProxy(databaseConfig, new ConnectionProviderImpl(databaseConfig));
 
         for (Class<?> aClass : this.getClasses()) {
             Object instance = dbProxy.create(aClass);
@@ -88,36 +88,42 @@ public class DaoTester {
         LOG.info("Testing class {} and method {}", daoClass, method.getName());
         ArrayList<Object> mockValues = new ArrayList<>();
 
-        int index = 0;
         for (Parameter parameter : method.getParameters()) {
-
-            mockValues.add(getRandomValue(daoClass, method, index, parameter.getType()));
-            index++;
+            mockValues.add(modify(getRandomValue(parameter.getType())));
         }
 
         AssertableSubscriber<?> test = ((Observable<?>)method.invoke(daoInstance, mockValues.toArray())).test().awaitTerminalEvent();
 
         for (Throwable onErrorEvent : test.getOnErrorEvents()) {
-            if( !(onErrorEvent.getCause() instanceof MinimumAffectedRowsException)) {
+            if (!isMinimumEffectedRowsException(onErrorEvent) && !isDuplicateKey(onErrorEvent)) {
                 LOG.error("Query should not fail", onErrorEvent);
-                Assert.fail("Query should not fail on class " + daoClass + " and method " + method.getName());
+                Assert.fail("Query should not fail on class " + daoClass + " and method " + method.getName() + " with error " + onErrorEvent.getCause());
             }
         }
     }
 
+    private boolean isMinimumEffectedRowsException(Throwable onErrorEvent) {
+        return (onErrorEvent.getCause() instanceof MinimumAffectedRowsException);
+    }
+
+    private boolean isDuplicateKey(Throwable onErrorEvent) {
+        return onErrorEvent.getCause() != null && onErrorEvent.getCause().getMessage() != null && onErrorEvent.getCause().getMessage().contains("duplicate key value violates unique constraint");
+    }
     /**
      * Override to customize random parameter generation
      *
      * Sometimes legacy columns are strings but still expected to contain numbers, here you can customize that.
      *
-     * @param daoClass the Class to be tested
-     * @param method the method being tested
-     * @param index the index of the param
-     * @param type the type of the param
+     * @param object the object created
      *
      * @return randomized value
      */
-    protected Object getRandomValue(Object daoClass, Method method, int index, Class<?> type) throws Exception {
+    protected Object modify(Object object) {
+        return object;
+    }
+
+
+    private Object getRandomValue(Class<?> type) throws Exception {
         return getType(type);
     }
 
