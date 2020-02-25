@@ -1,11 +1,13 @@
 package se.fortnox.reactivewizard.jaxrs;
 
 import io.netty.buffer.ByteBuf;
+import io.reactiverse.reactivecontexts.core.Context;
 import io.reactivex.netty.protocol.http.server.HttpServerRequest;
 import io.reactivex.netty.protocol.http.server.HttpServerResponse;
 import io.reactivex.netty.protocol.http.server.RequestHandler;
 import rx.Observable;
 import se.fortnox.reactivewizard.ExceptionHandler;
+import se.fortnox.reactivewizard.jaxrs.context.JaxRsRequestContext;
 import se.fortnox.reactivewizard.jaxrs.response.JaxRsResult;
 import se.fortnox.reactivewizard.util.DebugUtil;
 
@@ -17,6 +19,9 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class JaxRsRequestHandler implements RequestHandler<ByteBuf, ByteBuf> {
+    static {
+        Context.load();
+    }
 
     private final JaxRsResources   resources;
     private final ExceptionHandler exceptionHandler;
@@ -87,11 +92,16 @@ public class JaxRsRequestHandler implements RequestHandler<ByteBuf, ByteBuf> {
 
         long requestStartTime = System.currentTimeMillis();
 
-        return resource.call(jaxRsRequest)
-            .singleOrDefault(null)
-            .flatMap(result -> writeResult(response, result))
-            .onErrorResumeNext(e -> exceptionHandler.handleException(request, response, e))
-            .doAfterTerminate(() -> resource.log(request, response, requestStartTime));
+        try {
+            JaxRsRequestContext.open();
+            return resource.call(jaxRsRequest)
+                .singleOrDefault(null)
+                .flatMap(result -> writeResult(response, result))
+                .onErrorResumeNext(e -> exceptionHandler.handleException(request, response, e))
+                .doAfterTerminate(() -> resource.log(request, response, requestStartTime));
+        } finally {
+            JaxRsRequestContext.close();
+        }
     }
 
     /**
