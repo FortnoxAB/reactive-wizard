@@ -73,7 +73,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <netty.version>4.1.19.Final</netty.version>
+        <netty.version>4.1.42.Final</netty.version>
         <rxnetty.version>0.5.3</rxnetty.version>
         <rxjava.version>1.2.10</rxjava.version>
         <jackson.version>2.9.9</jackson.version>
