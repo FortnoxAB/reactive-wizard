@@ -14,7 +14,7 @@ public class CollectionOptions {
     @QueryParam("offset")
     private Integer   offset;
 
-    @QueryParam("sortBy")
+    @QueryParam("sortby")
     private String    sortBy;
 
     @QueryParam("order")
