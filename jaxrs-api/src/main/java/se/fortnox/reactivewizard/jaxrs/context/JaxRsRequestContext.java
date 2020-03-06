@@ -17,10 +17,10 @@ public class JaxRsRequestContext {
     private static final Logger                           LOG     = LoggerFactory.getLogger(JaxRsRequestContext.class);
     private static final ThreadLocal<JaxRsRequestContext> CONTEXT = new ThreadLocal<>();
 
-    private final Map<Object, Object> context;
+    private final Map<Object, Object> contextStorage;
 
     private JaxRsRequestContext() {
-        context = new ConcurrentHashMap<>();
+        contextStorage = new ConcurrentHashMap<>();
     }
 
     static JaxRsRequestContext getContext() {
@@ -44,7 +44,7 @@ public class JaxRsRequestContext {
         if (ctx == null) {
             return Optional.empty();
         }
-        return Optional.ofNullable((T) ctx.context.get(key));
+        return Optional.ofNullable((T) ctx.contextStorage.get(key));
     }
 
     /**
@@ -59,7 +59,7 @@ public class JaxRsRequestContext {
             LOG.warn("No context exists or this is not executed in the context of a request");
             return;
         }
-        ctx.context.put(key, value);
+        ctx.contextStorage.put(key, value);
     }
 
     /**
