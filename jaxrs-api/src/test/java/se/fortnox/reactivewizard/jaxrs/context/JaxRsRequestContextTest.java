@@ -28,6 +28,6 @@ public class JaxRsRequestContextTest {
         assertThat(JaxRsRequestContext.getValue("foo").orElse(null)).isEqualTo("bar");
 
         JaxRsRequestContext.close();
-        assertThat(JaxRsRequestContext.getValue("foo").isEmpty()).isTrue();
+        assertThat(JaxRsRequestContext.getValue("foo").isPresent()).isFalse();
     }
 }
