@@ -7,6 +7,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static java.util.Optional.ofNullable;
+
 /**
  * A context that exists during handling of a jaxrs request.
  *
@@ -40,11 +42,7 @@ public class JaxRsRequestContext {
      *         if the value set is null or if the context is not open.
      */
     public static <T> Optional<T> getValue(Object key) {
-        JaxRsRequestContext ctx = getContext();
-        if (ctx == null) {
-            return Optional.empty();
-        }
-        return Optional.ofNullable((T) ctx.contextStorage.get(key));
+        return ofNullable(getContext()).map(ctx -> (T) ctx.contextStorage.get(key));
     }
 
     /**
