@@ -128,12 +128,6 @@
             <groupId>io.reactiverse</groupId>
             <artifactId>reactive-contexts-propagators-rxjava1</artifactId>
             <version>${reactiversecontexts.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>io.reactivex</groupId>
-                    <artifactId>rxjava</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
 	</dependencies>
 
