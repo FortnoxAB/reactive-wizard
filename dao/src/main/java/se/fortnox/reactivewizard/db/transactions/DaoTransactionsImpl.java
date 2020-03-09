@@ -48,7 +48,7 @@ public class DaoTransactionsImpl implements DaoTransactions {
             return empty();
         }
         createTransaction(daoCalls);
-        return merge(daoCalls).last().flatMap(e -> empty());
+        return merge(daoCalls).ignoreElements().cast(Void.class);
     }
 
     @Override
