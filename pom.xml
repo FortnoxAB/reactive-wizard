@@ -57,6 +57,7 @@
         <module>jaxrs-api</module>
         <module>jaxrs-api-test</module>
         <module>jaxrs</module>
+        <module>jaxrs-context</module>
         <module>config</module>
         <module>logging</module>
         <module>binding</module>

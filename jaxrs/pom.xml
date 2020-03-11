@@ -44,6 +44,12 @@
 
 		<dependency>
 			<groupId>se.fortnox.reactivewizard</groupId>
+			<artifactId>reactivewizard-binding</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>se.fortnox.reactivewizard</groupId>
 			<artifactId>reactivewizard-jaxrs-api</artifactId>
 			<version>${project.version}</version>
 		</dependency>
@@ -64,13 +70,6 @@
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-log4j12</artifactId>
 			<version>${slf4j.version}</version>
-			<scope>test</scope>
-		</dependency>
-
-		<dependency>
-			<groupId>com.google.inject</groupId>
-			<artifactId>guice</artifactId>
-			<version>${guice.version}</version>
 			<scope>test</scope>
 		</dependency>
 
@@ -122,12 +121,6 @@
             <artifactId>reactivewizard-logging</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>io.reactiverse</groupId>
-            <artifactId>reactive-contexts-propagators-rxjava1</artifactId>
-            <version>${reactiversecontexts.version}</version>
         </dependency>
 	</dependencies>
 
