@@ -5,6 +5,8 @@ import org.junit.Before;
 import org.junit.Test;
 import rx.Observable;
 
+import java.util.Optional;
+
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.fest.assertions.Assertions.assertThat;
 
@@ -31,5 +33,13 @@ public class JaxRsRequestContextTest {
 
         JaxRsRequestContext.close();
         assertThat(JaxRsRequestContext.getValue("foo").isPresent()).isFalse();
+    }
+
+    @Test
+    public void shouldDoNothingWhenNotInContext() {
+        JaxRsRequestContext.close();
+
+        JaxRsRequestContext.setValue("foo", "bar");
+        assertThat(JaxRsRequestContext.getValue("foo")).isEqualTo(Optional.empty());
     }
 }
