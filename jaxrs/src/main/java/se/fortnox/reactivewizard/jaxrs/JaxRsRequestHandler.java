@@ -12,27 +12,31 @@ import se.fortnox.reactivewizard.util.DebugUtil;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import static java.util.Collections.emptySet;
+
 /**
  * Handles incoming requests. If the request matches a resource an Observable which completes the request is returned.
  */
 @Singleton
 public class JaxRsRequestHandler implements RequestHandler<ByteBuf, ByteBuf> {
-
     private final JaxRsResources   resources;
     private final ExceptionHandler exceptionHandler;
-    private final ByteBufCollector collector;
+    private final ByteBufCollector          collector;
+    private final JaxRsResourceInterceptors requestInterceptors;
 
     @Inject
     public JaxRsRequestHandler(JaxRsResourcesProvider services,
                                JaxRsResourceFactory jaxRsResourceFactory,
                                ExceptionHandler exceptionHandler,
-                               ByteBufCollector collector
+                               ByteBufCollector collector,
+                               JaxRsResourceInterceptors requestInterceptors
     ) {
         this(services.getResources(),
             jaxRsResourceFactory,
             exceptionHandler,
             collector,
-            null);
+            null,
+            requestInterceptors);
     }
 
     /**
@@ -42,22 +46,25 @@ public class JaxRsRequestHandler implements RequestHandler<ByteBuf, ByteBuf> {
      * @param services a list of services to deploy
      */
     public JaxRsRequestHandler(Object... services) {
-        this(services, new JaxRsResourceFactory(), new ExceptionHandler(), new ByteBufCollector(), null);
+        this(services, new JaxRsResourceFactory(), new ExceptionHandler(), new ByteBufCollector(), null,
+            new JaxRsResourceInterceptors(emptySet()));
     }
 
     public JaxRsRequestHandler(Object[] services,
         JaxRsResourceFactory jaxRsResourceFactory,
         ExceptionHandler exceptionHandler,
-        Boolean classReloading
+        Boolean classReloading,
+        JaxRsResourceInterceptors requestInterceptors
     ) {
-        this(services, jaxRsResourceFactory, exceptionHandler, new ByteBufCollector(), classReloading);
+        this(services, jaxRsResourceFactory, exceptionHandler, new ByteBufCollector(), classReloading, requestInterceptors);
     }
 
     public JaxRsRequestHandler(Object[] services,
         JaxRsResourceFactory jaxRsResourceFactory,
         ExceptionHandler exceptionHandler,
         ByteBufCollector collector,
-        Boolean classReloading
+        Boolean classReloading,
+        JaxRsResourceInterceptors requestInterceptors
     ) {
         this.collector = collector;
         this.exceptionHandler = exceptionHandler;
@@ -65,6 +72,7 @@ public class JaxRsRequestHandler implements RequestHandler<ByteBuf, ByteBuf> {
             classReloading = DebugUtil.IS_DEBUG;
         }
         this.resources = new JaxRsResources(services, jaxRsResourceFactory, classReloading);
+        this.requestInterceptors = requestInterceptors;
     }
 
     /**
@@ -87,11 +95,19 @@ public class JaxRsRequestHandler implements RequestHandler<ByteBuf, ByteBuf> {
 
         long requestStartTime = System.currentTimeMillis();
 
-        return resource.call(jaxRsRequest)
-            .singleOrDefault(null)
-            .flatMap(result -> writeResult(response, result))
-            .onErrorResumeNext(e -> exceptionHandler.handleException(request, response, e))
-            .doAfterTerminate(() -> resource.log(request, response, requestStartTime));
+        Observable<Void> resourceCall = null;
+        JaxRsResourceInterceptor.JaxRsResourceContext resourceContext = new JaxRsResourceCallContext(request, resource);
+        try {
+            requestInterceptors.preHandle(resourceContext);
+            resourceCall = resource.call(jaxRsRequest)
+                .singleOrDefault(null)
+                .flatMap(result -> writeResult(response, result))
+                .onErrorResumeNext(e -> exceptionHandler.handleException(request, response, e))
+                .doAfterTerminate(() -> resource.log(request, response, requestStartTime));
+            return resourceCall;
+        } finally {
+            requestInterceptors.postHandle(resourceContext, resourceCall);
+        }
     }
 
     /**
