@@ -68,6 +68,7 @@
         <module>client</module>
         <module>validation</module>
         <module>dbmigrate</module>
+        <module>reactor-client</module>
     </modules>
 
     <properties>
@@ -94,6 +95,18 @@
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         <sonar.organization>fortnoxab</sonar.organization>
     </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>io.projectreactor</groupId>
+                <artifactId>reactor-bom</artifactId>
+                <version>Californium-RELEASE</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <profiles>
         <profile>

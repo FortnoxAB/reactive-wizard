@@ -3,6 +3,7 @@ package se.fortnox.reactivewizard.metrics;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import com.codahale.metrics.Timer.Context;
+import reactor.core.publisher.Flux;
 import rx.Observable;
 import rx.Observable.Operator;
 import rx.Subscriber;
@@ -36,10 +37,19 @@ public class Metrics {
         return measure(observable, NOOP);
     }
 
+    public <T> Flux<T> measure(Flux<T> observable) {
+        return measure(observable, NOOP);
+    }
+
+    public <T> Flux<T> measure(Flux<T> flux, Consumer<Long> callback) {
+        return new MetricsOperator<T>(flux, timer, callback);
+    }
+
     public <T> Observable<T> measure(Observable<T> observable, Consumer<Long> callback) {
         if (observable == null) {
             return null;
         }
+
         return observable.lift(new Operator<T, T>() {
             @Override
             public Subscriber<? super T> call(Subscriber<? super T> subscriber) {
@@ -72,4 +82,5 @@ public class Metrics {
             }
         });
     }
+
 }
