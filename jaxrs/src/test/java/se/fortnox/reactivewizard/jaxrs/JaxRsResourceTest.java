@@ -9,6 +9,7 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.Multibinder;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.reactivex.netty.protocol.http.server.MockHttpServerRequest;
 import org.junit.Test;
@@ -441,6 +442,7 @@ public class JaxRsResourceTest {
                     .findAndRegisterModules()
                     .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
                     .setDateFormat(new CustomDateFormat()));
+                Multibinder.newSetBinder(binder(), JaxRsResourceInterceptor.class);
             }
         };
         Injector            injector = Guice.createInjector(customDateModule);

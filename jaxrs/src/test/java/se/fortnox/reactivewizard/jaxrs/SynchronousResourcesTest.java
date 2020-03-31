@@ -11,8 +11,10 @@ import se.fortnox.reactivewizard.utils.JaxRsTestUtil;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import java.util.Collections;
 import java.util.concurrent.Executors;
 
+import static java.util.Collections.emptySet;
 import static org.assertj.core.api.Assertions.assertThat;
 import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.testServer;
 
@@ -33,7 +35,8 @@ public class SynchronousResourcesTest {
                 new JaxRsResourceFactory(new ParamResolverFactories(), new JaxRsResultFactoryFactory(), new BlockingResourceScheduler(scheduler)),
                 new ExceptionHandler(),
                 new ByteBufCollector(),
-                false
+                false,
+                new JaxRsResourceInterceptors(emptySet())
         );
         JaxRsTestUtil.TestServer testServer = new JaxRsTestUtil.TestServer(handler);
         assertThat(testServer.get("/threadname"))

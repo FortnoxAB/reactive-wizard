@@ -10,6 +10,7 @@ import rx.Observable;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 
+import static java.util.Collections.emptySet;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static rx.Observable.just;
@@ -62,7 +63,8 @@ public class WrappedParamTest {
                 new JaxRsResourceFactory(),
                 new ExceptionHandler(),
                 new ByteBufCollector(),
-                false
+                false,
+                new JaxRsResourceInterceptors(emptySet())
         );
     }
 
