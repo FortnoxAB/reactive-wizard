@@ -17,7 +17,6 @@ import reactor.netty.ByteBufFlux;
 import rx.Observable;
 import rx.RxReactiveStreams;
 import rx.Single;
-import se.fortnox.reactivewizard.client.HttpClient;
 import se.fortnox.reactivewizard.client.HttpClientConfig;
 import se.fortnox.reactivewizard.client.PreRequestHook;
 import se.fortnox.reactivewizard.client.RequestBuilder;
@@ -442,8 +441,8 @@ public class ReactorHttpClient implements InvocationHandler {
                 request.getHeaders().entrySet(),
                 formatHeaders(clientResponse),
                 data);
-            Throwable                detailedErrorCause = new HttpClient.ThrowableWithoutStack(message);
-            HttpClient.DetailedError detailedError      = getDetailedError(data, detailedErrorCause);
+            Throwable                detailedErrorCause = new ReactorHttpClient.ThrowableWithoutStack(message);
+            ReactorHttpClient.DetailedError detailedError      = getDetailedError(data, detailedErrorCause);
             String                   reasonPhrase       = detailedError.hasReason() ? detailedError.reason() : clientResponse.status().reasonPhrase();
             HttpResponseStatus responseStatus = new HttpResponseStatus(clientResponse.status()
                 .code(),
@@ -460,8 +459,8 @@ public class ReactorHttpClient implements InvocationHandler {
         return headers.toString();
     }
 
-    private HttpClient.DetailedError getDetailedError(String data, Throwable cause) {
-        HttpClient.DetailedError detailedError = new HttpClient.DetailedError(cause);
+    private ReactorHttpClient.DetailedError getDetailedError(String data, Throwable cause) {
+        ReactorHttpClient.DetailedError detailedError = new ReactorHttpClient.DetailedError(cause);
         if (data != null && data.length() > 0) {
             try {
                 objectMapper.readerForUpdating(detailedError).readValue(data);

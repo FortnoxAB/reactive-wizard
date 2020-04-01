@@ -35,7 +35,6 @@ import rx.functions.Func0;
 import rx.functions.Func1;
 import rx.functions.Func2;
 import rx.observers.AssertableSubscriber;
-import se.fortnox.reactivewizard.client.HttpClient;
 import se.fortnox.reactivewizard.client.HttpClientConfig;
 import se.fortnox.reactivewizard.client.PreRequestHook;
 import se.fortnox.reactivewizard.client.RequestParameterSerializers;
@@ -220,7 +219,7 @@ public class ReactorHttpClientTest {
         });
     }
 
-    //@Test
+    @Test
 
     /**
      * This test will fail occationally and is therefore commented out.
@@ -434,8 +433,8 @@ public class ReactorHttpClientTest {
             resource.getHello().toBlocking().single();
             Assert.fail("Expected exception");
         } catch (WebException e) {
-            assertThat(e.getCause()).isInstanceOf(HttpClient.DetailedError.class);
-            HttpClient.DetailedError detailedError = (HttpClient.DetailedError)e.getCause();
+            assertThat(e.getCause()).isInstanceOf(ReactorHttpClient.DetailedError.class);
+            ReactorHttpClient.DetailedError detailedError = (ReactorHttpClient.DetailedError)e.getCause();
             assertThat(detailedError.getError()).isEqualTo("1");
             assertThat(detailedError.getCode()).isEqualTo(100);
             assertThat(detailedError.getMessage()).isEqualTo("Detailed error description.");
@@ -664,7 +663,7 @@ public class ReactorHttpClientTest {
             fail("expected exception");
         } catch (WebException e) {
             assertThat(e.getError()).isEqualTo("validation");
-            HttpClient.DetailedError cause = (HttpClient.DetailedError)e.getCause();
+            ReactorHttpClient.DetailedError cause = (ReactorHttpClient.DetailedError)e.getCause();
             assertThat(cause.getFields()).isNotNull();
             assertThat(cause.getFields()).hasSize(1);
             FieldError error = cause.getFields()[0];
@@ -848,7 +847,7 @@ public class ReactorHttpClientTest {
 
         HttpClientConfig config = new HttpClientConfig("localhost:" + server.getServerPort());
         config.setMaxConnections(1);
-        HttpClient   client   = new HttpClient(config);
+        ReactorHttpClient   client   = new ReactorHttpClient(config);
         TestResource resource = client.create(TestResource.class);
         ReactorHttpClient.setTimeout(resource, 200, TimeUnit.MILLISECONDS);
 
@@ -882,7 +881,7 @@ public class ReactorHttpClientTest {
     @Test
     public void shouldShouldNotGivePoolExhaustedIfServerDoesNotCloseConnection() throws URISyntaxException {
 
-        LogManager.getLogger(HttpClient.class).setLevel(Level.toLevel(Level.OFF_INT));
+        LogManager.getLogger(ReactorHttpClient.class).setLevel(Level.toLevel(Level.OFF_INT));
 
         HttpServer<ByteBuf, ByteBuf> server = HttpServer.newServer(0)
             .start((request, response) -> {
@@ -899,7 +898,7 @@ public class ReactorHttpClientTest {
         // this config ensures that the autocleanup will run before the hystrix timeout
         HttpClientConfig config = new HttpClientConfig("localhost:" + server.getServerPort());
         config.setMaxConnections(2);
-        HttpClient   client   = new HttpClient(config);
+        ReactorHttpClient   client   = new ReactorHttpClient(config);
         TestResource resource = client.create(TestResource.class);
         ReactorHttpClient.setTimeout(resource, 100, TimeUnit.MILLISECONDS);
 
@@ -1141,7 +1140,7 @@ public class ReactorHttpClientTest {
         HttpServer<ByteBuf, ByteBuf> server = startServer(OK, "this is my response");
 
         String url      = "http://localhost:" + server.getServerPort();
-        String response = HttpClient.get(url).toBlocking().single();
+        String response = ReactorHttpClient.get(url).toBlocking().single();
 
         assertThat(response).isEqualTo("this is my response");
 
@@ -1155,7 +1154,7 @@ public class ReactorHttpClientTest {
         String url = "htp://localhost:" + server.getServerPort();
 
         try {
-            HttpClient.get(url).toBlocking().single();
+            ReactorHttpClient.get(url).toBlocking().single();
         } catch (RuntimeException e) {
             assertThat(e.getCause()).isInstanceOf(MalformedURLException.class);
         }
@@ -1172,12 +1171,12 @@ public class ReactorHttpClientTest {
 
         String           url            = "localhost:" + server.getServerPort();
         HttpClientConfig config         = new HttpClientConfig(url);
-        RxClientProvider clientProvider = new RxClientProvider(config, healthRecorder);
+        ReactorRxClientProvider clientProvider = new ReactorRxClientProvider(config);
 
         PreRequestHook          preRequestHook  = mock(PreRequestHook.class);
         HashSet<PreRequestHook> preRequestHooks = Sets.newHashSet(preRequestHook);
 
-        HttpClient client = new HttpClient(config, clientProvider, new ObjectMapper(), new RequestParameterSerializers(), preRequestHooks);
+        ReactorHttpClient client = new ReactorHttpClient(config, clientProvider, new ObjectMapper(), new RequestParameterSerializers(), preRequestHooks);
 
         TestResource resource = client.create(TestResource.class);
         resource.getHello().toBlocking().single();
