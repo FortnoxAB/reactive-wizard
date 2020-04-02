@@ -7,14 +7,14 @@
     <parent>
         <groupId>se.fortnox.reactivewizard</groupId>
         <artifactId>reactivewizard-parent</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
+        <version>9.9.9-SNAPSHOT</version>
     </parent>
 
     <dependencies>
         <dependency>
             <groupId>se.fortnox.reactivewizard</groupId>
             <artifactId>reactivewizard-test</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
+            <version>9.9.9-SNAPSHOT</version>
             <scope>test</scope>
         </dependency>
         <dependency>
