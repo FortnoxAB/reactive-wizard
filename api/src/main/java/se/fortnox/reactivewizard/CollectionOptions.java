@@ -1,14 +1,23 @@
 package se.fortnox.reactivewizard;
 
+import javax.ws.rs.QueryParam;
+
 public class CollectionOptions {
     public enum SortOrder {
         ASC,
         DESC
     }
 
+    @QueryParam("limit")
     private Integer   limit;
+
+    @QueryParam("offset")
     private Integer   offset;
+
+    @QueryParam("sortby")
     private String    sortBy;
+
+    @QueryParam("order")
     private SortOrder order;
 
     public CollectionOptions() {
