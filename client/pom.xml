@@ -22,6 +22,11 @@
             <version>${project.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>io.projectreactor.netty</groupId>
+            <artifactId>reactor-netty</artifactId>
+        </dependency>
+
 		<dependency>
 			<groupId>se.fortnox.reactivewizard</groupId>
 			<artifactId>reactivewizard-jaxrs</artifactId>

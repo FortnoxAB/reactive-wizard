@@ -5,8 +5,6 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.matcher.Matchers;
 import org.aopalliance.intercept.Joinpoint;
-import org.aopalliance.intercept.MethodInterceptor;
-import org.aopalliance.intercept.MethodInvocation;
 import org.junit.Test;
 import rx.Observable;
 
@@ -231,7 +229,7 @@ public class ReflectionUtilTest {
             ReflectionUtil.getTypeOfObservable(nonObservableGenericReturnType);
             fail("expected exception");
         } catch (RuntimeException e) {
-            assertThat(e.getMessage()).isEqualTo("java.util.List<java.lang.String> is not an Observable or Single");
+            assertThat(e.getMessage()).isEqualTo("java.util.List<java.lang.String> is not an Observable, Single, Mono or Flux");
         }
     }
 
