@@ -77,6 +77,7 @@ import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERR
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
+import static javax.ws.rs.core.HttpHeaders.CONTENT_LENGTH;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 
 public class ReactorHttpClient implements InvocationHandler {
@@ -245,10 +246,14 @@ public class ReactorHttpClient implements InvocationHandler {
                 for (Map.Entry<String, String> stringStringEntry : requestBuilder.getHeaders().entrySet()) {
                     entries.set(stringStringEntry.getKey(), stringStringEntry.getValue());
                 }
+
+                if (requestBuilder.getContent() != null) {
+                    entries.set(CONTENT_LENGTH, requestBuilder.getContent().length());
+                }
             })
             .request(requestBuilder.getHttpMethod())
             .uri(requestBuilder.getFullUrl())
-            .send(ByteBufFlux.fromString(Mono.just((requestBuilder).getContent())));
+            .send(ByteBufFlux.fromString(Mono.just(requestBuilder.getContent())));
     }
 
     private <T> Flux<T> convertError(RequestBuilder fullReq, Throwable throwable) {

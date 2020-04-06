@@ -1211,7 +1211,6 @@ public class ReactorHttpClientTest {
             reactor.netty.http.server.HttpServer.create()
                 .secure(sslContextSpec -> sslContextSpec.sslContext(serverOptions))
                 .handle((req, res) -> res.sendString(Mono.just("Hello")))
-                .wiretap()
                 .bindNow();
 
         HttpClientConfig httpClientConfig = new HttpClientConfig("https://localhost:" + server.port());
@@ -1222,7 +1221,6 @@ public class ReactorHttpClientTest {
         try {
             rxClientProvider
                 .clientFor(new InetSocketAddress("localhost", server.port()))
-                .wiretap()
                 .get()
                 .uri("/")
                 .responseContent()
@@ -1246,7 +1244,6 @@ public class ReactorHttpClientTest {
             reactor.netty.http.server.HttpServer.create()
                 .secure(sslContextSpec -> sslContextSpec.sslContext(serverOptions))
                 .handle((req, res) -> res.sendString(Mono.just("Hello")))
-                .wiretap()
                 .bindNow();
 
         HttpClientConfig httpClientConfig = new HttpClientConfig("https://localhost:" + server.port());
@@ -1257,7 +1254,6 @@ public class ReactorHttpClientTest {
         try {
             String response = rxClientProvider
                 .clientFor(new InetSocketAddress("localhost", server.port()))
-                .wiretap()
                 .get()
                 .uri("/")
                 .responseContent()

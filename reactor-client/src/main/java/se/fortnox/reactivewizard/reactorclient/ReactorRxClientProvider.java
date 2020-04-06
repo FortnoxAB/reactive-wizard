@@ -2,6 +2,7 @@ package se.fortnox.reactivewizard.reactorclient;
 
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
+import io.reactivex.netty.RxNetty;
 import reactor.netty.http.client.HttpClient;
 import reactor.netty.resources.ConnectionProvider;
 import reactor.netty.tcp.SslProvider;
@@ -37,8 +38,16 @@ public class ReactorRxClientProvider {
 
     private HttpClient buildClient(InetSocketAddress socketAddress) {
 
+        ConnectionProvider connectionProvider = ConnectionProvider
+            .builder("http-connections")
+            .maxConnections(config.getMaxConnections())
+            .pendingAcquireMaxCount(-1)
+            .build();
+
         HttpClient client = HttpClient
-            .create(ConnectionProvider.fixed("http-connections", config.getMaxConnections()))
+            .create(connectionProvider)
+            .tcpConfiguration(tcpClient -> tcpClient
+                .runOn(RxNetty.getRxEventLoopProvider().globalServerEventLoop(true)))
             .port(config.getPort())
             .followRedirect(false);
 

@@ -75,7 +75,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <netty.version>4.1.45.Final</netty.version>
+        <netty.version>4.1.48.Final</netty.version>
         <rxnetty.version>0.5.3</rxnetty.version>
         <rxjava.version>1.3.8</rxjava.version>
         <jackson.version>2.10.2</jackson.version>
@@ -103,7 +103,7 @@
             <dependency>
                 <groupId>io.projectreactor</groupId>
                 <artifactId>reactor-bom</artifactId>
-                <version>Californium-RELEASE</version>
+                <version>Dysprosium-SR6</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
