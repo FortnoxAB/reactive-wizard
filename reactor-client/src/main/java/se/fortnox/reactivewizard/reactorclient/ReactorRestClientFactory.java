@@ -5,6 +5,11 @@ import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
+import io.micrometer.core.instrument.Clock;
+import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
+import io.micrometer.prometheus.PrometheusConfig;
+import io.micrometer.prometheus.PrometheusMeterRegistry;
+import io.prometheus.client.CollectorRegistry;
 import se.fortnox.reactivewizard.binding.AutoBindModule;
 import se.fortnox.reactivewizard.binding.scanners.HttpConfigClassScanner;
 import se.fortnox.reactivewizard.binding.scanners.JaxRsClassScanner;
@@ -28,6 +33,10 @@ public class ReactorRestClientFactory implements AutoBindModule {
     public ReactorRestClientFactory(JaxRsClassScanner jaxRsClassScanner, HttpConfigClassScanner httpConfigClassScanner) {
         this.jaxRsClassScanner = jaxRsClassScanner;
         this.httpConfigClassScanner = httpConfigClassScanner;
+
+        //Adding all the micrometer metrics to the default registry
+        PrometheusMeterRegistry registry = new PrometheusMeterRegistry(PrometheusConfig.DEFAULT, CollectorRegistry.defaultRegistry, Clock.SYSTEM);
+        ((CompositeMeterRegistry)reactor.netty.Metrics.REGISTRY).add(registry);
     }
 
     private <T> Provider<T> provider(Class<T> iface,

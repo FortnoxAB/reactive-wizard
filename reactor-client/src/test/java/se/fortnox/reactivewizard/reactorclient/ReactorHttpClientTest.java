@@ -161,7 +161,7 @@ public class ReactorHttpClientTest {
     private TestResource getHttpProxy(HttpClientConfig config) {
         ObjectMapper mapper = new ObjectMapper().findAndRegisterModules()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        ReactorHttpClient client = new ReactorHttpClient(config, new ReactorRxClientProvider(config), mapper, new RequestParameterSerializers(), Collections.emptySet());
+        ReactorHttpClient client = new ReactorHttpClient(config, new ReactorRxClientProvider(config, healthRecorder), mapper, new RequestParameterSerializers(), Collections.emptySet());
         return client.create(TestResource.class);
     }
 
@@ -174,7 +174,7 @@ public class ReactorHttpClientTest {
             Assert.fail("Could not create httpClientConfig");
         }
 
-        ReactorHttpClient client = new ReactorHttpClient(config, new ReactorRxClientProvider(config),
+        ReactorHttpClient client = new ReactorHttpClient(config, new ReactorRxClientProvider(config, healthRecorder),
             new ObjectMapper(), new RequestParameterSerializers(), Collections.emptySet());
         return client.create(TestResource.class);
     }
@@ -380,6 +380,33 @@ public class ReactorHttpClientTest {
                 Assert.fail("Expected no exception");
             }
         });
+    }
+
+    @Test
+    public void shouldReportUnhealthyWhenConnectionCannotBeAquiredBeforeTimeout() throws URISyntaxException {
+
+        HttpServer<ByteBuf, ByteBuf> server = HttpServer.newServer(0)
+            .start((request, response) -> Observable.defer(() -> {
+                response.setStatus(HttpResponseStatus.OK);
+                return Observable.<Void>empty();
+            }).delaySubscription(1000, TimeUnit.MILLISECONDS));
+
+        HttpClientConfig httpClientConfig = new HttpClientConfig();
+        httpClientConfig.setUrl("http://localhost:" + server.getServerPort());
+        httpClientConfig.setPoolAcquireTimeoutMs(100);
+        httpClientConfig.setMaxConnections(1);
+
+        ReactorRxClientProvider reactorRxClientProvider = new ReactorRxClientProvider(httpClientConfig, healthRecorder);
+        ReactorHttpClient reactorHttpClient = new ReactorHttpClient(httpClientConfig, reactorRxClientProvider, new ObjectMapper(), new RequestParameterSerializers(), Collections.EMPTY_SET);
+
+        TestResource testResource = reactorHttpClient.create(TestResource.class);
+
+        Observable<String> hello = testResource.getHello();
+        Observable<String> hello2 = testResource.getHello();
+
+        Observable
+            .merge(hello, hello2).test().awaitTerminalEvent();
+        assertThat(healthRecorder.isHealthy()).isFalse();
     }
 
     @Test
@@ -1140,7 +1167,7 @@ public class ReactorHttpClientTest {
         HttpServer<ByteBuf, ByteBuf> server = startServer(OK, "this is my response");
 
         String url      = "http://localhost:" + server.getServerPort();
-        String response = ReactorHttpClient.get(url).toBlocking().single();
+        String response = ReactorHttpClient.get(url).block();
 
         assertThat(response).isEqualTo("this is my response");
 
@@ -1154,7 +1181,8 @@ public class ReactorHttpClientTest {
         String url = "htp://localhost:" + server.getServerPort();
 
         try {
-            ReactorHttpClient.get(url).toBlocking().single();
+            ReactorHttpClient.get(url).block();
+            Assert.fail("Expected exception");
         } catch (RuntimeException e) {
             assertThat(e.getCause()).isInstanceOf(MalformedURLException.class);
         }
@@ -1171,7 +1199,7 @@ public class ReactorHttpClientTest {
 
         String           url            = "localhost:" + server.getServerPort();
         HttpClientConfig config         = new HttpClientConfig(url);
-        ReactorRxClientProvider clientProvider = new ReactorRxClientProvider(config);
+        ReactorRxClientProvider clientProvider = new ReactorRxClientProvider(config, healthRecorder);
 
         PreRequestHook          preRequestHook  = mock(PreRequestHook.class);
         HashSet<PreRequestHook> preRequestHooks = Sets.newHashSet(preRequestHook);

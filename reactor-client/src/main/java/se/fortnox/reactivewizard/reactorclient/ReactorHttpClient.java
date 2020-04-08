@@ -25,6 +25,7 @@ import se.fortnox.reactivewizard.client.RequestParameterSerializers;
 import se.fortnox.reactivewizard.jaxrs.FieldError;
 import se.fortnox.reactivewizard.jaxrs.JaxRsMeta;
 import se.fortnox.reactivewizard.jaxrs.WebException;
+import se.fortnox.reactivewizard.metrics.HealthRecorder;
 import se.fortnox.reactivewizard.metrics.Metrics;
 import se.fortnox.reactivewizard.util.JustMessageException;
 import se.fortnox.reactivewizard.util.ReflectionUtil;
@@ -115,19 +116,19 @@ public class ReactorHttpClient implements InvocationHandler {
     }
 
     public ReactorHttpClient(HttpClientConfig config) {
-        this(config, new ReactorRxClientProvider(config), new ObjectMapper(), new RequestParameterSerializers(), emptySet());
+        this(config, new ReactorRxClientProvider(config, new HealthRecorder()), new ObjectMapper(), new RequestParameterSerializers(), emptySet());
     }
 
-    public static Observable<String> get(String url) {
+    public static Mono<String> get(String url) {
         try {
             URL urlObj = new URL(url);
 
-            return RxReactiveStreams.toObservable(reactor.netty.http.client.HttpClient.create()
+            return reactor.netty.http.client.HttpClient.create()
                 .get()
                 .uri(urlObj.toString())
                 .responseContent()
                 .aggregate()
-                .asString());
+                .asString();
 
         } catch (MalformedURLException e) {
             throw new RuntimeException(e);
