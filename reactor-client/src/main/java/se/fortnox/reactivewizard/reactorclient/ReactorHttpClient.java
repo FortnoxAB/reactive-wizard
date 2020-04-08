@@ -293,7 +293,7 @@ public class ReactorHttpClient implements InvocationHandler {
             fullRequest.addHeader("Cookie", cookie);
         }
 
-        if (config.getDevHeaders() != null && config.getDevHeaders() != null) {
+        if (config.getDevHeaders() != null) {
             config.getDevHeaders().forEach(fullRequest::addHeader);
         }
     }
