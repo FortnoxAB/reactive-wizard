@@ -11,8 +11,7 @@ import se.fortnox.reactivewizard.util.DebugUtil;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
-import static java.util.Collections.emptySet;
+import java.util.Collections;
 
 /**
  * Handles incoming requests. If the request matches a resource an Observable which completes the request is returned.
@@ -39,15 +38,19 @@ public class JaxRsRequestHandler implements RequestHandler<ByteBuf, ByteBuf> {
             requestInterceptors);
     }
 
-    /**
-     * A bit dangerous to have a constructor with varargs.
-     * It is only used in test but be aware when adding new parameters to the other constructors that
-     * Code using the other constructors will end up here if we don't provide overloaded constructors.
-     * @param services a list of services to deploy
-     */
-    public JaxRsRequestHandler(Object... services) {
-        this(services, new JaxRsResourceFactory(), new ExceptionHandler(), new ByteBufCollector(), null,
-            new JaxRsResourceInterceptors(emptySet()));
+    public JaxRsRequestHandler(JaxRsResourcesProvider services,
+        JaxRsResourceFactory jaxRsResourceFactory,
+        ExceptionHandler exceptionHandler,
+        ByteBufCollector collector) {
+        this(services.getResources(), jaxRsResourceFactory, exceptionHandler, collector, null,
+            new JaxRsResourceInterceptors(Collections.emptySet()));
+    }
+
+    public JaxRsRequestHandler(Object[] services,
+        JaxRsResourceFactory jaxRsResourceFactory,
+        ExceptionHandler exceptionHandler,
+        Boolean classReloading) {
+        this(services, jaxRsResourceFactory, exceptionHandler, classReloading, new JaxRsResourceInterceptors(Collections.emptySet()));
     }
 
     public JaxRsRequestHandler(Object[] services,

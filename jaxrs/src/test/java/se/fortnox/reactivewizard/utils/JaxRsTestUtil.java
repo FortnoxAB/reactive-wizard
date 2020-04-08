@@ -75,7 +75,8 @@ public class JaxRsTestUtil {
     }
 
     private static JaxRsRequestHandler getJaxRsRequestHandler(Object... services) {
-        return new JaxRsRequestHandler(services);
+        return new JaxRsRequestHandler(services,
+            new JaxRsResourceFactory(), new ExceptionHandler(), true);
     }
 
     public static MockHttpServerResponse processRequestWithHandler(JaxRsRequestHandler handler, HttpServerRequest<ByteBuf> request) {
