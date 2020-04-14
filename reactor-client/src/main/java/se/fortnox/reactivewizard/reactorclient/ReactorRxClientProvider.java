@@ -35,8 +35,8 @@ public class ReactorRxClientProvider {
         }
         try {
             return client.secure(this::configureSsl);
-        } catch (Throwable e) {
-            throw new RuntimeException("Unable to create secure https client.", e);
+        } catch (Exception e) {
+            throw new IllegalStateException("Unable to create secure https client.", e);
         }
     }
 
@@ -44,7 +44,6 @@ public class ReactorRxClientProvider {
 
         ConnectionProvider connectionProvider = ConnectionProvider
             .builder("http-connections")
-            .metrics(true)
             .maxConnections(config.getMaxConnections())
             .pendingAcquireMaxCount(-1)
             .pendingAcquireTimeout(Duration.ofMillis(config.getPoolAcquireTimeoutMs()))
@@ -53,7 +52,6 @@ public class ReactorRxClientProvider {
 
         HttpClient client = HttpClient
             .create(connectionProvider)
-            .metrics(true)
             .tcpConfiguration(tcpClient -> tcpClient
                 .runOn(RxNetty.getRxEventLoopProvider().globalServerEventLoop(true)))
             .port(config.getPort())

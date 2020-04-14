@@ -9,6 +9,8 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.timeout.ReadTimeoutException;
+import io.reactivex.netty.protocol.http.client.HttpClientResponse;
+import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
@@ -17,16 +19,15 @@ import reactor.netty.ByteBufFlux;
 import rx.Observable;
 import rx.RxReactiveStreams;
 import rx.Single;
+import se.fortnox.reactivewizard.client.HttpClient;
 import se.fortnox.reactivewizard.client.HttpClientConfig;
 import se.fortnox.reactivewizard.client.PreRequestHook;
 import se.fortnox.reactivewizard.client.RequestBuilder;
 import se.fortnox.reactivewizard.client.RequestParameterSerializer;
 import se.fortnox.reactivewizard.client.RequestParameterSerializers;
-import se.fortnox.reactivewizard.jaxrs.FieldError;
 import se.fortnox.reactivewizard.jaxrs.JaxRsMeta;
 import se.fortnox.reactivewizard.jaxrs.WebException;
 import se.fortnox.reactivewizard.metrics.HealthRecorder;
-import se.fortnox.reactivewizard.metrics.Metrics;
 import se.fortnox.reactivewizard.util.JustMessageException;
 import se.fortnox.reactivewizard.util.ReflectionUtil;
 import se.fortnox.reactivewizard.util.rx.RetryWithDelayFlux;
@@ -46,18 +47,18 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Proxy;
 import java.lang.reflect.Type;
 import java.net.InetSocketAddress;
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalUnit;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Date;
@@ -68,7 +69,6 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 
@@ -82,20 +82,21 @@ import static javax.ws.rs.core.HttpHeaders.CONTENT_LENGTH;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 
 public class ReactorHttpClient implements InvocationHandler {
-    private static final Logger LOG            = LoggerFactory.getLogger(ReactorHttpClient.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ReactorHttpClient.class);
     private static final Class  BYTEARRAY_TYPE = (new byte[0]).getClass();
+    public static final String COOKIE = "Cookie";
 
     protected final InetSocketAddress                                        serverInfo;
     protected final HttpClientConfig                                         config;
     private final   ByteBufferCollector                                      collector;
     private final   RequestParameterSerializers                              requestParameterSerializers;
     private final   Set<PreRequestHook>                                      preRequestHooks;
-    private         ReactorRxClientProvider                                  clientProvider;
-    private         ObjectMapper                                             objectMapper;
-    private         int                                                      timeout        = 10;
-    private         TimeUnit                                                 timeoutUnit    = TimeUnit.SECONDS;
+    private final   ReactorRxClientProvider                                  clientProvider;
+    private final   ObjectMapper                                             objectMapper;
     private final   Map<Class<?>, List<ReactorHttpClient.BeanParamProperty>> beanParamCache = new HashMap<>();
     private final   Map<Method, JaxRsMeta>                                   jaxRsMetaMap   = new ConcurrentHashMap<>();
+    private         int                                                      timeout        = 10;
+    private         TemporalUnit                                             timeoutUnit    = ChronoUnit.SECONDS;
 
     @Inject
     public ReactorHttpClient(HttpClientConfig config,
@@ -119,23 +120,7 @@ public class ReactorHttpClient implements InvocationHandler {
         this(config, new ReactorRxClientProvider(config, new HealthRecorder()), new ObjectMapper(), new RequestParameterSerializers(), emptySet());
     }
 
-    public static Mono<String> get(String url) {
-        try {
-            URL urlObj = new URL(url);
-
-            return reactor.netty.http.client.HttpClient.create()
-                .get()
-                .uri(urlObj.toString())
-                .responseContent()
-                .aggregate()
-                .asString();
-
-        } catch (MalformedURLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public static void setTimeout(Object proxy, int timeout, TimeUnit timeoutUnit) {
+    public static void setTimeout(Object proxy, int timeout, ChronoUnit timeoutUnit) {
         if (Proxy.isProxyClass(proxy.getClass())) {
             Object handler = Proxy.getInvocationHandler(proxy);
             if (handler instanceof ReactorHttpClient) {
@@ -144,13 +129,9 @@ public class ReactorHttpClient implements InvocationHandler {
         }
     }
 
-    public void setTimeout(int timeout, TimeUnit timeoutUnit) {
+    public void setTimeout(int timeout, ChronoUnit timeoutUnit) {
         this.timeout = timeout;
         this.timeoutUnit = timeoutUnit;
-    }
-
-    public static <T> T create(HttpClientConfig config, ReactorRxClientProvider clientProvider, ObjectMapper objectMapper, Class<T> jaxRsInterface) {
-        return new ReactorHttpClient(config, clientProvider, objectMapper, new RequestParameterSerializers(), null).create(jaxRsInterface);
     }
 
     @SuppressWarnings("unchecked")
@@ -173,69 +154,36 @@ public class ReactorHttpClient implements InvocationHandler {
 
         reactor.netty.http.client.HttpClient.ResponseReceiver<?> response = ReactorHttpClient.submit(rxClient, request);
 
-        Flux<?> output = null;
-
+        Publisher<?> publisher = null;
         if (expectsRawResponse(method)) {
-            output =
-                Flux.from(response
-                    .responseSingle((realResponse, content) -> content.asString().map(string -> new RwHttpClientResponse(realResponse, string))));
+            throw new IllegalStateException("Not implemented");
         } else if (expectsByteArrayResponse(method)) {
-            output = response.response((httpClientResponse, content) -> {
+            publisher = response.response((httpClientResponse, content) -> {
                 if (httpClientResponse.status().code() >= 400) {
-                    return collector.collectString(content)
+                    return Mono.from(collector.collectString(content))
                         .map(data -> handleError(request, httpClientResponse, data).getBytes());
                 }
                 return collector.collectBytes(content);
             });
         } else {
-            output = response.response((httpClientResponse, byteBufFlux) ->
+            publisher = response.response((httpClientResponse, byteBufFlux) ->
                 parseResponse(method, request, httpClientResponse, byteBufFlux));
         }
+        publisher = measure(request, publisher);
 
-        output = timeout(output);
-        output = withRetry(request, output).onErrorResume(e -> convertError(request, e));
-        output = measure(request, output);
-
+        //End of publisher
+        Flux<?> flux = Flux.from(publisher);
+        flux = flux.timeout(Duration.of(timeout, timeoutUnit));
+        publisher = withRetry(request, flux).onErrorResume(e -> convertError(request, e));
 
         if (Single.class.isAssignableFrom(method.getReturnType())) {
-            return RxReactiveStreams.toSingle(output);
+            return RxReactiveStreams.toSingle(publisher);
         } else if (Observable.class.isAssignableFrom(method.getReturnType())) {
-            return RxReactiveStreams.toObservable(output);
+            return RxReactiveStreams.toObservable(publisher);
         } else if (Mono.class.isAssignableFrom(method.getReturnType())) {
-            return Mono.from(output);
+            return Mono.from(publisher);
         }
-        return output;
-    }
-
-    private Flux<?> timeout(Flux<?> output) {
-        Duration duration = null;
-        switch (this.timeoutUnit) {
-            case NANOSECONDS:
-                duration = Duration.ofNanos(timeout);
-                break;
-            case MICROSECONDS:
-                duration = Duration.of(timeout, ChronoUnit.MICROS);
-                break;
-            case MILLISECONDS:
-                duration = Duration.ofMillis(timeout);
-                break;
-            case SECONDS:
-                duration = Duration.ofSeconds(timeout);
-                break;
-            case MINUTES:
-                duration = Duration.ofMinutes(timeout);
-                break;
-            case HOURS:
-                duration = Duration.ofHours(timeout);
-                break;
-            case DAYS:
-                duration = Duration.ofDays(timeout);
-                break;
-            default:
-                duration = Duration.ofMillis(10000);
-        }
-
-        return output.timeout(duration);
+        return publisher;
     }
 
     private static reactor.netty.http.client.HttpClient.ResponseReceiver<?> submit(
@@ -261,7 +209,7 @@ public class ReactorHttpClient implements InvocationHandler {
         String request = format("%s, headers: %s", fullReq.getFullUrl(), fullReq.getHeaders().entrySet());
         LOG.warn("Failed request. Url: {}", request, throwable);
         if (throwable instanceof TimeoutException || throwable instanceof ReadTimeoutException) {
-            String message = format("Timeout after %d ms calling %s", timeoutUnit.toMillis(timeout), request);
+            String message = format("Timeout after %d ms calling %s", Duration.of(timeout, timeoutUnit).toMillis(), request);
             return Flux.error(new WebException(GATEWAY_TIMEOUT, new JustMessageException(message), false));
         } else if (!(throwable instanceof WebException)) {
             String message = format("Error calling %s", request);
@@ -272,7 +220,7 @@ public class ReactorHttpClient implements InvocationHandler {
 
     protected Mono<Object> parseResponse(Method method, RequestBuilder request, reactor.netty.http.client.HttpClientResponse response, ByteBufFlux content) {
 
-        return collector.collectString(content)
+        return Mono.from(collector.collectString(content))
             .map(stringContent -> handleError(request, response, stringContent))
             .flatMap(stringContent -> this.deserialize(method, stringContent));
     }
@@ -288,9 +236,9 @@ public class ReactorHttpClient implements InvocationHandler {
         }
 
         if (config.getDevCookie() != null) {
-            String cookie = fullRequest.getHeaders().get("Cookie") + ";" + config.getDevCookie();
-            fullRequest.getHeaders().remove("Cookie");
-            fullRequest.addHeader("Cookie", cookie);
+            String cookie = fullRequest.getHeaders().get(COOKIE) + ";" + config.getDevCookie();
+            fullRequest.getHeaders().remove(COOKIE);
+            fullRequest.addHeader(COOKIE, cookie);
         }
 
         if (config.getDevHeaders() != null) {
@@ -320,8 +268,8 @@ public class ReactorHttpClient implements InvocationHandler {
         return "Basic " + new String(encodedAuth);
     }
 
-    protected <T> Flux<T> measure(RequestBuilder fullRequest, Flux<T> output) {
-        return Metrics.get("OUT_res:" + fullRequest.getKey()).measure(output);
+    protected <T> Publisher<T> measure(RequestBuilder fullRequest, Publisher<T> output) {
+        return PublisherMetrics.get("OUT_res:" + fullRequest.getKey()).measure(output);
     }
 
     protected <T> Flux<T> withRetry(RequestBuilder fullReq, Flux<T> response) {
@@ -337,13 +285,11 @@ public class ReactorHttpClient implements InvocationHandler {
                 }
                 if (!(throwable instanceof WebException)) {
                     // Don't retry posts when a NoSuchElementException is raised since the request might have ended up at the server the first time
-                    if (throwable instanceof NoSuchElementException && POST.equals(fullReq.getHttpMethod())) {
-                        return false;
-                    }
+                    return !(throwable instanceof NoSuchElementException) || !POST.equals(fullReq.getHttpMethod());
 
                     // Retry on system error of some kind, like IO
-                    return true;
                 }
+
                 if (fullReq.getHttpMethod().equals(POST)) {
                     // Don't retry if it was a POST, as it is not idempotent
                     return false;
@@ -366,7 +312,7 @@ public class ReactorHttpClient implements InvocationHandler {
     private boolean expectsRawResponse(Method method) {
         Type type = ReflectionUtil.getTypeOfObservable(method);
 
-        return type.getTypeName().equals(RwHttpClientResponse.class.getName());
+        return (type instanceof ParameterizedType && ((ParameterizedType)type).getRawType().equals(HttpClientResponse.class));
     }
 
     protected void addContent(Method method, Object[] arguments, RequestBuilder requestBuilder) {
@@ -447,8 +393,8 @@ public class ReactorHttpClient implements InvocationHandler {
                 request.getHeaders().entrySet(),
                 formatHeaders(clientResponse),
                 data);
-            Throwable                detailedErrorCause = new ReactorHttpClient.ThrowableWithoutStack(message);
-            ReactorHttpClient.DetailedError detailedError      = getDetailedError(data, detailedErrorCause);
+            Throwable                detailedErrorCause = new HttpClient.ThrowableWithoutStack(message);
+            HttpClient.DetailedError detailedError      = getDetailedError(data, detailedErrorCause);
             String                   reasonPhrase       = detailedError.hasReason() ? detailedError.reason() : clientResponse.status().reasonPhrase();
             HttpResponseStatus responseStatus = new HttpResponseStatus(clientResponse.status()
                 .code(),
@@ -465,8 +411,8 @@ public class ReactorHttpClient implements InvocationHandler {
         return headers.toString();
     }
 
-    private ReactorHttpClient.DetailedError getDetailedError(String data, Throwable cause) {
-        ReactorHttpClient.DetailedError detailedError = new ReactorHttpClient.DetailedError(cause);
+    private HttpClient.DetailedError getDetailedError(String data, Throwable cause) {
+        HttpClient.DetailedError detailedError = new HttpClient.DetailedError(cause);
         if (data != null && data.length() > 0) {
             try {
                 objectMapper.readerForUpdating(detailedError).readValue(data);
@@ -529,12 +475,12 @@ public class ReactorHttpClient implements InvocationHandler {
                 if (annotation instanceof HeaderParam) {
                     request.addHeader(((HeaderParam)annotation).value(), serialize(value));
                 } else if (annotation instanceof CookieParam) {
-                    final String currentCookieValue = request.getHeaders().get("Cookie");
+                    final String currentCookieValue = request.getHeaders().get(COOKIE);
                     final String cookiePart         = ((CookieParam)annotation).value() + "=" + serialize(value);
                     if (currentCookieValue != null) {
-                        request.addHeader("Cookie", format("%s; %s", currentCookieValue, cookiePart));
+                        request.addHeader(COOKIE, format("%s; %s", currentCookieValue, cookiePart));
                     } else {
-                        request.addHeader("Cookie", cookiePart);
+                        request.addHeader(COOKIE, cookiePart);
                     }
                 }
             }
@@ -660,67 +606,6 @@ public class ReactorHttpClient implements InvocationHandler {
 
     protected boolean isNullOrEmpty(String string) {
         return string == null || string.isEmpty();
-    }
-
-    public static class DetailedError extends Throwable {
-        private int          code;
-        private String       error;
-        private String       message;
-        private FieldError[] fields;
-
-        public DetailedError() {
-            this(null);
-        }
-
-        public DetailedError(Throwable cause) {
-            super(null, cause, false, false);
-        }
-
-        public String getMessage() {
-            return message;
-        }
-
-        public void setMessage(String message) {
-            this.message = message;
-        }
-
-        public String getError() {
-            return error;
-        }
-
-        public void setError(String error) {
-            this.error = error;
-        }
-
-        public int getCode() {
-            return code;
-        }
-
-        public void setCode(int code) {
-            this.code = code;
-        }
-
-        public String reason() {
-            return error;
-        }
-
-        public boolean hasReason() {
-            return code == 0 && error != null;
-        }
-
-        public FieldError[] getFields() {
-            return fields;
-        }
-
-        public void setFields(FieldError[] fields) {
-            this.fields = fields;
-        }
-    }
-
-    public static class ThrowableWithoutStack extends Throwable {
-        public ThrowableWithoutStack(String message) {
-            super(message, null, false, false);
-        }
     }
 
     private static class BeanParamProperty {

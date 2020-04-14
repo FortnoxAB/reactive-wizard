@@ -19,11 +19,6 @@ public class ReactorRequestBuilder extends RequestBuilder {
     }
 
     @Override
-    public void setContent(String content) {
-        super.setContent(content);
-    }
-
-    @Override
     public void setContent(byte[] content) {
         super.setContent(content);
         this.content = new String(content, UTF_8);

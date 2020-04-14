@@ -46,9 +46,7 @@ public class ReactorRestClientFactory implements AutoBindModule {
             HttpClientConfig httpClientConfig = httpClientConfigProvider.get();
 
             //Create client based on config and create proxy
-            T httpProxy = httpClientProvider.get().createClient(httpClientConfig).create(iface);
-
-            return httpProxy;
+            return httpClientProvider.get().createClient(httpClientConfig).create(iface);
         };
     }
 

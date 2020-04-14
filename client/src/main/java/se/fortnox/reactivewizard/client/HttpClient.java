@@ -128,6 +128,9 @@ public class HttpClient implements InvocationHandler {
             Object handler = Proxy.getInvocationHandler(proxy);
             if (handler instanceof HttpClient) {
                 ((HttpClient)handler).setTimeout(timeout, timeoutUnit);
+            } else {
+                throw new IllegalArgumentException("Trying to set timeout on handler that is not instance of HttpClient as expected instead instance of: "
+                    + handler.getClass().getSimpleName());
             }
         }
     }

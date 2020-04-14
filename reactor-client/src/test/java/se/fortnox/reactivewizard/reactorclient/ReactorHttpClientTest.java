@@ -35,6 +35,7 @@ import rx.functions.Func0;
 import rx.functions.Func1;
 import rx.functions.Func2;
 import rx.observers.AssertableSubscriber;
+import se.fortnox.reactivewizard.client.HttpClient;
 import se.fortnox.reactivewizard.client.HttpClientConfig;
 import se.fortnox.reactivewizard.client.PreRequestHook;
 import se.fortnox.reactivewizard.client.RequestParameterSerializers;
@@ -70,10 +71,10 @@ import java.io.PrintStream;
 import java.lang.reflect.Method;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
-import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.security.cert.CertificateException;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -460,8 +461,8 @@ public class ReactorHttpClientTest {
             resource.getHello().toBlocking().single();
             Assert.fail("Expected exception");
         } catch (WebException e) {
-            assertThat(e.getCause()).isInstanceOf(ReactorHttpClient.DetailedError.class);
-            ReactorHttpClient.DetailedError detailedError = (ReactorHttpClient.DetailedError)e.getCause();
+            assertThat(e.getCause()).isInstanceOf(HttpClient.DetailedError.class);
+            HttpClient.DetailedError detailedError = (HttpClient.DetailedError)e.getCause();
             assertThat(detailedError.getError()).isEqualTo("1");
             assertThat(detailedError.getCode()).isEqualTo(100);
             assertThat(detailedError.getMessage()).isEqualTo("Detailed error description.");
@@ -690,7 +691,7 @@ public class ReactorHttpClientTest {
             fail("expected exception");
         } catch (WebException e) {
             assertThat(e.getError()).isEqualTo("validation");
-            ReactorHttpClient.DetailedError cause = (ReactorHttpClient.DetailedError)e.getCause();
+            HttpClient.DetailedError cause = (HttpClient.DetailedError)e.getCause();
             assertThat(cause.getFields()).isNotNull();
             assertThat(cause.getFields()).hasSize(1);
             FieldError error = cause.getFields()[0];
@@ -716,7 +717,7 @@ public class ReactorHttpClientTest {
             });
 
         TestResource resource = getHttpProxy(server.getServerPort());
-        ReactorHttpClient.setTimeout(resource, 500, TimeUnit.MILLISECONDS);
+        ReactorHttpClient.setTimeout(resource, 500, ChronoUnit.MILLIS);
         try {
             resource.getHello().toBlocking().singleOrDefault(null);
             fail("expected exception");
@@ -741,7 +742,7 @@ public class ReactorHttpClientTest {
             });
 
         TestResource resource = getHttpProxy(server.getServerPort(), 1, 30000);
-        ReactorHttpClient.setTimeout(resource, 15000, TimeUnit.MILLISECONDS);
+        ReactorHttpClient.setTimeout(resource, 15000, ChronoUnit.MILLIS);
         try {
             resource.getHello().toBlocking().singleOrDefault(null);
             fail("expected exception");
@@ -765,7 +766,7 @@ public class ReactorHttpClientTest {
         TestResource resource = getHttpProxy(server.getServerPort(), 1, 500);
 
         //Lets set the observable timeout higher than the httpproxy readTimeout
-        ReactorHttpClient.setTimeout(resource, 1000, TimeUnit.MILLISECONDS);
+        ReactorHttpClient.setTimeout(resource, 1000, ChronoUnit.MILLIS);
 
         try {
             resource.getHello().toBlocking().singleOrDefault(null);
@@ -813,7 +814,7 @@ public class ReactorHttpClientTest {
         config.setRetryCount(0);
         ReactorHttpClient   client   = new ReactorHttpClient(config);
         TestResource resource = client.create(TestResource.class);
-        ReactorHttpClient.setTimeout(resource, 200, TimeUnit.MILLISECONDS);
+        ReactorHttpClient.setTimeout(resource, 200, ChronoUnit.MILLIS);
 
         resource.servertest("fast")
             // Delay needed so that repeat will not subscribe immediately, as the pooled connection is released on the event loop thread.
@@ -876,7 +877,7 @@ public class ReactorHttpClientTest {
         config.setMaxConnections(1);
         ReactorHttpClient   client   = new ReactorHttpClient(config);
         TestResource resource = client.create(TestResource.class);
-        ReactorHttpClient.setTimeout(resource, 200, TimeUnit.MILLISECONDS);
+        ReactorHttpClient.setTimeout(resource, 200, ChronoUnit.MILLIS);
 
         resource.servertest("fast")
             // Delay needed so that repeat will not subscribe immediately, as the pooled connection is released on the event loop thread.
@@ -927,7 +928,7 @@ public class ReactorHttpClientTest {
         config.setMaxConnections(2);
         ReactorHttpClient   client   = new ReactorHttpClient(config);
         TestResource resource = client.create(TestResource.class);
-        ReactorHttpClient.setTimeout(resource, 100, TimeUnit.MILLISECONDS);
+        ReactorHttpClient.setTimeout(resource, 100, ChronoUnit.MILLIS);
 
         for (int i = 0; i < 5; i++) {
             try {
@@ -1144,51 +1145,10 @@ public class ReactorHttpClientTest {
         });
 
         TestResource testResource = injector.getInstance(TestResource.class);
-        ReactorHttpClient.setTimeout(testResource, 1300, TimeUnit.MILLISECONDS);
-        verify(mockClient, times(1)).setTimeout(eq(1300), eq(TimeUnit.MILLISECONDS));
+        ReactorHttpClient.setTimeout(testResource, 1300, ChronoUnit.MILLIS);
+        verify(mockClient, times(1)).setTimeout(eq(1300), eq(ChronoUnit.MILLIS));
     }
 
-    @Test
-    public void shouldReturnRawResponse() {
-        HttpServer<ByteBuf, ByteBuf> server   = startServer(OK, "this is my response");
-        TestResource         resource = getHttpProxy(server.getServerPort());
-        RwHttpClientResponse response = resource.getRawResponse().toBlocking().single();
-
-        assertThat(response.getHttpClientResponse().status()).isEqualTo(OK);
-
-        String body = response.getContent();
-        assertThat(body).isEqualTo("this is my response");
-
-        server.shutdown();
-    }
-
-    @Test
-    public void shouldHandleSimpleGetRequests() {
-        HttpServer<ByteBuf, ByteBuf> server = startServer(OK, "this is my response");
-
-        String url      = "http://localhost:" + server.getServerPort();
-        String response = ReactorHttpClient.get(url).block();
-
-        assertThat(response).isEqualTo("this is my response");
-
-        server.shutdown();
-    }
-
-    @Test
-    public void shouldErrorHandleSimpleGetRequestsWithBadUrl() {
-        HttpServer<ByteBuf, ByteBuf> server = startServer(OK, "this is my response");
-
-        String url = "htp://localhost:" + server.getServerPort();
-
-        try {
-            ReactorHttpClient.get(url).block();
-            Assert.fail("Expected exception");
-        } catch (RuntimeException e) {
-            assertThat(e.getCause()).isInstanceOf(MalformedURLException.class);
-        }
-
-        server.shutdown();
-    }
 
     @Test
     public void shouldExecutePreRequestHooks() throws URISyntaxException {
@@ -1263,7 +1223,6 @@ public class ReactorHttpClientTest {
     }
 
     @Test
-
     public void shouldHandleUnsafeSecureOnUntrustedHost() throws URISyntaxException, CertificateException {
 
         SelfSignedCertificate cert          =new SelfSignedCertificate();
@@ -1294,12 +1253,6 @@ public class ReactorHttpClientTest {
         }
 
         server.disposeNow();
-
-        rxClientProvider
-            .clientFor(new InetSocketAddress(httpClientConfig.getHost(), httpClientConfig.getPort()))
-            .get()
-            .response()
-            .block();
     }
 
     @Test
@@ -1309,7 +1262,7 @@ public class ReactorHttpClientTest {
 
         try {
             TestResource resource = getHttpProxy(server.getServerPort());
-            ReactorHttpClient.setTimeout(resource, 10, TimeUnit.MILLISECONDS);
+            ReactorHttpClient.setTimeout(resource, 10, ChronoUnit.MILLIS);
             resource.servertest("mode").toBlocking().single();
             fail("expected timeout");
         } catch (Exception e) {
@@ -1549,7 +1502,7 @@ public class ReactorHttpClientTest {
         Observable<Void> post(String value);
 
         @GET
-        Observable<RwHttpClientResponse> getRawResponse();
+        Observable<HttpClientResponse> getRawResponse();
 
         @GET
         Observable<Wrapper> getWrappedPojo();

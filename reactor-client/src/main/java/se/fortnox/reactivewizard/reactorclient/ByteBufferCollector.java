@@ -2,7 +2,7 @@ package se.fortnox.reactivewizard.reactorclient;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpResponseStatus;
-import reactor.core.publisher.Mono;
+import org.reactivestreams.Publisher;
 import reactor.netty.ByteBufFlux;
 import se.fortnox.reactivewizard.jaxrs.WebException;
 
@@ -23,7 +23,7 @@ public class ByteBufferCollector {
         this.maxReqSize = maxReqSize;
     }
 
-    public Mono<String> collectString(ByteBufFlux input) {
+    public Publisher<String> collectString(ByteBufFlux input) {
         return input.collect(ByteArrayOutputStream::new, this::collectChunks)
             .map(this::decodeBody);
     }
@@ -49,7 +49,7 @@ public class ByteBufferCollector {
         }
     }
 
-    public Mono<byte[]> collectBytes(ByteBufFlux input) {
+    public Publisher<byte[]> collectBytes(ByteBufFlux input) {
         return input.collect(ByteArrayOutputStream::new, this::collectChunks)
             .map(ByteArrayOutputStream::toByteArray);
     }

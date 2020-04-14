@@ -53,7 +53,7 @@ public class ReflectionUtil {
                 !(rawClass.equals(Flux.class)) &&
                 !rawClass.equals(Mono.class)
         ) {
-            throw new RuntimeException(type + " is not an Observable, Single, Mono or Flux");
+            throw new IllegalArgumentException(type + " is not an Observable, Single, Mono or Flux");
         }
         Type[] actualTypeArguments = parameterizedType.getActualTypeArguments();
         return actualTypeArguments[0];

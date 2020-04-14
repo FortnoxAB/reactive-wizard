@@ -14,9 +14,7 @@ public class RetryWithDelayFlux implements Function<Flux<Throwable>, Flux<?>> {
     private       int                          retryCount;
 
     public RetryWithDelayFlux(int maxRetries, int retryDelayMillis, final Class<? extends Throwable> exceptionType) {
-        this(maxRetries, retryDelayMillis, throwable -> {
-            return exceptionType == null || exceptionType.isAssignableFrom(throwable.getClass());
-        });
+        this(maxRetries, retryDelayMillis, throwable -> exceptionType == null || exceptionType.isAssignableFrom(throwable.getClass()));
     }
 
     public RetryWithDelayFlux(int maxRetries, int retryDelayMillis, final Predicate<? super Throwable> predicate) {

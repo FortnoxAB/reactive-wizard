@@ -1,15 +1,13 @@
-package se.fortnox.reactivewizard.metrics;
+package se.fortnox.reactivewizard.reactorclient;
 
 import com.codahale.metrics.Timer;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.CoreSubscriber;
-import reactor.core.publisher.Flux;
 
 import java.util.function.Consumer;
 
-public class MetricsOperator<T> extends Flux<T> {
+public class MetricsOperator<T> implements Publisher<T> {
 
     private static final int            NS_TO_MS = 1000000;
     private final        Publisher<T>   source;
@@ -24,8 +22,8 @@ public class MetricsOperator<T> extends Flux<T> {
     }
 
     @Override
-    public void subscribe(CoreSubscriber<? super T> coreSubscriber) {
-        final Subscriber<T> wrappedSubscriber = createSubscriber(coreSubscriber, timer);
+    public void subscribe(Subscriber<? super T> subscriber) {
+        final Subscriber<T> wrappedSubscriber = createSubscriber(subscriber, timer);
         source.subscribe(wrappedSubscriber);
     }
 
