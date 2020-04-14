@@ -1177,6 +1177,24 @@ public class ReactorHttpClientTest {
     }
 
     @Test
+    public void shouldNotRetryFailedPostCallsWithStrangeExceptions() {
+        AtomicLong callCount = new AtomicLong();
+        HttpServer<ByteBuf, ByteBuf> server    = startServer(INTERNAL_SERVER_ERROR, "\"NOT OK\"", r -> callCount.incrementAndGet());
+        try {
+            HttpClientConfig config = new HttpClientConfig("localhost:" + server.getServerPort());
+            config.setReadTimeoutMs(2);
+            TestResource resource = getHttpProxy(config);
+            resource.postHello().toBlocking().singleOrDefault(null);
+            Assert.fail("Expected exception");
+        } catch (Exception e) {
+            assertThat(callCount.get()).isEqualTo(1);
+            assertThat(e.getClass()).isEqualTo(WebException.class);
+        } finally {
+            server.shutdown();
+        }
+    }
+
+    @Test
     public void shouldHandleHttpsAgainstKnownHost() throws URISyntaxException {
         HttpClientConfig httpClientConfig = new HttpClientConfig("https://sha512.badssl.com/");
         Injector         injector         = injectorWithProgrammaticHttpClientConfig(httpClientConfig);

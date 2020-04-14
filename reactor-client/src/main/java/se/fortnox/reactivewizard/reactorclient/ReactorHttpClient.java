@@ -158,12 +158,12 @@ public class ReactorHttpClient implements InvocationHandler {
         if (expectsRawResponse(method)) {
             throw new IllegalStateException("Not implemented");
         } else if (expectsByteArrayResponse(method)) {
-            publisher = response.response((httpClientResponse, content) -> {
+            publisher = response.response((httpClientResponse, byteBufFlux) -> {
                 if (httpClientResponse.status().code() >= 400) {
-                    return Mono.from(collector.collectString(content))
+                    return Mono.from(collector.collectString(byteBufFlux))
                         .map(data -> handleError(request, httpClientResponse, data).getBytes());
                 }
-                return collector.collectBytes(content);
+                return collector.collectBytes(byteBufFlux);
             });
         } else {
             publisher = response.response((httpClientResponse, byteBufFlux) ->
@@ -285,9 +285,9 @@ public class ReactorHttpClient implements InvocationHandler {
                 }
                 if (!(throwable instanceof WebException)) {
                     // Don't retry posts when a NoSuchElementException is raised since the request might have ended up at the server the first time
-                    return !(throwable instanceof NoSuchElementException) || !POST.equals(fullReq.getHttpMethod());
-
-                    // Retry on system error of some kind, like IO
+                    if (throwable instanceof NoSuchElementException && POST.equals(fullReq.getHttpMethod())) {
+                        return false;
+                    }
                 }
 
                 if (fullReq.getHttpMethod().equals(POST)) {

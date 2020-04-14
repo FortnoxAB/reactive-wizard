@@ -2,6 +2,7 @@ package se.fortnox.reactivewizard.reactorclient;
 
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
+import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.reactivex.netty.RxNetty;
 import reactor.netty.http.client.HttpClient;
 import reactor.netty.resources.ConnectionProvider;
@@ -13,6 +14,7 @@ import javax.inject.Inject;
 import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 public class ReactorRxClientProvider {
     private final ConcurrentHashMap<InetSocketAddress, HttpClient> clients = new ConcurrentHashMap<>();
@@ -53,7 +55,11 @@ public class ReactorRxClientProvider {
         HttpClient client = HttpClient
             .create(connectionProvider)
             .tcpConfiguration(tcpClient -> tcpClient
-                .runOn(RxNetty.getRxEventLoopProvider().globalServerEventLoop(true)))
+                .runOn(RxNetty.getRxEventLoopProvider().globalServerEventLoop(true))
+                .doOnConnected(connection -> {
+                    connection.addHandler(new ReadTimeoutHandler(config.getReadTimeoutMs(), TimeUnit.MILLISECONDS));
+                    })
+            )
             .port(config.getPort())
             .doOnRequest((httpClientRequest, connection) -> healthRecorder.logStatus(connectionProvider, true))
             .doOnError((httpClientRequest, throwable) -> healthRecorder.logStatus(connectionProvider, false), (httpClientResponse, throwable) -> { })
