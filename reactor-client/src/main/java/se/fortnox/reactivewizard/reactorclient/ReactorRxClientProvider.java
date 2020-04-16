@@ -58,7 +58,7 @@ public class ReactorRxClientProvider {
                 .runOn(RxNetty.getRxEventLoopProvider().globalServerEventLoop(true))
                 .doOnConnected(connection -> {
                     connection.addHandler(new ReadTimeoutHandler(config.getReadTimeoutMs(), TimeUnit.MILLISECONDS));
-                    })
+                })
             )
             .port(config.getPort())
             .doOnRequest((httpClientRequest, connection) -> healthRecorder.logStatus(connectionProvider, true))

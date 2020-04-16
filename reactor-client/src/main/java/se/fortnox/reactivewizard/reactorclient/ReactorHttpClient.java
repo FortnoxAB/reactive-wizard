@@ -65,7 +65,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -152,22 +151,23 @@ public class ReactorHttpClient implements InvocationHandler {
 
         reactor.netty.http.client.HttpClient rxClient = clientProvider.clientFor(request.getServerInfo());
 
-        reactor.netty.http.client.HttpClient.ResponseReceiver<?> response = ReactorHttpClient.submit(rxClient, request);
+        Mono<RwHttpClientResponse> response = ReactorHttpClient.submit(rxClient, request);
 
         Publisher<?> publisher = null;
         if (expectsRawResponse(method)) {
             throw new IllegalStateException("Not implemented");
         } else if (expectsByteArrayResponse(method)) {
-            publisher = response.response((httpClientResponse, byteBufFlux) -> {
-                if (httpClientResponse.status().code() >= 400) {
-                    return Mono.from(collector.collectString(byteBufFlux))
-                        .map(data -> handleError(request, httpClientResponse, data).getBytes());
+
+            publisher = response.flatMap(rwHttpClientResponse -> {
+                if (rwHttpClientResponse.getHttpClientResponse().status().code() >= 400) {
+                    return Mono.from(collector.collectString(rwHttpClientResponse.getContent()))
+                        .map(data -> handleError(request, rwHttpClientResponse.getHttpClientResponse(), data).getBytes());
                 }
-                return collector.collectBytes(byteBufFlux);
+                return Mono.from(collector.collectBytes(rwHttpClientResponse.getContent()));
             });
         } else {
-            publisher = response.response((httpClientResponse, byteBufFlux) ->
-                parseResponse(method, request, httpClientResponse, byteBufFlux));
+            publisher = response.flatMap(rwHttpClientResponse ->
+                parseResponse(method, request, rwHttpClientResponse.getHttpClientResponse(), rwHttpClientResponse.getContent()));
         }
         publisher = measure(request, publisher);
 
@@ -186,11 +186,12 @@ public class ReactorHttpClient implements InvocationHandler {
         return publisher;
     }
 
-    private static reactor.netty.http.client.HttpClient.ResponseReceiver<?> submit(
+    private static Mono<RwHttpClientResponse> submit(
         reactor.netty.http.client.HttpClient client,
         ReactorRequestBuilder requestBuilder) {
 
-        return client
+        return
+            Mono.from(client
             .headers(entries -> {
                 for (Map.Entry<String, String> stringStringEntry : requestBuilder.getHeaders().entrySet()) {
                     entries.set(stringStringEntry.getKey(), stringStringEntry.getValue());
@@ -202,7 +203,8 @@ public class ReactorHttpClient implements InvocationHandler {
             })
             .request(requestBuilder.getHttpMethod())
             .uri(requestBuilder.getFullUrl())
-            .send(ByteBufFlux.fromString(Mono.just(requestBuilder.getContent())));
+            .send(ByteBufFlux.fromString(Mono.just(requestBuilder.getContent())))
+            .responseConnection((httpClientResponse, connection) -> Mono.just(new RwHttpClientResponse(httpClientResponse, connection.inbound().receive()))));
     }
 
     private <T> Flux<T> convertError(RequestBuilder fullReq, Throwable throwable) {
@@ -283,14 +285,13 @@ public class ReactorHttpClient implements InvocationHandler {
                     // Do not retry when deserialization failed
                     return false;
                 }
+                boolean isPostCall = POST.equals(fullReq.getHttpMethod());
                 if (!(throwable instanceof WebException)) {
-                    // Don't retry posts when a NoSuchElementException is raised since the request might have ended up at the server the first time
-                    if (throwable instanceof NoSuchElementException && POST.equals(fullReq.getHttpMethod())) {
-                        return false;
-                    }
+                    // Don't retry posts
+                    return !isPostCall;
                 }
 
-                if (fullReq.getHttpMethod().equals(POST)) {
+                if (isPostCall) {
                     // Don't retry if it was a POST, as it is not idempotent
                     return false;
                 }
