@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.netty.ByteBufFlux;
+import reactor.util.retry.Retry;
 import rx.Observable;
 import rx.RxReactiveStreams;
 import rx.Single;
@@ -30,7 +31,6 @@ import se.fortnox.reactivewizard.jaxrs.WebException;
 import se.fortnox.reactivewizard.metrics.HealthRecorder;
 import se.fortnox.reactivewizard.util.JustMessageException;
 import se.fortnox.reactivewizard.util.ReflectionUtil;
-import se.fortnox.reactivewizard.util.rx.RetryWithDelayFlux;
 
 import javax.inject.Inject;
 import javax.ws.rs.BeanParam;
@@ -79,6 +79,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_LENGTH;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
+import static reactor.core.Exceptions.isRetryExhausted;
 
 public class ReactorHttpClient implements InvocationHandler {
     private static final Logger LOG = LoggerFactory.getLogger(ReactorHttpClient.class);
@@ -96,6 +97,7 @@ public class ReactorHttpClient implements InvocationHandler {
     private final   Map<Method, JaxRsMeta>                                   jaxRsMetaMap   = new ConcurrentHashMap<>();
     private         int                                                      timeout        = 10;
     private         TemporalUnit                                             timeoutUnit    = ChronoUnit.SECONDS;
+    private final   Duration                                                 retryDuration;
 
     @Inject
     public ReactorHttpClient(HttpClientConfig config,
@@ -113,6 +115,7 @@ public class ReactorHttpClient implements InvocationHandler {
         serverInfo = new InetSocketAddress(config.getHost(), config.getPort());
         collector = new ByteBufferCollector(config.getMaxResponseSize());
         this.preRequestHooks = preRequestHooks;
+        this.retryDuration = Duration.ofMillis(config.getRetryDelayMs());
     }
 
     public ReactorHttpClient(HttpClientConfig config) {
@@ -210,6 +213,11 @@ public class ReactorHttpClient implements InvocationHandler {
     private <T> Flux<T> convertError(RequestBuilder fullReq, Throwable throwable) {
         String request = format("%s, headers: %s", fullReq.getFullUrl(), fullReq.getHeaders().entrySet());
         LOG.warn("Failed request. Url: {}", request, throwable);
+
+        if (isRetryExhausted(throwable)) {
+            throwable = throwable.getCause();
+        }
+
         if (throwable instanceof TimeoutException || throwable instanceof ReadTimeoutException) {
             String message = format("Timeout after %d ms calling %s", Duration.of(timeout, timeoutUnit).toMillis(), request);
             return Flux.error(new WebException(GATEWAY_TIMEOUT, new JustMessageException(message), false));
@@ -275,39 +283,38 @@ public class ReactorHttpClient implements InvocationHandler {
     }
 
     protected <T> Flux<T> withRetry(RequestBuilder fullReq, Flux<T> response) {
-        return response.retryWhen(new RetryWithDelayFlux(config.getRetryCount(), config.getRetryDelayMs(),
-            throwable -> {
-                if (throwable instanceof TimeoutException) {
-                    return false;
-                }
-                Throwable cause = throwable.getCause();
-                if (throwable instanceof JsonMappingException || cause instanceof JsonMappingException) {
-                    // Do not retry when deserialization failed
-                    return false;
-                }
-                boolean isPostCall = POST.equals(fullReq.getHttpMethod());
-                if (!(throwable instanceof WebException)) {
-                    // Don't retry posts
-                    return !isPostCall;
-                }
-
-                if (isPostCall) {
-                    // Don't retry if it was a POST, as it is not idempotent
-                    return false;
-                }
-                if (((WebException)throwable).getStatus().code() >= 500) {
-
-                    // Log the error on every retry.
-                    LOG.info(format("Will retry because an error occurred. %s, headers: %s",
-                        fullReq.getFullUrl(),
-                        fullReq.getHeaders().entrySet()), throwable);
-
-                    // Retry if it's 500+ error
-                    return true;
-                }
-                // Don't retry if it is a 400 error or something like that
+        return response.retryWhen(Retry.backoff(config.getRetryCount(), this.retryDuration).filter(throwable -> {
+            if (throwable instanceof TimeoutException) {
                 return false;
-            }));
+            }
+            Throwable cause = throwable.getCause();
+            if (throwable instanceof JsonMappingException || cause instanceof JsonMappingException) {
+                // Do not retry when deserialization failed
+                return false;
+            }
+            boolean isPostCall = POST.equals(fullReq.getHttpMethod());
+            if (!(throwable instanceof WebException)) {
+                // Don't retry posts
+                return !isPostCall;
+            }
+
+            if (isPostCall) {
+                // Don't retry if it was a POST, as it is not idempotent
+                return false;
+            }
+            if (((WebException)throwable).getStatus().code() >= 500) {
+
+                // Log the error on every retry.
+                LOG.info(format("Will retry because an error occurred. %s, headers: %s",
+                    fullReq.getFullUrl(),
+                    fullReq.getHeaders().entrySet()), throwable);
+
+                // Retry if it's 500+ error
+                return true;
+            }
+            // Don't retry if it is a 400 error or something like that
+            return false;
+        }));
     }
 
     private boolean expectsRawResponse(Method method) {

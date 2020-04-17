@@ -1182,7 +1182,7 @@ public class ReactorHttpClientTest {
         HttpServer<ByteBuf, ByteBuf> server    = startServer(INTERNAL_SERVER_ERROR, "\"NOT OK\"", r -> callCount.incrementAndGet());
         try {
             HttpClientConfig config = new HttpClientConfig("localhost:" + server.getServerPort());
-            config.setReadTimeoutMs(10);
+            config.setReadTimeoutMs(100);
             TestResource resource = getHttpProxy(config);
             resource.postHello().toBlocking().singleOrDefault(null);
             Assert.fail("Expected exception");
