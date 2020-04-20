@@ -139,6 +139,28 @@ public class HttpClientTest {
         }
     }
 
+    @Test
+    public void shouldNotRetryFailedPostCallsWithSystemExceptions() {
+        AtomicLong callCount = new AtomicLong();
+        HttpServer<ByteBuf, ByteBuf> server    = startServer(INTERNAL_SERVER_ERROR, "\"NOT OK\"", r -> callCount.incrementAndGet());
+
+        try {
+            HttpClientConfig config = new HttpClientConfig("localhost:" + server.getServerPort());
+            config.setReadTimeoutMs(2);
+            TestResource resource = getHttpProxy(config);
+
+            resource.postHello().toBlocking().singleOrDefault(null);
+
+            Assert.fail("Expected exception");
+        } catch (Exception e) {
+            assertThat(callCount.get()).isEqualTo(1);
+            assertThat(e.getClass()).isEqualTo(WebException.class);
+
+        } finally {
+            server.shutdown();
+        }
+    }
+
     protected TestResource getHttpProxy(int port) {
         return getHttpProxy(port, 1, 10000);
     }
