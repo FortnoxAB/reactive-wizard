@@ -142,11 +142,19 @@ public class HttpClientTest {
     @Test
     public void shouldNotRetryFailedPostCallsWithSystemExceptions() {
         AtomicLong callCount = new AtomicLong();
-        HttpServer<ByteBuf, ByteBuf> server    = startServer(INTERNAL_SERVER_ERROR, "\"NOT OK\"", r -> callCount.incrementAndGet());
+        HttpServer<ByteBuf, ByteBuf> server = startServer(OK, "\"TAKES LONGER THAN READ TIMEOUT\"", r -> {
+            callCount.incrementAndGet();
+            try {
+                Thread.sleep(6);
+            } catch (InterruptedException exception) {
+                System.out.println(exception.getCause());
+                Assert.fail("Thread sleep was interrupted");
+            }
+        });
 
         try {
             HttpClientConfig config = new HttpClientConfig("localhost:" + server.getServerPort());
-            config.setReadTimeoutMs(2);
+            config.setReadTimeoutMs(1);
             TestResource resource = getHttpProxy(config);
 
             resource.postHello().toBlocking().singleOrDefault(null);
@@ -155,7 +163,6 @@ public class HttpClientTest {
         } catch (Exception e) {
             assertThat(callCount.get()).isEqualTo(1);
             assertThat(e.getClass()).isEqualTo(WebException.class);
-
         } finally {
             server.shutdown();
         }
