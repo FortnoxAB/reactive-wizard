@@ -29,7 +29,6 @@ public class ObservableStatementFactory {
     private final PagingOutput               pagingOutput;
     private final Scheduler                  scheduler;
     private final Metrics                    metrics;
-    private final Function<Object[], String> paramSerializer;
     private final DatabaseConfig             config;
 
     public ObservableStatementFactory(
@@ -44,7 +43,6 @@ public class ObservableStatementFactory {
         this.pagingOutput = pagingOutput;
         this.scheduler = scheduler;
         this.metrics = metrics;
-        this.paramSerializer = paramSerializer;
         this.config = config;
     }
 
@@ -90,7 +88,7 @@ public class ObservableStatementFactory {
 
     private void logSlowQuery(TransactionStatement transactionStatement, long time, Object[] args) {
         if (transactionStatement == null && time > config.getSlowQueryLogThreshold()) {
-            LOG.warn(format("Slow query: %s\nargs: %s\ntime: %d", statementFactory, paramSerializer.apply(args), time));
+            LOG.warn(format("Slow query: %s\ntime: %d", statementFactory, time));
         }
     }
 
