@@ -140,17 +140,9 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldNotRetryFailedPostCallsWithSystemExceptions() {
+    public void shouldNotRetryFailedPostCallsWithNonWebExceptions() {
         AtomicLong callCount = new AtomicLong();
-        HttpServer<ByteBuf, ByteBuf> server = startServer(OK, "\"TAKES LONGER THAN READ TIMEOUT\"", r -> {
-            callCount.incrementAndGet();
-            try {
-                Thread.sleep(6);
-            } catch (InterruptedException exception) {
-                System.out.println(exception.getCause());
-                Assert.fail("Thread sleep was interrupted");
-            }
-        });
+        HttpServer<ByteBuf, ByteBuf> server    = startSlowServer(OK, 6, r -> callCount.incrementAndGet());
 
         try {
             HttpClientConfig config = new HttpClientConfig("localhost:" + server.getServerPort());
@@ -679,15 +671,7 @@ public class HttpClientTest {
     @Test
     public void shouldNotRetryOnTimeout() {
         AtomicLong callCount = new AtomicLong();
-        // Slow server
-        HttpServer<ByteBuf, ByteBuf> server = HttpServer.newServer(0)
-            .start((request, response) -> {
-                callCount.incrementAndGet();
-                return Observable.defer(() -> {
-                    response.setStatus(HttpResponseStatus.NOT_FOUND);
-                    return Observable.<Void>empty();
-                }).delaySubscription(1000, TimeUnit.MILLISECONDS);
-            });
+        HttpServer<ByteBuf, ByteBuf> server = startSlowServer(HttpResponseStatus.NOT_FOUND, 1000, r -> callCount.incrementAndGet());
 
         TestResource resource = getHttpProxy(server.getServerPort());
         HttpClient.setTimeout(resource, 500, TimeUnit.MILLISECONDS);
@@ -704,15 +688,7 @@ public class HttpClientTest {
 
     @Test
     public void shouldHandleLongerRequestsThan10SecondsWhenRequested() {
-        // Slow server
-        HttpServer<ByteBuf, ByteBuf> server = HttpServer.newServer(0)
-            .start((request, response) -> {
-
-                return Observable.defer(() -> {
-                    response.setStatus(HttpResponseStatus.NOT_FOUND);
-                    return Observable.<Void>empty();
-                }).delaySubscription(20000, TimeUnit.MILLISECONDS);
-            });
+        HttpServer<ByteBuf, ByteBuf> server = startSlowServer(HttpResponseStatus.NOT_FOUND, 20000);
 
         TestResource resource = getHttpProxy(server.getServerPort(), 1, 30000);
         HttpClient.setTimeout(resource, 15000, TimeUnit.MILLISECONDS);
@@ -985,6 +961,21 @@ public class HttpClientTest {
     private HttpServer<ByteBuf, ByteBuf> startServer(HttpResponseStatus status, String body) {
         return startServer(status, body, r -> {
         });
+    }
+
+    private HttpServer<ByteBuf, ByteBuf> startSlowServer(HttpResponseStatus status, Integer delayInMs) {
+        return startSlowServer(status, delayInMs, r -> {});
+    }
+
+    private HttpServer<ByteBuf, ByteBuf> startSlowServer(HttpResponseStatus status, Integer delayInMs, Consumer<HttpServerRequest<ByteBuf>> callback) {
+        return HttpServer.newServer(0)
+            .start((request, response) -> {
+                callback.accept(request);
+                return Observable.defer(() -> {
+                    response.setStatus(status);
+                    return Observable.<Void>empty();
+                }).delaySubscription(delayInMs, TimeUnit.MILLISECONDS);
+            });
     }
 
     @Test
