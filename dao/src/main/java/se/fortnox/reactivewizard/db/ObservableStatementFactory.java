@@ -9,6 +9,7 @@ import se.fortnox.reactivewizard.db.paging.PagingOutput;
 import se.fortnox.reactivewizard.db.statement.DbStatementFactory;
 import se.fortnox.reactivewizard.db.statement.Statement;
 import se.fortnox.reactivewizard.db.transactions.DaoObservable;
+import se.fortnox.reactivewizard.db.transactions.Transaction;
 import se.fortnox.reactivewizard.db.transactions.TransactionStatement;
 import se.fortnox.reactivewizard.metrics.Metrics;
 import se.fortnox.reactivewizard.util.DebugUtil;
@@ -57,16 +58,41 @@ public class ObservableStatementFactory {
     public Observable<Object> create(Object[] args, ConnectionProvider connectionProvider) {
         AtomicReference<TransactionStatement> transactionHolder = new AtomicReference<>();
 
-        Observable<Object> result = Observable.create(subscription -> {
+        Observable<Object> result = Observable.unsafeCreate(subscription -> {
+            try {
+                Statement dbStatement = statementFactory.create(args, subscription);
 
-            Statement dbStatement = statementFactory.create(args, subscription);
-
-            TransactionStatement transaction = transactionHolder.get();
-            if (transaction != null) {
-                transaction.setConnectionProvider(connectionProvider);
-                transaction.executeStatement(dbStatement);
-            } else {
-                executeStatement(dbStatement, connectionProvider);
+                TransactionStatement transactionStatement = transactionHolder.get();
+                if (transactionStatement != null) {
+                    Transaction transaction = transactionStatement.getTransaction();
+                    transaction.setConnectionProvider(connectionProvider);
+                    transactionStatement.markStatementSubscribed(dbStatement);
+                    if (transaction.isAllSubscribed()) {
+                        scheduler.createWorker().schedule(() -> {
+                            try {
+                                transaction.execute();
+                            } catch (Exception e) {
+                                if (!subscription.isUnsubscribed()) {
+                                    subscription.onError(e);
+                                }
+                            }
+                        });
+                    }
+                } else {
+                    scheduler.createWorker().schedule(() -> {
+                        try {
+                            executeStatement(dbStatement, connectionProvider);
+                        } catch (Exception e) {
+                            if (!subscription.isUnsubscribed()) {
+                                subscription.onError(e);
+                            }
+                        }
+                    });
+                }
+            } catch (Exception e) {
+                if (!subscription.isUnsubscribed()) {
+                    subscription.onError(e);
+                }
             }
         });
 
@@ -81,7 +107,6 @@ public class ObservableStatementFactory {
         result = pagingOutput.apply(result, args);
         result = metrics.measure(result, time -> logSlowQuery(transactionHolder.get(), time, args));
         result = result.onBackpressureBuffer(RECORD_BUFFER_SIZE);
-        result = result.subscribeOn(scheduler);
 
         return new DaoObservable<>(result, transactionHolder);
     }
