@@ -56,7 +56,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -265,6 +264,10 @@ public class HttpClient implements InvocationHandler {
     protected <T> Observable<T> withRetry(RequestBuilder fullReq, Observable<T> response) {
         return response.retryWhen(new RetryWithDelay(config.getRetryCount(), config.getRetryDelayMs(),
             throwable -> {
+                if (fullReq.getHttpMethod().equals(POST)) {
+                    // Don't retry if it was a POST, as it is not idempotent
+                    return false;
+                }
                 if (throwable instanceof TimeoutException) {
                     return false;
                 }
@@ -274,17 +277,8 @@ public class HttpClient implements InvocationHandler {
                     return false;
                 }
                 if (!(throwable instanceof WebException)) {
-                    // Don't retry posts when a NoSuchElementException is raised since the request might have ended up at the server the first time
-                    if (throwable instanceof NoSuchElementException && POST.equals(fullReq.getHttpMethod())) {
-                        return false;
-                    }
-
                     // Retry on system error of some kind, like IO
                     return true;
-                }
-                if (fullReq.getHttpMethod().equals(POST)) {
-                    // Don't retry if it was a POST, as it is not idempotent
-                    return false;
                 }
                 if (((WebException)throwable).getStatus().code() >= 500) {
 
