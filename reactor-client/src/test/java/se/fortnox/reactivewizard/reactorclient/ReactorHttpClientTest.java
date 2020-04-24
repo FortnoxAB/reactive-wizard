@@ -796,7 +796,17 @@ public class ReactorHttpClientTest {
 
     @Test
     public void shouldDeserializeVoidResult() {
-        HttpServer<ByteBuf, ByteBuf> server = startServer(HttpResponseStatus.CREATED, "");
+        HttpServer<ByteBuf, ByteBuf> server = startServer(HttpResponseStatus.CREATED, "{\"json\":\"test\" }");
+
+        TestResource resource = getHttpProxy(server.getServerPort());
+        resource.getVoid().toBlocking().singleOrDefault(null);
+
+        server.shutdown();
+    }
+
+    @Test
+    public void shouldDeserializeVoidResultWithContent() {
+        HttpServer<ByteBuf, ByteBuf> server = startServer(HttpResponseStatus.CREATED, "{\"json\":\"test\" }");
 
         TestResource resource = getHttpProxy(server.getServerPort());
         resource.getVoid().toBlocking().singleOrDefault(null);

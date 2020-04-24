@@ -229,7 +229,6 @@ public class ReactorHttpClient implements InvocationHandler {
     }
 
     protected Mono<Object> parseResponse(Method method, RequestBuilder request, reactor.netty.http.client.HttpClientResponse response, ByteBufFlux content) {
-
         return Mono.from(collector.collectString(content))
             .map(stringContent -> handleError(request, response, stringContent))
             .flatMap(stringContent -> this.deserialize(method, stringContent));
@@ -504,6 +503,11 @@ public class ReactorHttpClient implements InvocationHandler {
             return Mono.empty();
         }
         Type type = ReflectionUtil.getTypeOfObservable(method);
+
+        if (Void.class.equals(type)) {
+            return Mono.empty();
+        }
+
         try {
             JavaType     javaType = TypeFactory.defaultInstance().constructType(type);
             ObjectReader reader   = objectMapper.readerFor(javaType);
