@@ -18,9 +18,14 @@ import java.nio.file.NoSuchFileException;
  * Requires a config file as last parameter.
  */
 public class Main {
+    /**
+     * Main application entry point.
+     *
+     * @param args Commandline arguments
+     */
     public static void main(String[] args) {
         try {
-            ConfigFactory configFactory = createConfigFactory(args);
+            ConfigFactory  configFactory  = createConfigFactory(args);
             LoggingFactory loggingFactory = configFactory.get(LoggingFactory.class);
             loggingFactory.init();
             Module bootstrap = new AbstractModule() {
@@ -42,7 +47,7 @@ public class Main {
 
     /**
      * Prepares a ConfigFactory before setting up Guice.
-     *
+     * <p>
      * As logging can be part of the configuration file and the configuration file
      * could be missing, we have a side effect of setting up and initializing a LoggingFactory
      * that doesn't depend on ConfigFactory, if the configuration file is missing.
@@ -55,10 +60,10 @@ public class Main {
         try {
             return new ConfigFactory(args);
         } catch (RuntimeException runtimeException) {
-            if(runtimeException.getCause().getClass().isAssignableFrom(NoSuchFileException.class)) {
+            if (runtimeException.getCause().getClass().isAssignableFrom(NoSuchFileException.class)) {
                 LoggingFactory loggingFactory = new LoggingFactory();
                 loggingFactory.init();
-                throw (NoSuchFileException) runtimeException.getCause();
+                throw (NoSuchFileException)runtimeException.getCause();
             }
             throw runtimeException;
         }
