@@ -796,7 +796,7 @@ public class ReactorHttpClientTest {
 
     @Test
     public void shouldDeserializeVoidResult() {
-        HttpServer<ByteBuf, ByteBuf> server = startServer(HttpResponseStatus.CREATED, "{\"json\":\"test\" }");
+        HttpServer<ByteBuf, ByteBuf> server = startServer(HttpResponseStatus.CREATED, "");
 
         TestResource resource = getHttpProxy(server.getServerPort());
         resource.getVoid().toBlocking().singleOrDefault(null);
