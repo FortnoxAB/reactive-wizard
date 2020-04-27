@@ -26,7 +26,6 @@ import org.apache.log4j.LogManager;
 import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.Mockito;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.netty.DisposableServer;
 import rx.Observable;
@@ -543,28 +542,6 @@ public class ReactorHttpClientTest {
         filters.setFilter2("b");
         String     path   = client.getPath(method, new Object[]{filters}, new JaxRsMeta(method, null));
         assertThat(path).isEqualTo("/hello/beanParam?filter1=a&filter2=b");
-    }
-
-
-    @Test
-    public void shouldSupportMonoSource() {
-        HttpServer<ByteBuf, ByteBuf> server = startServer(HttpResponseStatus.OK, "\"OK\"");
-
-        TestResource resource = getHttpProxy(server.getServerPort());
-        String       mono    = resource.getMono().block();
-        assertThat(mono).isEqualTo("OK");
-        server.shutdown();
-    }
-
-    @Test
-    public void shouldSupportFluxSource() {
-        HttpServer<ByteBuf, ByteBuf> server = startServer(HttpResponseStatus.OK, "\"OK\"");
-
-        TestResource resource = getHttpProxy(server.getServerPort());
-        String       flux        = resource.getFlux().blockFirst();
-        assertThat(flux).isEqualTo("OK");
-
-        server.shutdown();
     }
 
     @Test
@@ -1492,12 +1469,6 @@ public class ReactorHttpClientTest {
 
         @GET
         Observable<byte[]> getAsBytes();
-
-        @GET
-        Mono<String> getMono();
-
-        @GET
-        Flux<String> getFlux();
 
         @POST
         Observable<Void> getVoid();

@@ -112,4 +112,8 @@ public class RequestBuilder {
         String prefix = uri.contains("?") ? "&" : "?";
         uri += prefix + key + "=" + value;
     }
+
+    protected byte[] getContent() {
+        return content;
+    }
 }

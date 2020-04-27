@@ -1,7 +1,5 @@
 package se.fortnox.reactivewizard.util;
 
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 import rx.Observable;
 import rx.Single;
 
@@ -47,13 +45,8 @@ public class ReflectionUtil {
         }
         ParameterizedType parameterizedType = (ParameterizedType)type;
         Class<?>          rawClass          = (Class<?>)parameterizedType.getRawType();
-        if (
-            !(rawClass.equals(Observable.class)) &&
-                !(rawClass.equals(Single.class)) &&
-                !(rawClass.equals(Flux.class)) &&
-                !rawClass.equals(Mono.class)
-        ) {
-            throw new IllegalArgumentException(type + " is not an Observable, Single, Mono or Flux");
+        if (!(rawClass.equals(Observable.class)) && !(rawClass.equals(Single.class))) {
+            throw new RuntimeException(type + " is not an Observable or Single");
         }
         Type[] actualTypeArguments = parameterizedType.getActualTypeArguments();
         return actualTypeArguments[0];

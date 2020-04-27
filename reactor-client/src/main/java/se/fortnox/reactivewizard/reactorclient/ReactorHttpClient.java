@@ -15,9 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.netty.ByteBufFlux;
 import reactor.util.retry.Retry;
-import rx.Observable;
 import rx.RxReactiveStreams;
 import rx.Single;
 import se.fortnox.reactivewizard.client.HttpClient;
@@ -77,7 +75,6 @@ import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERR
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
-import static javax.ws.rs.core.HttpHeaders.CONTENT_LENGTH;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static reactor.core.Exceptions.isRetryExhausted;
 
@@ -154,7 +151,7 @@ public class ReactorHttpClient implements InvocationHandler {
 
         reactor.netty.http.client.HttpClient rxClient = clientProvider.clientFor(request.getServerInfo());
 
-        Mono<RwHttpClientResponse> response = ReactorHttpClient.submit(rxClient, request);
+        Mono<RwHttpClientResponse> response = request.submit(rxClient, request);
 
         Publisher<?> publisher = null;
         if (expectsRawResponse(method)) {
@@ -170,7 +167,7 @@ public class ReactorHttpClient implements InvocationHandler {
             });
         } else {
             publisher = response.flatMap(rwHttpClientResponse ->
-                parseResponse(method, request, rwHttpClientResponse.getHttpClientResponse(), rwHttpClientResponse.getContent()));
+                parseResponse(method, request, rwHttpClientResponse));
         }
         publisher = measure(request, publisher);
 
@@ -181,33 +178,8 @@ public class ReactorHttpClient implements InvocationHandler {
 
         if (Single.class.isAssignableFrom(method.getReturnType())) {
             return RxReactiveStreams.toSingle(publisher);
-        } else if (Observable.class.isAssignableFrom(method.getReturnType())) {
-            return RxReactiveStreams.toObservable(publisher);
-        } else if (Mono.class.isAssignableFrom(method.getReturnType())) {
-            return Mono.from(publisher);
         }
-        return publisher;
-    }
-
-    private static Mono<RwHttpClientResponse> submit(
-        reactor.netty.http.client.HttpClient client,
-        ReactorRequestBuilder requestBuilder) {
-
-        return
-            Mono.from(client
-            .headers(entries -> {
-                for (Map.Entry<String, String> stringStringEntry : requestBuilder.getHeaders().entrySet()) {
-                    entries.set(stringStringEntry.getKey(), stringStringEntry.getValue());
-                }
-
-                if (requestBuilder.getContent() != null) {
-                    entries.set(CONTENT_LENGTH, requestBuilder.getContent().length());
-                }
-            })
-            .request(requestBuilder.getHttpMethod())
-            .uri(requestBuilder.getFullUrl())
-            .send(ByteBufFlux.fromString(Mono.just(requestBuilder.getContent())))
-            .responseConnection((httpClientResponse, connection) -> Mono.just(new RwHttpClientResponse(httpClientResponse, connection.inbound().receive()))));
+        return RxReactiveStreams.toObservable(publisher);
     }
 
     private <T> Flux<T> convertError(RequestBuilder fullReq, Throwable throwable) {
@@ -228,9 +200,9 @@ public class ReactorHttpClient implements InvocationHandler {
         return Flux.error(throwable);
     }
 
-    protected Mono<Object> parseResponse(Method method, RequestBuilder request, reactor.netty.http.client.HttpClientResponse response, ByteBufFlux content) {
-        return Mono.from(collector.collectString(content))
-            .map(stringContent -> handleError(request, response, stringContent))
+    protected Mono<Object> parseResponse(Method method, RequestBuilder request, RwHttpClientResponse response) {
+        return Mono.from(collector.collectString(response.getContent()))
+            .map(stringContent -> handleError(request, response.getHttpClientResponse(), stringContent))
             .flatMap(stringContent -> this.deserialize(method, stringContent));
     }
 

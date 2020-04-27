@@ -229,7 +229,7 @@ public class ReflectionUtilTest {
             ReflectionUtil.getTypeOfObservable(nonObservableGenericReturnType);
             fail("expected exception");
         } catch (RuntimeException e) {
-            assertThat(e.getMessage()).isEqualTo("java.util.List<java.lang.String> is not an Observable, Single, Mono or Flux");
+            assertThat(e.getMessage()).isEqualTo("java.util.List<java.lang.String> is not an Observable or Single");
         }
     }
 
