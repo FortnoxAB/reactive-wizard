@@ -8,7 +8,7 @@ import java.util.Set;
 /**
  * Composition of all registered JaxRsResourceInterceptor instances.
  */
-class JaxRsResourceInterceptors {
+public class JaxRsResourceInterceptors {
     private final Set<JaxRsResourceInterceptor> interceptors;
 
     @Inject
