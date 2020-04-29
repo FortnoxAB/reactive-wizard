@@ -60,10 +60,11 @@ public class Main {
         try {
             return new ConfigFactory(args);
         } catch (RuntimeException runtimeException) {
-            if (runtimeException.getCause().getClass().isAssignableFrom(NoSuchFileException.class)) {
+            Throwable cause = runtimeException.getCause();
+            if (cause != null && cause.getClass().isAssignableFrom(NoSuchFileException.class)) {
                 LoggingFactory loggingFactory = new LoggingFactory();
                 loggingFactory.init();
-                throw (NoSuchFileException)runtimeException.getCause();
+                throw (NoSuchFileException)cause;
             }
             throw runtimeException;
         }
