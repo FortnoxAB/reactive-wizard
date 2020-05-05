@@ -116,21 +116,6 @@ public class ParameterizedQueryTest {
     }
 
     @Test
-    public void shouldSendListsOfObjectsAsJson() throws SQLException {
-        TestObject myobj = new TestObject();
-        List<MyTestParam> list = new ArrayList<>();
-        list.add(new MyTestParam());
-        list.add(new MyTestParam());
-        myobj.setList(list);
-
-        dao.listParam(myobj).toBlocking().singleOrDefault(null);
-
-        verify(db.getConnection()).prepareStatement(
-                "INSERT INTO a (a) VALUES (?)");
-        verify(db.getPreparedStatement()).setObject(1, "[{\"name\":\"testName\"},{\"name\":\"testName\"}]");
-    }
-
-    @Test
     public void shouldSendMapTypesAsStringsAsLastArg() throws SQLException {
         TestObject myobj = new TestObject();
         myobj.setFinished(false);
@@ -161,6 +146,47 @@ public class ParameterizedQueryTest {
         verify(db.getPreparedStatement()).setObject(1, false);
         verify(db.getPreparedStatement()).setObject(2, "{\"aKey\":\"aValue\"}");
 
+    }
+
+    @Test
+    public void shouldSendListsOfObjectsAsJson() throws SQLException {
+        TestObject myobj = new TestObject();
+        List<MyTestParam> list = new ArrayList<>();
+        list.add(new MyTestParam());
+        list.add(new MyTestParam());
+        myobj.setList(list);
+
+        dao.listParam(myobj).toBlocking().singleOrDefault(null);
+
+        verify(db.getConnection()).prepareStatement(
+            "INSERT INTO a (a) VALUES (?)");
+        verify(db.getPreparedStatement()).setObject(1, "[{\"name\":\"testName\"},{\"name\":\"testName\"}]");
+    }
+
+    @Test
+    public void shouldSendListsOfLongAsArray() throws SQLException {
+        TestObject myobj = new TestObject();
+        myobj.setLongList(Lists.newArrayList(1L, 2L));
+
+        dao.longListParam(myobj).toBlocking().singleOrDefault(null);
+
+        verify(db.getConnection()).prepareStatement("INSERT INTO a (a) VALUES (?)");
+        verify(db.getConnection()).createArrayOf("bigint", new Long[]{1L, 2L});
+
+        verify(db.getPreparedStatement()).setArray(eq(1), any());
+    }
+
+    @Test
+    public void shouldSendListsOfIntegerAsArray() throws SQLException {
+        TestObject myobj = new TestObject();
+        myobj.setIntegerList(Lists.newArrayList(1, 2));
+
+        dao.integerListParam(myobj).toBlocking().singleOrDefault(null);
+
+        verify(db.getConnection()).prepareStatement("INSERT INTO a (a) VALUES (?)");
+        verify(db.getConnection()).createArrayOf("integer", new Integer[]{1, 2});
+
+        verify(db.getPreparedStatement()).setArray(eq(1), any());
     }
 
     @Test
@@ -263,6 +289,12 @@ public class ParameterizedQueryTest {
         @Query("INSERT INTO a (a) VALUES (:testObject.list)")
         Observable<String> listParam(TestObject testObject);
 
+        @Query("INSERT INTO a (a) VALUES (:testObject.longList)")
+        Observable<String> longListParam(TestObject testObject);
+
+        @Query("INSERT INTO a (a) VALUES (:testObject.integerList)")
+        Observable<String> integerListParam(TestObject testObject);
+
         @Query("SELECT a FROM b WHERE c NOT IN (:param)")
         Observable<String> notInClauseBigint(List<Long> param);
 
@@ -287,6 +319,8 @@ public class ParameterizedQueryTest {
         boolean             finished;
         Map<String, String> map;
         List<MyTestParam>   list;
+        List<Long>          longList;
+        List<Integer>       integerList;
 
         public TestEnum getMyEnum() {
             return myEnum;
@@ -318,6 +352,22 @@ public class ParameterizedQueryTest {
 
         public void setList(List<MyTestParam> list) {
             this.list = list;
+        }
+
+        public List<Long> getLongList() {
+            return longList;
+        }
+
+        public void setLongList(List<Long> longList) {
+            this.longList = longList;
+        }
+
+        public List<Integer> getIntegerList() {
+            return integerList;
+        }
+
+        public void setIntegerList(List<Integer> integerList) {
+            this.integerList = integerList;
         }
     }
 
