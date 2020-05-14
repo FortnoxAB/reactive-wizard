@@ -4,6 +4,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Scheduler;
+import rx.Subscriber;
+import rx.functions.Action0;
 import se.fortnox.reactivewizard.db.config.DatabaseConfig;
 import se.fortnox.reactivewizard.db.paging.PagingOutput;
 import se.fortnox.reactivewizard.db.statement.DbStatementFactory;
@@ -68,26 +70,10 @@ public class ObservableStatementFactory {
                     transaction.setConnectionProvider(connectionProvider);
                     transactionStatement.markStatementSubscribed(dbStatement);
                     if (transaction.isAllSubscribed()) {
-                        scheduler.createWorker().schedule(() -> {
-                            try {
-                                transaction.execute();
-                            } catch (Exception e) {
-                                if (!subscription.isUnsubscribed()) {
-                                    subscription.onError(e);
-                                }
-                            }
-                        });
+                        scheduleWorker(subscription, transaction::execute);
                     }
                 } else {
-                    scheduler.createWorker().schedule(() -> {
-                        try {
-                            executeStatement(dbStatement, connectionProvider);
-                        } catch (Exception e) {
-                            if (!subscription.isUnsubscribed()) {
-                                subscription.onError(e);
-                            }
-                        }
-                    });
+                    scheduleWorker(subscription, () -> executeStatement(dbStatement, connectionProvider));
                 }
             } catch (Exception e) {
                 if (!subscription.isUnsubscribed()) {
@@ -109,6 +95,21 @@ public class ObservableStatementFactory {
         result = result.onBackpressureBuffer(RECORD_BUFFER_SIZE);
 
         return new DaoObservable<>(result, transactionHolder);
+    }
+
+    private void scheduleWorker(Subscriber<?> subscription, Action0 action) {
+        Scheduler.Worker worker = scheduler.createWorker();
+        worker.schedule(() -> {
+            try {
+                action.call();
+            } catch (Exception e) {
+                if (!subscription.isUnsubscribed()) {
+                    subscription.onError(e);
+                }
+            } finally {
+                worker.unsubscribe();
+            }
+        });
     }
 
     private void logSlowQuery(TransactionStatement transactionStatement, long time, Object[] args) {
