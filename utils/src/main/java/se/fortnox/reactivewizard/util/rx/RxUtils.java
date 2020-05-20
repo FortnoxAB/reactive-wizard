@@ -5,6 +5,7 @@ import rx.Observer;
 import rx.functions.Action0;
 import rx.functions.Action2;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
@@ -121,5 +122,33 @@ public class RxUtils {
 
     public static <T> Observable<T> exception(Supplier<Exception> supplier) {
         return defer(() -> error(supplier.get()));
+    }
+
+    /**
+     * Extracts a single item from an Observable of a collection of items. Returns an Observable if a single item if
+     * the provided Observable of a collection of items emits a single list containing a single item. Returns empty if
+     * the provided Observable of a collection of items is empty or if it emits a single list that contains no items.
+     * Notifies of an {@code IllegalArgumentException} if the provided Observable of a collection of items either emits
+     * more than one collection of items or if a single collection of items contains more than one item.
+     *
+     * @param collectionObservable Observable of a collection of items
+     * @param <T> The observable and result item type
+     * @return An Observable emitting a single item
+     * @throws IllegalArgumentException if the provided Observable of a collection of items either emits more than one
+     *              collection or if it emits a collection with more than one item
+     */
+    public static <T> Observable<T> singleOrEmpty(Observable<? extends Collection<T>> collectionObservable) {
+        return collectionObservable.toList().concatMap(lists -> {
+            if (lists.size() > 1) {
+                return Observable.error(new IllegalArgumentException("Observable contains more than one collection."));
+            } else if (lists.size() == 1 && lists.get(0).size() > 1) {
+                return Observable.error(new IllegalArgumentException(
+                    "Observable collection contains more than one item."));
+            } else if (lists.size() == 1 && lists.get(0).size() == 1) {
+                return Observable.just(lists.get(0).iterator().next());
+            } else {
+                return Observable.empty();
+            }
+        });
     }
 }
