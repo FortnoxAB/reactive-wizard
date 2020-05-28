@@ -51,10 +51,11 @@ public final class TestUtil {
             }
 
             @Override
-            public void describeTo(Description description) {
+            public String toString() {
                 if (error != null) {
-                    description.appendText(error.getMessage());
+                    return error.getMessage();
                 }
+                return null;
             }
         });
     }

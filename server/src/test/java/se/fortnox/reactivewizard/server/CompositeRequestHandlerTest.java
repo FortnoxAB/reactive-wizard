@@ -83,11 +83,7 @@ public class CompositeRequestHandlerTest {
     @Test
     public void exceptionHandlerShallBeInvokedWhenNoRequestHandlerIsGiven() {
         when(exceptionHandler.handleException(any(), any(), any())).thenReturn(Observable.empty());
-        IllegalArgumentException illegalArgumentException = new IllegalArgumentException("expected exception");
-        when(exceptionHandler.handleException(request, response, illegalArgumentException)).thenReturn(Observable.empty());
-
         compositeRequestHandler.handle(request, response).test().awaitTerminalEvent();
-
         verify(exceptionHandler, times(1)).handleException(any(), any(), any(WebException.class));
         assertThat(connectionCounter.getCount()).isEqualTo(0);
     }

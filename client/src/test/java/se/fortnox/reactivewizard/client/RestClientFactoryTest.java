@@ -46,7 +46,7 @@ public class RestClientFactoryTest {
             mockResourcesOnClassPath(binder, of(TestResource.class));
 
             when(httpClientProvider.createClient(any(HttpClientConfig.class))).thenAnswer(invocation -> {
-                HttpClientConfig httpClientConfig = invocation.getArgumentAt(0, HttpClientConfig.class);
+                HttpClientConfig httpClientConfig = invocation.getArgument(0, HttpClientConfig.class);
                 httpClientSpy.set(Mockito.spy(new HttpClient(httpClientConfig)));
                 return httpClientSpy.get();
             });
@@ -78,7 +78,7 @@ public class RestClientFactoryTest {
             HttpClientProvider httpClientProvider = mock(HttpClientProvider.class);
 
             when(httpClientProvider.createClient(any())).thenAnswer(invocation -> {
-                HttpClientConfig httpClientConfig = invocation.getArgumentAt(0, HttpClientConfig.class);
+                HttpClientConfig httpClientConfig = invocation.getArgument(0, HttpClientConfig.class);
                 HttpClient httpClient = spy(new HttpClient(httpClientConfig));
                 if (httpClientConfig instanceof CustomHttpClientConfig) {
                     mockCustomClient.set(httpClient);

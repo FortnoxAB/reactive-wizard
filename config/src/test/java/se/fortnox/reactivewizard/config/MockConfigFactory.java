@@ -11,7 +11,7 @@ public class MockConfigFactory {
 
     public static ConfigFactory create() {
         ConfigFactory configFactory = mock(ConfigFactory.class);
-        when(configFactory.get(any())).thenAnswer(call -> call.getArgumentAt(0, Class.class).newInstance());
+        when(configFactory.get(any())).thenAnswer(call -> call.getArgument(0, Class.class).newInstance());
         return configFactory;
     }
 }
