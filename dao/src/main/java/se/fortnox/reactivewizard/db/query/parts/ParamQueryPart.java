@@ -116,6 +116,8 @@ public class ParamQueryPart implements DynamicQueryPart {
             return Optional.of("varchar");
         } else if (genericParam.equals(Long.class)) {
             return Optional.of("bigint");
+        } else if (genericParam.equals(Integer.class)) {
+            return Optional.of("integer");
         } else if (genericParam.equals(UUID.class)) {
             return Optional.of("uuid");
         } else {
