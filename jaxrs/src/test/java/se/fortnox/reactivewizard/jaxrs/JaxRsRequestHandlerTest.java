@@ -1,10 +1,11 @@
 package se.fortnox.reactivewizard.jaxrs;
 
-import io.reactivex.netty.protocol.http.server.MockHttpServerRequest;
 import org.junit.Before;
 import org.junit.Test;
+import org.reactivestreams.Publisher;
 import rx.Observable;
 import se.fortnox.reactivewizard.ExceptionHandler;
+import se.fortnox.reactivewizard.mocks.MockHttpServerRequest;
 import se.fortnox.reactivewizard.mocks.MockHttpServerResponse;
 
 import javax.ws.rs.GET;
@@ -33,7 +34,7 @@ public class JaxRsRequestHandlerTest {
     public void shouldInterceptResourceCall() {
         MockHttpServerRequest request = new MockHttpServerRequest("/");
         MockHttpServerResponse response = new MockHttpServerResponse();
-        Observable<Void> result = handler.handle(request, response);
+        Publisher<Void> result = handler.apply(request, response);
 
         assertThat(interceptor.preHandled).isNotNull();
         assertThat(interceptor.postHandled).isNotNull();
@@ -43,7 +44,7 @@ public class JaxRsRequestHandlerTest {
     private static class Interceptor implements JaxRsResourceInterceptor {
         private JaxRsResourceContext preHandled;
         private JaxRsResourceContext postHandled;
-        private Observable<Void>     resourceCall;
+        private Publisher<Void>     resourceCall;
 
         @Override
         public void preHandle(JaxRsResourceContext context) {
@@ -51,7 +52,7 @@ public class JaxRsRequestHandlerTest {
         }
 
         @Override
-        public void postHandle(JaxRsResourceContext context, Observable<Void> resourceCall) {
+        public void postHandle(JaxRsResourceContext context, Publisher<Void> resourceCall) {
             postHandled = context;
             this.resourceCall = resourceCall;
         }

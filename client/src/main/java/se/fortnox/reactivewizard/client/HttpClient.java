@@ -1,28 +1,30 @@
 package se.fortnox.reactivewizard.client;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.type.TypeFactory;
-import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.timeout.ReadTimeoutException;
-import io.reactivex.netty.protocol.http.client.HttpClientResponse;
+import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import rx.Observable;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.util.retry.Retry;
+import rx.RxReactiveStreams;
 import rx.Single;
 import se.fortnox.reactivewizard.jaxrs.ByteBufCollector;
 import se.fortnox.reactivewizard.jaxrs.FieldError;
 import se.fortnox.reactivewizard.jaxrs.JaxRsMeta;
 import se.fortnox.reactivewizard.jaxrs.WebException;
 import se.fortnox.reactivewizard.metrics.HealthRecorder;
-import se.fortnox.reactivewizard.metrics.Metrics;
+import se.fortnox.reactivewizard.metrics.PublisherMetrics;
 import se.fortnox.reactivewizard.util.JustMessageException;
 import se.fortnox.reactivewizard.util.ReflectionUtil;
-import se.fortnox.reactivewizard.util.rx.RetryWithDelay;
 
 import javax.inject.Inject;
 import javax.ws.rs.BeanParam;
@@ -39,28 +41,26 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
-import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Proxy;
 import java.lang.reflect.Type;
 import java.net.InetSocketAddress;
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalUnit;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 
@@ -71,77 +71,61 @@ import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
-import static rx.Observable.error;
-import static rx.Observable.just;
+import static reactor.core.Exceptions.isRetryExhausted;
 
 public class HttpClient implements InvocationHandler {
-    private static final Logger           LOG            = LoggerFactory.getLogger(HttpClient.class);
-    private static final Class            BYTEARRAY_TYPE = (new byte[0]).getClass();
+    private static final Logger LOG = LoggerFactory.getLogger(HttpClient.class);
+    private static final Class  BYTEARRAY_TYPE = (new byte[0]).getClass();
+    public static final String COOKIE = "Cookie";
 
-    protected final InetSocketAddress           serverInfo;
-    protected final HttpClientConfig            config;
-    private final   ByteBufCollector            collector;
-    private final   RequestParameterSerializers requestParameterSerializers;
-    private final   Set<PreRequestHook>         preRequestHooks;
-    private         RxClientProvider            clientProvider;
-    private         ObjectMapper                objectMapper;
-    private         int                         timeout = 10;
-    private         TimeUnit                    timeoutUnit = TimeUnit.SECONDS;
-    private final Map<Class<?>, List<BeanParamProperty>> beanParamCache = new HashMap<>();
-    private final Map<Method, JaxRsMeta>        jaxRsMetaMap = new ConcurrentHashMap<>();
+    protected final InetSocketAddress                                        serverInfo;
+    protected final HttpClientConfig                                         config;
+    private final   ByteBufCollector                                         collector;
+    private final   RequestParameterSerializers                              requestParameterSerializers;
+    private final   Set<PreRequestHook>                                      preRequestHooks;
+    private final   ReactorRxClientProvider                                  clientProvider;
+    private final   ObjectMapper                                             objectMapper;
+    private final   Map<Class<?>, List<HttpClient.BeanParamProperty>>        beanParamCache = new HashMap<>();
+    private final   Map<Method, JaxRsMeta>                                   jaxRsMetaMap   = new ConcurrentHashMap<>();
+    private         int                                                      timeout        = 10;
+    private TemporalUnit timeoutUnit    = ChronoUnit.SECONDS;
+    private final Duration retryDuration;
 
     @Inject
     public HttpClient(HttpClientConfig config,
-        RxClientProvider clientProvider,
-        ObjectMapper objectMapper,
-        RequestParameterSerializers requestParameterSerializers,
-        Set<PreRequestHook> preRequestHooks
+                             ReactorRxClientProvider clientProvider,
+                             ObjectMapper objectMapper,
+                             RequestParameterSerializers requestParameterSerializers,
+                             Set<PreRequestHook> preRequestHooks
     ) {
         this.config = config;
         this.clientProvider = clientProvider;
         this.objectMapper = objectMapper;
+        this.objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         this.requestParameterSerializers = requestParameterSerializers;
 
         serverInfo = new InetSocketAddress(config.getHost(), config.getPort());
         collector = new ByteBufCollector(config.getMaxResponseSize());
         this.preRequestHooks = preRequestHooks;
+        this.retryDuration = Duration.ofMillis(config.getRetryDelayMs());
     }
 
     public HttpClient(HttpClientConfig config) {
-        this(config, new RxClientProvider(config, new HealthRecorder()), new ObjectMapper(), new RequestParameterSerializers(), emptySet());
+        this(config, new ReactorRxClientProvider(config, new HealthRecorder()), new ObjectMapper(), new RequestParameterSerializers(), emptySet());
     }
 
-    public static Observable<String> get(String url) {
-        try {
-            URL urlObj = new URL(url);
-            return io.reactivex.netty.protocol.http.client.HttpClient.newClient(urlObj.getHost(), urlObj.getPort())
-                .createGet(urlObj.getPath())
-                .flatMap(HttpClientResponse::getContent)
-                .map(buf -> buf.toString(Charset.defaultCharset()));
-        } catch (MalformedURLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public static void setTimeout(Object proxy, int timeout, TimeUnit timeoutUnit) {
+    public static void setTimeout(Object proxy, int timeout, ChronoUnit timeoutUnit) {
         if (Proxy.isProxyClass(proxy.getClass())) {
             Object handler = Proxy.getInvocationHandler(proxy);
             if (handler instanceof HttpClient) {
                 ((HttpClient)handler).setTimeout(timeout, timeoutUnit);
-            } else {
-                throw new IllegalArgumentException("Trying to set timeout on handler that is not instance of HttpClient as expected instead instance of: "
-                    + handler.getClass().getSimpleName());
             }
         }
     }
 
-    public void setTimeout(int timeout, TimeUnit timeoutUnit) {
+    public void setTimeout(int timeout, ChronoUnit timeoutUnit) {
         this.timeout = timeout;
         this.timeoutUnit = timeoutUnit;
-    }
-
-    public static <T> T create(HttpClientConfig config, RxClientProvider clientProvider, ObjectMapper objectMapper, Class<T> jaxRsInterface) {
-        return new HttpClient(config, clientProvider, objectMapper, new RequestParameterSerializers(), null).create(jaxRsInterface);
     }
 
     @SuppressWarnings("unchecked")
@@ -160,62 +144,58 @@ public class HttpClient implements InvocationHandler {
         addDevOverrides(request);
         addAuthenticationHeaders(request);
 
-        final io.reactivex.netty.protocol.http.client.HttpClient<ByteBuf, ByteBuf> rxClient = clientProvider.clientFor(request.getServerInfo());
+        reactor.netty.http.client.HttpClient rxClient = clientProvider.clientFor(request.getServerInfo());
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug(request + " with headers " + request.getHeaders().entrySet());
-        }
+        Mono<RwHttpClientResponse> response = request.submit(rxClient, request);
 
-        final Observable<HttpClientResponse<ByteBuf>> resp = request
-            .submit(rxClient)
-            .timeout(timeout, timeoutUnit)
-            //Forcing the stream to be not empty. If empty then it will be retried through the standard retry logic
-            .single();
-
-        Observable<?> output = null;
-        if (expectsRawResponse(method)) {
-            output = resp;
+        Publisher<?> publisher = null;
+        if (expectsByteArrayResponse(method)) {
+            publisher = response.flatMap(rwHttpClientResponse -> {
+                if (rwHttpClientResponse.getHttpClientResponse().status().code() >= 400) {
+                    return Mono.from(collector.collectString(rwHttpClientResponse.getContent()))
+                        .map(data -> handleError(request, rwHttpClientResponse.getHttpClientResponse(), data).getBytes());
+                }
+                return Mono.from(collector.collectBytes(rwHttpClientResponse.getContent()));
+            });
         } else {
-            output = resp.flatMap(r -> parseResponse(method, request, r));
+            publisher = response.flatMap(rwHttpClientResponse ->
+                parseResponse(method, request, rwHttpClientResponse));
         }
+        publisher = measure(request, publisher);
 
-        output = withRetry(request, output).onErrorResumeNext(e -> convertError(request, e));
-        output = measure(request, output);
+        //End of publisher
+        Flux<?> flux = Flux.from(publisher);
+        flux = flux.timeout(Duration.of(timeout, timeoutUnit));
+        publisher = withRetry(request, flux).onErrorResume(e -> convertError(request, e));
 
         if (Single.class.isAssignableFrom(method.getReturnType())) {
-            return output.toSingle();
-        } else {
-            return output;
+            return RxReactiveStreams.toSingle(publisher);
         }
+        return RxReactiveStreams.toObservable(publisher);
     }
 
-    private <T> Observable<T> convertError(RequestBuilder fullReq, Throwable throwable) {
+    private <T> Flux<T> convertError(RequestBuilder fullReq, Throwable throwable) {
         String request = format("%s, headers: %s", fullReq.getFullUrl(), fullReq.getHeaders().entrySet());
         LOG.warn("Failed request. Url: {}", request, throwable);
+
+        if (isRetryExhausted(throwable)) {
+            throwable = throwable.getCause();
+        }
+
         if (throwable instanceof TimeoutException || throwable instanceof ReadTimeoutException) {
-            String message = format("Timeout after %d ms calling %s", timeoutUnit.toMillis(timeout), request);
-            return error(new WebException(GATEWAY_TIMEOUT, new JustMessageException(message), false));
+            String message = format("Timeout after %d ms calling %s", Duration.of(timeout, timeoutUnit).toMillis(), request);
+            return Flux.error(new WebException(GATEWAY_TIMEOUT, new JustMessageException(message), false));
         } else if (!(throwable instanceof WebException)) {
             String message = format("Error calling %s", request);
-            return error(new WebException(INTERNAL_SERVER_ERROR, new JustMessageException(message, throwable), false));
+            return Flux.error(new WebException(INTERNAL_SERVER_ERROR, new JustMessageException(message, throwable), false));
         }
-        return error(throwable);
+        return Flux.error(throwable);
     }
 
-    protected Observable<?> parseResponse(Method method, RequestBuilder request, HttpClientResponse<ByteBuf> response) {
-        final Observable<String> body = collector.collectString(response.getContent()).singleOrDefault("");
-
-        if (expectsByteArrayResponse(method)) {
-            if (response.getStatus().code() >= 400) {
-                return body.map(data -> handleError(request, response, data));
-            }
-
-            return collector.collectBytes(response.getContent());
-        }
-
-        return body
-            .map(data -> handleError(request, response, data))
-            .flatMap(str -> deserialize(method, str));
+    protected Mono<Object> parseResponse(Method method, RequestBuilder request, RwHttpClientResponse response) {
+        return Mono.from(collector.collectString(response.getContent()))
+            .map(stringContent -> handleError(request, response.getHttpClientResponse(), stringContent))
+            .flatMap(stringContent -> this.deserialize(method, stringContent));
     }
 
     private boolean expectsByteArrayResponse(Method method) {
@@ -229,12 +209,12 @@ public class HttpClient implements InvocationHandler {
         }
 
         if (config.getDevCookie() != null) {
-            String cookie = fullRequest.getHeaders().get("Cookie") + ";" + config.getDevCookie();
-            fullRequest.getHeaders().remove("Cookie");
-            fullRequest.addHeader("Cookie", cookie);
+            String cookie = fullRequest.getHeaders().get(COOKIE) + ";" + config.getDevCookie();
+            fullRequest.getHeaders().remove(COOKIE);
+            fullRequest.addHeader(COOKIE, cookie);
         }
 
-        if (config.getDevHeaders() != null && config.getDevHeaders() != null) {
+        if (config.getDevHeaders() != null) {
             config.getDevHeaders().forEach(fullRequest::addHeader);
         }
     }
@@ -261,53 +241,43 @@ public class HttpClient implements InvocationHandler {
         return "Basic " + new String(encodedAuth);
     }
 
-    protected <T> Observable<T> measure(RequestBuilder fullRequest, Observable<T> output) {
-        return Metrics.get("OUT_res:" + fullRequest.getKey()).measure(output);
+    protected <T> Publisher<T> measure(RequestBuilder fullRequest, Publisher<T> output) {
+        return PublisherMetrics.get("OUT_res:" + fullRequest.getKey()).measure(output);
     }
 
-    protected <T> Observable<T> withRetry(RequestBuilder fullReq, Observable<T> response) {
-        return response.retryWhen(new RetryWithDelay(config.getRetryCount(), config.getRetryDelayMs(),
-            throwable -> {
-                if (throwable instanceof TimeoutException) {
-                    return false;
-                }
-                Throwable cause = throwable.getCause();
-                if (throwable instanceof JsonMappingException || cause instanceof JsonMappingException) {
-                    // Do not retry when deserialization failed
-                    return false;
-                }
-                if (!(throwable instanceof WebException)) {
-                    // Don't retry posts when a NoSuchElementException is raised since the request might have ended up at the server the first time
-                    if (throwable instanceof NoSuchElementException && POST.equals(fullReq.getHttpMethod())) {
-                        return false;
-                    }
-
-                    // Retry on system error of some kind, like IO
-                    return true;
-                }
-                if (fullReq.getHttpMethod().equals(POST)) {
-                    // Don't retry if it was a POST, as it is not idempotent
-                    return false;
-                }
-                if (((WebException)throwable).getStatus().code() >= 500) {
-
-                    // Log the error on every retry.
-                    LOG.info(format("Will retry because an error occurred. %s, headers: %s",
-                        fullReq.getFullUrl(),
-                        fullReq.getHeaders().entrySet()), throwable);
-
-                    // Retry if it's 500+ error
-                    return true;
-                }
-                // Don't retry if it is a 400 error or something like that
+    protected <T> Flux<T> withRetry(RequestBuilder fullReq, Flux<T> response) {
+        return response.retryWhen(Retry.backoff(config.getRetryCount(), this.retryDuration).filter(throwable -> {
+            if (throwable instanceof TimeoutException) {
                 return false;
-            }));
-    }
+            }
+            Throwable cause = throwable.getCause();
+            if (throwable instanceof JsonMappingException || cause instanceof JsonMappingException) {
+                // Do not retry when deserialization failed
+                return false;
+            }
+            boolean isPostCall = POST.equals(fullReq.getHttpMethod());
+            if (!(throwable instanceof WebException)) {
+                // Don't retry posts
+                return !isPostCall;
+            }
 
-    private boolean expectsRawResponse(Method method) {
-        Type type = ReflectionUtil.getTypeOfObservable(method);
+            if (isPostCall) {
+                // Don't retry if it was a POST, as it is not idempotent
+                return false;
+            }
+            if (((WebException)throwable).getStatus().code() >= 500) {
 
-        return (type instanceof ParameterizedType && ((ParameterizedType)type).getRawType().equals(HttpClientResponse.class));
+                // Log the error on every retry.
+                LOG.info(format("Will retry because an error occurred. %s, headers: %s",
+                    fullReq.getFullUrl(),
+                    fullReq.getHeaders().entrySet()), throwable);
+
+                // Retry if it's 500+ error
+                return true;
+            }
+            // Don't retry if it is a 400 error or something like that
+            return false;
+        }));
     }
 
     protected void addContent(Method method, Object[] arguments, RequestBuilder requestBuilder) {
@@ -380,18 +350,18 @@ public class HttpClient implements InvocationHandler {
         return true;
     }
 
-    protected String handleError(RequestBuilder request, HttpClientResponse<ByteBuf> clientResponse, String data) {
-        if (clientResponse.getStatus().code() >= 400) {
+    protected String handleError(RequestBuilder request, reactor.netty.http.client.HttpClientResponse clientResponse, String data) {
+        if (clientResponse.status().code() >= 400) {
             String message = format("Error calling other service:\n\tResponse Status: %d\n\tURL: %s\n\tRequest Headers: %s\n\tResponse Headers: %s\n\tData: %s",
-                clientResponse.getStatus().code(),
+                clientResponse.status().code(),
                 request.getFullUrl(),
                 request.getHeaders().entrySet(),
                 formatHeaders(clientResponse),
                 data);
-            Throwable     detailedErrorCause = new ThrowableWithoutStack(message);
-            DetailedError detailedError      = getDetailedError(data, detailedErrorCause);
-            String        reasonPhrase       = detailedError.hasReason() ? detailedError.reason() : clientResponse.getStatus().reasonPhrase();
-            HttpResponseStatus responseStatus = new HttpResponseStatus(clientResponse.getStatus()
+            Throwable                detailedErrorCause = new HttpClient.ThrowableWithoutStack(message);
+            HttpClient.DetailedError detailedError      = getDetailedError(data, detailedErrorCause);
+            String                   reasonPhrase       = detailedError.hasReason() ? detailedError.reason() : clientResponse.status().reasonPhrase();
+            HttpResponseStatus responseStatus = new HttpResponseStatus(clientResponse.status()
                 .code(),
                 reasonPhrase);
 
@@ -400,14 +370,14 @@ public class HttpClient implements InvocationHandler {
         return data;
     }
 
-    private String formatHeaders(HttpClientResponse<ByteBuf> clientResponse) {
+    private String formatHeaders(reactor.netty.http.client.HttpClientResponse clientResponse) {
         StringBuilder headers = new StringBuilder();
-        clientResponse.headerIterator().forEachRemaining(h -> headers.append(h.getKey()).append('=').append(h.getValue()).append(' '));
+        clientResponse.responseHeaders().forEach(h -> headers.append(h.getKey()).append('=').append(h.getValue()).append(' '));
         return headers.toString();
     }
 
-    private DetailedError getDetailedError(String data, Throwable cause) {
-        DetailedError detailedError = new DetailedError(cause);
+    private HttpClient.DetailedError getDetailedError(String data, Throwable cause) {
+        HttpClient.DetailedError detailedError = new HttpClient.DetailedError(cause);
         if (data != null && data.length() > 0) {
             try {
                 objectMapper.readerForUpdating(detailedError).readValue(data);
@@ -470,12 +440,12 @@ public class HttpClient implements InvocationHandler {
                 if (annotation instanceof HeaderParam) {
                     request.addHeader(((HeaderParam)annotation).value(), serialize(value));
                 } else if (annotation instanceof CookieParam) {
-                    final String currentCookieValue = request.getHeaders().get("Cookie");
+                    final String currentCookieValue = request.getHeaders().get(COOKIE);
                     final String cookiePart         = ((CookieParam)annotation).value() + "=" + serialize(value);
                     if (currentCookieValue != null) {
-                        request.addHeader("Cookie", format("%s; %s", currentCookieValue, cookiePart));
+                        request.addHeader(COOKIE, format("%s; %s", currentCookieValue, cookiePart));
                     } else {
-                        request.addHeader("Cookie", cookiePart);
+                        request.addHeader(COOKIE, cookiePart);
                     }
                 }
             }
@@ -486,15 +456,20 @@ public class HttpClient implements InvocationHandler {
         }
     }
 
-    protected Observable<Object> deserialize(Method method, String string) {
+    protected Mono<Object> deserialize(Method method, String string) {
         if (string == null || string.isEmpty()) {
-            return Observable.empty();
+            return Mono.empty();
         }
         Type type = ReflectionUtil.getTypeOfObservable(method);
+
+        if (Void.class.equals(type)) {
+            return Mono.empty();
+        }
+
         try {
             JavaType     javaType = TypeFactory.defaultInstance().constructType(type);
             ObjectReader reader   = objectMapper.readerFor(javaType);
-            return just(reader.readValue(string));
+            return Mono.just(reader.readValue(string));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

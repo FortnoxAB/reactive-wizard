@@ -1,4 +1,4 @@
-package se.fortnox.reactivewizard.reactorclient;
+package se.fortnox.reactivewizard.metrics;
 
 import com.codahale.metrics.Timer;
 import org.reactivestreams.Publisher;
@@ -14,7 +14,7 @@ public class MetricsOperator<T> implements Publisher<T> {
     private              Timer          timer;
     private              Consumer<Long> callback;
 
-    public MetricsOperator(Publisher<T> source, Timer timer,  Consumer<Long> callback) {
+    public MetricsOperator(Publisher<T> source, Timer timer, Consumer<Long> callback) {
         super();
         this.source = source;
         this.timer = timer;

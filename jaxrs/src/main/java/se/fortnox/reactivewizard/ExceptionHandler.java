@@ -2,14 +2,15 @@ package se.fortnox.reactivewizard;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
-import io.reactivex.netty.protocol.http.server.HttpServerRequest;
-import io.reactivex.netty.protocol.http.server.HttpServerResponse;
+import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import rx.Observable;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.netty.http.server.HttpServerRequest;
+import reactor.netty.http.server.HttpServerResponse;
 import rx.exceptions.CompositeException;
 import rx.exceptions.OnErrorThrowable;
 import se.fortnox.reactivewizard.jaxrs.WebException;
@@ -20,9 +21,6 @@ import javax.ws.rs.core.MediaType;
 import java.nio.channels.ClosedChannelException;
 import java.nio.file.FileSystemException;
 import java.util.List;
-
-import static rx.Observable.empty;
-import static rx.Observable.just;
 
 /**
  * Handles exceptions and writes errors to the response and the log.
@@ -47,8 +45,9 @@ public class ExceptionHandler {
      * @param request The current request
      * @param response The current response
      * @param throwable The exception that occured
+     * @return success or error
      */
-    public Observable<Void> handleException(HttpServerRequest<ByteBuf> request, HttpServerResponse<ByteBuf> response, Throwable throwable) {
+    public Publisher<Void> handleException(HttpServerRequest request, HttpServerResponse response, Throwable throwable) {
         if (throwable instanceof OnErrorThrowable) {
             throwable = throwable.getCause();
         }
@@ -67,22 +66,22 @@ public class ExceptionHandler {
         } else if (throwable instanceof WebException) {
             webException = (WebException)throwable;
         } else if (throwable instanceof ClosedChannelException) {
-            LOG.debug("ClosedChannelException: " + request.getHttpMethod() + " " + request.getUri(), throwable);
-            return Observable.empty();
+            LOG.debug("ClosedChannelException: " + request.method() + " " + request.uri(), throwable);
+            return Flux.empty();
         } else {
             webException = new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR, throwable);
         }
 
         logException(request, webException);
 
-        response = response.setStatus(webException.getStatus());
-        if (HttpMethod.HEAD.equals(request.getHttpMethod())) {
-            response.addHeader("Content-Length", 0);
+        response = response.status(webException.getStatus());
+        if (HttpMethod.HEAD.equals(request.method())) {
+            response.addHeader("Content-Length", "0");
         } else {
             response = response.addHeader("Content-Type", MediaType.APPLICATION_JSON);
-            return response.writeString(just(json(webException)));
+            return response.sendString(Mono.just(json(webException)));
         }
-        return empty();
+        return Flux.empty();
     }
 
     private String json(WebException webException) {
@@ -94,7 +93,7 @@ public class ExceptionHandler {
         }
     }
 
-    private String getLogMessage(HttpServerRequest<ByteBuf> request, WebException webException) {
+    private String getLogMessage(HttpServerRequest request, WebException webException) {
         final StringBuilder msg = new StringBuilder()
             .append(webException.getStatus().toString())
             .append("\n\tCause: ").append(webException.getCause() != null ?
@@ -102,11 +101,11 @@ public class ExceptionHandler {
                 "-")
             .append("\n\tResponse: ").append(json(webException))
             .append("\n\tRequest: ")
-            .append(request.getHttpMethod())
-            .append(" ").append(request.getUri())
+            .append(request.method())
+            .append(" ").append(request.uri())
             .append(" headers: ");
 
-        request.headerIterator().forEachRemaining(header ->
+        request.requestHeaders().forEach(header ->
             msg
                 .append(header.getKey())
                 .append('=')
@@ -116,7 +115,7 @@ public class ExceptionHandler {
         return msg.toString();
     }
 
-    private void logException(HttpServerRequest<ByteBuf> request, WebException webException) {
+    private void logException(HttpServerRequest request, WebException webException) {
         String logMessage = getLogMessage(request, webException);
         switch (webException.getLogLevel()) {
             case WARN:

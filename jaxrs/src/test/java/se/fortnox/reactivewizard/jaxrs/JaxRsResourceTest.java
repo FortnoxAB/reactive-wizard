@@ -11,9 +11,11 @@ import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import io.netty.handler.codec.http.HttpResponseStatus;
-import io.reactivex.netty.protocol.http.server.MockHttpServerRequest;
+import io.netty.handler.codec.http.cookie.DefaultCookie;
 import org.junit.Test;
 import org.mockito.Mockito;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import rx.Observable;
 import rx.Single;
 import se.fortnox.reactivewizard.jaxrs.params.ParamResolver;
@@ -26,6 +28,7 @@ import se.fortnox.reactivewizard.jaxrs.params.deserializing.DeserializerFactory;
 import se.fortnox.reactivewizard.jaxrs.response.JaxRsResult;
 import se.fortnox.reactivewizard.jaxrs.response.JaxRsResultFactoryFactory;
 import se.fortnox.reactivewizard.jaxrs.response.ResultTransformerFactories;
+import se.fortnox.reactivewizard.mocks.MockHttpServerRequest;
 import se.fortnox.reactivewizard.mocks.MockHttpServerResponse;
 import se.fortnox.reactivewizard.utils.JaxRsTestUtil;
 
@@ -53,6 +56,7 @@ import java.time.LocalTime;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -95,17 +99,17 @@ public class JaxRsResourceTest {
 
     @Test
     public void shouldHandleHeaderOnClassAsAResource() {
-        assertThat(get(new Testresource(), "/test/serverSideAnnotationsOnClassAsResource").getHeader("Content-Disposition")).isNotNull();
+        assertThat(get(new Testresource(), "/test/serverSideAnnotationsOnClassAsResource").responseHeaders().get("Content-Disposition")).isNotNull();
     }
 
     @Test
     public void shouldIgnoreHeaderOnInterface() {
-        assertThat(get(new Testresource(), "/test/shouldIgnoreHeadersAnnotationOnInterface").getHeader("Content-Disposition")).isNull();
+        assertThat(get(new Testresource(), "/test/shouldIgnoreHeadersAnnotationOnInterface").responseHeaders().get("Content-Disposition")).isNull();
     }
 
     @Test
     public void shouldAcceptHeaderOnImplementingClass() {
-        assertThat(get(service, "/test/acceptsHeadersOnImplementation").getHeader("Content-Disposition")).isNotNull();
+        assertThat(get(service, "/test/acceptsHeadersOnImplementation").responseHeaders().get("Content-Disposition")).isNotNull();
     }
 
     @Test
@@ -119,14 +123,14 @@ public class JaxRsResourceTest {
         IllegalArgumentException, InvocationTargetException, JsonProcessingException {
 
         MockHttpServerRequest req = new MockHttpServerRequest("/test/accepts/res?fid=5678");
-        req.addCookie("fnox_5678", "888");
+        req.cookies().put("fnox_5678", new HashSet<>(asList(new DefaultCookie("fnox_5678","888"))));
 
         Foo foo = Mockito.mock(Foo.class);
         when(foo.getStr()).thenReturn("5678");
         ParamResolver<Foo> fooResolver = new ParamResolver<Foo>() {
             @Override
-            public Observable<Foo> resolve(JaxRsRequest request) {
-                return just(foo);
+            public Mono<Foo> resolve(JaxRsRequest request) {
+                return Mono.just(foo);
             }
         };
 
@@ -140,19 +144,14 @@ public class JaxRsResourceTest {
                     paramResolvers,
                     new AnnotatedParamResolverFactories(),
                     new WrapSupportingParamTypeResolver()),
-                new JaxRsResultFactoryFactory(),
-                new BlockingResourceScheduler()),
+                new JaxRsResultFactoryFactory()),
             false);
         JaxRsRequest                         jaxRsRequest = new JaxRsRequest(req, new ByteBufCollector());
-        Observable<? extends JaxRsResult<?>> result       = jaxRsResources.findResource(jaxRsRequest).call(jaxRsRequest);
+        Mono<? extends JaxRsResult<?>> result       = jaxRsResources.findResource(jaxRsRequest).call(jaxRsRequest);
 
         MockHttpServerResponse response = new MockHttpServerResponse();
 
-        result.toBlocking()
-            .single()
-            .write(response)
-            .toBlocking()
-            .lastOrDefault(null);
+        Flux.from(result.block().write(response)).count().block();
 
         assertThat(response.getOutp()).isEqualTo("\"foo: 5678\"");
     }
@@ -225,15 +224,15 @@ public class JaxRsResourceTest {
 
     @Test
     public void shouldSupportTrailingSlashInResource() {
-        assertThat(get(service, "/test/trailingSlash/").getStatus()).isEqualTo(HttpResponseStatus.OK);
-        assertThat(get(service, "/test/trailingSlash").getStatus()).isEqualTo(HttpResponseStatus.OK);
+        assertThat(get(service, "/test/trailingSlash/").status()).isEqualTo(HttpResponseStatus.OK);
+        assertThat(get(service, "/test/trailingSlash").status()).isEqualTo(HttpResponseStatus.OK);
     }
 
     @Test
     public void shouldSupportWhitespace() {
-        assertThat(get(service, "/test/accepts").getStatus()).isEqualTo(HttpResponseStatus.OK);
-        assertThat(get(service, "/test/accepts    ").getStatus()).isEqualTo(HttpResponseStatus.OK);
-        assertThat(get(service, "/test/accepts\t\t").getStatus()).isEqualTo(HttpResponseStatus.OK);
+        assertThat(get(service, "/test/accepts").status()).isEqualTo(HttpResponseStatus.OK);
+        assertThat(get(service, "/test/accepts%20%20%20").status()).isEqualTo(HttpResponseStatus.OK);
+        assertThat(get(service, "/test/accepts%09%09").status()).isEqualTo(HttpResponseStatus.OK);
     }
 
     @Test
@@ -359,7 +358,7 @@ public class JaxRsResourceTest {
             .replaceAll("\\}", "\\\\}")
             .replaceAll("\\[", "\\\\[")
             .replaceAll("\\]", "\\\\]");
-        assertThat(response.getStatus())
+        assertThat(response.status())
             .isEqualTo(HttpResponseStatus.BAD_REQUEST);
         assertThat(response.getOutp())
             .matches(expectedBodyRegex);
@@ -380,7 +379,7 @@ public class JaxRsResourceTest {
         assertBadRequest(get(service, "/test/acceptsDate?myarg=20aa-01-01"),
             "{'id':'.*','error':'validation','fields':[{'field':'myarg','error':'validation.invalid.date'}]}");
 
-        assertBadRequest(get(service, "/test/acceptsDate?myarg=2010-0b-01 00:00:00"),
+        assertBadRequest(get(service, "/test/acceptsDate?myarg=2010-0b-01%2000:00:00"),
             "{'id':'.*','error':'validation','fields':[{'field':'myarg','error':'validation.invalid.date'}]}");
 
         assertBadRequest(get(service, "/test/acceptsDate?myarg=2010-01-qehjeq:00:00.000"),
@@ -450,7 +449,7 @@ public class JaxRsResourceTest {
 
         assertThat(
             body(
-                JaxRsTestUtil.processRequestWithHandler(handler, new MockHttpServerRequest("/test/acceptsDate?myarg=2010-01-01 00:00:00"))))
+                JaxRsTestUtil.processRequestWithHandler(handler, new MockHttpServerRequest("/test/acceptsDate?myarg=2010-01-01%2000:00:00"))))
             .isEqualTo("\"2010-01-01T00:00:00.000+0100\"");
     }
 
@@ -471,19 +470,19 @@ public class JaxRsResourceTest {
     @Test
     public void shouldReturnErrorWhenServiceThrowsError() {
         assertThat(get(service,
-            "/test/throwInsufficientStorage").getStatus()).isEqualTo(HttpResponseStatus.INSUFFICIENT_STORAGE);
+            "/test/throwInsufficientStorage").status()).isEqualTo(HttpResponseStatus.INSUFFICIENT_STORAGE);
     }
 
     @Test
     public void shouldReturnErrorWhenServiceThrowsRuntimeException() {
         assertThat(get(service,
-            "/test/throwRuntimeException").getStatus()).isEqualTo(HttpResponseStatus.INTERNAL_SERVER_ERROR);
+            "/test/throwRuntimeException").status()).isEqualTo(HttpResponseStatus.INTERNAL_SERVER_ERROR);
     }
 
     @Test
     public void shouldReturnErrorWhenServiceThrowsException() {
         assertThat(get(service,
-            "/test/throwException").getStatus()).isEqualTo(HttpResponseStatus.INTERNAL_SERVER_ERROR);
+            "/test/throwException").status()).isEqualTo(HttpResponseStatus.INTERNAL_SERVER_ERROR);
     }
 
     @Test
@@ -505,7 +504,7 @@ public class JaxRsResourceTest {
     public void shouldAcceptTextPlainInput() {
         String                 text = "my plain text";
         MockHttpServerResponse resp = post(service, "/test/textPlain", text);
-        assertThat(resp.getStatus()).isEqualTo(HttpResponseStatus.CREATED);
+        assertThat(resp.status()).isEqualTo(HttpResponseStatus.CREATED);
         assertThat(resp.getOutp()).isEqualTo("\"" + text + "\"");
     }
 
@@ -513,14 +512,8 @@ public class JaxRsResourceTest {
     public void shouldAcceptByteArrayInput() {
         String                 text = "my bytes";
         MockHttpServerResponse resp = post(service, "/test/byteArray", text);
-        assertThat(resp.getStatus()).isEqualTo(HttpResponseStatus.CREATED);
+        assertThat(resp.status()).isEqualTo(HttpResponseStatus.CREATED);
         assertThat(resp.getOutp()).isEqualTo("\"" + text + "\"");
-    }
-
-    @Test
-    public void shouldAcceptNonObservableReturnTypes() {
-        assertThat(get(service,
-            "/test/returningString").getStatus()).isEqualTo(HttpResponseStatus.OK);
     }
 
     @Test
@@ -554,7 +547,7 @@ public class JaxRsResourceTest {
 
     @Test
     public void shouldHandleNoMatchingResource() {
-        assertThat(get(service, "/noservice/nomethod").getStatus())
+        assertThat(get(service, "/noservice/nomethod").status())
             .isEqualTo(HttpResponseStatus.NOT_FOUND);
     }
 
@@ -596,7 +589,7 @@ public class JaxRsResourceTest {
     @Test
     public void shouldGive400ErrorForBadUuid() {
         MockHttpServerResponse response = get(service, "/test/acceptsUuid/baduuid");
-        assertThat(response.getStatus()).isEqualTo(HttpResponseStatus.BAD_REQUEST);
+        assertThat(response.status()).isEqualTo(HttpResponseStatus.BAD_REQUEST);
         assertThat(body(response)).contains("\"error\":\"validation\",\"fields\":[{\"field\":\"id\",\"error\":\"validation.invalid.uuid\"}]}");
     }
 
@@ -615,13 +608,13 @@ public class JaxRsResourceTest {
 
     @Test
     public void shouldSetContentType() {
-        assertThat(get(new Testresource(), "/test/acceptsString").getHeader("Content-Type"))
+        assertThat(get(new Testresource(), "/test/acceptsString").responseHeaders().get("Content-Type"))
             .isEqualTo("application/json");
     }
 
     @Test
     public void shouldSupportReturningNullFromResource() {
-        assertThat(get(new Testresource(), "/test/returnsNull").getStatus())
+        assertThat(get(new Testresource(), "/test/returnsNull").status())
             .isEqualTo(HttpResponseStatus.NO_CONTENT);
     }
 
@@ -687,7 +680,7 @@ public class JaxRsResourceTest {
 
     @Test
     public void shouldAcceptLargeBodiesWithinLimits() {
-        assertThat(post(service, "/test/acceptsPostString", new byte[10 * 1024 * 1024]).getStatus())
+        assertThat(post(service, "/test/acceptsPostString", new byte[10 * 1024 * 1024]).status())
             .isEqualTo(HttpResponseStatus.CREATED);
     }
 
@@ -717,17 +710,6 @@ public class JaxRsResourceTest {
     public void shouldAcceptBeanParamInherited() {
         assertThat(get(service, "/test/acceptsBeanParamInherited?name=foo&age=3&items=1,2&inherited=YES").getOutp()).isEqualTo("\"foo - 3 2 - YES\"");
     }
-
-    @Test
-    public void shouldGive400ErrorForUnescapedUrls() {
-        try {
-            get(service, "/test/acceptsString/something% ");
-            fail("Expected exception");
-        } catch (WebException e) {
-            assertThat(e.getStatus().code()).isEqualTo(400);
-        }
-    }
-
 
     @Path("test")
     class Testresource {
@@ -944,10 +926,6 @@ public class JaxRsResourceTest {
         @GET
         @Path("throwException")
         Observable<String> throwException();
-
-        @GET
-        @Path("returningString")
-        String returningString();
 
         @POST
         @Path("jsonParam")
@@ -1209,11 +1187,6 @@ public class JaxRsResourceTest {
         @Override
         public Observable<String> throwException() {
             throw new AssertionError();
-        }
-
-        @Override
-        public String returningString() {
-            return "";
         }
 
         @Override

@@ -2,16 +2,17 @@ package se.fortnox.reactivewizard.server;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpResponseStatus;
-import io.reactivex.netty.protocol.http.server.HttpServerRequest;
-import io.reactivex.netty.protocol.http.server.HttpServerResponse;
-import io.reactivex.netty.protocol.http.server.RequestHandler;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
+import reactor.core.publisher.Flux;
+import reactor.netty.http.server.HttpServerRequest;
+import reactor.netty.http.server.HttpServerResponse;
 import rx.Observable;
 import se.fortnox.reactivewizard.ExceptionHandler;
+import se.fortnox.reactivewizard.RequestHandler;
 import se.fortnox.reactivewizard.jaxrs.WebException;
 
 import java.util.HashSet;
@@ -28,22 +29,22 @@ import static org.mockito.Mockito.when;
 public class CompositeRequestHandlerTest {
 
     private CompositeRequestHandler compositeRequestHandler;
-    private Set<RequestHandler<ByteBuf, ByteBuf>> requestHandlers = new HashSet<>();
+    private Set<RequestHandler> requestHandlers = new HashSet<>();
 
     @Mock
     private ExceptionHandler exceptionHandler;
 
     @Mock
-    private HttpServerRequest<ByteBuf> request;
+    private HttpServerRequest request;
 
     @Mock
-    private HttpServerResponse<ByteBuf> response;
+    private HttpServerResponse response;
 
     private ConnectionCounter connectionCounter;
 
     @Before
     public void beforeEach() {
-        when(exceptionHandler.handleException(any(), any(), any())).thenReturn(Observable.empty());
+        when(exceptionHandler.handleException(any(), any(), any())).thenReturn(Flux.empty());
         connectionCounter = new ConnectionCounter();
         compositeRequestHandler = new CompositeRequestHandler(requestHandlers, exceptionHandler, connectionCounter);
     }
@@ -53,14 +54,14 @@ public class CompositeRequestHandlerTest {
         AtomicInteger callCounter = new AtomicInteger();
         requestHandlers.add((request, response) -> {
             callCounter.incrementAndGet();
-            return Observable.empty();
+            return Flux.empty();
         });
         requestHandlers.add((request, response) -> {
             callCounter.incrementAndGet();
-            return Observable.empty();
+            return Flux.empty();
         });
 
-        compositeRequestHandler.handle(request, response).toBlocking().firstOrDefault(null);
+        Flux.from(compositeRequestHandler.apply(request, response)).count().block();
 
         assertThat(callCounter.get()).isEqualTo(1);
 
@@ -69,24 +70,24 @@ public class CompositeRequestHandlerTest {
     @Test
     public void exceptionHandlerShallBeInvokedByRuntimeException() {
         IllegalArgumentException illegalArgumentException = new IllegalArgumentException("expected exception");
-        when(exceptionHandler.handleException(request, response, illegalArgumentException)).thenReturn(Observable.empty());
+        when(exceptionHandler.handleException(request, response, illegalArgumentException)).thenReturn(Flux.empty());
 
         requestHandlers.add((request, response) -> {
             throw illegalArgumentException;
         });
 
-        compositeRequestHandler.handle(request, response).test();
+        Flux.from(compositeRequestHandler.apply(request, response)).count().block();
 
         verify(exceptionHandler, times(1)).handleException(request, response, illegalArgumentException);
     }
 
     @Test
     public void exceptionHandlerShallBeInvokedWhenNoRequestHandlerIsGiven() {
-        when(exceptionHandler.handleException(any(), any(), any())).thenReturn(Observable.empty());
+        when(exceptionHandler.handleException(any(), any(), any())).thenReturn(Flux.empty());
         IllegalArgumentException illegalArgumentException = new IllegalArgumentException("expected exception");
-        when(exceptionHandler.handleException(request, response, illegalArgumentException)).thenReturn(Observable.empty());
+        when(exceptionHandler.handleException(request, response, illegalArgumentException)).thenReturn(Flux.empty());
 
-        compositeRequestHandler.handle(request, response).test().awaitTerminalEvent();
+        Flux.from(compositeRequestHandler.apply(request, response)).count().block();
 
         verify(exceptionHandler, times(1)).handleException(any(), any(), any(WebException.class));
         assertThat(connectionCounter.getCount()).isEqualTo(0);
@@ -95,10 +96,10 @@ public class CompositeRequestHandlerTest {
     @Test
     public void exceptionHandlerShallBeInvokedWhenNullIsReturnedByRequestHandler() {
 
-        when(response.getStatus()).thenReturn(HttpResponseStatus.OK);
+        when(response.status()).thenReturn(HttpResponseStatus.OK);
         requestHandlers.add((request, response) -> null);
 
-        compositeRequestHandler.handle(request, response).toBlocking().firstOrDefault(null);
+        Flux.from(compositeRequestHandler.apply(request, response)).count().block();
 
         verify(exceptionHandler, times(1)).handleException(any(), any(), any(WebException.class));
 

@@ -1,4 +1,4 @@
-package se.fortnox.reactivewizard.reactorclient;
+package se.fortnox.reactivewizard.client;
 
 import reactor.netty.ByteBufFlux;
 

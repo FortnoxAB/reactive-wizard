@@ -1,13 +1,12 @@
 package se.fortnox.reactivewizard.server;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.reactivex.netty.RxNetty;
-import io.reactivex.netty.protocol.http.server.HttpServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.netty.DisposableServer;
+import reactor.netty.http.server.HttpServer;
+import reactor.netty.resources.LoopResources;
 import rx.functions.Action0;
+import se.fortnox.reactivewizard.RequestHandler;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -16,7 +15,7 @@ import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Runs an RxNetty @{@link HttpServer} with all registered @{@link io.reactivex.netty.protocol.http.server.RequestHandler}s.
+ * Runs an RxNetty @{@link HttpServer} with all registered @{@link RequestHandler}s.
  */
 @Singleton
 public class RxNettyServer extends Thread {
@@ -25,28 +24,28 @@ public class RxNettyServer extends Thread {
     private final ServerConfig config;
     private final ConnectionCounter connectionCounter;
     public static final int MAX_CHUNK_SIZE_DEFAULT = 8192;
-    private final EventLoopGroup eventLoopGroup;
-    private final HttpServer<ByteBuf, ByteBuf> server;
+    private final LoopResources eventLoopGroup;
+    private final DisposableServer server;
     private static Runnable blockShutdownUntil;
 
     @Inject
     public RxNettyServer(ServerConfig config, CompositeRequestHandler compositeRequestHandler, ConnectionCounter connectionCounter) {
-        this(config, compositeRequestHandler, connectionCounter, RxNetty.getRxEventLoopProvider().globalServerEventLoop(true));
+        this(config, compositeRequestHandler, connectionCounter, null);
     }
 
-    RxNettyServer(ServerConfig config, CompositeRequestHandler compositeRequestHandler, ConnectionCounter connectionCounter, EventLoopGroup eventLoopGroup) {
-        this(config, connectionCounter, createHttpServer(config, eventLoopGroup), compositeRequestHandler, eventLoopGroup);
+    RxNettyServer(ServerConfig config, CompositeRequestHandler compositeRequestHandler, ConnectionCounter connectionCounter, LoopResources loopResources) {
+        this(config, connectionCounter, createHttpServer(config, loopResources), compositeRequestHandler, loopResources);
     }
 
-    RxNettyServer(ServerConfig config, ConnectionCounter connectionCounter, HttpServer<ByteBuf, ByteBuf> httpServer,
-                  CompositeRequestHandler compositeRequestHandler, EventLoopGroup eventLoopGroup) {
+    RxNettyServer(ServerConfig config, ConnectionCounter connectionCounter, HttpServer httpServer,
+                  CompositeRequestHandler compositeRequestHandler, LoopResources loopResources) {
         super("RxNettyServerMain");
         this.config = config;
         this.connectionCounter = connectionCounter;
-        this.eventLoopGroup = eventLoopGroup;
+        this.eventLoopGroup = loopResources;
 
         if (config.isEnabled()) {
-            server = httpServer.start(compositeRequestHandler);
+            server = httpServer.handle(compositeRequestHandler).bindNow();
             start();
             registerShutdownHook();
         } else {
@@ -54,26 +53,22 @@ public class RxNettyServer extends Thread {
         }
     }
 
-    private static HttpServer<ByteBuf, ByteBuf> createHttpServer(ServerConfig config, EventLoopGroup eventLoopGroup) {
+    private static HttpServer createHttpServer(ServerConfig config, LoopResources loopResources) {
         if (!config.isEnabled()) {
             return null;
         }
-        return HttpServer.newServer(config.getPort(), eventLoopGroup, NioServerSocketChannel.class)
-            .<ByteBuf, ByteBuf>pipelineConfigurator(
-                new NoContentFixConfigurator(
-                    config.getMaxInitialLineLengthDefault(),
-                    MAX_CHUNK_SIZE_DEFAULT,
-                    config.getMaxHeaderSize()));
+        return HttpServer.create().host("localhost").port(config.getPort());
     }
 
     /**
      * Run the thread until server is shutdown
      */
+    @Override
     public void run() {
-        server.awaitShutdown();
+        server.onDispose().block();
     }
 
-    public HttpServer<ByteBuf, ByteBuf> getServer() {
+    public DisposableServer getServer() {
         return server;
     }
 
@@ -88,17 +83,17 @@ public class RxNettyServer extends Thread {
         RxNettyServer.blockShutdownUntil = blockShutdownUntil;
     }
 
-    static void shutdownHook(ServerConfig config, HttpServer server, EventLoopGroup eventLoopGroup, ConnectionCounter connectionCounter) {
+    static void shutdownHook(ServerConfig config, DisposableServer server, LoopResources loopResources, ConnectionCounter connectionCounter) {
         LOG.info("Shutdown requested. Will wait up to {} seconds...", config.getShutdownTimeoutSeconds());
         int elapsedSeconds = measureElapsedSeconds(() ->
             awaitShutdownDependency(config.getShutdownTimeoutSeconds())
         );
         int secondsLeft = Math.max(config.getShutdownTimeoutSeconds() - elapsedSeconds, 0);
-        shutdownEventLoopGracefully(secondsLeft, eventLoopGroup);
+        shutdownEventLoopGracefully(secondsLeft, loopResources);
         if (!connectionCounter.awaitZero(secondsLeft, TimeUnit.SECONDS)) {
             LOG.error("Shutdown proceeded while connection count was not zero: " + connectionCounter.getCount());
         }
-        server.awaitShutdown();
+        server.disposeNow(Duration.ofSeconds(config.getShutdownTimeoutSeconds()));
         LOG.info("Shutdown complete");
     }
 
@@ -118,11 +113,11 @@ public class RxNettyServer extends Thread {
         LOG.info("Shutdown dependency completed, continue...");
     }
 
-    static void shutdownEventLoopGracefully(int shutdownTimeoutSeconds, EventLoopGroup eventLoopGroup) {
+    static void shutdownEventLoopGracefully(int shutdownTimeoutSeconds, LoopResources loopResources) {
         try {
             int shutdownQuietPeriodSeconds = 0;
-            eventLoopGroup.shutdownGracefully(shutdownQuietPeriodSeconds, shutdownTimeoutSeconds, TimeUnit.SECONDS).await();
-        } catch (InterruptedException e) {
+            loopResources.disposeLater(Duration.ofSeconds(shutdownQuietPeriodSeconds), Duration.ofSeconds(shutdownTimeoutSeconds)).block();
+        } catch (Exception e) {
             LOG.error("Graceful shutdown failed" + e);
         }
     }

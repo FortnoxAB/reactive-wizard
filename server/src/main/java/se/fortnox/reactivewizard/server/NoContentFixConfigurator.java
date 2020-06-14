@@ -7,7 +7,6 @@ import io.netty.channel.ChannelPromise;
 import io.netty.handler.codec.http.DefaultHttpResponse;
 import io.netty.handler.codec.http.HttpRequestDecoder;
 import io.netty.handler.codec.http.HttpResponseStatus;
-import io.reactivex.netty.protocol.http.HttpHandlerNames;
 import rx.functions.Action1;
 
 /**
@@ -32,10 +31,10 @@ public class NoContentFixConfigurator implements Action1<ChannelPipeline> {
     @Override
     public void call(ChannelPipeline pipeline) {
         pipeline.replace(
-                HttpHandlerNames.HttpServerDecoder.getName(),
-                HttpHandlerNames.HttpServerDecoder.getName(),
+                "HttpServerDecoder",
+                "HttpServerDecoder",
                 new HttpRequestDecoder(maxInitialLineLength, maxHeaderSize, maxChunkSize));
-        pipeline.addAfter(HttpHandlerNames.HttpServerEncoder.getName(), "NoContentFix", new NoContentBodyFix());
+        pipeline.addAfter("HttpServerEncoder", "NoContentFix", new NoContentBodyFix());
     }
 
     /**

@@ -31,18 +31,6 @@
 		</dependency>
 
 		<dependency>
-			<groupId>io.reactivex</groupId>
-			<artifactId>rxnetty-common</artifactId>
-			<version>${rxnetty.version}</version>
-		</dependency>
-
-		<dependency>
-			<groupId>io.reactivex</groupId>
-			<artifactId>rxnetty-http</artifactId>
-			<version>${rxnetty.version}</version>
-		</dependency>
-
-		<dependency>
 			<groupId>se.fortnox.reactivewizard</groupId>
 			<artifactId>reactivewizard-binding</artifactId>
 			<version>${project.version}</version>
@@ -121,6 +109,11 @@
             <artifactId>reactivewizard-logging</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>io.projectreactor.netty</groupId>
+            <artifactId>reactor-netty</artifactId>
         </dependency>
 	</dependencies>
 

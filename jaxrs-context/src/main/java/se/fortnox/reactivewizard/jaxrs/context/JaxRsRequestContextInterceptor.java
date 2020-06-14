@@ -1,6 +1,6 @@
 package se.fortnox.reactivewizard.jaxrs.context;
 
-import rx.Observable;
+import org.reactivestreams.Publisher;
 import se.fortnox.reactivewizard.jaxrs.JaxRsResourceInterceptor;
 
 public class JaxRsRequestContextInterceptor implements JaxRsResourceInterceptor {
@@ -10,7 +10,7 @@ public class JaxRsRequestContextInterceptor implements JaxRsResourceInterceptor 
     }
 
     @Override
-    public void postHandle(JaxRsResourceContext context, Observable<Void> resourceCall) {
+    public void postHandle(JaxRsResourceContext context, Publisher<Void> resourceCall) {
         JaxRsRequestContext.close();
     }
 }

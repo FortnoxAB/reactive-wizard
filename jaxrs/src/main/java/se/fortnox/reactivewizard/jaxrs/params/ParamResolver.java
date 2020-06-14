@@ -1,5 +1,6 @@
 package se.fortnox.reactivewizard.jaxrs.params;
 
+import reactor.core.publisher.Mono;
 import rx.Observable;
 import se.fortnox.reactivewizard.jaxrs.JaxRsRequest;
 
@@ -10,5 +11,5 @@ import se.fortnox.reactivewizard.jaxrs.JaxRsRequest;
  * @param <T> the type that this ParamResolver can resolve from a request
  */
 public interface ParamResolver<T> {
-    Observable<T> resolve(JaxRsRequest request);
+    Mono<T> resolve(JaxRsRequest request);
 }

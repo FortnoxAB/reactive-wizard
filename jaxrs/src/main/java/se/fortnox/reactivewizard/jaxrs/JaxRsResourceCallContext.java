@@ -1,15 +1,14 @@
 package se.fortnox.reactivewizard.jaxrs;
 
-import io.netty.buffer.ByteBuf;
-import io.reactivex.netty.protocol.http.server.HttpServerRequest;
+import reactor.netty.http.server.HttpServerRequest;
 
 import java.util.Set;
 
 class JaxRsResourceCallContext implements JaxRsResourceInterceptor.JaxRsResourceContext {
-    private final HttpServerRequest<ByteBuf> request;
+    private final HttpServerRequest request;
     private final JaxRsResource<?> resource;
 
-    public JaxRsResourceCallContext(HttpServerRequest<ByteBuf> request, JaxRsResource<?> resource) {
+    public JaxRsResourceCallContext(HttpServerRequest request, JaxRsResource<?> resource) {
         this.request = request;
         this.resource = resource;
     }
@@ -21,17 +20,17 @@ class JaxRsResourceCallContext implements JaxRsResourceInterceptor.JaxRsResource
 
     @Override
     public String getRequestUri() {
-        return request.getUri();
+        return request.uri();
     }
 
     @Override
     public Set<String> getRequestHeaderNames() {
-        return request.getHeaderNames();
+        return request.requestHeaders().names();
     }
 
     @Override
     public String getRequestHeader(String name) {
-        return request.getHeader(name);
+        return request.requestHeaders().get(name);
     }
 
     @Override

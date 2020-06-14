@@ -16,20 +16,17 @@ public class JaxRsResourceFactory {
 
     protected final ParamResolverFactories    paramResolverFactories;
     protected final JaxRsResultFactoryFactory jaxRsResultFactoryFactory;
-    protected final BlockingResourceScheduler blockingResourceScheduler;
 
     public JaxRsResourceFactory() {
-        this(new ParamResolverFactories(), new JaxRsResultFactoryFactory(), new BlockingResourceScheduler());
+        this(new ParamResolverFactories(), new JaxRsResultFactoryFactory());
     }
 
     @Inject
     public JaxRsResourceFactory(ParamResolverFactories paramResolverFactories,
-        JaxRsResultFactoryFactory jaxRsResultFactoryFactory,
-        BlockingResourceScheduler blockingResourceScheduler
+        JaxRsResultFactoryFactory jaxRsResultFactoryFactory
     ) {
         this.paramResolverFactories = paramResolverFactories;
         this.jaxRsResultFactoryFactory = jaxRsResultFactoryFactory;
-        this.blockingResourceScheduler = blockingResourceScheduler;
     }
 
     public List<JaxRsResource> createResources(Object[] services) {
@@ -70,6 +67,6 @@ public class JaxRsResourceFactory {
     }
 
     protected JaxRsResource createResource(Method method, Object service, JaxRsMeta meta) {
-        return new JaxRsResource(method, service, paramResolverFactories, jaxRsResultFactoryFactory, blockingResourceScheduler, meta);
+        return new JaxRsResource(method, service, paramResolverFactories, jaxRsResultFactoryFactory, meta);
     }
 }

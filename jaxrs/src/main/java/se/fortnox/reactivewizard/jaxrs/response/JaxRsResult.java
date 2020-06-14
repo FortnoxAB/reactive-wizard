@@ -1,9 +1,10 @@
 package se.fortnox.reactivewizard.jaxrs.response;
 
-import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpResponseStatus;
-import io.reactivex.netty.protocol.http.server.HttpServerResponse;
-import rx.Observable;
+import org.reactivestreams.Publisher;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.netty.http.server.HttpServerResponse;
 import rx.functions.Action1;
 import rx.functions.Func1;
 
@@ -12,8 +13,6 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static javax.ws.rs.core.HttpHeaders.CONTENT_LENGTH;
-import static rx.Observable.empty;
-import static rx.Observable.just;
 
 /**
  * Represents a result of a call to a JaxRs resource. Contains the output but also some meta data about the call.
@@ -23,11 +22,11 @@ public class JaxRsResult<T> {
     protected static final byte[] EMPTY_RESPONSE = new byte[0];
 
     protected final Func1<T, byte[]>    serializer;
-    protected final Map<String, Object> headers = new HashMap<>();
-    protected       Observable<T>       output;
+    protected final Map<String, String> headers = new HashMap<>();
+    protected       Flux<T>       output;
     protected       HttpResponseStatus  responseStatus;
 
-    public JaxRsResult(Observable<T> output, HttpResponseStatus responseStatus, Func1<T, byte[]> serializer, Map<String, Object> headers) {
+    public JaxRsResult(Flux<T> output, HttpResponseStatus responseStatus, Func1<T, byte[]> serializer, Map<String, String> headers) {
         this.output = output;
         this.responseStatus = responseStatus;
         this.serializer = serializer;
@@ -38,40 +37,40 @@ public class JaxRsResult<T> {
         return responseStatus;
     }
 
-    public JaxRsResult<T> addHeader(String key, Object value) {
+    public JaxRsResult<T> addHeader(String key, String value) {
         headers.put(key, value);
         return this;
     }
 
     public JaxRsResult<T> doOnOutput(Action1<T> action) {
-        output = output.doOnNext(action);
+        output = output.doOnNext(action::call);
         return this;
     }
 
-    public JaxRsResult<T> map(Func1<Observable<T>, Observable<T>> mapFunction) {
+    public JaxRsResult<T> map(Func1<Flux<T>, Flux<T>> mapFunction) {
         output = mapFunction.call(output);
         return this;
     }
 
-    public Observable<Void> write(HttpServerResponse<ByteBuf> response) {
+    public Publisher<Void> write(HttpServerResponse response) {
         AtomicBoolean headersWritten = new AtomicBoolean();
         return output
-            .map(serializer)
+            .map(serializer::call)
             .defaultIfEmpty(EMPTY_RESPONSE)
             .flatMap(bytes -> {
                 int contentLength = getContentLength(bytes);
 
                 if (headersWritten.compareAndSet(false, true)) {
-                    response.setStatus(responseStatus);
+                    response.status(responseStatus);
                     headers.forEach(response::addHeader);
-                    response.addHeader(CONTENT_LENGTH, contentLength);
+                    response.addHeader(CONTENT_LENGTH, String.valueOf(contentLength));
                 }
 
                 if (contentLength > 0) {
-                    return response.writeBytes(just(bytes));
+                    return response.sendByteArray(Mono.just(bytes));
                 }
 
-                return empty();
+                return Flux.empty();
             });
     }
 

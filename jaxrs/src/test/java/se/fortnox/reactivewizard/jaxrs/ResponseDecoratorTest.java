@@ -21,14 +21,14 @@ public class ResponseDecoratorTest {
     @Test
     public void shouldReturnHeaderFromResource() {
         MockHttpServerResponse response = JaxRsTestUtil.get(new ResourceWithHeaders(), "/");
-        assertThat(response.getHeader("custom_header")).isEqualTo("value");
+        assertThat(response.responseHeaders().get("custom_header")).isEqualTo("value");
         assertThat(response.getOutp()).isEqualTo("\"body\"");
     }
 
     @Test
     public void shouldReturnDeferedHeaderFromResource() {
         MockHttpServerResponse response = JaxRsTestUtil.get(new ResourceWithHeaders(), "/deferred");
-        assertThat(response.getHeader("custom_header")).isEqualTo("deferred");
+        assertThat(response.responseHeaders().get("custom_header")).isEqualTo("deferred");
         assertThat(response.getOutp()).isEqualTo("\"body\"");
     }
 

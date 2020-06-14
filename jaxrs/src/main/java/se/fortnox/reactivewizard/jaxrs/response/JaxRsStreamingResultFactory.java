@@ -1,6 +1,6 @@
 package se.fortnox.reactivewizard.jaxrs.response;
 
-import rx.Observable;
+import reactor.core.publisher.Flux;
 import se.fortnox.reactivewizard.jaxrs.JaxRsResource;
 import se.fortnox.reactivewizard.json.JsonSerializerFactory;
 
@@ -13,7 +13,7 @@ public class JaxRsStreamingResultFactory<T> extends JaxRsResultFactory<T> {
     }
 
     @Override
-    public JaxRsResult<T> createResult(Observable<T> output, Object[] args) {
+    public JaxRsResult<T> createResult(Flux<T> output, Object[] args) {
         return new JaxRsStreamingResult<>(output,
             responseStatus,
             serializer,

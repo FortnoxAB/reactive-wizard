@@ -1,18 +1,27 @@
 package se.fortnox.reactivewizard.server;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.channel.EventLoopGroup;
-import io.netty.util.concurrent.Future;
-import io.reactivex.netty.protocol.http.server.HttpServer;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import org.apache.log4j.Appender;
+import org.assertj.core.api.Assertions;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
+import reactor.core.publisher.Mono;
+import reactor.netty.DisposableServer;
+import reactor.netty.http.client.HttpClient;
+import reactor.netty.http.client.HttpClientResponse;
+import reactor.netty.http.server.HttpServer;
+import reactor.netty.resources.LoopResources;
+import reactor.netty.tcp.TcpClient;
+import reactor.netty.tcp.TcpServer;
+import se.fortnox.reactivewizard.jaxrs.WebException;
 import se.fortnox.reactivewizard.test.LoggingMockUtil;
 
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
@@ -20,24 +29,17 @@ import java.util.function.Supplier;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.anyInt;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
+import static reactor.core.publisher.Mono.just;
 import static se.fortnox.reactivewizard.test.TestUtil.matches;
 
 @RunWith(MockitoJUnitRunner.class)
 public class RxNettyServerTest {
 
-    @Mock
-    HttpServer<ByteBuf, ByteBuf> server;
+    HttpServer server;
 
     @Mock
-    EventLoopGroup eventLoopGroup;
+    LoopResources loopResources;
 
     @Mock
     ConnectionCounter connectionCounter;
@@ -48,9 +50,8 @@ public class RxNettyServerTest {
     @Before
     public void before() {
         RxNettyServer.registerShutdownDependency(null);
-        when(server.start(compositeRequestHandler)).thenReturn(server);
-        Future future = Mockito.mock(Future.class);
-        when(eventLoopGroup.shutdownGracefully(anyLong(), anyLong(), any())).thenReturn(future);
+        //when(server.handle(compositeRequestHandler)).thenReturn(server);
+        when(loopResources.disposeLater(any(), any())).thenReturn(Mono.empty());
     }
 
     @Test
@@ -58,7 +59,8 @@ public class RxNettyServerTest {
         ServerConfig serverConfig = new ServerConfig();
         serverConfig.setEnabled(false);
 
-        RxNettyServer rxNettyServer = new RxNettyServer(serverConfig, connectionCounter, server, compositeRequestHandler, eventLoopGroup);
+        HttpServer server = HttpServer.create().port(0);
+        RxNettyServer rxNettyServer = new RxNettyServer(serverConfig, connectionCounter, server, compositeRequestHandler, loopResources);
         rxNettyServer.join();
 
         assertNull(rxNettyServer.getServer());
@@ -69,51 +71,85 @@ public class RxNettyServerTest {
         ServerConfig  serverConfig              = new ServerConfig();
         AtomicInteger startInvocedNumberOfTimes = new AtomicInteger(0);
 
-        RxNettyServer rxNettyServer = new RxNettyServer(serverConfig, connectionCounter, server, compositeRequestHandler, eventLoopGroup) {
-            @Override
-            public void start() {
-                startInvocedNumberOfTimes.incrementAndGet();
-            }
-        };
-        rxNettyServer.join();
+        RxNettyServer rxNettyServer = null;
+        try {
+            server = HttpServer.create().port(0);
+            rxNettyServer = new RxNettyServer(serverConfig, connectionCounter, server, compositeRequestHandler, loopResources) {
+                @Override
+                public void start() {
+                    startInvocedNumberOfTimes.incrementAndGet();
+                }
+            };
+            rxNettyServer.join();
 
-        assertThat(rxNettyServer.getServer()).isEqualTo(server);
-        assertThat(startInvocedNumberOfTimes.get()).isEqualTo(1);
+            assertThat(rxNettyServer.getServer()).isNotNull().isInstanceOf(DisposableServer.class);
+            assertThat(startInvocedNumberOfTimes.get()).isEqualTo(1);
+        } finally {
+            if (rxNettyServer != null) {
+                rxNettyServer.getServer().disposeNow();
+            }
+        }
     }
 
     @Test
     public void shouldAwaitShutDown() throws InterruptedException {
         ServerConfig serverConfig = new ServerConfig();
 
-        RxNettyServer rxNettyServer = new RxNettyServer(serverConfig, connectionCounter, server, compositeRequestHandler, eventLoopGroup) {};
+        DisposableServer disposableServer = mock(DisposableServer.class);
+        when(disposableServer.onDispose()).thenReturn(Mono.empty());
+        server = new HttpServer() {
+            @Override
+            protected Mono<? extends DisposableServer> bind(TcpServer b) {
+                return just(disposableServer);
+            }
+        };
+        RxNettyServer rxNettyServer = new RxNettyServer(serverConfig, connectionCounter, server, compositeRequestHandler, loopResources) {};
         rxNettyServer.join();
 
-        verify(server, times(1)).awaitShutdown();
+        verify(disposableServer, times(1)).onDispose();
     }
 
     @Test
     public void shouldLogThatShutDownIsRegistered() throws NoSuchFieldException, IllegalAccessException {
         Appender mockAppender = LoggingMockUtil.createMockedLogAppender(RxNettyServer.class);
 
-        RxNettyServer.shutdownHook(new ServerConfig(), server, eventLoopGroup, connectionCounter);
+        RxNettyServer rxNettyServer = null;
+        try {
+            server = HttpServer.create().port(0);
+            rxNettyServer = new RxNettyServer(new ServerConfig(), connectionCounter, server, compositeRequestHandler, loopResources) {
+            };
+            RxNettyServer.shutdownHook(new ServerConfig(), rxNettyServer.getServer(), loopResources, connectionCounter);
 
-        verify(mockAppender).doAppend(matches(log ->
-            assertThat(log.getMessage().toString()).matches("Shutdown requested. Will wait up to 20 seconds...")
-        ));
+            verify(mockAppender).doAppend(matches(log ->
+                assertThat(log.getMessage().toString()).matches("Shutdown requested. Will wait up to 20 seconds...")
+            ));
 
-        verify(mockAppender).doAppend(matches(log ->
-            assertThat(log.getMessage().toString()).matches("Shutdown complete")
-        ));
+            verify(mockAppender).doAppend(matches(log ->
+                assertThat(log.getMessage().toString()).matches("Shutdown complete")
+            ));
 
-        LoggingMockUtil.destroyMockedAppender(mockAppender, RxNettyServer.class);
+            LoggingMockUtil.destroyMockedAppender(mockAppender, RxNettyServer.class);
+        } finally {
+            rxNettyServer.getServer().disposeNow();
+        }
     }
 
     @Test
     public void shouldCallServerShutDownWhenShutdownHookIsInvoked() {
-        RxNettyServer.shutdownHook(new ServerConfig(), server, eventLoopGroup, connectionCounter);
+        DisposableServer disposableServer = mock(DisposableServer.class);
+        when(disposableServer.onDispose()).thenReturn(Mono.empty());
+        server = new HttpServer() {
+            @Override
+            protected Mono<? extends DisposableServer> bind(TcpServer b) {
+                return just(disposableServer);
+            }
+        };
 
-        verify(eventLoopGroup, times(1)).shutdownGracefully(anyLong(), anyLong(), any());
-        verify(server, times(1)).awaitShutdown();
+        RxNettyServer rxNettyServer = new RxNettyServer(new ServerConfig(), connectionCounter, server, compositeRequestHandler, loopResources) {};
+        RxNettyServer.shutdownHook(new ServerConfig(), rxNettyServer.getServer(), loopResources, connectionCounter);
+
+        verify(loopResources, times(1)).disposeLater(any(), any());
+        verify(disposableServer, times(1)).disposeNow(any());
     }
 
     @Test
@@ -122,18 +158,25 @@ public class RxNettyServerTest {
 
         when(connectionCounter.awaitZero(anyInt(), any(TimeUnit.class))).thenReturn(false);
         when(connectionCounter.getCount()).thenReturn(4L);
+        RxNettyServer rxNettyServer = null;
+        try {
+            server = HttpServer.create().port(0);
+            rxNettyServer = new RxNettyServer(new ServerConfig(), connectionCounter, server, compositeRequestHandler, loopResources) {
+            };
+            RxNettyServer.shutdownHook(new ServerConfig(), rxNettyServer.getServer(), loopResources, connectionCounter);
 
-        RxNettyServer.shutdownHook(new ServerConfig(), server, eventLoopGroup, connectionCounter);
+            verify(mockAppender).doAppend(matches(log ->
+                assertThat(log.getMessage().toString()).matches("Shutdown requested. Will wait up to 20 seconds...")
+            ));
 
-        verify(mockAppender).doAppend(matches(log ->
-            assertThat(log.getMessage().toString()).matches("Shutdown requested. Will wait up to 20 seconds...")
-        ));
+            verify(mockAppender).doAppend(matches(log ->
+                assertThat(log.getMessage().toString()).matches("Shutdown proceeded while connection count was not zero: 4")
+            ));
 
-        verify(mockAppender).doAppend(matches(log ->
-            assertThat(log.getMessage().toString()).matches("Shutdown proceeded while connection count was not zero: 4")
-        ));
-
-        LoggingMockUtil.destroyMockedAppender(mockAppender, RxNettyServer.class);
+            LoggingMockUtil.destroyMockedAppender(mockAppender, RxNettyServer.class);
+        } finally {
+            rxNettyServer.getServer().disposeNow();
+        }
     }
 
     @Test

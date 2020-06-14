@@ -1,5 +1,7 @@
 package se.fortnox.reactivewizard.jaxrs.response;
 
+import reactor.core.CoreSubscriber;
+import reactor.core.publisher.Flux;
 import rx.Observable;
 import rx.Observer;
 
@@ -24,11 +26,14 @@ public class ResponseDecorator {
     }
 
     @SuppressWarnings("unchecked")
-    protected static <T> Observable<T> apply(Observable<T> output, JaxRsResult<T> result) {
-        if (output instanceof ObservableWithHeaders) {
-            Map<String,String> headers = ((ObservableWithHeaders) output).getHeaders();
+    protected static <T> Flux<T> apply(Flux<T> output, JaxRsResult<T> result) {
+        if (output instanceof FluxWithHeaders) {
+            Map<String,String> headers = ((FluxWithHeaders) output).getHeaders();
             headers.forEach(result::addHeader);
-            return output.doOnEach(new SetHeadersOnEmit(headers, result));
+            SetHeadersOnEmit setHeaders = new SetHeadersOnEmit(headers, result);
+            return output
+                .doOnNext(setHeaders::onNext)
+                .doOnComplete(setHeaders::onCompleted);
         }
         return output;
     }
@@ -67,7 +72,7 @@ public class ResponseDecorator {
         }
     }
 
-    private static class ObservableWithHeaders<T> extends Observable<T> {
+    public static class ObservableWithHeaders<T> extends Observable<T> {
 
         private final Map<String, String> headers;
 
@@ -78,6 +83,27 @@ public class ResponseDecorator {
 
         public Map<String, String> getHeaders() {
             return headers;
+        }
+    }
+
+
+    public static class FluxWithHeaders<T> extends Flux<T> {
+
+        private final Flux<T> inner;
+        private final Map<String, String> headers;
+
+        public FluxWithHeaders(Flux<T> inner, Map<String,String> headers) {
+            this.inner = inner;
+            this.headers = headers;
+        }
+
+        public Map<String, String> getHeaders() {
+            return headers;
+        }
+
+        @Override
+        public void subscribe(CoreSubscriber<? super T> actual) {
+            inner.subscribe(actual);
         }
     }
 }

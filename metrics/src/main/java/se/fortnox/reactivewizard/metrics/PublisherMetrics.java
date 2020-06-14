@@ -1,9 +1,8 @@
-package se.fortnox.reactivewizard.reactorclient;
+package se.fortnox.reactivewizard.metrics;
 
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import org.reactivestreams.Publisher;
-import se.fortnox.reactivewizard.metrics.Metrics;
 
 import java.util.function.Consumer;
 

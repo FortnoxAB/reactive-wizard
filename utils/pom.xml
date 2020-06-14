@@ -49,33 +49,10 @@
 			<version>${slf4j.version}</version>
 		</dependency>
 
-		<dependency>
-			<groupId>io.reactivex</groupId>
-			<artifactId>rxnetty-common</artifactId>
-			<version>${rxnetty.version}</version>
-		</dependency>
-
-		<!-- BEGIN Needed to override netty version from rxnetty -->
-
-		<dependency>
-			<groupId>io.netty</groupId>
-			<artifactId>netty-handler</artifactId>
-			<version>${netty.version}</version>
-		</dependency>
-
-		<dependency>
-			<groupId>io.netty</groupId>
-			<artifactId>netty-transport-native-epoll</artifactId>
-			<version>${netty.version}</version>
-		</dependency>
-
-		<!-- END Needed to override netty version from rxnetty -->
-
-		<dependency>
-			<groupId>io.netty</groupId>
-			<artifactId>netty-codec-http</artifactId>
-			<version>${netty.version}</version>
-		</dependency>
+        <dependency>
+            <groupId>io.projectreactor</groupId>
+            <artifactId>reactor-core</artifactId>
+        </dependency>
 
         <!-- Test dependencies -->
 

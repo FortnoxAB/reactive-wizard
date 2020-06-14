@@ -1,13 +1,11 @@
-package se.fortnox.reactivewizard.reactorclient;
+package se.fortnox.reactivewizard.client;
 
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import io.netty.handler.timeout.ReadTimeoutHandler;
-import io.reactivex.netty.RxNetty;
 import reactor.netty.http.client.HttpClient;
 import reactor.netty.resources.ConnectionProvider;
 import reactor.netty.tcp.SslProvider;
-import se.fortnox.reactivewizard.client.HttpClientConfig;
 import se.fortnox.reactivewizard.metrics.HealthRecorder;
 
 import javax.inject.Inject;
@@ -55,7 +53,7 @@ public class ReactorRxClientProvider {
         HttpClient client = HttpClient
             .create(connectionProvider)
             .tcpConfiguration(tcpClient -> tcpClient
-                .runOn(RxNetty.getRxEventLoopProvider().globalServerEventLoop(true))
+                //.runOn(RxNetty.getRxEventLoopProvider().globalServerEventLoop(true))
                 .doOnConnected(connection -> {
                     connection.addHandler(new ReadTimeoutHandler(config.getReadTimeoutMs(), TimeUnit.MILLISECONDS));
                 })

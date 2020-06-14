@@ -4,8 +4,7 @@ import com.fasterxml.jackson.databind.util.StdDateFormat;
 import com.google.inject.Binder;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
-import io.netty.buffer.ByteBuf;
-import io.reactivex.netty.protocol.http.server.RequestHandler;
+import se.fortnox.reactivewizard.RequestHandler;
 import se.fortnox.reactivewizard.binding.AutoBindModule;
 import se.fortnox.reactivewizard.binding.scanners.InjectAnnotatedScanner;
 import se.fortnox.reactivewizard.config.ConfigFactory;
@@ -41,8 +40,8 @@ public class ServerModule implements AutoBindModule {
 
     @Override
     public void configure(Binder binder) {
-        Multibinder<RequestHandler<ByteBuf, ByteBuf>> requestHandlers = Multibinder.newSetBinder(binder,
-                new TypeLiteral<RequestHandler<ByteBuf, ByteBuf>>() { });
+        Multibinder<RequestHandler> requestHandlers = Multibinder.newSetBinder(binder,
+                new TypeLiteral<RequestHandler>() { });
         requestHandlers.addBinding().to(JaxRsRequestHandler.class);
 
         Multibinder.newSetBinder(binder, TypeLiteral.get(ParamResolverFactory.class));

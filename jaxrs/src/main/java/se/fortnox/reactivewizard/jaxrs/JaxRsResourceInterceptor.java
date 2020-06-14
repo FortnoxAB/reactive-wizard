@@ -1,5 +1,6 @@
 package se.fortnox.reactivewizard.jaxrs;
 
+import org.reactivestreams.Publisher;
 import rx.Observable;
 
 import java.util.Set;
@@ -17,16 +18,19 @@ public interface JaxRsResourceInterceptor {
     /**
      * Intercept the call to a JaxRsResource.
      * Called after the resource has been determined but before the resource has been called.
+     * @param context describing the request
      */
     default void preHandle(JaxRsResourceContext context) {
     }
 
     /**
      * Intercept the call to a JaxRsResource.
-     * Called after the resource call. The resource call results in an Observable that has not yet been
+     * Called after the resource call. The resource call results in a Publisher that has not yet been
      * subscribed to.
+     * @param context describing the request
+     * @param resourceCall the processing of the request
      */
-    default void postHandle(JaxRsResourceContext context, Observable<Void> resourceCall) {
+    default void postHandle(JaxRsResourceContext context, Publisher<Void> resourceCall) {
     }
 
     /**

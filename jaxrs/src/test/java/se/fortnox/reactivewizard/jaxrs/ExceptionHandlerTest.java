@@ -3,16 +3,16 @@ package se.fortnox.reactivewizard.jaxrs;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
-import io.reactivex.netty.protocol.http.server.HttpServerRequest;
-import io.reactivex.netty.protocol.http.server.HttpServerResponse;
-import io.reactivex.netty.protocol.http.server.MockHttpServerRequest;
 import org.apache.log4j.Appender;
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 import org.junit.Test;
+import reactor.netty.http.server.HttpServerRequest;
+import reactor.netty.http.server.HttpServerResponse;
 import rx.exceptions.CompositeException;
 import rx.exceptions.OnErrorThrowable;
 import se.fortnox.reactivewizard.ExceptionHandler;
+import se.fortnox.reactivewizard.mocks.MockHttpServerRequest;
 import se.fortnox.reactivewizard.mocks.MockHttpServerResponse;
 
 import java.nio.channels.ClosedChannelException;
@@ -29,7 +29,7 @@ public class ExceptionHandlerTest {
     @Test
     public void shouldLogHeadersForErrors() {
         MockHttpServerRequest request = new MockHttpServerRequest("/path");
-        request.addHeader("X-DBID", "5678");
+        request.requestHeaders().add("X-DBID", "5678");
         String expectedLog = "500 Internal Server Error\n\tCause: runtime exception\n" +
             "\tResponse: {\"id\":\"*\",\"error\":\"internal\"}\n\tRequest: GET /path headers: X-DBID=5678 ";
         assertLog(request, new RuntimeException("runtime exception"), Level.ERROR, expectedLog);
@@ -38,7 +38,7 @@ public class ExceptionHandlerTest {
     @Test
     public void shouldLogHeadersForWarnings() {
         MockHttpServerRequest request = new MockHttpServerRequest("/path");
-        request.addHeader("X-DBID", "5678");
+        request.requestHeaders().add("X-DBID", "5678");
         assertLog(request,
             new WebException(HttpResponseStatus.BAD_REQUEST),
             Level.WARN,
@@ -117,19 +117,19 @@ public class ExceptionHandlerTest {
     @Test
     public void shouldSetContentLengthZeroFromHEAD() {
         MockHttpServerRequest       request   = new MockHttpServerRequest("/path", HttpMethod.HEAD);
-        HttpServerResponse<ByteBuf> response  = new MockHttpServerResponse();
+        HttpServerResponse          response  = new MockHttpServerResponse();
         WebException                exception = new WebException(HttpResponseStatus.BAD_GATEWAY);
         new ExceptionHandler().handleException(request, response, exception);
 
-        assertThat(response.getHeader("Content-Length")).isEqualTo("0");
+        assertThat(response.responseHeaders().get("Content-Length")).isEqualTo("0");
     }
 
-    private void assertLog(HttpServerRequest<ByteBuf> request, Exception exception, Level expectedLevel, String expectedLog) {
+    private void assertLog(HttpServerRequest request, Exception exception, Level expectedLevel, String expectedLog) {
         Appender mockAppender = mock(Appender.class);
         LogManager.getLogger(ExceptionHandler.class).addAppender(mockAppender);
         LogManager.getLogger(ExceptionHandler.class).setLevel(Level.DEBUG);
 
-        HttpServerResponse<ByteBuf> response = new MockHttpServerResponse();
+        HttpServerResponse response = new MockHttpServerResponse();
         new ExceptionHandler().handleException(request, response, exception);
 
         String regex = expectedLog.replaceAll("\\*", ".*")

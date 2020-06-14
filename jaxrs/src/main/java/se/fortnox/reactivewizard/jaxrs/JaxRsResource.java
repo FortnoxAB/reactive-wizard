@@ -1,10 +1,11 @@
 package se.fortnox.reactivewizard.jaxrs;
 
-import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpMethod;
-import io.reactivex.netty.protocol.http.server.HttpServerRequest;
-import io.reactivex.netty.protocol.http.server.HttpServerResponse;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.netty.http.server.HttpServerRequest;
+import reactor.netty.http.server.HttpServerResponse;
 import rx.Observable;
 import rx.Single;
 import se.fortnox.reactivewizard.jaxrs.params.ParamResolver;
@@ -12,6 +13,8 @@ import se.fortnox.reactivewizard.jaxrs.params.ParamResolverFactories;
 import se.fortnox.reactivewizard.jaxrs.response.JaxRsResult;
 import se.fortnox.reactivewizard.jaxrs.response.JaxRsResultFactory;
 import se.fortnox.reactivewizard.jaxrs.response.JaxRsResultFactoryFactory;
+import se.fortnox.reactivewizard.jaxrs.response.ResponseDecorator;
+import se.fortnox.reactivewizard.util.FluxRxConverter;
 import se.fortnox.reactivewizard.util.ReflectionUtil;
 
 import javax.ws.rs.Consumes;
@@ -19,13 +22,12 @@ import javax.ws.rs.core.MediaType;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
+import static java.lang.String.format;
 import static java.util.Arrays.asList;
-import static rx.Observable.empty;
-import static rx.Observable.just;
-import static rx.Observable.zip;
 
 /**
  * Represents a JaxRs resource. Maps to a method of a resource class. Use the call method with an incoming request to
@@ -34,6 +36,7 @@ import static rx.Observable.zip;
 public class JaxRsResource<T> implements Comparable<JaxRsResource> {
 
     private static final RequestLogger REQUEST_LOGGER = new RequestLogger(LoggerFactory.getLogger(JaxRsResource.class));
+    private static final Object EMPTY_ARG = new Object();
     private final Pattern                           pathPattern;
     private final Method                            method;
     private final Method                            instanceMethod;
@@ -41,13 +44,13 @@ public class JaxRsResource<T> implements Comparable<JaxRsResource> {
     private final List<ParamResolver>               argumentExtractors;
     private final JaxRsResultFactory<T>             resultFactory;
     private final JaxRsMeta                         meta;
-    private final Function<Object[], Observable<T>> methodCaller;
+    private final Function<Object[], Flux<T>> methodCaller;
 
     public JaxRsResource(Method method,
         Object resourceInstance,
         ParamResolverFactories paramResolverFactories,
         JaxRsResultFactoryFactory jaxRsResultFactoryFactory,
-        BlockingResourceScheduler blockingResourceScheduler, JaxRsMeta meta
+        JaxRsMeta meta
     ) {
         this.method = method;
         this.meta = meta;
@@ -58,7 +61,7 @@ public class JaxRsResource<T> implements Comparable<JaxRsResource> {
 
         this.argumentExtractors = paramResolverFactories.createParamResolvers(instanceMethod, getConsumes());
         this.resultFactory = jaxRsResultFactoryFactory.createResultFactory(this);
-        this.methodCaller = createMethodCaller(method, resourceInstance, blockingResourceScheduler);
+        this.methodCaller = createMethodCaller(method, resourceInstance);
     }
 
     private static Pattern createPathPattern(String path) {
@@ -82,66 +85,78 @@ public class JaxRsResource<T> implements Comparable<JaxRsResource> {
         return true;
     }
 
-    protected Observable<JaxRsResult<T>> call(JaxRsRequest request) {
+    protected Mono<JaxRsResult<T>> call(JaxRsRequest request) {
         return request.loadBody()
             .flatMap(this::resolveArgs)
-            .map(this::call)
-            .first();
+            .map(this::call);
     }
 
     private JaxRsResult<T> call(Object[] args) {
-        Observable<T> observableOutput = methodCaller.apply(args);
+        Flux<T> observableOutput = methodCaller.apply(args);
         return resultFactory.create(observableOutput, args);
     }
 
     @SuppressWarnings("unchecked")
-    private Function<Object[], Observable<T>> createMethodCaller(Method method, Object resourceInstance, BlockingResourceScheduler blockingResourceScheduler) {
+    private Function<Object[], Flux<T>> createMethodCaller(Method method, Object resourceInstance) {
         if (!Observable.class.isAssignableFrom(method.getReturnType()) && !Single.class.isAssignableFrom(method.getReturnType())) {
-            return args -> Observable.<T>create(s -> {
-                try {
-                    s.onNext((T)method.invoke(resourceInstance, args));
-                    s.onCompleted();
-                } catch (InvocationTargetException e) {
-                    s.onError(e.getTargetException());
-                } catch (Throwable e) {
-                    s.onError(e);
-                }
-            }).subscribeOn(blockingResourceScheduler);
+            throw new IllegalArgumentException(format(
+                "Can only serve methods that are reactive. %s had unsupported return type %s",
+                method, method.getReturnType()));
         } else {
             return args -> {
                 try {
                     Object result = method.invoke(resourceInstance, args);
 
                     if (result == null) {
-                        return empty();
+                        return Flux.empty();
                     }
 
                     if (result instanceof Single) {
-                        return ((Single<T>)result).toObservable();
+                        return observableToFlux(((Single<T>)result).toObservable());
                     }
 
-                    return (Observable<T>)result;
+                    return observableToFlux((Observable<T>)result);
                 } catch (InvocationTargetException e) {
-                    return Observable.error(e.getTargetException());
+                    return Flux.error(e.getTargetException());
                 } catch (Throwable e) {
-                    return Observable.error(e);
+                    return Flux.error(e);
                 }
             };
         }
     }
 
+    private Flux<T> observableToFlux(Observable<T> result) {
+        Flux<T> fluxResult = FluxRxConverter.observableToFlux(result);
+
+        // This part should be refactored so that this class does not know about decorator, but right now the meta data
+        // is lost if not handled here.
+        if (result instanceof ResponseDecorator.ObservableWithHeaders) {
+            Map<String, String> headers = ((ResponseDecorator.ObservableWithHeaders<T>) result).getHeaders();
+            return new ResponseDecorator.FluxWithHeaders<>(fluxResult, headers);
+        }
+
+        return fluxResult;
+    }
+
     @SuppressWarnings("unchecked")
-    private Observable<Object[]> resolveArgs(JaxRsRequest request) {
+    private Mono<Object[]> resolveArgs(JaxRsRequest request) {
         if (argumentExtractors.isEmpty()) {
-            return just(new Object[0]);
+            return Mono.just(new Object[0]);
         }
 
-        Observable<?>[] obsArgs = new Observable[argumentExtractors.size()];
+        Mono<?>[] obsArgs = new Mono[argumentExtractors.size()];
         for (int i = 0; i < obsArgs.length; i++) {
-            obsArgs[i] = argumentExtractors.get(i).resolve(request).firstOrDefault(null);
+            obsArgs[i] = argumentExtractors.get(i).resolve(request).defaultIfEmpty(EMPTY_ARG);
         }
 
-        return zip(asList(obsArgs), array -> array).first();
+        return Mono.zip(asList(obsArgs), array -> {
+            for (int i = 0; i < array.length; i++) {
+                if (array[i] == EMPTY_ARG) {
+                    array[i] = null;
+                }
+            }
+            return array;
+        });
     }
 
     @Override
@@ -155,7 +170,7 @@ public class JaxRsResource<T> implements Comparable<JaxRsResource> {
 
     @Override
     public String toString() {
-        return String.format("%1$s\t%2$s (%3$s.%4$s)",
+        return format("%1$s\t%2$s (%3$s.%4$s)",
             meta.getHttpMethod(),
             meta.getFullPath(),
             method.getDeclaringClass().getName(),
@@ -194,7 +209,7 @@ public class JaxRsResource<T> implements Comparable<JaxRsResource> {
         return new String[]{MediaType.APPLICATION_JSON};
     }
 
-    public void log(HttpServerRequest<ByteBuf> request, HttpServerResponse<ByteBuf> response, long requestStartTime) {
+    public void log(HttpServerRequest request, HttpServerResponse response, long requestStartTime) {
         REQUEST_LOGGER.log(request, response, requestStartTime);
     }
 
