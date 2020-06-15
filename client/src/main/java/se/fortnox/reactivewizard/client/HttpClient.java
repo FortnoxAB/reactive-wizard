@@ -247,6 +247,10 @@ public class HttpClient implements InvocationHandler {
 
     protected <T> Flux<T> withRetry(RequestBuilder fullReq, Flux<T> response) {
         return response.retryWhen(Retry.backoff(config.getRetryCount(), this.retryDuration).filter(throwable -> {
+            if (fullReq.getHttpMethod().equals(POST)) {
+                // Don't retry if it was a POST, as it is not idempotent
+                return false;
+            }
             if (throwable instanceof TimeoutException) {
                 return false;
             }
@@ -255,15 +259,8 @@ public class HttpClient implements InvocationHandler {
                 // Do not retry when deserialization failed
                 return false;
             }
-            boolean isPostCall = POST.equals(fullReq.getHttpMethod());
             if (!(throwable instanceof WebException)) {
-                // Don't retry posts
-                return !isPostCall;
-            }
-
-            if (isPostCall) {
-                // Don't retry if it was a POST, as it is not idempotent
-                return false;
+                return true;
             }
             if (((WebException)throwable).getStatus().code() >= 500) {
 

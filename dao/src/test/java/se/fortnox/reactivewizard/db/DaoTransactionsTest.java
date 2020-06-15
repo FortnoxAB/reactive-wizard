@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.Matchers.any;
@@ -258,6 +259,17 @@ public class DaoTransactionsTest {
     }
 
     @Test
+    public void shouldAllowOnlyVoidsInTransaction() throws SQLException {
+        when(db.getPreparedStatement().executeBatch())
+            .thenReturn(new int[]{1, 1});
+        try {
+            daoTransactions.executeTransaction(asList(dao.updateSuccessVoid(),dao.updateSuccessVoid())).toBlocking().lastOrDefault(null);
+        } catch (Exception e) {
+            Fail.fail("Unexpected exception when testing transactions with only voids");
+        }
+    }
+
+    @Test
     public void shouldFailIfTransactionIsModifiedAfterCreation() throws Exception {
         db.addRows(1);
         Observable<String> find1 = dao.find();
@@ -297,6 +309,9 @@ public class DaoTransactionsTest {
 
         @Update(value = "update foo set key=val", minimumAffected = 0)
         Observable<Integer> updateSuccess();
+
+        @Update(value = "update foo set key=val", minimumAffected = 0)
+        Observable<Void> updateSuccessVoid();
 
         @Update(value = "update foo set key=val2", minimumAffected = 0)
         Observable<Integer> updateOtherSuccess();

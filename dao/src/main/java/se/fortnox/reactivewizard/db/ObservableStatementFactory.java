@@ -4,11 +4,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Scheduler;
+import rx.Subscriber;
+import rx.functions.Action0;
 import se.fortnox.reactivewizard.db.config.DatabaseConfig;
 import se.fortnox.reactivewizard.db.paging.PagingOutput;
 import se.fortnox.reactivewizard.db.statement.DbStatementFactory;
 import se.fortnox.reactivewizard.db.statement.Statement;
 import se.fortnox.reactivewizard.db.transactions.DaoObservable;
+import se.fortnox.reactivewizard.db.transactions.Transaction;
 import se.fortnox.reactivewizard.db.transactions.TransactionStatement;
 import se.fortnox.reactivewizard.metrics.Metrics;
 import se.fortnox.reactivewizard.util.DebugUtil;
@@ -29,7 +32,6 @@ public class ObservableStatementFactory {
     private final PagingOutput               pagingOutput;
     private final Scheduler                  scheduler;
     private final Metrics                    metrics;
-    private final Function<Object[], String> paramSerializer;
     private final DatabaseConfig             config;
 
     public ObservableStatementFactory(
@@ -44,7 +46,6 @@ public class ObservableStatementFactory {
         this.pagingOutput = pagingOutput;
         this.scheduler = scheduler;
         this.metrics = metrics;
-        this.paramSerializer = paramSerializer;
         this.config = config;
     }
 
@@ -59,16 +60,25 @@ public class ObservableStatementFactory {
     public Observable<Object> create(Object[] args, ConnectionProvider connectionProvider) {
         AtomicReference<TransactionStatement> transactionHolder = new AtomicReference<>();
 
-        Observable<Object> result = Observable.create(subscription -> {
+        Observable<Object> result = Observable.unsafeCreate(subscription -> {
+            try {
+                Statement dbStatement = statementFactory.create(args, subscription);
 
-            Statement dbStatement = statementFactory.create(args, subscription);
-
-            TransactionStatement transaction = transactionHolder.get();
-            if (transaction != null) {
-                transaction.setConnectionProvider(connectionProvider);
-                transaction.executeStatement(dbStatement);
-            } else {
-                executeStatement(dbStatement, connectionProvider);
+                TransactionStatement transactionStatement = transactionHolder.get();
+                if (transactionStatement != null) {
+                    Transaction transaction = transactionStatement.getTransaction();
+                    transaction.setConnectionProvider(connectionProvider);
+                    transactionStatement.markStatementSubscribed(dbStatement);
+                    if (transaction.isAllSubscribed()) {
+                        scheduleWorker(subscription, transaction::execute);
+                    }
+                } else {
+                    scheduleWorker(subscription, () -> executeStatement(dbStatement, connectionProvider));
+                }
+            } catch (Exception e) {
+                if (!subscription.isUnsubscribed()) {
+                    subscription.onError(e);
+                }
             }
         });
 
@@ -83,14 +93,28 @@ public class ObservableStatementFactory {
         result = pagingOutput.apply(result, args);
         result = metrics.measure(result, time -> logSlowQuery(transactionHolder.get(), time, args));
         result = result.onBackpressureBuffer(RECORD_BUFFER_SIZE);
-        result = result.subscribeOn(scheduler);
 
         return new DaoObservable<>(result, transactionHolder);
     }
 
+    private void scheduleWorker(Subscriber<?> subscription, Action0 action) {
+        Scheduler.Worker worker = scheduler.createWorker();
+        worker.schedule(() -> {
+            try {
+                action.call();
+            } catch (Exception e) {
+                if (!subscription.isUnsubscribed()) {
+                    subscription.onError(e);
+                }
+            } finally {
+                worker.unsubscribe();
+            }
+        });
+    }
+
     private void logSlowQuery(TransactionStatement transactionStatement, long time, Object[] args) {
         if (transactionStatement == null && time > config.getSlowQueryLogThreshold()) {
-            LOG.warn(format("Slow query: %s\nargs: %s\ntime: %d", statementFactory, paramSerializer.apply(args), time));
+            LOG.warn(format("Slow query: %s\ntime: %d", statementFactory, time));
         }
     }
 

@@ -4,8 +4,7 @@ import org.junit.Test;
 import org.mockito.Mockito;
 import rx.Observable;
 
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
@@ -109,6 +108,51 @@ public class RxUtilsTest {
             .switchIfEmpty(RxUtils.exception(RuntimeException::new))
             .toBlocking()
             .first();
+    }
+
+    @Test
+    public void emptyShouldReturnEmpty() {
+        Observable<Foo> fooObservable = RxUtils.singleOrEmpty(Observable.empty());
+
+        assertThat(fooObservable.toList().toBlocking().single()).isEmpty();
+    }
+
+    @Test
+    public void noItemsShouldReturnEmpty() {
+        Observable<Foo> fooObservable = RxUtils.singleOrEmpty(just(new ArrayList<>()));
+
+        assertThat(fooObservable.toList().toBlocking().single()).isEmpty();
+    }
+
+    @Test
+    public void oneItemShouldReturnOneItem() {
+        List<Foo> expected = Collections.singletonList(new Foo());
+
+        Foo actual = RxUtils.singleOrEmpty(just(expected)).toBlocking().single();
+
+        assertThat(actual).isEqualTo(expected.get(0));
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void severalItemsShouldNotifyException() {
+        List<Foo> foos = Arrays.asList(new Foo(), new Foo());
+
+        RxUtils.singleOrEmpty(just(foos)).toBlocking().subscribe();
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void severalCollectionsShouldNotifyException() {
+        List<Foo> foos =Arrays.asList(new Foo(), new Foo());
+        List<Foo> fi =Arrays.asList(new Foo(), new Foo());
+
+        RxUtils.singleOrEmpty(just(foos, fi)).toBlocking().subscribe();
+    }
+
+    @Test(expected = NoSuchElementException.class)
+    public void shouldAggregateExceptions() {
+        Observable<List<Foo>> error = Observable.error(new NoSuchElementException());
+
+        RxUtils.singleOrEmpty(error).toBlocking().subscribe();
     }
 
     class Foo {

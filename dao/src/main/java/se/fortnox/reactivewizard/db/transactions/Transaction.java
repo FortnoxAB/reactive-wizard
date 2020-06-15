@@ -9,7 +9,9 @@ import se.fortnox.reactivewizard.db.statement.Statement;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -20,6 +22,7 @@ public class Transaction<T> {
     private final        AtomicReference<ConnectionProvider>         connectionProvider  = new AtomicReference<>();
     private final        Iterable<Observable<T>>                     daoCalls;
     private final        ConcurrentLinkedQueue<TransactionStatement> statementsToExecute = new ConcurrentLinkedQueue<>();
+    private final        Set<TransactionStatement>                   statementsToSubscribe = new HashSet<>();
     private final        AtomicBoolean                               waitingForExecution = new AtomicBoolean(true);
 
     Transaction(Iterable<Observable<T>> daoCalls) {
@@ -30,12 +33,14 @@ public class Transaction<T> {
         TransactionStatement transactionStatement = new TransactionStatement(this);
         daoObservable.setTransactionStatement(transactionStatement);
         statementsToExecute.add(transactionStatement);
+        statementsToSubscribe.add(transactionStatement);
     }
 
-    public void subscribed() {
+
+    public void execute() {
         if (!isAllSubscribed()) {
             // all DaoObservables have not been subscribed yet
-            return;
+            throw new RuntimeException("Transaction execute called before all Observables were subscribed. This should never happen.");
         }
 
         if (isModifiedAfterCreation()) {
@@ -139,16 +144,15 @@ public class Transaction<T> {
         return daoCallsSize != statementsToExecute.size();
     }
 
-    private boolean isAllSubscribed() {
-        for (TransactionStatement statement : statementsToExecute) {
-            if (!statement.isSubscribed()) {
-                return false;
-            }
-        }
-        return true;
+    public boolean isAllSubscribed() {
+        return statementsToSubscribe.isEmpty();
     }
 
     public void setConnectionProvider(ConnectionProvider connectionProvider) {
         this.connectionProvider.compareAndSet(null, connectionProvider);
+    }
+
+    public void markSubscribed(TransactionStatement transactionStatement) {
+        statementsToSubscribe.remove(transactionStatement);
     }
 }

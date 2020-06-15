@@ -16,13 +16,9 @@ public class TransactionStatement implements Batchable {
         this.statement = new AtomicReference<>();
     }
 
-    public boolean isSubscribed() {
-        return statement.get() != null;
-    }
-
-    public void executeStatement(Statement statement) {
+    public void markStatementSubscribed(Statement statement) {
         if (this.statement.compareAndSet(null, statement)) {
-            transaction.subscribed();
+            transaction.markSubscribed(this);
         } else {
             throw new TransactionAlreadyExecutedException();
         }
@@ -36,10 +32,6 @@ public class TransactionStatement implements Batchable {
         statement.set(null);
     }
 
-    public void setConnectionProvider(ConnectionProvider connectionProvider) {
-        transaction.setConnectionProvider(connectionProvider);
-    }
-
     @Override
     public boolean sameBatch(Batchable batchable) {
         return batchable instanceof TransactionStatement
@@ -49,5 +41,9 @@ public class TransactionStatement implements Batchable {
     @Override
     public void execute(Connection connection) throws SQLException {
         getStatement().execute(connection);
+    }
+
+    public Transaction getTransaction() {
+        return transaction;
     }
 }

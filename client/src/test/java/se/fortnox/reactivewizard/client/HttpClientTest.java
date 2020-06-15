@@ -114,6 +114,27 @@ public class HttpClientTest {
         }
     }
 
+    @Test
+    public void shouldNotRetryFailedPostCallsWithNonWebExceptions() {
+        AtomicLong callCount = new AtomicLong();
+        HttpServer<ByteBuf, ByteBuf> server    = startSlowServer(OK, 6, r -> callCount.incrementAndGet());
+
+        try {
+            HttpClientConfig config = new HttpClientConfig("localhost:" + server.getServerPort());
+            config.setReadTimeoutMs(1);
+            TestResource resource = getHttpProxy(config);
+
+            resource.postHello().toBlocking().singleOrDefault(null);
+
+            Assert.fail("Expected exception");
+        } catch (Exception e) {
+            assertThat(callCount.get()).isEqualTo(1);
+            assertThat(e.getClass()).isEqualTo(WebException.class);
+        } finally {
+            server.shutdown();
+        }
+    }
+
     protected TestResource getHttpProxy(int port) {
         return getHttpProxy(port, 1, 10000);
     }
@@ -639,15 +660,7 @@ public class HttpClientTest {
     @Test
     public void shouldNotRetryOnTimeout() {
         AtomicLong callCount = new AtomicLong();
-        // Slow server
-        DisposableServer server = HttpServer.create().port(0)
-            .handle((request, response) -> {
-                callCount.incrementAndGet();
-                return Flux.defer(() -> {
-                    response.status(HttpResponseStatus.NOT_FOUND);
-                    return Flux.<Void>empty();
-                }).delaySubscription(Duration.ofMillis(1000));
-            }).bindNow();
+        DisposableServer server = startSlowServer(HttpResponseStatus.NOT_FOUND, 1000, r -> callCount.incrementAndGet());
 
         TestResource resource = getHttpProxy(server.port());
         HttpClient.setTimeout(resource, 500, ChronoUnit.MILLIS);
@@ -664,15 +677,7 @@ public class HttpClientTest {
 
     @Test
     public void shouldHandleLongerRequestsThan10SecondsWhenRequested() {
-        // Slow server
-        DisposableServer server = HttpServer.create().port(0)
-            .handle((request, response) -> {
-
-                return Flux.defer(() -> {
-                    response.status(HttpResponseStatus.NOT_FOUND);
-                    return Flux.<Void>empty();
-                }).delaySubscription(Duration.ofMillis(20000));
-            }).bindNow();
+        DisposableServer server = startSlowServer(HttpResponseStatus.NOT_FOUND, 20000);
 
         TestResource resource = getHttpProxy(server.port(), 1, 30000);
         HttpClient.setTimeout(resource, 15000, ChronoUnit.MILLIS);
@@ -910,6 +915,21 @@ public class HttpClientTest {
     private DisposableServer startServer(HttpResponseStatus status, String body) {
         return startServer(status, body, r -> {
         });
+    }
+
+    private DisposableServer startSlowServer(HttpResponseStatus status, Integer delayInMs) {
+        return startSlowServer(status, delayInMs, r -> {});
+    }
+
+    private DisposableServer startSlowServer(HttpResponseStatus status, Integer delayInMs, Consumer<HttpServerRequest<ByteBuf>> callback) {
+        return HttpServer.create.port(0)
+            .handle((request, response) -> {
+                callback.accept(request);
+                return Flux.defer(() -> {
+                    response.status(status);
+                    return Flux.<Void>empty();
+                }).delaySubscription(Duration.ofMillis(delayInMs));
+            }).bindNow();
     }
 
     @Test
