@@ -117,10 +117,10 @@ public class HttpClientTest {
     @Test
     public void shouldNotRetryFailedPostCallsWithNonWebExceptions() {
         AtomicLong callCount = new AtomicLong();
-        HttpServer<ByteBuf, ByteBuf> server    = startSlowServer(OK, 6, r -> callCount.incrementAndGet());
+        DisposableServer server    = startSlowServer(OK, 6, r -> callCount.incrementAndGet());
 
         try {
-            HttpClientConfig config = new HttpClientConfig("localhost:" + server.getServerPort());
+            HttpClientConfig config = new HttpClientConfig("localhost:" + server.port());
             config.setReadTimeoutMs(1);
             TestResource resource = getHttpProxy(config);
 
@@ -131,7 +131,7 @@ public class HttpClientTest {
             assertThat(callCount.get()).isEqualTo(1);
             assertThat(e.getClass()).isEqualTo(WebException.class);
         } finally {
-            server.shutdown();
+            server.disposeNow();
         }
     }
 
@@ -921,8 +921,8 @@ public class HttpClientTest {
         return startSlowServer(status, delayInMs, r -> {});
     }
 
-    private DisposableServer startSlowServer(HttpResponseStatus status, Integer delayInMs, Consumer<HttpServerRequest<ByteBuf>> callback) {
-        return HttpServer.create.port(0)
+    private DisposableServer startSlowServer(HttpResponseStatus status, Integer delayInMs, Consumer<HttpServerRequest> callback) {
+        return HttpServer.create().port(0)
             .handle((request, response) -> {
                 callback.accept(request);
                 return Flux.defer(() -> {
