@@ -9,6 +9,8 @@ import io.netty.handler.codec.http.HttpRequestDecoder;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import rx.functions.Action1;
 
+import static reactor.netty.NettyPipeline.HttpTrafficHandler;
+
 /**
  * Adds a fix for 204 NoContent and 1XX responses, which should have neither body nor Content-Length
  * header. Responses having "Content-Length: 0" are also having this header stripped because
@@ -18,23 +20,9 @@ import rx.functions.Action1;
  */
 public class NoContentFixConfigurator implements Action1<ChannelPipeline> {
 
-    private final int maxInitialLineLength;
-    private final int maxChunkSize;
-    private final int maxHeaderSize;
-
-    public NoContentFixConfigurator(int maxInitialLineLength, int maxChunkSize, int maxHeaderSize) {
-        this.maxInitialLineLength = maxInitialLineLength;
-        this.maxChunkSize = maxChunkSize;
-        this.maxHeaderSize = maxHeaderSize;
-    }
-
     @Override
     public void call(ChannelPipeline pipeline) {
-        pipeline.replace(
-                "HttpServerDecoder",
-                "HttpServerDecoder",
-                new HttpRequestDecoder(maxInitialLineLength, maxHeaderSize, maxChunkSize));
-        pipeline.addAfter("HttpServerEncoder", "NoContentFix", new NoContentBodyFix());
+        pipeline.addBefore(HttpTrafficHandler, "NoContentFix", new NoContentBodyFix());
     }
 
     /**

@@ -53,7 +53,6 @@ public class ReactorRxClientProvider {
         HttpClient client = HttpClient
             .create(connectionProvider)
             .tcpConfiguration(tcpClient -> tcpClient
-                //.runOn(RxNetty.getRxEventLoopProvider().globalServerEventLoop(true))
                 .doOnConnected(connection -> {
                     connection.addHandler(new ReadTimeoutHandler(config.getReadTimeoutMs(), TimeUnit.MILLISECONDS));
                 })

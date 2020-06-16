@@ -11,7 +11,7 @@
 
     <name>Reactive Wizard</name>
     <description>The Reactive Wizard project makes it easy to build performant and scalable web
-        applications that harness the power of RxNetty (i.e., RxJava and Netty).
+        applications that harness the power of Rx and Netty (i.e., RxJava and Netty).
     </description>
     <url>https://github.com/FortnoxAB/reactive-wizard</url>
 

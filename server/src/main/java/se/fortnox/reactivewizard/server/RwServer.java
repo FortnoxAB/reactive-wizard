@@ -15,31 +15,30 @@ import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Runs an RxNetty @{@link HttpServer} with all registered @{@link RequestHandler}s.
+ * Runs an Reactor @{@link HttpServer} with all registered @{@link RequestHandler}s.
  */
 @Singleton
-public class RxNettyServer extends Thread {
+public class RwServer extends Thread {
 
-    private static final Logger LOG = LoggerFactory.getLogger(RxNettyServer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(RwServer.class);
     private final ServerConfig config;
     private final ConnectionCounter connectionCounter;
-    public static final int MAX_CHUNK_SIZE_DEFAULT = 8192;
     private final LoopResources eventLoopGroup;
     private final DisposableServer server;
     private static Runnable blockShutdownUntil;
 
     @Inject
-    public RxNettyServer(ServerConfig config, CompositeRequestHandler compositeRequestHandler, ConnectionCounter connectionCounter) {
+    public RwServer(ServerConfig config, CompositeRequestHandler compositeRequestHandler, ConnectionCounter connectionCounter) {
         this(config, compositeRequestHandler, connectionCounter, null);
     }
 
-    RxNettyServer(ServerConfig config, CompositeRequestHandler compositeRequestHandler, ConnectionCounter connectionCounter, LoopResources loopResources) {
+    RwServer(ServerConfig config, CompositeRequestHandler compositeRequestHandler, ConnectionCounter connectionCounter, LoopResources loopResources) {
         this(config, connectionCounter, createHttpServer(config, loopResources), compositeRequestHandler, loopResources);
     }
 
-    RxNettyServer(ServerConfig config, ConnectionCounter connectionCounter, HttpServer httpServer,
-                  CompositeRequestHandler compositeRequestHandler, LoopResources loopResources) {
-        super("RxNettyServerMain");
+    RwServer(ServerConfig config, ConnectionCounter connectionCounter, HttpServer httpServer,
+             CompositeRequestHandler compositeRequestHandler, LoopResources loopResources) {
+        super("RwServerMain");
         this.config = config;
         this.connectionCounter = connectionCounter;
         this.eventLoopGroup = loopResources;
@@ -57,7 +56,18 @@ public class RxNettyServer extends Thread {
         if (!config.isEnabled()) {
             return null;
         }
-        return HttpServer.create().host("localhost").port(config.getPort());
+        NoContentFixConfigurator noContentFixConfigurator = new NoContentFixConfigurator();
+        return HttpServer.create().host("localhost").port(config.getPort())
+            .tcpConfiguration(s -> {
+                if (loopResources != null) {
+                    s = s.runOn(loopResources);
+                }
+                return s.doOnConnection(c ->
+                    noContentFixConfigurator.call(c.channel().pipeline())
+                );
+            }).httpRequestDecoder(d -> d
+                .maxInitialLineLength(config.getMaxInitialLineLengthDefault())
+                .maxHeaderSize(config.getMaxHeaderSize()));
     }
 
     /**
@@ -77,10 +87,10 @@ public class RxNettyServer extends Thread {
     }
 
     public static void registerShutdownDependency(Runnable blockShutdownUntil) {
-        if (RxNettyServer.blockShutdownUntil != null && blockShutdownUntil != null) {
+        if (RwServer.blockShutdownUntil != null && blockShutdownUntil != null) {
             throw new IllegalStateException("Shutdown dependency is already registered");
         }
-        RxNettyServer.blockShutdownUntil = blockShutdownUntil;
+        RwServer.blockShutdownUntil = blockShutdownUntil;
     }
 
     static void shutdownHook(ServerConfig config, DisposableServer server, LoopResources loopResources, ConnectionCounter connectionCounter) {
@@ -114,6 +124,9 @@ public class RxNettyServer extends Thread {
     }
 
     static void shutdownEventLoopGracefully(int shutdownTimeoutSeconds, LoopResources loopResources) {
+        if (loopResources == null) {
+            return;
+        }
         try {
             int shutdownQuietPeriodSeconds = 0;
             loopResources.disposeLater(Duration.ofSeconds(shutdownQuietPeriodSeconds), Duration.ofSeconds(shutdownTimeoutSeconds)).block();

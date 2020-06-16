@@ -24,7 +24,7 @@ import java.text.DateFormat;
 import java.util.Optional;
 
 /**
- * Makes all necessary bindings for setting up an @{@link RxNettyServer} with @{@link JaxRsRequestHandler}.
+ * Makes all necessary bindings for setting up an @{@link RwServer} with @{@link JaxRsRequestHandler}.
  */
 @Singleton
 public class ServerModule implements AutoBindModule {
@@ -67,6 +67,6 @@ public class ServerModule implements AutoBindModule {
             }
         }
 
-        binder.bind(RxNettyServer.class).asEagerSingleton();
+        binder.bind(RwServer.class).asEagerSingleton();
     }
 }
