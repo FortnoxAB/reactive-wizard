@@ -31,7 +31,7 @@ public class ByteBufCollector {
             .map(this::decodeBody);
     }
 
-    public Publisher<String> collectString(ByteBufFlux input) {
+    public Mono<String> collectString(ByteBufFlux input) {
         return input.collect(ByteArrayOutputStream::new, this::collectChunks)
             .map(this::decodeBody);
     }

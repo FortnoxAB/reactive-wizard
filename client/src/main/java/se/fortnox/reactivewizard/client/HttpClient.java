@@ -466,7 +466,7 @@ public class HttpClient implements InvocationHandler {
         try {
             JavaType     javaType = TypeFactory.defaultInstance().constructType(type);
             ObjectReader reader   = objectMapper.readerFor(javaType);
-            return Mono.just(reader.readValue(string));
+            return Mono.justOrEmpty(reader.readValue(string));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

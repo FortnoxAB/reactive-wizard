@@ -3,6 +3,8 @@ package se.fortnox.reactivewizard.metrics;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import org.reactivestreams.Publisher;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.util.function.Consumer;
 
@@ -24,11 +26,19 @@ public class PublisherMetrics {
         return new PublisherMetrics(name);
     }
 
-    public <T extends Publisher<S>, S> T measure(T publisher) {
+    public <T> Publisher<T> measure(Publisher<T> publisher) {
         return measure(publisher, NOOP);
     }
 
-    public <T extends Publisher<S>, S> T measure(T publisher, Consumer<Long> callback) {
-        return (T)new MetricsOperator<S>(publisher, timer, callback);
+    public <T> Mono<T> measure(Mono<T> publisher) {
+        return Mono.from(measure(publisher, NOOP));
+    }
+
+    public <T> Flux<T> measure(Flux<T> publisher) {
+        return Flux.from(measure(publisher, NOOP));
+    }
+
+    public <T> Publisher<T> measure(Publisher<T> publisher, Consumer<Long> callback) {
+        return new MetricsOperator<T>(publisher, timer, callback);
     }
 }

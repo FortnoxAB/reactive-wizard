@@ -1,5 +1,6 @@
 package se.fortnox.reactivewizard.client;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.AbstractModule;
 import com.google.inject.Binder;
 import com.google.inject.Guice;
@@ -10,15 +11,21 @@ import com.google.inject.util.Modules;
 import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.Mockito;
+import reactor.core.publisher.Mono;
+import reactor.netty.DisposableServer;
+import reactor.netty.http.server.HttpServer;
 import rx.Observable;
 import se.fortnox.reactivewizard.binding.AutoBindModules;
 import se.fortnox.reactivewizard.binding.scanners.HttpConfigClassScanner;
 import se.fortnox.reactivewizard.binding.scanners.JaxRsClassScanner;
 import se.fortnox.reactivewizard.config.TestInjector;
+import se.fortnox.reactivewizard.metrics.HealthRecorder;
 import se.fortnox.reactivewizard.server.ServerConfig;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import java.net.URISyntaxException;
+import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -143,6 +150,21 @@ public class RestClientFactoryTest {
         } catch (Exception e) {
             assertThat(e.getCause()).isInstanceOf(IllegalArgumentException.class);
             assertThat(e.getCause().getMessage()).isEqualTo("class se.fortnox.reactivewizard.client.RestClientFactoryTest pointed out in UseInResource annotation must be an interface");
+        }
+    }
+
+    @Test
+    public void shouldDeserializeNullToEmpty() throws URISyntaxException {
+        DisposableServer server = HttpServer.create().port(0).handle((req, resp) -> resp.sendString(Mono.just("null"))).bindNow();
+        try {
+            HttpClientConfig config = new HttpClientConfig("http://localhost:"+server.port());
+            HttpClientProvider provider = new HttpClientProvider(new ObjectMapper(), new RequestParameterSerializers(), Collections.emptySet(), new HealthRecorder());
+            HttpClient client = provider.createClient(config);
+            TestResource resource = client.create(TestResource.class);
+
+            assertThat(resource.testCall().isEmpty().toBlocking().single()).isTrue();
+        } finally {
+            server.disposeNow();
         }
     }
 

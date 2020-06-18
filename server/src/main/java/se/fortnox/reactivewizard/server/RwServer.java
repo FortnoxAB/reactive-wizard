@@ -45,6 +45,7 @@ public class RwServer extends Thread {
 
         if (config.isEnabled()) {
             server = httpServer.handle(compositeRequestHandler).bindNow();
+            LOG.info("Server started on port " + server.port());
             start();
             registerShutdownHook();
         } else {

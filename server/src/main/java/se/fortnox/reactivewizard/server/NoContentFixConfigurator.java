@@ -38,7 +38,7 @@ public class NoContentFixConfigurator implements Action1<ChannelPipeline> {
                     response.headers().remove("Content-Length");
                 }
                 HttpResponseStatus status = response.status();
-                if (status.equals(HttpResponseStatus.NO_CONTENT) || status.code() < 200) {
+                if (status.equals(HttpResponseStatus.NO_CONTENT) || status.code() < 200 || isEmptyBody) {
                     response.headers().remove("Transfer-Encoding");
                 }
             }
