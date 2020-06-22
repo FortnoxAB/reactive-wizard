@@ -1,11 +1,14 @@
 package se.fortnox.reactivewizard.jaxrs;
 
+import reactor.core.publisher.Flux;
+import reactor.netty.http.server.HttpServerRequest;
+import reactor.netty.http.server.HttpServerResponse;
 import se.fortnox.reactivewizard.ExceptionHandler;
-import se.fortnox.reactivewizard.mocks.MockHttpServerResponse;
 import io.netty.handler.codec.http.HttpMethod;
-import io.reactivex.netty.protocol.http.server.MockHttpServerRequest;
 import org.junit.Test;
 import rx.Observable;
+import se.fortnox.reactivewizard.mocks.MockHttpServerRequest;
+import se.fortnox.reactivewizard.mocks.MockHttpServerResponse;
 
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -26,7 +29,7 @@ public class WrappedParamTest {
                 return just(param.getClass().getName());
             }
         });
-        MockHttpServerRequest  request = new MockHttpServerRequest("/", HttpMethod.POST, "{}");
+        HttpServerRequest request = new MockHttpServerRequest("/", HttpMethod.POST, "{}");
         MockHttpServerResponse resp    = runRequest(handler, request);
         assertThat(resp.getOutp()).isEqualTo("\"" + EntitySubClass.class.getName() + "\"");
     }
@@ -51,9 +54,9 @@ public class WrappedParamTest {
         fail("expected exception");
     }
 
-    private MockHttpServerResponse runRequest(JaxRsRequestHandler handler, MockHttpServerRequest req) {
+    private MockHttpServerResponse runRequest(JaxRsRequestHandler handler, HttpServerRequest req) {
         MockHttpServerResponse resp = new MockHttpServerResponse();
-        handler.handle(req, resp).isEmpty().toBlocking().single();
+        Flux.from(handler.apply(req, resp)).count().block();
         return resp;
     }
 

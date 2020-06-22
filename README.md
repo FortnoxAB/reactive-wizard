@@ -1,5 +1,5 @@
 ## Reactive Wizard
-The Reactive Wizard project makes it easy to build performant and scalable web applications that harness the power of RxNetty (i.e., RxJava and Netty).
+The Reactive Wizard project makes it easy to build performant and scalable web applications that harness the power of Rx and Netty (i.e., RxJava and Netty).
 
 [![Build Status](https://travis-ci.org/FortnoxAB/reactive-wizard.svg?branch=master)](https://travis-ci.org/FortnoxAB/reactive-wizard)
 
@@ -35,7 +35,7 @@ I/O operations complete, which translates to less idle system resources and more
 is supported out of the box in Reactive Wizard via Netty.
 
 A natural fit for this type of I/O is Reactive Extensions (Rx). Rx lets you compose non-blocking and
-event-based applications using the Observer pattern. An existing Rx adaptor for Netty, called RxNetty, is used
+event-based applications using the Observer pattern. An existing Rx adaptor for Netty, called Reactor, is used
 to power Reactive Wizard. 
 
 We think that building non-blocking web applications with the above technologies should be easy. That is why
@@ -43,7 +43,7 @@ Reactive Wizard support JAX-RS annotations on class methods returning Rx observa
 for an example!
 
 ## Hello world example
-This small example explains how to get going with a simple hello world resource. The example demonstrate how JAX-RS annotations can be used to fire up an RxNetty powered REST API.
+This small example explains how to get going with a simple hello world resource. The example demonstrate how JAX-RS annotations can be used to fire up a Reactor Netty powered REST API.
 
 ### 1. Add Reactive Wizard as a dependency
 Create a new Maven project and add Reactive Wizard to the dependencies section of your pom.xml file. Set the version element to match the latest released version to make use of the most up-to-date stable version.

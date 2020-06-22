@@ -1,9 +1,9 @@
 package se.fortnox.reactivewizard.jaxrs;
 
-import io.netty.buffer.ByteBuf;
-import io.reactivex.netty.protocol.http.server.HttpServerRequest;
-import io.reactivex.netty.protocol.http.server.HttpServerResponse;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import org.slf4j.Logger;
+import reactor.netty.http.server.HttpServerRequest;
+import reactor.netty.http.server.HttpServerResponse;
 
 /**
  * Logs incoming requests to a Logger.
@@ -21,8 +21,8 @@ public class RequestLogger {
      * @param request The request to extract headers from
      * @param logLine StringBuilder to append the header content to.
      */
-    public static void headersToString(HttpServerRequest<ByteBuf> request, StringBuilder logLine) {
-        request.headerIterator().forEachRemaining(e ->
+    public static void headersToString(HttpServerRequest request, StringBuilder logLine) {
+        request.requestHeaders().forEach(e ->
             logLine.append(e.getKey()).append('=').append(e.getValue()).append(' ')
         );
     }
@@ -33,9 +33,9 @@ public class RequestLogger {
      * @param response The response to extract headers from
      * @param logLine  StringBuilder to append the header content to
      */
-    public static void headersToString(HttpServerResponse<ByteBuf> response, StringBuilder logLine) {
-        response.getHeaderNames().forEach(key ->
-            logLine.append(key).append('=').append(response.getHeader(key)).append(' ')
+    public static void headersToString(HttpServerResponse response, StringBuilder logLine) {
+        response.responseHeaders().forEach(header ->
+            logLine.append(header.getKey()).append('=').append(header.getValue()).append(' ')
         );
     }
 
@@ -47,12 +47,13 @@ public class RequestLogger {
      * @param duration Duration of the request
      * @param logLine StringBuilder to append the header content to
      */
-    public static void logAccess(HttpServerRequest<ByteBuf> request, HttpServerResponse<ByteBuf> response, long duration, StringBuilder logLine) {
-        logLine.append(response.getStatus().code())
+    public static void logAccess(HttpServerRequest request, HttpServerResponse response, long duration, StringBuilder logLine) {
+        HttpResponseStatus status = response.status();
+        logLine.append(status == null ? "0" : status.code())
             .append(": ")
-            .append(request.getHttpMethod())
+            .append(request.method())
             .append(" ")
-            .append(request.getUri())
+            .append(request.uri())
             .append(" ")
             .append(duration);
     }
@@ -65,7 +66,7 @@ public class RequestLogger {
      * @param requestStartTime Duration of the request
      * @param log The logger to write to
      */
-    public static void logRequestResponse(HttpServerRequest<ByteBuf> request, HttpServerResponse<ByteBuf> response, long requestStartTime, Logger log) {
+    public static void logRequestResponse(HttpServerRequest request, HttpServerResponse response, long requestStartTime, Logger log) {
         long          duration = System.currentTimeMillis() - requestStartTime;
         StringBuilder logLine  = new StringBuilder();
         RequestLogger.logAccess(request, response, duration, logLine);
@@ -80,7 +81,7 @@ public class RequestLogger {
         }
     }
 
-    public void log(HttpServerRequest<ByteBuf> request, HttpServerResponse<ByteBuf> response, long requestStartTime) {
+    public void log(HttpServerRequest request, HttpServerResponse response, long requestStartTime) {
         logRequestResponse(request, response, requestStartTime, logger);
     }
 }

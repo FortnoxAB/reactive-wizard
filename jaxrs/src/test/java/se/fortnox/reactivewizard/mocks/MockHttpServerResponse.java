@@ -1,296 +1,218 @@
 package se.fortnox.reactivewizard.mocks;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.Channel;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.handler.codec.http.DefaultHttpHeaders;
+import io.netty.handler.codec.http.HttpHeaders;
+import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.cookie.Cookie;
-import io.reactivex.netty.channel.AllocatingTransformer;
-import io.reactivex.netty.channel.Connection;
-import io.reactivex.netty.protocol.http.TrailingHeaders;
-import io.reactivex.netty.protocol.http.server.HttpServerResponse;
-import io.reactivex.netty.protocol.http.server.ResponseContentWriter;
-import io.reactivex.netty.protocol.http.sse.ServerSentEvent;
-import io.reactivex.netty.protocol.http.ws.server.WebSocketHandler;
-import io.reactivex.netty.protocol.http.ws.server.WebSocketHandshaker;
-import rx.Observable;
-import rx.Subscriber;
-import rx.functions.Func0;
-import rx.functions.Func1;
-import rx.functions.Func2;
+import org.reactivestreams.Publisher;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.netty.Connection;
+import reactor.netty.NettyOutbound;
+import reactor.netty.http.server.HttpServerResponse;
+import reactor.netty.http.server.WebsocketServerSpec;
+import reactor.netty.http.websocket.WebsocketInbound;
+import reactor.netty.http.websocket.WebsocketOutbound;
 
-import java.text.ParseException;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 
-public class MockHttpServerResponse extends HttpServerResponse<ByteBuf> {
-
-    private StringBuilder outp = new StringBuilder();
+public class MockHttpServerResponse implements HttpServerResponse {
+    private Publisher<? extends byte[]> output;
+    private HttpHeaders headers = new DefaultHttpHeaders();
     private HttpResponseStatus status;
-    private Map<CharSequence, Object> headers = new HashMap<>();
-
-    public MockHttpServerResponse() {
-        super(new OnSubscribe<Void>() {
-            @Override
-            public void call(Subscriber<? super Void> subscriber) {
-                subscriber.onCompleted();
-            }
-        });
-    }
 
     public String getOutp() {
-        return outp.toString();
+        if (output == null) {
+            return "";
+        }
+        return Flux.from(output)
+            .collect(ByteArrayOutputStream::new, this::collectChunks)
+            .map(ByteArrayOutputStream::toString)
+            .block();
+    }
+
+    private void collectChunks(ByteArrayOutputStream outputStream, byte[] bytes) {
+        try {
+            outputStream.write(bytes);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
-    public HttpResponseStatus getStatus() {
+    public HttpServerResponse addCookie(Cookie cookie) {
+        return null;
+    }
+
+    @Override
+    public HttpServerResponse addHeader(CharSequence name, CharSequence value) {
+        headers.add(name, value);
+        return this;
+    }
+
+    @Override
+    public HttpServerResponse chunkedTransfer(boolean chunked) {
+        return null;
+    }
+
+    @Override
+    public ByteBufAllocator alloc() {
+        return null;
+    }
+
+    @Override
+    public NettyOutbound sendByteArray(Publisher<? extends byte[]> dataStream) {
+        if (output == null) {
+            output = dataStream;
+        }
+        return this;
+    }
+
+    @Override
+    public NettyOutbound sendString(Publisher<? extends String> dataStream) {
+        return sendByteArray(Flux.from(dataStream).map(String::getBytes));
+    }
+
+    @Override
+    public NettyOutbound send(Publisher<? extends ByteBuf> dataStream, Predicate<ByteBuf> predicate) {
+        return null;
+    }
+
+    @Override
+    public NettyOutbound sendObject(Publisher<?> dataStream, Predicate<Object> predicate) {
+        return null;
+    }
+
+    @Override
+    public NettyOutbound sendObject(Object message) {
+        return null;
+    }
+
+    @Override
+    public <S> NettyOutbound sendUsing(Callable<? extends S> sourceInput, BiFunction<? super Connection, ? super S, ?> mappedInput, Consumer<? super S> sourceCleanup) {
+        return null;
+    }
+
+    @Override
+    public HttpServerResponse withConnection(Consumer<? super Connection> withConnection) {
+        return null;
+    }
+
+    @Override
+    public HttpServerResponse compression(boolean compress) {
+        return null;
+    }
+
+    @Override
+    public boolean hasSentHeaders() {
+        return false;
+    }
+
+    @Override
+    public HttpServerResponse header(CharSequence name, CharSequence value) {
+        return null;
+    }
+
+    @Override
+    public HttpServerResponse headers(HttpHeaders headers) {
+        return null;
+    }
+
+    @Override
+    public HttpServerResponse keepAlive(boolean keepAlive) {
+        return null;
+    }
+
+    @Override
+    public HttpHeaders responseHeaders() {
+        return headers;
+    }
+
+    @Override
+    public Mono<Void> send() {
+        return null;
+    }
+
+    @Override
+    public NettyOutbound sendHeaders() {
+        return null;
+    }
+
+    @Override
+    public Mono<Void> sendNotFound() {
+        return null;
+    }
+
+    @Override
+    public Mono<Void> sendRedirect(String location) {
+        return null;
+    }
+
+    @Override
+    public Mono<Void> sendWebsocket(BiFunction<? super WebsocketInbound, ? super WebsocketOutbound, ? extends Publisher<Void>> websocketHandler, WebsocketServerSpec websocketServerSpec) {
+        return null;
+    }
+
+    @Override
+    public HttpServerResponse sse() {
+        return null;
+    }
+
+    @Override
+    public HttpResponseStatus status() {
         return status;
     }
 
     @Override
-    public boolean containsHeader(CharSequence charSequence) {
+    public HttpServerResponse status(HttpResponseStatus status) {
+        this.status = status;
+        return this;
+    }
+
+    @Override
+    public Map<CharSequence, Set<Cookie>> cookies() {
+        return null;
+    }
+
+    @Override
+    public boolean isKeepAlive() {
         return false;
     }
 
     @Override
-    public boolean containsHeader(CharSequence name, CharSequence value, boolean ignoreCaseValue) {
+    public boolean isWebsocket() {
         return false;
     }
 
     @Override
-    public String getHeader(CharSequence charSequence) {
-        Object header = headers.get(charSequence);
-        if (header == null) {
-            return null;
-        }
-        return header.toString();
-    }
-
-    @Override
-    public String getHeader(CharSequence name, String defaultValue) {
+    public HttpMethod method() {
         return null;
     }
 
     @Override
-    public List<String> getAllHeaderValues(CharSequence charSequence) {
+    public String fullPath() {
         return null;
     }
 
     @Override
-    public long getDateHeader(CharSequence charSequence) throws ParseException {
-        return 0;
-    }
-
-    @Override
-    public long getDateHeader(CharSequence name, long defaultValue) {
-        return 0;
-    }
-
-    @Override
-    public int getIntHeader(CharSequence charSequence) {
-        return 0;
-    }
-
-    @Override
-    public int getIntHeader(CharSequence name, int defaultValue) {
-        return 0;
-    }
-
-    @Override
-    public Set<String> getHeaderNames() {
+    public String uri() {
         return null;
     }
 
     @Override
-    public HttpServerResponse<ByteBuf> addHeader(CharSequence key, Object value) {
-        headers.put(key, value);
-        return this;
-    }
-
-    @Override
-    public HttpServerResponse<ByteBuf> addHeader(CharSequence charSequence, Iterable<Object> iterable) {
+    public HttpVersion version() {
         return null;
-    }
-
-    @Override
-    public HttpServerResponse<ByteBuf> addCookie(Cookie cookie) {
-        return null;
-    }
-
-    @Override
-    public HttpServerResponse<ByteBuf> addDateHeader(CharSequence charSequence, Date date) {
-        return null;
-    }
-
-    @Override
-    public HttpServerResponse<ByteBuf> addDateHeader(CharSequence charSequence, Iterable<Date> iterable) {
-        return null;
-    }
-
-    @Override
-    public HttpServerResponse<ByteBuf> setDateHeader(CharSequence charSequence, Date date) {
-        return null;
-    }
-
-    @Override
-    public HttpServerResponse<ByteBuf> setDateHeader(CharSequence charSequence, Iterable<Date> iterable) {
-        return null;
-    }
-
-    @Override
-    public HttpServerResponse<ByteBuf> setHeader(CharSequence name, Object value) {
-        return null;
-    }
-
-    @Override
-    public HttpServerResponse<ByteBuf> setHeader(CharSequence charSequence, Iterable<Object> iterable) {
-        return null;
-    }
-
-    @Override
-    public HttpServerResponse<ByteBuf> removeHeader(CharSequence charSequence) {
-        return null;
-    }
-
-    @Override
-    public HttpServerResponse<ByteBuf> setStatus(HttpResponseStatus httpResponseStatus) {
-        status = httpResponseStatus;
-        return this;
-    }
-
-    @Override
-    public HttpServerResponse<ByteBuf> setTransferEncodingChunked() {
-        return null;
-    }
-
-    @Override
-    public HttpServerResponse<ByteBuf> flushOnlyOnReadComplete() {
-        return null;
-    }
-
-    @Override
-    public ResponseContentWriter<ByteBuf> sendHeaders() {
-        return null;
-    }
-
-    @Override
-    public HttpServerResponse<ServerSentEvent> transformToServerSentEvents() {
-        return null;
-    }
-
-    @Override
-    public <C> HttpServerResponse<C> transformContent(AllocatingTransformer<C, ByteBuf> allocatingTransformer) {
-        return null;
-    }
-
-    @Override
-    public WebSocketHandshaker acceptWebSocketUpgrade(WebSocketHandler webSocketHandler) {
-        return null;
-    }
-
-    @Override
-    public Observable<Void> dispose() {
-        return null;
-    }
-
-    @Override
-    public Channel unsafeNettyChannel() {
-        return null;
-    }
-
-    @Override
-    public Connection<?, ?> unsafeConnection() {
-        return null;
-    }
-
-    @Override
-    public ResponseContentWriter<ByteBuf> write(Observable<ByteBuf> observable) {
-        return null;
-    }
-
-    @Override
-    public <T extends TrailingHeaders> Observable<Void> write(Observable<ByteBuf> observable, Func0<T> func0, Func2<T, ByteBuf, T> func2) {
-        return null;
-    }
-
-    @Override
-    public <T extends TrailingHeaders> Observable<Void> write(Observable<ByteBuf> observable,
-        Func0<T> func0,
-        Func2<T, ByteBuf, T> func2,
-        Func1<ByteBuf, Boolean> func1
-    ) {
-        return null;
-    }
-
-    @Override
-    public ResponseContentWriter<ByteBuf> write(Observable<ByteBuf> observable, Func1<ByteBuf, Boolean> func1) {
-        return null;
-    }
-
-    @Override
-    public ResponseContentWriter<ByteBuf> writeAndFlushOnEach(Observable<ByteBuf> observable) {
-        return null;
-    }
-
-    @Override
-    public ResponseContentWriter<ByteBuf> writeString(Observable<String> observable) {
-        observable.toBlocking().forEach(str -> outp.append(str));
-        return this;
-    }
-
-    @Override
-    public <T extends TrailingHeaders> Observable<Void> writeString(Observable<String> observable, Func0<T> func0, Func2<T, String, T> func2) {
-        return null;
-    }
-
-    @Override
-    public <T extends TrailingHeaders> Observable<Void> writeString(Observable<String> observable,
-        Func0<T> func0,
-        Func2<T, String, T> func2,
-        Func1<String, Boolean> func1
-    ) {
-        return null;
-    }
-
-    @Override
-    public ResponseContentWriter<ByteBuf> writeString(Observable<String> observable, Func1<String, Boolean> func1) {
-        return null;
-    }
-
-    @Override
-    public ResponseContentWriter<ByteBuf> writeStringAndFlushOnEach(Observable<String> observable) {
-        return null;
-    }
-
-    @Override
-    public ResponseContentWriter<ByteBuf> writeBytes(Observable<byte[]> observable) {
-        observable.toBlocking().forEach(bytes -> outp.append(new String(bytes)));
-        return this;
-    }
-
-    @Override
-    public <T extends TrailingHeaders> Observable<Void> writeBytes(Observable<byte[]> observable, Func0<T> func0, Func2<T, byte[], T> func2) {
-        return null;
-    }
-
-    @Override
-    public <T extends TrailingHeaders> Observable<Void> writeBytes(Observable<byte[]> observable,
-        Func0<T> func0,
-        Func2<T, byte[], T> func2,
-        Func1<byte[], Boolean> func1
-    ) {
-        return null;
-    }
-
-    @Override
-    public ResponseContentWriter<ByteBuf> writeBytes(Observable<byte[]> observable, Func1<byte[], Boolean> func1) {
-        return null;
-    }
-
-    @Override
-    public ResponseContentWriter<ByteBuf> writeBytesAndFlushOnEach(Observable<byte[]> observable) {
-        return writeBytes(observable);
     }
 }

@@ -48,6 +48,7 @@ public class HttpClientConfig {
     private int     retryCount             = 3;
     private int     retryDelayMs           = 1000;
     private int     readTimeoutMs          = 10000;
+    private int     poolAcquireTimeoutMs   = 10000;
     @JsonProperty("validateCertificates")
     private boolean isValidateCertificates = true;
 
@@ -188,5 +189,13 @@ public class HttpClientConfig {
         this.basicAuth = new BasicAuthConfig()
             .setUsername(username)
             .setPassword(password);
+    }
+
+    public int getPoolAcquireTimeoutMs() {
+        return poolAcquireTimeoutMs;
+    }
+
+    public void setPoolAcquireTimeoutMs(int poolAcquireTimeoutMs) {
+        this.poolAcquireTimeoutMs = poolAcquireTimeoutMs;
     }
 }

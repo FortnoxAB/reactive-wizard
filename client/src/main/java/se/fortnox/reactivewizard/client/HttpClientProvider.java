@@ -14,30 +14,30 @@ import java.util.Set;
  */
 @Singleton
 public class HttpClientProvider {
-
-    protected final HealthRecorder                          healthRecorder;
-    protected final ObjectMapper                            objectMapper;
-    protected final RequestParameterSerializers             requestParameterSerializers;
-    protected final Set<PreRequestHook>                     preRequestHooks;
-    private final Map<Class<? extends HttpClientConfig>, RxClientProvider> rxClientProviderCache = new HashMap<>();
+    protected final ObjectMapper                                             objectMapper;
+    protected final RequestParameterSerializers                              requestParameterSerializers;
+    protected final Set<PreRequestHook>                                             preRequestHooks;
+    private final HealthRecorder healthRecorder;
+    private final   Map<Class<? extends HttpClientConfig>, ReactorRxClientProvider> rxClientProviderCache = new HashMap<>();
 
     @Inject
-    public HttpClientProvider(HealthRecorder healthRecorder,
-        ObjectMapper objectMapper,
-        RequestParameterSerializers requestParameterSerializers,
-        Set<PreRequestHook> preRequestHooks
+    public HttpClientProvider(ObjectMapper objectMapper,
+                                     RequestParameterSerializers requestParameterSerializers,
+                                     Set<PreRequestHook> preRequestHooks,
+                                     HealthRecorder healthRecorder
     ) {
-        this.healthRecorder = healthRecorder;
         this.objectMapper = objectMapper;
         this.requestParameterSerializers = requestParameterSerializers;
         this.preRequestHooks = preRequestHooks;
+        this.healthRecorder = healthRecorder;
     }
 
-    private RxClientProvider getRxClientProvider(HttpClientConfig httpClientConfig) {
-        return rxClientProviderCache.computeIfAbsent(httpClientConfig.getClass(), config -> new RxClientProvider(httpClientConfig, healthRecorder));
+    private ReactorRxClientProvider getRxClientProvider(HttpClientConfig httpClientConfig) {
+        return rxClientProviderCache.computeIfAbsent(httpClientConfig.getClass(),
+            config -> new ReactorRxClientProvider(httpClientConfig, healthRecorder));
     }
 
-    protected HttpClient instantiateClient(HttpClientConfig httpClientConfig, RxClientProvider rxClientProvider) {
+    protected HttpClient instantiateClient(HttpClientConfig httpClientConfig, ReactorRxClientProvider rxClientProvider) {
         return new HttpClient(httpClientConfig, rxClientProvider, objectMapper, requestParameterSerializers, preRequestHooks);
     }
 

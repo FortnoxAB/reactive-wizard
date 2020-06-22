@@ -7,8 +7,9 @@ import io.netty.channel.ChannelPromise;
 import io.netty.handler.codec.http.DefaultHttpResponse;
 import io.netty.handler.codec.http.HttpRequestDecoder;
 import io.netty.handler.codec.http.HttpResponseStatus;
-import io.reactivex.netty.protocol.http.HttpHandlerNames;
 import rx.functions.Action1;
+
+import static reactor.netty.NettyPipeline.HttpTrafficHandler;
 
 /**
  * Adds a fix for 204 NoContent and 1XX responses, which should have neither body nor Content-Length
@@ -19,23 +20,9 @@ import rx.functions.Action1;
  */
 public class NoContentFixConfigurator implements Action1<ChannelPipeline> {
 
-    private final int maxInitialLineLength;
-    private final int maxChunkSize;
-    private final int maxHeaderSize;
-
-    public NoContentFixConfigurator(int maxInitialLineLength, int maxChunkSize, int maxHeaderSize) {
-        this.maxInitialLineLength = maxInitialLineLength;
-        this.maxChunkSize = maxChunkSize;
-        this.maxHeaderSize = maxHeaderSize;
-    }
-
     @Override
     public void call(ChannelPipeline pipeline) {
-        pipeline.replace(
-                HttpHandlerNames.HttpServerDecoder.getName(),
-                HttpHandlerNames.HttpServerDecoder.getName(),
-                new HttpRequestDecoder(maxInitialLineLength, maxHeaderSize, maxChunkSize));
-        pipeline.addAfter(HttpHandlerNames.HttpServerEncoder.getName(), "NoContentFix", new NoContentBodyFix());
+        pipeline.addBefore(HttpTrafficHandler, "NoContentFix", new NoContentBodyFix());
     }
 
     /**
@@ -51,7 +38,7 @@ public class NoContentFixConfigurator implements Action1<ChannelPipeline> {
                     response.headers().remove("Content-Length");
                 }
                 HttpResponseStatus status = response.status();
-                if (status.equals(HttpResponseStatus.NO_CONTENT) || status.code() < 200) {
+                if (status.equals(HttpResponseStatus.NO_CONTENT) || status.code() < 200 || isEmptyBody) {
                     response.headers().remove("Transfer-Encoding");
                 }
             }

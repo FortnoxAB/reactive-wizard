@@ -20,6 +20,5 @@ public class MetricsTest {
 
         assertThat(metrics.registry().getNames()).contains("test");
         assertThat(metrics.registry().getTimers().get("test").getCount()).isEqualTo(5);
-
     }
 }

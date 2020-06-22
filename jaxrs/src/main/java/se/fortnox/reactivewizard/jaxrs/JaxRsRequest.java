@@ -1,14 +1,13 @@
 package se.fortnox.reactivewizard.jaxrs;
 
-import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.QueryStringDecoder;
 import io.netty.handler.codec.http.cookie.Cookie;
-import io.reactivex.netty.protocol.http.server.HttpServerRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import rx.Observable;
+import reactor.core.publisher.Mono;
+import reactor.netty.http.server.HttpServerRequest;
 
 import java.util.List;
 import java.util.Map;
@@ -16,11 +15,10 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static io.netty.handler.codec.http.HttpMethod.DELETE;
 import static io.netty.handler.codec.http.HttpMethod.PATCH;
 import static io.netty.handler.codec.http.HttpMethod.POST;
 import static io.netty.handler.codec.http.HttpMethod.PUT;
-import static rx.Observable.just;
+import static io.netty.handler.codec.http.HttpMethod.DELETE;
 
 /**
  * Represents an incoming request. Helps with extracting different types of data from the request.
@@ -28,53 +26,54 @@ import static rx.Observable.just;
 public class JaxRsRequest {
     private static final Logger LOG = LoggerFactory.getLogger(JaxRsResource.class);
 
-    private final HttpServerRequest<ByteBuf> req;
-    private final byte[]                     body;
-    private final String                     path;
-    private       Matcher                    matcher;
-    private final ByteBufCollector           collector;
+    private final HttpServerRequest   req;
+    private final byte[]              body;
+    private final String              path;
+    private       Matcher             matcher;
+    private final ByteBufCollector    collector;
+    private Map<String, List<String>> queryParameters;
 
-    protected JaxRsRequest(HttpServerRequest<ByteBuf> req, Matcher matcher, byte[] body, ByteBufCollector collector) {
+    protected JaxRsRequest(HttpServerRequest req, Matcher matcher, byte[] body, ByteBufCollector collector) {
         this.req       = req;
         this.matcher   = matcher;
         this.body      = body;
         this.collector = collector; // 10 MB as default
         try {
-            this.path = req.getDecodedPath();
+            this.path = req.fullPath();
         } catch (IllegalArgumentException e) {
             throw new WebException(HttpResponseStatus.BAD_REQUEST);
         }
     }
 
-    public JaxRsRequest(HttpServerRequest<ByteBuf> request) {
+    public JaxRsRequest(HttpServerRequest request) {
         this(request, new ByteBufCollector());
     }
 
-    public JaxRsRequest(HttpServerRequest<ByteBuf> request, ByteBufCollector collector) {
+    public JaxRsRequest(HttpServerRequest request, ByteBufCollector collector) {
         this(request, null, null, collector);
     }
 
-    protected JaxRsRequest create(HttpServerRequest<ByteBuf> req, Matcher matcher, byte[] body, ByteBufCollector collector) {
+    protected JaxRsRequest create(HttpServerRequest req, Matcher matcher, byte[] body, ByteBufCollector collector) {
         return new JaxRsRequest(req, matcher, body, collector);
     }
 
     public boolean hasMethod(HttpMethod httpMethod) {
-        return req.getHttpMethod().equals(httpMethod);
+        return req.method().equals(httpMethod);
     }
 
     public byte[] getBody() {
         return body;
     }
 
-    public Observable<JaxRsRequest> loadBody() {
-        HttpMethod httpMethod = req.getHttpMethod();
+    public Mono<JaxRsRequest> loadBody() {
+        HttpMethod httpMethod = req.method();
         if (POST.equals(httpMethod) || PUT.equals(httpMethod) || PATCH.equals(httpMethod) || DELETE.equals(httpMethod)) {
-            return collector.collectBytes(req.getContent()
-                .doOnError(e -> LOG.error("Error reading data for request " + httpMethod + " " + req.getUri(), e)))
-                .lastOrDefault(null)
+            return collector.collectBytes(req.receive()
+                .doOnError(e -> LOG.error("Error reading data for request " + httpMethod + " " + req.uri(), e)))
+                .defaultIfEmpty(new byte[0])
                 .map(reqBody -> create(req, matcher, reqBody, collector));
         }
-        return just(this);
+        return Mono.just(this);
     }
 
     public String getQueryParam(String key) {
@@ -82,7 +81,11 @@ public class JaxRsRequest {
     }
 
     public String getQueryParam(String key, String defaultValue) {
-        List<String> list = req.getQueryParameters().get(key);
+        if (queryParameters == null) {
+            QueryStringDecoder queryStringDecoder = new QueryStringDecoder(req.uri());
+            queryParameters = queryStringDecoder.parameters();
+        }
+        List<String> list = queryParameters.get(key);
         if (list != null && !list.isEmpty()) {
             return list.get(0);
         }
@@ -105,7 +108,7 @@ public class JaxRsRequest {
     }
 
     public String getHeader(String key, String defaultValue) {
-        return req.getHeader(key, defaultValue);
+        return req.requestHeaders().get(key, defaultValue);
     }
 
     public String getFormParam(String key) {
@@ -124,7 +127,7 @@ public class JaxRsRequest {
     }
 
     public Set<Cookie> getCookie(String key) {
-        return req.getCookies().get(key);
+        return req.cookies().get(key);
     }
 
     public String getCookieValue(String key) {
@@ -132,7 +135,7 @@ public class JaxRsRequest {
     }
 
     public String getCookieValue(String key, String defaultValue) {
-        Set<Cookie> cookies = req.getCookies().get(key);
+        Set<Cookie> cookies = req.cookies().get(key);
         if (cookies == null || cookies.isEmpty()) {
             return defaultValue;
         }

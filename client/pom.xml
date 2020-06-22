@@ -6,7 +6,7 @@
 	<parent>
 		<groupId>se.fortnox.reactivewizard</groupId>
 		<artifactId>reactivewizard-parent</artifactId>
-		<version>1.0.0-SNAPSHOT</version>
+		<version>999.9.9-SNAPSHOT</version>
 	</parent>
 
 	<dependencies>
@@ -20,6 +20,28 @@
             <groupId>se.fortnox.reactivewizard</groupId>
             <artifactId>reactivewizard-api</artifactId>
             <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.projectreactor</groupId>
+            <artifactId>reactor-core</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.reactivestreams</groupId>
+            <artifactId>reactive-streams</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.reactivex</groupId>
+            <artifactId>rxjava-reactive-streams</artifactId>
+            <version>1.2.1</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.reactivex</groupId>
+                    <artifactId>rxjava</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
 		<dependency>

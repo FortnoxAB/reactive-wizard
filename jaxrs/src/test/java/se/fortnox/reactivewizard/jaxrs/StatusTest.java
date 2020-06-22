@@ -1,13 +1,12 @@
 package se.fortnox.reactivewizard.jaxrs;
 
-import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
-import io.reactivex.netty.protocol.http.server.HttpServerRequest;
-import io.reactivex.netty.protocol.http.server.MockHttpServerRequest;
 import org.junit.Test;
+import reactor.core.publisher.Flux;
 import rx.Observable;
 import se.fortnox.reactivewizard.ExceptionHandler;
+import se.fortnox.reactivewizard.mocks.MockHttpServerRequest;
 import se.fortnox.reactivewizard.mocks.MockHttpServerResponse;
 
 import javax.ws.rs.DELETE;
@@ -16,8 +15,6 @@ import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.QueryParam;
-
-import java.util.Collections;
 
 import static java.util.Collections.emptySet;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -58,44 +55,44 @@ public class StatusTest {
 
     @Test
     public void shouldReturnEmptyResponseWith204Status() {
-        HttpServerRequest<ByteBuf> request  = new MockHttpServerRequest("/test/delete", HttpMethod.DELETE);
+        MockHttpServerRequest      request  = new MockHttpServerRequest("/test/delete", HttpMethod.DELETE);
         MockHttpServerResponse     response = new MockHttpServerResponse();
-        Observable<Void>           result   = handler.handle(request, response);
-        result.onErrorReturn(e -> {
+        Flux<Void>                 result   = Flux.from(handler.apply(request, response));
+        result.onErrorResume(e -> {
             exceptionHandler.handleException(request, response, e);
-            return null;
-        }).toBlocking().singleOrDefault(null);
-        assertThat(response.getStatus()).isEqualTo(HttpResponseStatus.NO_CONTENT);
-        assertThat(response.getHeader("Content-Length")).isEqualTo("0"); // Will be removed in pipeline filter
-        assertThat(response.getHeader("Transfer-Encoding")).isNull();
+            return Flux.empty();
+        }).count().block();
+        assertThat(response.status()).isEqualTo(HttpResponseStatus.NO_CONTENT);
+        assertThat(response.responseHeaders().get("Content-Length")).isEqualTo("0"); // Will be removed in pipeline filter
+        assertThat(response.responseHeaders().get("Transfer-Encoding")).isNull();
         assertThat(response.getOutp()).isEmpty();
     }
 
     @Test
     public void shouldReturnContentDispositionHeaderIfPresent() {
-        HttpServerRequest<ByteBuf> request  = new MockHttpServerRequest("/test/get-content-disposition", HttpMethod.GET);
+        MockHttpServerRequest      request  = new MockHttpServerRequest("/test/get-content-disposition", HttpMethod.GET);
         MockHttpServerResponse     response = new MockHttpServerResponse();
-        Observable<Void>           result   = handler.handle(request, response);
-        result.onErrorReturn(e -> {
+        Flux<Void>                 result   = Flux.from(handler.apply(request, response));
+        result.onErrorResume(e -> {
             exceptionHandler.handleException(request, response, e);
-            return null;
-        }).toBlocking().singleOrDefault(null);
+            return Flux.empty();
+        }).count().block();
 
-        assertThat(response.getHeader("Content-Disposition")).isEqualTo("attachment; filename=\"export.csv\"");
-        assertThat(response.getHeader("test")).isEqualTo("test");
+        assertThat(response.responseHeaders().get("Content-Disposition")).isEqualTo("attachment; filename=\"export.csv\"");
+        assertThat(response.responseHeaders().get("test")).isEqualTo("test");
     }
 
     @Test
     public void shouldReturnNoContentDispositionHeaderIfAbsent() {
-        HttpServerRequest<ByteBuf> request  = new MockHttpServerRequest("/test/get", HttpMethod.GET);
+        MockHttpServerRequest      request  = new MockHttpServerRequest("/test/get", HttpMethod.GET);
         MockHttpServerResponse     response = new MockHttpServerResponse();
-        Observable<Void>           result   = handler.handle(request, response);
-        result.onErrorReturn(e -> {
+        Flux<Void>                 result   = Flux.from(handler.apply(request, response));
+        result.onErrorResume(e -> {
             exceptionHandler.handleException(request, response, e);
-            return null;
-        }).toBlocking().singleOrDefault(null);
+            return Flux.empty();
+        }).count().block();
 
-        assertThat(response.getHeader("Content-Disposition")).isNull();
+        assertThat(response.responseHeaders().get("Content-Disposition")).isNull();
     }
 
     @Test
@@ -108,14 +105,14 @@ public class StatusTest {
     }
 
     private void assertStatus(String url, HttpMethod httpMethod, HttpResponseStatus status, String body) {
-        HttpServerRequest<ByteBuf> request  = new MockHttpServerRequest(url, httpMethod, body);
+        MockHttpServerRequest      request  = new MockHttpServerRequest(url, httpMethod, body);
         MockHttpServerResponse     response = new MockHttpServerResponse();
-        Observable<Void>           result   = handler.handle(request, response);
-        result.onErrorReturn(e -> {
+        Flux<Void>                 result   = Flux.from(handler.apply(request, response));
+        result.onErrorResume(e -> {
             exceptionHandler.handleException(request, response, e);
-            return null;
-        }).toBlocking().singleOrDefault(null);
-        assertThat(response.getStatus()).isEqualTo(status);
+            return Flux.empty();
+        }).count().block();
+        assertThat(response.status()).isEqualTo(status);
     }
 
     @Path("test")

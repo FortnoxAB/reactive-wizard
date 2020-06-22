@@ -1,5 +1,6 @@
 package se.fortnox.reactivewizard.jaxrs;
 
+import org.reactivestreams.Publisher;
 import rx.Observable;
 
 import javax.inject.Inject;
@@ -20,7 +21,7 @@ public class JaxRsResourceInterceptors {
         interceptors.forEach(interceptor -> interceptor.preHandle(context));
     }
 
-    void postHandle(JaxRsResourceInterceptor.JaxRsResourceContext context, Observable<Void> resourceCall) {
+    void postHandle(JaxRsResourceInterceptor.JaxRsResourceContext context, Publisher<Void> resourceCall) {
         interceptors.forEach(interceptor -> interceptor.postHandle(context, resourceCall));
     }
 }

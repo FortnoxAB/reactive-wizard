@@ -9,37 +9,24 @@ import com.google.inject.Injector;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
-import io.netty.handler.codec.http.HttpVersion;
-import io.netty.handler.codec.http.cookie.Cookie;
-import io.reactivex.netty.channel.AllocatingTransformer;
-import io.reactivex.netty.channel.Connection;
-import io.reactivex.netty.client.ConnectionProvider;
-import io.reactivex.netty.client.ConnectionProviderFactory;
-import io.reactivex.netty.client.HostConnector;
-import io.reactivex.netty.client.internal.SingleHostConnectionProvider;
-import io.reactivex.netty.client.pool.PoolConfig;
-import io.reactivex.netty.client.pool.PoolExhaustedException;
-import io.reactivex.netty.client.pool.PooledConnectionProvider;
-import io.reactivex.netty.protocol.http.TrailingHeaders;
-import io.reactivex.netty.protocol.http.client.HttpClientRequest;
-import io.reactivex.netty.protocol.http.client.HttpClientResponse;
-import io.reactivex.netty.protocol.http.server.HttpServer;
-import io.reactivex.netty.protocol.http.server.HttpServerRequest;
-import io.reactivex.netty.protocol.http.ws.client.WebSocketRequest;
+import io.netty.handler.ssl.SslContextBuilder;
+import io.netty.handler.ssl.util.SelfSignedCertificate;
 import org.apache.log4j.Appender;
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.Mockito;
+import org.reactivestreams.Publisher;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.netty.DisposableServer;
+import reactor.netty.http.server.HttpServer;
+import reactor.netty.http.server.HttpServerRequest;
 import rx.Observable;
 import rx.Single;
-import rx.functions.Func0;
-import rx.functions.Func1;
-import rx.functions.Func2;
 import rx.observers.AssertableSubscriber;
 import se.fortnox.reactivewizard.config.TestInjector;
-import se.fortnox.reactivewizard.jaxrs.ByteBufCollector;
 import se.fortnox.reactivewizard.jaxrs.FieldError;
 import se.fortnox.reactivewizard.jaxrs.JaxRsMeta;
 import se.fortnox.reactivewizard.jaxrs.PATCH;
@@ -70,18 +57,17 @@ import java.io.PrintStream;
 import java.lang.reflect.Method;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
-import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
+import java.security.cert.CertificateException;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -90,25 +76,14 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
-import static io.netty.handler.codec.http.HttpResponseStatus.BAD_REQUEST;
-import static io.netty.handler.codec.http.HttpResponseStatus.GATEWAY_TIMEOUT;
-import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
-import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
-import static io.netty.handler.codec.http.HttpResponseStatus.OK;
+import static io.netty.handler.codec.http.HttpResponseStatus.*;
 import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static rx.Observable.defer;
-import static rx.Observable.empty;
-import static rx.Observable.error;
-import static rx.Observable.just;
+import static org.mockito.Mockito.*;
+import static reactor.core.publisher.Flux.*;
 import static se.fortnox.reactivewizard.test.TestUtil.matches;
 
 public class HttpClientTest {
@@ -118,11 +93,11 @@ public class HttpClientTest {
     @Test
     public void shouldNotRetryFailedPostCalls() {
         AtomicLong                   callCount = new AtomicLong();
-        HttpServer<ByteBuf, ByteBuf> server    = startServer(INTERNAL_SERVER_ERROR, "\"NOT OK\"", r -> callCount.incrementAndGet());
+        DisposableServer server    = startServer(INTERNAL_SERVER_ERROR, "\"NOT OK\"", r -> callCount.incrementAndGet());
 
         long start = System.currentTimeMillis();
         try {
-            TestResource resource = getHttpProxy(server.getServerPort());
+            TestResource resource = getHttpProxy(server.port());
 
             resource.postHello().toBlocking().lastOrDefault(null);
 
@@ -135,17 +110,17 @@ public class HttpClientTest {
 
             assertThat(e.getClass()).isEqualTo(WebException.class);
         } finally {
-            server.shutdown();
+            server.disposeNow();
         }
     }
 
     @Test
     public void shouldNotRetryFailedPostCallsWithNonWebExceptions() {
         AtomicLong callCount = new AtomicLong();
-        HttpServer<ByteBuf, ByteBuf> server    = startSlowServer(OK, 6, r -> callCount.incrementAndGet());
+        DisposableServer server    = startSlowServer(OK, 6, r -> callCount.incrementAndGet());
 
         try {
-            HttpClientConfig config = new HttpClientConfig("localhost:" + server.getServerPort());
+            HttpClientConfig config = new HttpClientConfig("localhost:" + server.port());
             config.setReadTimeoutMs(1);
             TestResource resource = getHttpProxy(config);
 
@@ -156,7 +131,7 @@ public class HttpClientTest {
             assertThat(callCount.get()).isEqualTo(1);
             assertThat(e.getClass()).isEqualTo(WebException.class);
         } finally {
-            server.shutdown();
+            server.disposeNow();
         }
     }
 
@@ -182,43 +157,33 @@ public class HttpClientTest {
     private TestResource getHttpProxy(HttpClientConfig config) {
         ObjectMapper mapper = new ObjectMapper().findAndRegisterModules()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        HttpClient client = new HttpClient(config, new RxClientProvider(config, healthRecorder), mapper, new RequestParameterSerializers(), Collections.emptySet());
+        HttpClient client = new HttpClient(config, new ReactorRxClientProvider(config, healthRecorder), mapper, new RequestParameterSerializers(), Collections.emptySet());
         return client.create(TestResource.class);
     }
 
-    private TestResource getHttpProxyWithClientReturningEmpty(AtomicInteger callCounter) {
+    private TestResource getHttpProxyWithClientReturningEmpty(DisposableServer disposableServer) {
+
         HttpClientConfig config = null;
         try {
-            config = new HttpClientConfig("localhost:8080");
+            config = new HttpClientConfig(disposableServer.host() + ":" +disposableServer.port());
         } catch (URISyntaxException e) {
-            Assert.fail("Could not create httpClientConfig");
+            Assert.fail("Could not create httpClientConfig: "+e);
         }
 
-        HttpClient client = new HttpClient(config, new RxClientProvider(config, healthRecorder) {
-            @Override
-            @SuppressWarnings("unchecked")
-            public io.reactivex.netty.protocol.http.client.HttpClient<ByteBuf, ByteBuf> clientFor(InetSocketAddress serverInfo) {
-                io.reactivex.netty.protocol.http.client.HttpClient mock = mock(io.reactivex.netty.protocol.http.client.HttpClient.class);
-                when(mock.createRequest(any(), anyString())).thenAnswer(invocation -> {
-                    //callCounter.incrementAndGet();
-                    return new EmptyReturningHttpClientRequest(callCounter);
-                });
-                return mock;
-            }
-
-        }, new ObjectMapper(), new RequestParameterSerializers(), Collections.emptySet());
+        HttpClient client = new HttpClient(config, new ReactorRxClientProvider(config, healthRecorder),
+            new ObjectMapper(), new RequestParameterSerializers(), Collections.emptySet());
         return client.create(TestResource.class);
     }
 
-    protected void withServer(Consumer<HttpServer<ByteBuf, ByteBuf>> serverConsumer) {
-        final HttpServer<ByteBuf, ByteBuf> server = startServer(HttpResponseStatus.OK, "\"OK\"");
+    protected void withServer(Consumer<DisposableServer> serverConsumer) {
+        final DisposableServer server = startServer(HttpResponseStatus.OK, "\"OK\"");
 
         LogManager.getLogger(RetryWithDelay.class).setLevel(Level.toLevel(Level.OFF_INT));
 
         try {
             serverConsumer.accept(server);
         } finally {
-            server.shutdown();
+            server.disposeNow();
         }
     }
 
@@ -227,7 +192,7 @@ public class HttpClientTest {
         withServer(server -> {
             long start = System.currentTimeMillis();
             try {
-                HttpClientConfig config = new HttpClientConfig("127.0.0.1:" + server.getServerPort());
+                HttpClientConfig config = new HttpClientConfig("127.0.0.1:" + server.port());
                 config.setRetryCount(1);
                 config.setRetryDelayMs(1000);
                 config.setMaxConnections(1);
@@ -243,29 +208,21 @@ public class HttpClientTest {
                     .toBlocking()
                     .lastOrDefault(null);
 
-                Assert.fail("Expected exception");
+
             } catch (Exception e) {
-                long duration = System.currentTimeMillis() - start;
-
-                assertThat(e.getCause().getCause().getClass()).isEqualTo(PoolExhaustedException.class);
-
-                assertThat(duration).isGreaterThan(1000);
+                Assert.fail("Expected no exception but got:" + e);
             }
         });
     }
 
-    //@Test
 
-    /**
-     * This test will fail occationally and is therefore commented out.
-     * This should be used to try to pin down the bug probably residing in rxnetty
-     */
+    @Test
     public void shouldNotSometimesDropItems() {
 
         withServer(server -> {
 
             try {
-                HttpClientConfig config = new HttpClientConfig("127.0.0.1:" + server.getServerPort());
+                HttpClientConfig config = new HttpClientConfig("127.0.0.1:" + server.port());
                 config.setRetryCount(1);
                 config.setRetryDelayMs(1000);
                 config.setMaxConnections(1000);
@@ -281,7 +238,7 @@ public class HttpClientTest {
                         results.add(resource
                             .getHello()
                             .switchIfEmpty(
-                                error(new RuntimeException("Did not expect empty"))));
+                                Observable.error(new RuntimeException("Did not expect empty"))));
                     }
                     AssertableSubscriber<String> test = Observable.merge(results).test();
                     test.awaitTerminalEvent();
@@ -324,11 +281,16 @@ public class HttpClientTest {
     public void shouldRetryIfEmptyReturnedOnGet() {
 
         AtomicInteger callCount = new AtomicInteger();
+
+        DisposableServer server = createTestServer(s -> callCount.incrementAndGet());
         try {
-            TestResource resource = getHttpProxyWithClientReturningEmpty(callCount);
+            TestResource resource = getHttpProxyWithClientReturningEmpty(server);
             resource.getHello().toBlocking().singleOrDefault(null);
         } catch (Exception expected) {
             assertThat(callCount.get()).isEqualTo(4);
+        }
+        finally {
+            server.disposeNow();
         }
     }
 
@@ -336,17 +298,20 @@ public class HttpClientTest {
     public void shouldNotRetryIfEmptyReturnedOnPost() {
 
         AtomicInteger callCount = new AtomicInteger();
+        DisposableServer server = startServer(CREATED, Mono.empty(), s -> callCount.incrementAndGet());
         try {
 
-            TestResource resource = getHttpProxyWithClientReturningEmpty(callCount);
+            TestResource resource = getHttpProxyWithClientReturningEmpty(server);
             resource.postHello().toBlocking().singleOrDefault(null);
         } catch (Exception e) {
             assertThat(callCount.get()).isEqualTo(1);
+        } finally {
+            server.disposeNow();
         }
     }
 
     @Test
-    public void shouldReportUnhealthyWhenPoolIsExhausted() {
+    public void shouldNotReportUnhealthyWhenPoolIsExhaustedRatherSequentiatingTheRequests() throws URISyntaxException {
 
         AtomicBoolean wasUnhealthy = new AtomicBoolean(false);
 
@@ -362,7 +327,7 @@ public class HttpClientTest {
 
         withServer(server -> {
             try {
-                HttpClientConfig config = new HttpClientConfig("127.0.0.1:" + server.getServerPort());
+                HttpClientConfig config = new HttpClientConfig("127.0.0.1:" + server.port());
                 config.setMaxConnections(1);
                 config.setRetryCount(0);
                 TestResource resource = getHttpProxy(config);
@@ -377,20 +342,44 @@ public class HttpClientTest {
                     .toBlocking()
                     .lastOrDefault(null);
 
-                Assert.fail("Expected exception");
             } catch (Exception e) {
-
-                assertThat(e.getCause().getCause().getClass()).isEqualTo(PoolExhaustedException.class);
-
-                assertThat(wasUnhealthy.get()).isTrue();
+                Assert.fail("Expected no exception");
             }
         });
     }
 
     @Test
+    public void shouldReportUnhealthyWhenConnectionCannotBeAquiredBeforeTimeout() throws URISyntaxException {
+
+        DisposableServer server = HttpServer.create().port(0)
+            .handle((request, response) -> Flux.defer(() -> {
+                response.status(HttpResponseStatus.OK);
+                return Flux.<Void>empty();
+            }).delaySubscription(Duration.ofMillis(1000)))
+            .bindNow();
+
+        HttpClientConfig httpClientConfig = new HttpClientConfig();
+        httpClientConfig.setUrl("http://localhost:" + server.port());
+        httpClientConfig.setPoolAcquireTimeoutMs(100);
+        httpClientConfig.setMaxConnections(1);
+
+        ReactorRxClientProvider reactorRxClientProvider = new ReactorRxClientProvider(httpClientConfig, healthRecorder);
+        HttpClient reactorHttpClient = new HttpClient(httpClientConfig, reactorRxClientProvider, new ObjectMapper(), new RequestParameterSerializers(), Collections.EMPTY_SET);
+
+        TestResource testResource = reactorHttpClient.create(TestResource.class);
+
+        Observable<String> hello = testResource.getHello();
+        Observable<String> hello2 = testResource.getHello();
+
+        Observable
+            .merge(hello, hello2).test().awaitTerminalEvent();
+        assertThat(healthRecorder.isHealthy()).isFalse();
+    }
+
+    @Test
     public void shouldReportHealthyWhenPoolIsNotExhausted() {
         withServer(server -> {
-            TestResource resource = getHttpProxy(server.getServerPort(), 5);
+            TestResource resource = getHttpProxy(server.port(), 5);
 
             List<Observable<String>> results = new ArrayList<Observable<String>>();
             for (int i = 0; i < 5; i++) {
@@ -431,9 +420,9 @@ public class HttpClientTest {
     @Test
     public void shouldReturnDetailedError() {
         String                       detailedErrorJson = "{\"error\":1,\"message\":\"Detailed error description.\",\"code\":100}";
-        HttpServer<ByteBuf, ByteBuf> server            = startServer(HttpResponseStatus.BAD_REQUEST, detailedErrorJson);
+        DisposableServer             server            = startServer(HttpResponseStatus.BAD_REQUEST, detailedErrorJson);
 
-        TestResource resource = getHttpProxy(server.getServerPort());
+        TestResource resource = getHttpProxy(server.port());
         try {
             resource.getHello().toBlocking().single();
             Assert.fail("Expected exception");
@@ -444,7 +433,7 @@ public class HttpClientTest {
             assertThat(detailedError.getCode()).isEqualTo(100);
             assertThat(detailedError.getMessage()).isEqualTo("Detailed error description.");
         } finally {
-            server.shutdown();
+            server.disposeNow();
         }
     }
 
@@ -524,28 +513,28 @@ public class HttpClientTest {
 
     @Test
     public void shouldSupportSingleSource() {
-        HttpServer<ByteBuf, ByteBuf> server = startServer(HttpResponseStatus.OK, "\"OK\"");
+        DisposableServer server = startServer(HttpResponseStatus.OK, "\"OK\"");
 
-        TestResource resource = getHttpProxy(server.getServerPort());
+        TestResource resource = getHttpProxy(server.port());
         resource.getSingle().toBlocking().value();
 
-        server.shutdown();
+        server.disposeNow();
     }
 
     @Test
     public void shouldHandleLargeResponses() {
-        final HttpServer<ByteBuf, ByteBuf> server   = startServer(HttpResponseStatus.OK, generateLargeString(10));
-        TestResource                       resource = getHttpProxy(server.getServerPort());
+        DisposableServer                   server   = startServer(HttpResponseStatus.OK, generateLargeString(10));
+        TestResource                       resource = getHttpProxy(server.port());
         resource.getHello().toBlocking().single();
 
-        server.shutdown();
+        server.disposeNow();
     }
 
     @Test
     public void shouldLogErrorOnTooLargeResponse() throws NoSuchFieldException, IllegalAccessException {
         Appender                           mockAppender = LoggingMockUtil.createMockedLogAppender(HttpClient.class);
-        final HttpServer<ByteBuf, ByteBuf> server       = startServer(HttpResponseStatus.OK, generateLargeString(11));
-        TestResource                       resource     = getHttpProxy(server.getServerPort());
+        DisposableServer                   server       = startServer(HttpResponseStatus.OK, generateLargeString(11));
+        TestResource                       resource     = getHttpProxy(server.port());
         WebException                       e            = null;
         try {
             resource.getHello().toBlocking().single();
@@ -558,16 +547,16 @@ public class HttpClientTest {
         assertThat(e.getError()).isEqualTo("too.large.input");
 
         verify(mockAppender).doAppend(matches(log -> {
-            assertThat(log.getMessage()).isEqualTo("Failed request. Url: localhost:" + server.getServerPort() + "/hello, headers: [Host=localhost]");
+            assertThat(log.getMessage()).isEqualTo("Failed request. Url: localhost:" + server.port() + "/hello, headers: [Host=localhost]");
         }));
 
-        server.shutdown();
+        server.disposeNow();
     }
 
     @Test
     public void shouldReturnBadRequestOnTooLargeResponses() throws URISyntaxException {
-        final HttpServer<ByteBuf, ByteBuf> server = startServer(HttpResponseStatus.OK, "\"derp\"");
-        HttpClientConfig                   config = new HttpClientConfig("127.0.0.1:" + server.getServerPort());
+        DisposableServer                   server = startServer(HttpResponseStatus.OK, "\"derp\"");
+        HttpClientConfig                   config = new HttpClientConfig("127.0.0.1:" + server.port());
         config.setMaxResponseSize(5);
         TestResource resource = getHttpProxy(config);
         try {
@@ -577,25 +566,25 @@ public class HttpClientTest {
             assertThat(e.getStatus()).isEqualTo(BAD_REQUEST);
         }
 
-        server.shutdown();
+        server.disposeNow();
     }
 
     @Test
     public void shouldSupportByteArrayResponse() {
-        final HttpServer<ByteBuf, ByteBuf> server   = startServer(HttpResponseStatus.OK, "hej");
-        TestResource                       resource = getHttpProxy(server.getServerPort());
+        DisposableServer                   server   = startServer(HttpResponseStatus.OK, "hej");
+        TestResource                       resource = getHttpProxy(server.port());
         byte[]                             result   = resource.getAsBytes().toBlocking().single();
         assertThat(new String(result)).isEqualTo("hej");
 
-        server.shutdown();
+        server.disposeNow();
     }
 
     @Test
     public void shouldRetry5XXesponses() throws URISyntaxException {
         AtomicLong                   callCount = new AtomicLong();
-        HttpServer<ByteBuf, ByteBuf> server    = startServer(INTERNAL_SERVER_ERROR, "", r -> callCount.incrementAndGet());
+        DisposableServer server    = startServer(INTERNAL_SERVER_ERROR, "", r -> callCount.incrementAndGet());
 
-        HttpClientConfig config = new HttpClientConfig("127.0.0.1:" + server.getServerPort());
+        HttpClientConfig config = new HttpClientConfig("127.0.0.1:" + server.port());
         config.setRetryDelayMs(10);
         TestResource resource = getHttpProxy(config);
         try {
@@ -606,15 +595,15 @@ public class HttpClientTest {
         }
         assertThat(callCount.get()).isEqualTo(4);
 
-        server.shutdown();
+        server.disposeNow();
     }
 
     @Test
     public void shouldNotRetryFor4XXResponses() {
         AtomicLong                   callCount = new AtomicLong();
-        HttpServer<ByteBuf, ByteBuf> server    = startServer(NOT_FOUND, "", r -> callCount.incrementAndGet());
+        DisposableServer             server    = startServer(NOT_FOUND, "", r -> callCount.incrementAndGet());
 
-        TestResource resource = getHttpProxy(server.getServerPort());
+        TestResource resource = getHttpProxy(server.port());
         try {
             resource.getHello().toBlocking().singleOrDefault(null);
             fail("expected exception");
@@ -623,15 +612,15 @@ public class HttpClientTest {
         }
         assertThat(callCount.get()).isEqualTo(1);
 
-        server.shutdown();
+        server.disposeNow();
     }
 
     @Test
     public void shouldNotRetryForJsonParseErrors() {
         AtomicLong                   callCount = new AtomicLong();
-        HttpServer<ByteBuf, ByteBuf> server    = startServer(OK, "{\"result\":[]}", r -> callCount.incrementAndGet());
+        DisposableServer             server    = startServer(OK, "{\"result\":[]}", r -> callCount.incrementAndGet());
 
-        TestResource resource = getHttpProxy(server.getServerPort());
+        TestResource resource = getHttpProxy(server.port());
         try {
             resource.getWrappedPojo().toBlocking().singleOrDefault(null);
             fail("expected exception");
@@ -640,17 +629,17 @@ public class HttpClientTest {
         }
         assertThat(callCount.get()).isEqualTo(1);
 
-        server.shutdown();
+        server.disposeNow();
     }
 
     @Test
     public void shouldParseWebExceptions() {
         AtomicLong callCount = new AtomicLong();
-        HttpServer<ByteBuf, ByteBuf> server = startServer(BAD_REQUEST,
+        DisposableServer server = startServer(BAD_REQUEST,
             "{\"id\":\"f3872d6a-43b9-41c2-a302-f1fc89621f68\",\"error\":\"validation\",\"fields\":[{\"field\":\"phoneNumber\",\"error\":\"validation.invalid.phone.number\"}]}",
             r -> callCount.incrementAndGet());
 
-        TestResource resource = getHttpProxy(server.getServerPort());
+        TestResource resource = getHttpProxy(server.port());
         try {
             resource.getWrappedPojo().toBlocking().singleOrDefault(null);
             fail("expected exception");
@@ -665,16 +654,16 @@ public class HttpClientTest {
         }
 
         assertThat(callCount.get()).isEqualTo(1);
-        server.shutdown();
+        server.disposeNow();
     }
 
     @Test
     public void shouldNotRetryOnTimeout() {
         AtomicLong callCount = new AtomicLong();
-        HttpServer<ByteBuf, ByteBuf> server = startSlowServer(HttpResponseStatus.NOT_FOUND, 1000, r -> callCount.incrementAndGet());
+        DisposableServer server = startSlowServer(HttpResponseStatus.NOT_FOUND, 1000, r -> callCount.incrementAndGet());
 
-        TestResource resource = getHttpProxy(server.getServerPort());
-        HttpClient.setTimeout(resource, 500, TimeUnit.MILLISECONDS);
+        TestResource resource = getHttpProxy(server.port());
+        HttpClient.setTimeout(resource, 500, ChronoUnit.MILLIS);
         try {
             resource.getHello().toBlocking().singleOrDefault(null);
             fail("expected exception");
@@ -683,15 +672,15 @@ public class HttpClientTest {
         }
         assertThat(callCount.get()).isEqualTo(1);
 
-        server.shutdown();
+        server.disposeNow();
     }
 
     @Test
     public void shouldHandleLongerRequestsThan10SecondsWhenRequested() {
-        HttpServer<ByteBuf, ByteBuf> server = startSlowServer(HttpResponseStatus.NOT_FOUND, 20000);
+        DisposableServer server = startSlowServer(HttpResponseStatus.NOT_FOUND, 20000);
 
-        TestResource resource = getHttpProxy(server.getServerPort(), 1, 30000);
-        HttpClient.setTimeout(resource, 15000, TimeUnit.MILLISECONDS);
+        TestResource resource = getHttpProxy(server.port(), 1, 30000);
+        HttpClient.setTimeout(resource, 15000, ChronoUnit.MILLIS);
         try {
             resource.getHello().toBlocking().singleOrDefault(null);
             fail("expected exception");
@@ -699,23 +688,24 @@ public class HttpClientTest {
             assertThat(e.getStatus()).isEqualTo(GATEWAY_TIMEOUT);
         }
 
-        server.shutdown();
+        server.disposeNow();
     }
 
     @Test
     public void shouldThrowNettyReadTimeoutIfRequestTakesLongerThanClientIsConfigured() {
         // Slow server
-        HttpServer<ByteBuf, ByteBuf> server = HttpServer.newServer(0)
-            .start((request, response) -> Observable.defer(() -> {
-                response.setStatus(HttpResponseStatus.NOT_FOUND);
-                return Observable.<Void>empty();
-            }).delaySubscription(1000, TimeUnit.MILLISECONDS));
+        DisposableServer server = HttpServer.create().port(0)
+            .handle((request, response) -> Flux.defer(() -> {
+                response.status(HttpResponseStatus.NOT_FOUND);
+                return Flux.<Void>empty();
+            }).delaySubscription(Duration.ofMillis(1000)))
+            .bindNow();
 
         //Create a resource with 500ms limit
-        TestResource resource = getHttpProxy(server.getServerPort(), 1, 500);
+        TestResource resource = getHttpProxy(server.port(), 1, 500);
 
         //Lets set the observable timeout higher than the httpproxy readTimeout
-        HttpClient.setTimeout(resource, 1000, TimeUnit.MILLISECONDS);
+        HttpClient.setTimeout(resource, 1000, ChronoUnit.MILLIS);
 
         try {
             resource.getHello().toBlocking().singleOrDefault(null);
@@ -724,46 +714,46 @@ public class HttpClientTest {
             assertThat(e.getStatus()).isEqualTo(GATEWAY_TIMEOUT);
         }
 
-        server.shutdown();
+        server.disposeNow();
     }
 
     @Test
     public void shouldHandleMultipleChunks() {
-        HttpServer<ByteBuf, ByteBuf> server = HttpServer.newServer(0).start((request, response) -> {
-            response.setStatus(HttpResponseStatus.OK);
-            return response.writeStringAndFlushOnEach(just("\"he")
+        DisposableServer server = HttpServer.create().port(0).handle((request, response) -> {
+            response.status(HttpResponseStatus.OK);
+            return response.sendString(just("\"he")
                 .concatWith(defer(() -> just("llo\"")))
-                .concatWith(defer(Observable::empty)));
-        });
+                .concatWith(defer(Flux::empty)));
+        }).bindNow();
 
-        TestResource resource = getHttpProxy(server.getServerPort());
+        TestResource resource = getHttpProxy(server.port());
         String       result   = resource.getHello().toBlocking().single();
         assertThat(result).isEqualTo("hello");
 
-        server.shutdown();
+        server.disposeNow();
     }
 
     @Test
     public void shouldDeserializeVoidResult() {
-        HttpServer<ByteBuf, ByteBuf> server = startServer(HttpResponseStatus.CREATED, "");
+        DisposableServer server = startServer(HttpResponseStatus.CREATED, "");
 
-        TestResource resource = getHttpProxy(server.getServerPort());
+        TestResource resource = getHttpProxy(server.port());
         resource.getVoid().toBlocking().singleOrDefault(null);
 
-        server.shutdown();
+        server.disposeNow();
     }
 
     @Test
     public void shouldShutDownConnectionOnTimeoutBeforeHeaders() throws URISyntaxException {
         Consumer<String>             serverLog = mock(Consumer.class);
-        HttpServer<ByteBuf, ByteBuf> server    = createTestServer(serverLog);
+        DisposableServer server    = createTestServer(serverLog);
 
-        HttpClientConfig config = new HttpClientConfig("localhost:" + server.getServerPort());
+        HttpClientConfig config = new HttpClientConfig("localhost:" + server.port());
         config.setMaxConnections(1);
         config.setRetryCount(0);
         HttpClient   client   = new HttpClient(config);
         TestResource resource = client.create(TestResource.class);
-        HttpClient.setTimeout(resource, 200, TimeUnit.MILLISECONDS);
+        HttpClient.setTimeout(resource, 200, ChronoUnit.MILLIS);
 
         resource.servertest("fast")
             // Delay needed so that repeat will not subscribe immediately, as the pooled connection is released on the event loop thread.
@@ -789,81 +779,45 @@ public class HttpClientTest {
 
         verify(serverLog, times(6)).accept("/hello/servertest/slowHeaders");
 
-        server.shutdown();
+        server.disposeNow();
     }
 
-    @Test
-    public void shouldShutDownConnectionOnTimeoutEstablishingConnection() throws URISyntaxException {
-        HttpClientConfig config = new HttpClientConfig("http://127.0.0.1");
-        config.setMaxConnections(1);
-
-        AtomicLong connectionsRequested = new AtomicLong();
-
-        ConnectionProvider<ByteBuf, ByteBuf> connectionProvider = () -> Observable.<Connection<ByteBuf, ByteBuf>>never()
-            .doOnSubscribe(connectionsRequested::incrementAndGet);
-
-        // Setup a clientProvider that never returns any connections
-        RxClientProvider clientProvider = new RxClientProvider(config, new HealthRecorder()) {
-            @Override
-            protected ConnectionProviderFactory<ByteBuf, ByteBuf> createConnectionProviderFactory(PoolConfig<ByteBuf, ByteBuf> poolConfig) {
-                return hosts -> new SingleHostConnectionProvider<>(hosts.map(hc -> {
-                    return new HostConnector<>(hc, PooledConnectionProvider.create(poolConfig,
-                        new HostConnector<ByteBuf, ByteBuf>(hc, connectionProvider)));
-                }));
+    private DisposableServer createTestServer(Consumer<String> serverLog) {
+        return HttpServer.create().host("localhost").port(0).handle((request, response) -> {
+            serverLog.accept(request.fullPath());
+            if (request.fullPath().equals("/hello/servertest/fast")) {
+                response.status(HttpResponseStatus.OK);
+                return response.sendString(just("\"fast\""));
             }
-        };
-        HttpClient   client   = new HttpClient(config, clientProvider, new ObjectMapper(), new RequestParameterSerializers(), Collections.emptySet());
-        TestResource resource = client.create(TestResource.class);
-        HttpClient.setTimeout(resource, 100, TimeUnit.MILLISECONDS);
-
-        try {
-            resource.getHello()
-                .delaySubscription(10, TimeUnit.MILLISECONDS)
-                .retry(5)
-                .toBlocking().last();
-            fail("expected exception");
-        } catch (WebException e) {
-            assertThat(e.getStatus()).isEqualTo(GATEWAY_TIMEOUT);
-        }
-        assertThat(connectionsRequested.get()).isEqualTo(6);
-    }
-
-    private HttpServer<ByteBuf, ByteBuf> createTestServer(Consumer<String> serverLog) {
-        return HttpServer.newServer(0).start((request, response) -> {
-            serverLog.accept(request.getDecodedPath());
-            if (request.getDecodedPath().equals("/hello/servertest/fast")) {
-                response.setStatus(HttpResponseStatus.OK);
-                return response.writeString(just("\"fast\""));
-            }
-            if (request.getDecodedPath().equals("/hello/servertest/slowHeaders")) {
-                return Observable.defer(() -> {
-                    response.setStatus(HttpResponseStatus.OK);
-                    return response.writeString(just("\"slowHeaders\""));
+            if (request.fullPath().equals("/hello/servertest/slowHeaders")) {
+                return Flux.defer(() -> {
+                    response.status(HttpResponseStatus.OK);
+                    return response.sendString(just("\"slowHeaders\""));
                 })
-                    .delaySubscription(5000, TimeUnit.MILLISECONDS);
+                    .delaySubscription(Duration.ofMillis(5000));
             }
-            if (request.getDecodedPath().equals("/hello/servertest/slowBody")) {
-                response.setStatus(HttpResponseStatus.OK);
-                return response.writeStringAndFlushOnEach(
+            if (request.fullPath().equals("/hello/servertest/slowBody")) {
+                response.status(HttpResponseStatus.OK);
+                return response.sendString(
                     just("\"slowBody: ")
-                        .concatWith(just("1", "2", "3").delay(10000, TimeUnit.MILLISECONDS))
+                        .concatWith(just("1", "2", "3").delaySequence(Duration.ofMillis(10000)))
                         .concatWith(just("\""))
                 );
             }
             return empty();
-        });
+        }).bindNow();
     }
 
     @Test
     public void shouldCloseConnectionOnTimeoutDuringContentReceive() throws URISyntaxException {
         Consumer<String>             serverLog = mock(Consumer.class);
-        HttpServer<ByteBuf, ByteBuf> server    = createTestServer(serverLog);
+        DisposableServer server    = createTestServer(serverLog);
 
-        HttpClientConfig config = new HttpClientConfig("localhost:" + server.getServerPort());
+        HttpClientConfig config = new HttpClientConfig("localhost:" + server.port());
         config.setMaxConnections(1);
         HttpClient   client   = new HttpClient(config);
         TestResource resource = client.create(TestResource.class);
-        HttpClient.setTimeout(resource, 200, TimeUnit.MILLISECONDS);
+        HttpClient.setTimeout(resource, 200, ChronoUnit.MILLIS);
 
         resource.servertest("fast")
             // Delay needed so that repeat will not subscribe immediately, as the pooled connection is released on the event loop thread.
@@ -889,7 +843,7 @@ public class HttpClientTest {
 
         verify(serverLog, times(11)).accept("/hello/servertest/slowBody");
 
-        server.shutdown();
+        server.disposeNow();
     }
 
     @Test
@@ -897,24 +851,24 @@ public class HttpClientTest {
 
         LogManager.getLogger(HttpClient.class).setLevel(Level.toLevel(Level.OFF_INT));
 
-        HttpServer<ByteBuf, ByteBuf> server = HttpServer.newServer(0)
-            .start((request, response) -> {
-                return Observable.defer(() -> {
-                    response.setStatus(HttpResponseStatus.OK);
-                    return response.writeString(just("\"hello\""));
+        DisposableServer server = HttpServer.create().port(0)
+            .handle((request, response) -> {
+                return Flux.defer(() -> {
+                    response.status(HttpResponseStatus.OK);
+                    return response.sendString(Mono.just("\"hello\""));
                 })
-                    .delaySubscription(50000, TimeUnit.MILLISECONDS)
+                    .delaySubscription(Duration.ofMillis(50000))
                     .doOnError(e -> {
                         e.printStackTrace();
                     });
-            });
+            }).bindNow();
 
         // this config ensures that the autocleanup will run before the hystrix timeout
-        HttpClientConfig config = new HttpClientConfig("localhost:" + server.getServerPort());
+        HttpClientConfig config = new HttpClientConfig("localhost:" + server.port());
         config.setMaxConnections(2);
         HttpClient   client   = new HttpClient(config);
         TestResource resource = client.create(TestResource.class);
-        HttpClient.setTimeout(resource, 100, TimeUnit.MILLISECONDS);
+        HttpClient.setTimeout(resource, 100, ChronoUnit.MILLIS);
 
         for (int i = 0; i < 5; i++) {
             try {
@@ -925,205 +879,205 @@ public class HttpClientTest {
             }
         }
 
-        server.shutdown();
+        server.disposeNow();
     }
 
     @Test
     public void willRequestWithMultipleCookies() {
-        Consumer<HttpServerRequest<ByteBuf>> reqLog = mock(Consumer.class);
-        HttpServer<ByteBuf, ByteBuf>         server = startServer(OK, "", reqLog::accept);
+        Consumer<HttpServerRequest> reqLog = mock(Consumer.class);
+        DisposableServer         server = startServer(OK, "", reqLog::accept);
 
         String cookie1Value = "stub1";
         String cookie2Value = "stub2";
         String cookieHeader = format("cookie1=%s; cookie2=%s", cookie1Value, cookie2Value);
-        getHttpProxy(server.getServerPort()).withMultipleCookies(cookie1Value, cookie2Value).toBlocking().single();
+        getHttpProxy(server.port()).withMultipleCookies(cookie1Value, cookie2Value).toBlocking().single();
 
         verify(reqLog).accept(matches(req -> {
-            assertThat(req.headerIterator()).toIterable().isNotEmpty();
-            assertThat(req.getHeader("Cookie")).isEqualTo(cookieHeader);
+            assertThat(req.requestHeaders()).isNotEmpty();
+            assertThat(req.requestHeaders().get("Cookie")).isEqualTo(cookieHeader);
         }));
 
-        server.shutdown();
+        server.disposeNow();
     }
 
-    private HttpServer<ByteBuf, ByteBuf> startServer(HttpResponseStatus status, String body, Consumer<HttpServerRequest<ByteBuf>> callback) {
-        return startServer(status, just(body), callback);
+    private DisposableServer startServer(HttpResponseStatus status, String body, Consumer<HttpServerRequest> callback) {
+        return startServer(status, Mono.just(body), callback);
     }
 
-    private HttpServer<ByteBuf, ByteBuf> startServer(HttpResponseStatus status, Observable<String> body, Consumer<HttpServerRequest<ByteBuf>> callback) {
-        return HttpServer.newServer(0).start((request, response) -> {
+    private DisposableServer startServer(HttpResponseStatus status, Publisher<String> body, Consumer<HttpServerRequest> callback) {
+        return HttpServer.create().host("localhost").port(0).handle((request, response) -> {
             callback.accept(request);
-            response.setStatus(status);
-            return response.writeString(body);
-        });
+            response.status(status);
+            return response.sendString(body);
+        }).bindNow();
     }
 
-    private HttpServer<ByteBuf, ByteBuf> startServer(HttpResponseStatus status, String body) {
+    private DisposableServer startServer(HttpResponseStatus status, String body) {
         return startServer(status, body, r -> {
         });
     }
 
-    private HttpServer<ByteBuf, ByteBuf> startSlowServer(HttpResponseStatus status, Integer delayInMs) {
+    private DisposableServer startSlowServer(HttpResponseStatus status, Integer delayInMs) {
         return startSlowServer(status, delayInMs, r -> {});
     }
 
-    private HttpServer<ByteBuf, ByteBuf> startSlowServer(HttpResponseStatus status, Integer delayInMs, Consumer<HttpServerRequest<ByteBuf>> callback) {
-        return HttpServer.newServer(0)
-            .start((request, response) -> {
+    private DisposableServer startSlowServer(HttpResponseStatus status, Integer delayInMs, Consumer<HttpServerRequest> callback) {
+        return HttpServer.create().port(0)
+            .handle((request, response) -> {
                 callback.accept(request);
-                return Observable.defer(() -> {
-                    response.setStatus(status);
-                    return Observable.<Void>empty();
-                }).delaySubscription(delayInMs, TimeUnit.MILLISECONDS);
-            });
+                return Flux.defer(() -> {
+                    response.status(status);
+                    return Flux.<Void>empty();
+                }).delaySubscription(Duration.ofMillis(delayInMs));
+            }).bindNow();
     }
 
     @Test
     public void shouldSendFormParamsAsBodyWithCorrectContentType() {
-        AtomicReference<HttpServerRequest<ByteBuf>> recordedRequest     = new AtomicReference<>();
+        AtomicReference<HttpServerRequest> recordedRequest     = new AtomicReference<>();
         AtomicReference<String>                     recordedRequestBody = new AtomicReference<>();
 
-        HttpServer<ByteBuf, ByteBuf> server = HttpServer.newServer(0).start((request, response) -> {
+        DisposableServer server = HttpServer.create().port(0).handle((request, response) -> {
             recordedRequest.set(request);
-            response.setStatus(HttpResponseStatus.CREATED);
-            return request.getContent().flatMap(buf -> {
+            response.status(HttpResponseStatus.CREATED);
+            return request.receive().flatMap(buf -> {
                 recordedRequestBody.set(buf.toString(Charset.defaultCharset()));
-                return Observable.empty();
+                return Flux.empty();
             });
-        });
+        }).bindNow();
 
-        TestResource resource = getHttpProxy(server.getServerPort());
+        TestResource resource = getHttpProxy(server.port());
         resource.postForm("A", "b!\"#¤%/=&", null, null).toBlocking().singleOrDefault(null);
 
-        assertThat(recordedRequest.get().getHeader("Content-Type")).isEqualTo(MediaType.APPLICATION_FORM_URLENCODED);
+        assertThat(recordedRequest.get().requestHeaders().get("Content-Type")).isEqualTo(MediaType.APPLICATION_FORM_URLENCODED);
         assertThat(recordedRequestBody.get()).isEqualTo("paramA=A&paramB=b%21%22%23%C2%A4%25%2F%3D%26");
 
-        server.shutdown();
+        server.disposeNow();
     }
 
     @Test
     public void shouldNotSendHeaderParamsAsPostBody() {
-        AtomicReference<HttpServerRequest<ByteBuf>> recordedRequest     = new AtomicReference<>();
+        AtomicReference<HttpServerRequest> recordedRequest     = new AtomicReference<>();
         AtomicReference<String>                     recordedRequestBody = new AtomicReference<>();
-        HttpServer<ByteBuf, ByteBuf> server = HttpServer.newServer(0).start((request, response) -> {
+        DisposableServer server = HttpServer.create().port(0).handle((request, response) -> {
             recordedRequest.set(request);
-            response.setStatus(HttpResponseStatus.CREATED);
-            return request.getContent().flatMap(buf -> {
+            response.status(HttpResponseStatus.CREATED);
+            return request.receive().flatMap(buf -> {
                 recordedRequestBody.set(buf.toString(Charset.defaultCharset()));
-                return Observable.empty();
+                return Flux.empty();
             });
-        });
+        }).bindNow();
 
-        TestResource resource = getHttpProxy(server.getServerPort());
+        TestResource resource = getHttpProxy(server.port());
         resource.postForm("A", "b!\"#¤%/=&", "123", "cookie_val").toBlocking().singleOrDefault(null);
 
-        assertThat(recordedRequest.get().getHeader("Content-Type")).isEqualTo(MediaType.APPLICATION_FORM_URLENCODED);
-        assertThat(recordedRequest.get().getHeader("myheader")).isEqualTo("123");
-        assertThat(recordedRequest.get().getHeader("Cookie")).isEqualTo("cookie_key=cookie_val");
+        assertThat(recordedRequest.get().requestHeaders().get("Content-Type")).isEqualTo(MediaType.APPLICATION_FORM_URLENCODED);
+        assertThat(recordedRequest.get().requestHeaders().get("myheader")).isEqualTo("123");
+        assertThat(recordedRequest.get().requestHeaders().get("Cookie")).isEqualTo("cookie_key=cookie_val");
         assertThat(recordedRequestBody.get()).isEqualTo("paramA=A&paramB=b%21%22%23%C2%A4%25%2F%3D%26");
 
-        server.shutdown();
+        server.disposeNow();
     }
 
     @Test
     public void shouldUseConsumesAnnotationAsContentTypeHeader() {
-        AtomicReference<HttpServerRequest<ByteBuf>> recordedRequest = new AtomicReference<>();
-        HttpServer<ByteBuf, ByteBuf>                server          = startServer(OK, "", recordedRequest::set);
+        AtomicReference<HttpServerRequest> recordedRequest = new AtomicReference<>();
+        DisposableServer                   server          = startServer(OK, "", recordedRequest::set);
 
-        TestResource resource = getHttpProxy(server.getServerPort());
+        TestResource resource = getHttpProxy(server.port());
         resource.consumesAnnotation().toBlocking().singleOrDefault(null);
 
-        assertThat(recordedRequest.get().getHeader("Content-Type")).isEqualTo("my-test-value");
+        assertThat(recordedRequest.get().requestHeaders().get("Content-Type")).isEqualTo("my-test-value");
 
-        server.shutdown();
+        server.disposeNow();
     }
 
     @Test
     public void shouldSendBasicAuthHeaderIfConfigured() throws URISyntaxException {
-        AtomicReference<HttpServerRequest<ByteBuf>> recordedRequest = new AtomicReference<>();
-        HttpServer<ByteBuf, ByteBuf>                server          = startServer(OK, "", recordedRequest::set);
+        AtomicReference<HttpServerRequest> recordedRequest = new AtomicReference<>();
+        DisposableServer                   server          = startServer(OK, "", recordedRequest::set);
 
-        HttpClientConfig httpClientConfig = new HttpClientConfig("localhost:" + server.getServerPort());
+        HttpClientConfig httpClientConfig = new HttpClientConfig("localhost:" + server.port());
         httpClientConfig.setBasicAuth("root", "hunter2");
 
         TestResource resource = getHttpProxy(httpClientConfig);
         resource.getHello().test().awaitTerminalEvent();
 
-        assertThat(recordedRequest.get().containsHeader("Authorization")).isTrue();
-        assertThat(recordedRequest.get().getHeader("Authorization")).isEqualTo("Basic cm9vdDpodW50ZXIy");
+        assertThat(recordedRequest.get().requestHeaders().contains("Authorization")).isTrue();
+        assertThat(recordedRequest.get().requestHeaders().get("Authorization")).isEqualTo("Basic cm9vdDpodW50ZXIy");
 
-        server.shutdown();
+        server.disposeNow();
     }
 
 
     @Test
     public void shouldNotSendAuthorizationHeadersUnlessConfigured() throws URISyntaxException {
-        AtomicReference<HttpServerRequest<ByteBuf>> recordedRequest = new AtomicReference<>();
-        HttpServer<ByteBuf, ByteBuf>                server          = startServer(OK, "", recordedRequest::set);
+        AtomicReference<HttpServerRequest> recordedRequest = new AtomicReference<>();
+        DisposableServer                   server          = startServer(OK, "", recordedRequest::set);
 
-        HttpClientConfig httpClientConfig = new HttpClientConfig("localhost:" + server.getServerPort());
+        HttpClientConfig httpClientConfig = new HttpClientConfig("localhost:" + server.port());
 
         TestResource resource = getHttpProxy(httpClientConfig);
         resource.getHello().test().awaitTerminalEvent();
 
-        assertThat(recordedRequest.get().containsHeader("Authorization")).isFalse();
+        assertThat(recordedRequest.get().requestHeaders().contains("Authorization")).isFalse();
 
-        server.shutdown();
+        server.disposeNow();
     }
 
     @Test
     public void shouldSetDevParams() throws URISyntaxException {
-        AtomicReference<HttpServerRequest<ByteBuf>> recordedRequest = new AtomicReference<>();
-        HttpServer<ByteBuf, ByteBuf>                server          = startServer(OK, "", recordedRequest::set);
+        AtomicReference<HttpServerRequest> recordedRequest = new AtomicReference<>();
+        DisposableServer                   server          = startServer(OK, "", recordedRequest::set);
 
         HttpClientConfig httpClientConfig = new HttpClientConfig("localhost:12345");
         httpClientConfig.setDevCookie("DevCookie=123");
         ImmutableMap<String, String> devHeader = ImmutableMap.<String, String>builder().put("DevHeader", "213").build();
         httpClientConfig.setDevHeaders(devHeader);
-        httpClientConfig.setDevServerInfo(new InetSocketAddress("localhost", server.getServerPort()));
+        httpClientConfig.setDevServerInfo(new InetSocketAddress("localhost", server.port()));
 
         TestResource resource = getHttpProxy(httpClientConfig);
         resource.withCookie("cookieParam").toBlocking().singleOrDefault(null);
 
-        assertThat(recordedRequest.get().getHeader("Cookie")).isEqualTo("cookie=cookieParam;DevCookie=123");
-        assertThat(recordedRequest.get().getHeader("DevHeader")).isEqualTo("213");
+        assertThat(recordedRequest.get().requestHeaders().get("Cookie")).isEqualTo("cookie=cookieParam;DevCookie=123");
+        assertThat(recordedRequest.get().requestHeaders().get("DevHeader")).isEqualTo("213");
 
-        server.shutdown();
+        server.disposeNow();
     }
 
     @Test
     public void shouldAllowBodyInPostPutDeletePatchCalls() {
-        AtomicReference<HttpServerRequest<ByteBuf>> recordedRequest     = new AtomicReference<>();
+        AtomicReference<HttpServerRequest> recordedRequest     = new AtomicReference<>();
         AtomicReference<String>                     recordedRequestBody = new AtomicReference<>();
 
-        HttpServer<ByteBuf, ByteBuf> server = HttpServer.newServer(0).start((request, response) -> {
+        DisposableServer server = HttpServer.create().port(0).handle((request, response) -> {
             recordedRequest.set(request);
-            response.setStatus(HttpResponseStatus.NO_CONTENT);
-            return request.getContent().flatMap(buf -> {
+            response.status(HttpResponseStatus.NO_CONTENT);
+            return request.receive().flatMap(buf -> {
                 recordedRequestBody.set(buf.toString(Charset.defaultCharset()));
-                return Observable.empty();
+                return Flux.empty();
             });
-        });
+        }).bindNow();
 
-        TestResource resource = getHttpProxy(server.getServerPort());
+        TestResource resource = getHttpProxy(server.port());
 
         resource.patch("test").toBlocking().lastOrDefault(null);
         assertThat(recordedRequestBody.get()).isEqualTo("\"test\"");
-        assertThat(recordedRequest.get().getHttpMethod()).isEqualTo(HttpMethod.PATCH);
+        assertThat(recordedRequest.get().method()).isEqualTo(HttpMethod.PATCH);
 
         resource.delete("test").toBlocking().lastOrDefault(null);
         assertThat(recordedRequestBody.get()).isEqualTo("\"test\"");
-        assertThat(recordedRequest.get().getHttpMethod()).isEqualTo(HttpMethod.DELETE);
+        assertThat(recordedRequest.get().method()).isEqualTo(HttpMethod.DELETE);
 
         resource.put("test").toBlocking().lastOrDefault(null);
         assertThat(recordedRequestBody.get()).isEqualTo("\"test\"");
-        assertThat(recordedRequest.get().getHttpMethod()).isEqualTo(HttpMethod.PUT);
+        assertThat(recordedRequest.get().method()).isEqualTo(HttpMethod.PUT);
 
         resource.post("test").toBlocking().lastOrDefault(null);
         assertThat(recordedRequestBody.get()).isEqualTo("\"test\"");
-        assertThat(recordedRequest.get().getHttpMethod()).isEqualTo(HttpMethod.POST);
+        assertThat(recordedRequest.get().method()).isEqualTo(HttpMethod.POST);
 
-        server.shutdown();
+        server.disposeNow();
     }
 
     @Test
@@ -1146,61 +1100,20 @@ public class HttpClientTest {
         });
 
         TestResource testResource = injector.getInstance(TestResource.class);
-        HttpClient.setTimeout(testResource, 1300, TimeUnit.MILLISECONDS);
-        verify(mockClient, times(1)).setTimeout(eq(1300), eq(TimeUnit.MILLISECONDS));
-    }
-
-    @Test
-    public void shouldReturnRawResponse() {
-        HttpServer<ByteBuf, ByteBuf> server   = startServer(OK, "this is my response");
-        TestResource                 resource = getHttpProxy(server.getServerPort());
-        HttpClientResponse<ByteBuf>  response = resource.getRawResponse().toBlocking().single();
-
-        assertThat(response.getStatus()).isEqualTo(OK);
-
-        String body = new ByteBufCollector(1024 * 1024).collectString(response.getContent()).toBlocking().single();
-        assertThat(body).isEqualTo("this is my response");
-
-        server.shutdown();
-    }
-
-    @Test
-    public void shouldHandleSimpleGetRequests() {
-        HttpServer<ByteBuf, ByteBuf> server = startServer(OK, "this is my response");
-
-        String url      = "http://localhost:" + server.getServerPort();
-        String response = HttpClient.get(url).toBlocking().single();
-
-        assertThat(response).isEqualTo("this is my response");
-
-        server.shutdown();
-    }
-
-    @Test
-    public void shouldErrorHandleSimpleGetRequestsWithBadUrl() {
-        HttpServer<ByteBuf, ByteBuf> server = startServer(OK, "this is my response");
-
-        String url = "htp://localhost:" + server.getServerPort();
-
-        try {
-            HttpClient.get(url).toBlocking().single();
-        } catch (RuntimeException e) {
-            assertThat(e.getCause()).isInstanceOf(MalformedURLException.class);
-        }
-
-        server.shutdown();
+        HttpClient.setTimeout(testResource, 1300, ChronoUnit.MILLIS);
+        verify(mockClient, times(1)).setTimeout(eq(1300), eq(ChronoUnit.MILLIS));
     }
 
     @Test
     public void shouldExecutePreRequestHooks() throws URISyntaxException {
-        HttpServer<ByteBuf, ByteBuf> server = HttpServer.newServer(0).start((request, response) -> {
-            response.setStatus(HttpResponseStatus.OK);
-            return response.writeString(just("\"hi\""));
-        });
+        DisposableServer server = HttpServer.create().port(0).handle((request, response) -> {
+            response.status(HttpResponseStatus.OK);
+            return response.sendString(Mono.just("\"hi\""));
+        }).bindNow();
 
-        String           url            = "localhost:" + server.getServerPort();
+        String           url            = "localhost:" + server.port();
         HttpClientConfig config         = new HttpClientConfig(url);
-        RxClientProvider clientProvider = new RxClientProvider(config, healthRecorder);
+        ReactorRxClientProvider clientProvider = new ReactorRxClientProvider(config, healthRecorder);
 
         PreRequestHook          preRequestHook  = mock(PreRequestHook.class);
         HashSet<PreRequestHook> preRequestHooks = Sets.newHashSet(preRequestHook);
@@ -1214,74 +1127,125 @@ public class HttpClientTest {
             assertThat(requestBuilder.getFullUrl()).isEqualToIgnoringCase(url + "/hello");
         })));
 
-        server.shutdown();
+        server.disposeNow();
+    }
+
+    @Test
+    public void shouldNotRetryFailedPostCallsWithStrangeExceptions() {
+        AtomicLong callCount = new AtomicLong();
+        DisposableServer server    = startServer(INTERNAL_SERVER_ERROR, "\"NOT OK\"", r -> callCount.incrementAndGet());
+        try {
+            HttpClientConfig config = new HttpClientConfig("localhost:" + server.port());
+            config.setReadTimeoutMs(100);
+            TestResource resource = getHttpProxy(config);
+            resource.postHello().toBlocking().singleOrDefault(null);
+            Assert.fail("Expected exception");
+        } catch (Exception e) {
+            assertThat(callCount.get()).isEqualTo(1);
+            assertThat(e.getClass()).isEqualTo(WebException.class);
+        } finally {
+            server.disposeNow();
+        }
     }
 
     @Test
     public void shouldHandleHttpsAgainstKnownHost() throws URISyntaxException {
         HttpClientConfig httpClientConfig = new HttpClientConfig("https://sha512.badssl.com/");
         Injector         injector         = injectorWithProgrammaticHttpClientConfig(httpClientConfig);
-        RxClientProvider rxClientProvider = injector.getInstance(RxClientProvider.class);
+        ReactorRxClientProvider rxClientProvider = injector.getInstance(ReactorRxClientProvider.class);
 
         rxClientProvider
             .clientFor(new InetSocketAddress(httpClientConfig.getHost(), httpClientConfig.getPort()))
-            .createGet("/")
-            .flatMap(HttpClientResponse::discardContent)
-            .toBlocking()
-            .singleOrDefault(null);
+            .baseUrl(httpClientConfig.getUrl())
+            .get().uri("/")
+            .responseContent()
+            .flatMap(data -> Flux.empty())
+            .count()
+            .block();
     }
 
     @Test
-    public void shouldErrorOnUntrustedHost() throws URISyntaxException {
-        HttpClientConfig httpClientConfig = new HttpClientConfig("https://untrusted-root.badssl.com");
+    public void shouldErrorOnUntrustedHost() throws URISyntaxException, CertificateException {
+        SelfSignedCertificate cert          = new SelfSignedCertificate();
+        SslContextBuilder     serverOptions = SslContextBuilder.forServer(cert.certificate(), cert.privateKey());
+        DisposableServer server =
+            reactor.netty.http.server.HttpServer.create()
+                .secure(sslContextSpec -> sslContextSpec.sslContext(serverOptions))
+                .handle((req, res) -> res.sendString(Mono.just("Hello")))
+                .bindNow();
+
+        HttpClientConfig httpClientConfig = new HttpClientConfig("https://localhost:" + server.port());
+
         Injector         injector         = injectorWithProgrammaticHttpClientConfig(httpClientConfig);
-        RxClientProvider rxClientProvider = injector.getInstance(RxClientProvider.class);
+        ReactorRxClientProvider rxClientProvider = injector.getInstance(ReactorRxClientProvider.class);
 
         try {
             rxClientProvider
-                .clientFor(new InetSocketAddress(httpClientConfig.getHost(), httpClientConfig.getPort()))
-                .createGet("/")
-                .flatMap(HttpClientResponse::discardContent)
-                .toBlocking()
-                .singleOrDefault(null);
-            fail("Expected SSLHandshakeException");
+                .clientFor(new InetSocketAddress("localhost", server.port()))
+                .get()
+                .uri("/")
+                .responseContent()
+                .aggregate()
+                .asString()
+                .block();
+            fail("expected error");
         } catch (RuntimeException runtimeException) {
             assertThat(runtimeException.getCause()).isInstanceOf(SSLHandshakeException.class);
         }
+
+        server.disposeNow();
     }
 
     @Test
-    public void shouldHandleUnsafeSecureOnUntrustedHost() throws URISyntaxException {
-        HttpClientConfig httpClientConfig = new HttpClientConfig("https://untrusted-root.badssl.com");
+    public void shouldHandleUnsafeSecureOnUntrustedHost() throws URISyntaxException, CertificateException {
+
+        SelfSignedCertificate cert          =new SelfSignedCertificate();
+        SslContextBuilder serverOptions = SslContextBuilder.forServer(cert.certificate(), cert.privateKey());
+        DisposableServer server =
+            reactor.netty.http.server.HttpServer.create()
+                .secure(sslContextSpec -> sslContextSpec.sslContext(serverOptions))
+                .handle((req, res) -> res.sendString(Mono.just("Hello")))
+                .bindNow();
+
+        HttpClientConfig httpClientConfig = new HttpClientConfig("https://localhost:" + server.port());
         httpClientConfig.setValidateCertificates(false);
         Injector         injector         = injectorWithProgrammaticHttpClientConfig(httpClientConfig);
-        RxClientProvider rxClientProvider = injector.getInstance(RxClientProvider.class);
+        ReactorRxClientProvider rxClientProvider = injector.getInstance(ReactorRxClientProvider.class);
 
-        rxClientProvider
-            .clientFor(new InetSocketAddress(httpClientConfig.getHost(), httpClientConfig.getPort()))
-            .createGet("/")
-            .flatMap(HttpClientResponse::discardContent)
-            .toBlocking()
-            .singleOrDefault(null);
+        try {
+            String response = rxClientProvider
+                .clientFor(new InetSocketAddress("localhost", server.port()))
+                .get()
+                .uri("/")
+                .responseContent()
+                .aggregate()
+                .asString()
+                .block();
+            assertThat(response).isEqualTo("Hello");
+        } catch (RuntimeException runtimeException) {
+            Assert.fail("Should not give an error");
+        }
+
+        server.disposeNow();
     }
 
     @Test
     public void shouldLogRequestDetailsOnTimeout() {
-        HttpServer<ByteBuf, ByteBuf> server = startServer(OK, Observable.never(), r -> {
+        DisposableServer server = startServer(OK, Flux.never(), r -> {
         });
 
         try {
-            TestResource resource = getHttpProxy(server.getServerPort());
-            HttpClient.setTimeout(resource, 10, TimeUnit.MILLISECONDS);
+            TestResource resource = getHttpProxy(server.port());
+            HttpClient.setTimeout(resource, 10, ChronoUnit.MILLIS);
             resource.servertest("mode").toBlocking().single();
             fail("expected timeout");
         } catch (Exception e) {
             OutputStream baos   = new ByteArrayOutputStream();
             PrintStream  stream = new PrintStream(baos, true);
             e.printStackTrace(stream);
-            assertThat(baos.toString()).contains("Timeout after 10 ms calling localhost:" + server.getServerPort() + "/hello/servertest/mode");
+            assertThat(baos.toString()).contains("Timeout after 10 ms calling localhost:" + server.port() + "/hello/servertest/mode");
         } finally {
-            server.shutdown();
+            server.disposeNow();
         }
     }
 
@@ -1306,102 +1270,102 @@ public class HttpClientTest {
 
     @Test
     public void assertRequestContainsHost() {
-        Consumer<HttpServerRequest<ByteBuf>> reqLog = mock(Consumer.class);
-        HttpServer<ByteBuf, ByteBuf>         server = startServer(OK, "", reqLog::accept);
+        Consumer<HttpServerRequest> reqLog = mock(Consumer.class);
+        DisposableServer            server = startServer(OK, "", reqLog::accept);
 
         String host = "localhost";
 
-        getHttpProxy(server.getServerPort()).getHello().toBlocking().singleOrDefault(null);
+        getHttpProxy(server.port()).getHello().toBlocking().singleOrDefault(null);
 
         verify(reqLog).accept(matches(req -> {
-            assertThat(req.headerIterator()).toIterable().isNotEmpty();
-            assertThat(req.getHeader("Host")).isEqualTo(host);
+            assertThat(req.requestHeaders()).isNotEmpty();
+            assertThat(req.requestHeaders().get("Host")).isEqualTo(host);
         }));
 
-        server.shutdown();
+        server.disposeNow();
     }
 
     @Test
     public void assertRequestContainsHostFromHeaderParam() {
-        Consumer<HttpServerRequest<ByteBuf>> reqLog = mock(Consumer.class);
-        HttpServer<ByteBuf, ByteBuf>         server = startServer(OK, "", reqLog::accept);
+        Consumer<HttpServerRequest> reqLog = mock(Consumer.class);
+        DisposableServer            server = startServer(OK, "", reqLog::accept);
 
         String host = "globalhost";
 
-        getHttpProxy(server.getServerPort()).withHostHeaderParam(host).toBlocking().singleOrDefault(null);
+        getHttpProxy(server.port()).withHostHeaderParam(host).toBlocking().singleOrDefault(null);
 
         verify(reqLog).accept(matches(req -> {
-            assertThat(req.headerIterator()).toIterable().isNotEmpty();
-            assertThat(req.getHeader("Host")).isEqualTo(host);
+            assertThat(req.requestHeaders()).isNotEmpty();
+            assertThat(req.requestHeaders().get("Host")).isEqualTo(host);
         }));
 
-        server.shutdown();
+        server.disposeNow();
     }
 
     @Test
     public void shouldSupportSendingXml() {
-        AtomicReference<HttpServerRequest<ByteBuf>> recordedRequest     = new AtomicReference<>();
+        AtomicReference<HttpServerRequest> recordedRequest     = new AtomicReference<>();
         AtomicReference<String>                     recordedRequestBody = new AtomicReference<>();
 
-        HttpServer<ByteBuf, ByteBuf> server = HttpServer.newServer(0).start((request, response) -> {
+        DisposableServer server = HttpServer.create().port(0).handle((request, response) -> {
             recordedRequest.set(request);
-            response.setStatus(HttpResponseStatus.NO_CONTENT);
-            return request.getContent().flatMap(buf -> {
+            response.status(HttpResponseStatus.NO_CONTENT);
+            return request.receive().flatMap(buf -> {
                 recordedRequestBody.set(buf.toString(Charset.defaultCharset()));
-                return Observable.empty();
+                return Flux.empty();
             });
-        });
+        }).bindNow();
 
-        TestResource resource = getHttpProxy(server.getServerPort());
+        TestResource resource = getHttpProxy(server.port());
 
         resource.sendXml("<xml></xml>").toBlocking().lastOrDefault(null);
         assertThat(recordedRequestBody.get()).isEqualTo("<xml></xml>");
-        assertThat(recordedRequest.get().getHttpMethod()).isEqualTo(HttpMethod.POST);
-        assertThat(recordedRequest.get().getHeader("Content-Type")).isEqualTo("application/xml");
+        assertThat(recordedRequest.get().method()).isEqualTo(HttpMethod.POST);
+        assertThat(recordedRequest.get().requestHeaders().get("Content-Type")).isEqualTo("application/xml");
 
-        server.shutdown();
+        server.disposeNow();
     }
 
 
     @Test
     public void shouldSupportSendingXmlAsBytes() {
-        AtomicReference<HttpServerRequest<ByteBuf>> recordedRequest     = new AtomicReference<>();
-        AtomicReference<String>                     recordedRequestBody = new AtomicReference<>();
+        AtomicReference<HttpServerRequest> recordedRequest     = new AtomicReference<>();
+        AtomicReference<String>            recordedRequestBody = new AtomicReference<>();
 
-        HttpServer<ByteBuf, ByteBuf> server = HttpServer.newServer(0).start((request, response) -> {
+        DisposableServer server = HttpServer.create().port(0).handle((request, response) -> {
             recordedRequest.set(request);
-            response.setStatus(HttpResponseStatus.NO_CONTENT);
-            return request.getContent().flatMap(buf -> {
+            response.status(HttpResponseStatus.NO_CONTENT);
+            return request.receive().flatMap(buf -> {
                 recordedRequestBody.set(buf.toString(Charset.defaultCharset()));
-                return Observable.empty();
+                return Flux.empty();
             });
-        });
+        }).bindNow();
 
-        TestResource resource = getHttpProxy(server.getServerPort());
+        TestResource resource = getHttpProxy(server.port());
 
         resource.sendXml("<xml></xml>".getBytes(Charset.defaultCharset())).toBlocking().lastOrDefault(null);
         assertThat(recordedRequestBody.get()).isEqualTo("<xml></xml>");
-        assertThat(recordedRequest.get().getHttpMethod()).isEqualTo(HttpMethod.POST);
-        assertThat(recordedRequest.get().getHeader("Content-Type")).isEqualTo("application/xml");
+        assertThat(recordedRequest.get().method()).isEqualTo(HttpMethod.POST);
+        assertThat(recordedRequest.get().requestHeaders().get("Content-Type")).isEqualTo("application/xml");
 
-        server.shutdown();
+        server.disposeNow();
     }
 
     @Test
     public void shouldFailIfBodyIsNotStringOrBytes() {
-        AtomicReference<HttpServerRequest<ByteBuf>> recordedRequest     = new AtomicReference<>();
+        AtomicReference<HttpServerRequest> recordedRequest     = new AtomicReference<>();
         AtomicReference<String>                     recordedRequestBody = new AtomicReference<>();
 
-        HttpServer<ByteBuf, ByteBuf> server = HttpServer.newServer(0).start((request, response) -> {
+        DisposableServer server = HttpServer.create().port(0).handle((request, response) -> {
             recordedRequest.set(request);
-            response.setStatus(HttpResponseStatus.NO_CONTENT);
-            return request.getContent().flatMap(buf -> {
+            response.status(HttpResponseStatus.NO_CONTENT);
+            return request.receive().flatMap(buf -> {
                 recordedRequestBody.set(buf.toString(Charset.defaultCharset()));
-                return Observable.empty();
+                return Flux.empty();
             });
-        });
+        }).bindNow();
 
-        TestResource resource = getHttpProxy(server.getServerPort());
+        TestResource resource = getHttpProxy(server.port());
 
         try {
             resource.sendXml(new Pojo()).toBlocking().lastOrDefault(null);
@@ -1410,7 +1374,7 @@ public class HttpClientTest {
             assertThat(e).hasMessage("When content type is not application/json the body param must be String or byte[], but was class se.fortnox.reactivewizard.client.HttpClientTest$Pojo");
         }
 
-        server.shutdown();
+        server.disposeNow();
     }
 
     @Path("/hello")
@@ -1506,9 +1470,6 @@ public class HttpClientTest {
         Observable<Void> post(String value);
 
         @GET
-        Observable<HttpClientResponse<ByteBuf>> getRawResponse();
-
-        @GET
         Observable<Wrapper> getWrappedPojo();
 
         @POST
@@ -1545,259 +1506,6 @@ public class HttpClientTest {
 
         public void setName(String name) {
             this.name = name;
-        }
-    }
-
-    class EmptyReturningHttpClientRequest extends HttpClientRequest<ByteBuf, ByteBuf> {
-
-        public EmptyReturningHttpClientRequest(AtomicInteger callCounter) {
-            super(subscriber -> {
-                callCounter.incrementAndGet();
-                subscriber.onCompleted();
-            });
-        }
-
-        @Override
-        public Observable<HttpClientResponse<ByteBuf>> writeContent(Observable<ByteBuf> contentSource) {
-            return empty();
-        }
-
-        @Override
-        public Observable<HttpClientResponse<ByteBuf>> writeContent(Observable<ByteBuf> contentSource, Func1<ByteBuf, Boolean> flushSelector
-        ) {
-            return empty();
-        }
-
-        @Override
-        public <T extends TrailingHeaders> Observable<HttpClientResponse<ByteBuf>> writeContent(Observable<ByteBuf> contentSource,
-            Func0<T> trailerFactory,
-            Func2<T, ByteBuf, T> trailerMutator
-        ) {
-            return empty();
-        }
-
-        @Override
-        public <T extends TrailingHeaders> Observable<HttpClientResponse<ByteBuf>> writeContent(Observable<ByteBuf> contentSource,
-            Func0<T> trailerFactory,
-            Func2<T, ByteBuf, T> trailerMutator,
-            Func1<ByteBuf, Boolean> flushSelector
-        ) {
-            return empty();
-        }
-
-        @Override
-        public Observable<HttpClientResponse<ByteBuf>> writeContentAndFlushOnEach(Observable<ByteBuf> contentSource) {
-            return empty();
-        }
-
-        @Override
-        public Observable<HttpClientResponse<ByteBuf>> writeStringContent(Observable<String> contentSource) {
-            return empty();
-        }
-
-        @Override
-        public Observable<HttpClientResponse<ByteBuf>> writeStringContent(Observable<String> contentSource, Func1<String, Boolean> flushSelector
-        ) {
-            return empty();
-        }
-
-        @Override
-        public <T extends TrailingHeaders> Observable<HttpClientResponse<ByteBuf>> writeStringContent(Observable<String> contentSource,
-            Func0<T> trailerFactory,
-            Func2<T, String, T> trailerMutator
-        ) {
-            return empty();
-        }
-
-        @Override
-        public <T extends TrailingHeaders> Observable<HttpClientResponse<ByteBuf>> writeStringContent(Observable<String> contentSource,
-            Func0<T> trailerFactory,
-            Func2<T, String, T> trailerMutator,
-            Func1<String, Boolean> flushSelector
-        ) {
-            return empty();
-        }
-
-        @Override
-        public Observable<HttpClientResponse<ByteBuf>> writeBytesContent(Observable<byte[]> contentSource) {
-            return empty();
-        }
-
-        @Override
-        public Observable<HttpClientResponse<ByteBuf>> writeBytesContent(Observable<byte[]> contentSource, Func1<byte[], Boolean> flushSelector) {
-            return empty();
-        }
-
-        @Override
-        public <T extends TrailingHeaders> Observable<HttpClientResponse<ByteBuf>> writeBytesContent(Observable<byte[]> contentSource,
-            Func0<T> trailerFactory,
-            Func2<T, byte[], T> trailerMutator
-        ) {
-            return empty();
-        }
-
-        @Override
-        public <T extends TrailingHeaders> Observable<HttpClientResponse<ByteBuf>> writeBytesContent(Observable<byte[]> contentSource,
-            Func0<T> trailerFactory,
-            Func2<T, byte[], T> trailerMutator,
-            Func1<byte[], Boolean> flushSelector
-        ) {
-            return empty();
-        }
-
-        @Override
-        public HttpClientRequest<ByteBuf, ByteBuf> readTimeOut(int timeOut, TimeUnit timeUnit) {
-            return this;
-        }
-
-        @Override
-        public HttpClientRequest<ByteBuf, ByteBuf> followRedirects(int maxRedirects) {
-            return this;
-        }
-
-        @Override
-        public HttpClientRequest<ByteBuf, ByteBuf> followRedirects(boolean follow) {
-            return this;
-        }
-
-        @Override
-        public HttpClientRequest<ByteBuf, ByteBuf> setMethod(HttpMethod method) {
-            return this;
-        }
-
-        @Override
-        public HttpClientRequest<ByteBuf, ByteBuf> setUri(String newUri) {
-            return this;
-        }
-
-        @Override
-        public HttpClientRequest<ByteBuf, ByteBuf> addHeader(CharSequence name, Object value) {
-            return this;
-        }
-
-        @Override
-        public HttpClientRequest<ByteBuf, ByteBuf> addHeaders(Map<? extends CharSequence, ? extends Iterable<Object>> headers) {
-            return this;
-        }
-
-        @Override
-        public HttpClientRequest<ByteBuf, ByteBuf> addCookie(Cookie cookie) {
-            return this;
-        }
-
-        @Override
-        public HttpClientRequest<ByteBuf, ByteBuf> addDateHeader(CharSequence name, Date value) {
-            return this;
-        }
-
-        @Override
-        public HttpClientRequest<ByteBuf, ByteBuf> addDateHeader(CharSequence name, Iterable<Date> values) {
-            return this;
-        }
-
-        @Override
-        public HttpClientRequest<ByteBuf, ByteBuf> addHeaderValues(CharSequence name, Iterable<Object> values) {
-            return this;
-        }
-
-        @Override
-        public HttpClientRequest<ByteBuf, ByteBuf> setDateHeader(CharSequence name, Date value) {
-            return this;
-        }
-
-        @Override
-        public HttpClientRequest<ByteBuf, ByteBuf> setDateHeader(CharSequence name, Iterable<Date> values) {
-            return this;
-        }
-
-        @Override
-        public HttpClientRequest<ByteBuf, ByteBuf> setHeader(CharSequence name, Object value) {
-            return this;
-        }
-
-        @Override
-        public HttpClientRequest<ByteBuf, ByteBuf> setHeaders(Map<? extends CharSequence, ? extends Iterable<Object>> headers) {
-            return this;
-        }
-
-        @Override
-        public HttpClientRequest<ByteBuf, ByteBuf> setHeaderValues(CharSequence name, Iterable<Object> values) {
-            return this;
-        }
-
-        @Override
-        public HttpClientRequest<ByteBuf, ByteBuf> removeHeader(CharSequence name) {
-            return this;
-        }
-
-        @Override
-        public HttpClientRequest<ByteBuf, ByteBuf> setKeepAlive(boolean keepAlive) {
-            return this;
-        }
-
-        @Override
-        public HttpClientRequest<ByteBuf, ByteBuf> setTransferEncodingChunked() {
-            return this;
-        }
-
-        @Override
-        public <II> HttpClientRequest<II, ByteBuf> transformContent(AllocatingTransformer<II, ByteBuf> transformer) {
-            return null;
-        }
-
-        @Override
-        public <OO> HttpClientRequest<ByteBuf, OO> transformResponseContent(Transformer<ByteBuf, OO> transformer) {
-            return null;
-        }
-
-        @Override
-        public WebSocketRequest<ByteBuf> requestWebSocketUpgrade() {
-            return null;
-        }
-
-        @Override
-        public boolean containsHeader(CharSequence name) {
-            return false;
-        }
-
-        @Override
-        public boolean containsHeaderWithValue(CharSequence name, CharSequence value, boolean caseInsensitiveValueMatch) {
-            return false;
-        }
-
-        @Override
-        public String getHeader(CharSequence name) {
-            return null;
-        }
-
-        @Override
-        public List<String> getAllHeaders(CharSequence name) {
-            return null;
-        }
-
-        @Override
-        public Iterator<Map.Entry<CharSequence, CharSequence>> headerIterator() {
-            return null;
-        }
-
-        @Override
-        public Set<String> getHeaderNames() {
-            return null;
-        }
-
-        @Override
-        public HttpVersion getHttpVersion() {
-            return null;
-        }
-
-        @Override
-        public HttpMethod getMethod() {
-            return null;
-        }
-
-        @Override
-        public String getUri() {
-            return "";
         }
     }
 }

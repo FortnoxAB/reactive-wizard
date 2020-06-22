@@ -2,11 +2,11 @@ package se.fortnox.reactivewizard.jaxrs.params;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import reactor.core.publisher.Mono;
 import se.fortnox.reactivewizard.jaxrs.WebException;
 import se.fortnox.reactivewizard.jaxrs.params.annotated.AnnotatedParamResolverFactories;
 import se.fortnox.reactivewizard.jaxrs.params.annotated.AnnotatedParamResolverFactory;
 import se.fortnox.reactivewizard.jaxrs.params.deserializing.BodyDeserializer;
-import se.fortnox.reactivewizard.jaxrs.params.deserializing.Deserializer;
 import se.fortnox.reactivewizard.jaxrs.params.deserializing.DeserializerException;
 import se.fortnox.reactivewizard.jaxrs.params.deserializing.DeserializerFactory;
 import se.fortnox.reactivewizard.util.ReflectionUtil;
@@ -19,7 +19,6 @@ import java.lang.reflect.Parameter;
 import java.util.ArrayList;
 import java.util.List;
 
-import static rx.Observable.just;
 
 /**
  * Creates param resolvers which can resolve method parameters from an incoming request.
@@ -87,7 +86,7 @@ public class ParamResolverFactories {
 
         BodyDeserializer<T> bodyDeserializer = deserializerFactory.getBodyDeserializer(paramType, consumesAnnotation);
         if (bodyDeserializer != null) {
-            return request -> just(deserializeBody(bodyDeserializer, request.getBody()));
+            return request -> Mono.just(deserializeBody(bodyDeserializer, request.getBody()));
         }
 
         throw new RuntimeException("Could not find any deserializer for param of type " + paramType);

@@ -1,26 +1,23 @@
 package se.fortnox.reactivewizard.jaxrs;
 
-import io.netty.buffer.ByteBuf;
-import io.reactivex.netty.protocol.http.client.HttpClient;
-import io.reactivex.netty.protocol.http.client.HttpClientResponse;
-import io.reactivex.netty.protocol.http.server.HttpServer;
 import org.junit.Test;
+import reactor.netty.DisposableServer;
+import reactor.netty.http.client.HttpClient;
+import reactor.netty.http.client.HttpClientResponse;
 import rx.Observable;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
-import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static rx.Observable.just;
 import static se.fortnox.reactivewizard.jaxrs.response.ResponseDecorator.withHeaders;
-import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.body;
-import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.get;
-import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.testServer;
+import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.*;
 
 public class StreamingDataTest {
     private StreamingResource   streamingResource   = new StreamingResourceImpl();
@@ -29,56 +26,52 @@ public class StreamingDataTest {
     @Test
     public void testStreamingWithRealServer() {
 
-        HttpServer<ByteBuf, ByteBuf> server   = testServer(streamingResource, noStreamingResource).getServer();
-        HttpClient<ByteBuf, ByteBuf> client   = HttpClient.newClient("localhost", server.getServerPort());
-        HttpClientResponse<ByteBuf>  response = client.createGet("/stream").toBlocking().single();
-
-        List<String> strings = response.getContent().map(byteBuf -> byteBuf.toString(Charset.defaultCharset()))
-            .toList()
-            .toBlocking()
-            .single();
+        DisposableServer      server   = testServer(streamingResource, noStreamingResource).getServer();
+        HttpClient            client   = HttpClient.create().port(server.port());
+        final AtomicReference<HttpClientResponse>    response = new AtomicReference<>();
+        List<String> strings = client.get().uri("/stream").response((resp, body)->{
+            response.set(resp);
+            return body.asString();
+        }).collectList().block();
 
         assertThat(strings).hasSize(2);
         assertThat(strings.get(0)).isEqualTo("a");
         assertThat(strings.get(1)).isEqualTo("b");
-        assertThat(response.getHeader("Content-Type")).isEqualTo(MediaType.TEXT_PLAIN);
+        assertThat(response.get().responseHeaders().get("Content-Type")).isEqualTo(MediaType.TEXT_PLAIN);
 
         //When not streaming the response will finish after first string emission
-        response = client.createGet("/nostream").toBlocking().single();
-
-        strings = response.getContent().map(byteBuf -> byteBuf.toString(Charset.defaultCharset()))
-            .toList()
-            .toBlocking()
-            .single();
+        strings = client.get().uri("/nostream").response((resp, body)->{
+            response.set(resp);
+            return body.asString();
+        }).collectList().block();
 
         assertThat(strings).hasSize(1);
         assertThat(strings.get(0)).isEqualTo("a");
-        assertThat(response.getHeader("Content-Type")).isEqualTo(MediaType.TEXT_PLAIN);
+        assertThat(response.get().responseHeaders().get("Content-Type")).isEqualTo(MediaType.TEXT_PLAIN);
 
         //But at the end of the day
         assertThat(body(get(streamingResource, "/stream"))).isEqualTo("ab");
-        assertThat(body(get(noStreamingResource, "/nostream"))).isEqualTo("ab");
+        assertThat(body(get(noStreamingResource, "/nostream"))).isEqualTo("a");
     }
 
     @Test
     public void shouldSendStreamingResultWithHeaders() {
-        HttpServer<ByteBuf, ByteBuf> server   = testServer(streamingResource).getServer();
+        DisposableServer server   = testServer(streamingResource).getServer();
         try {
-            HttpClient<ByteBuf, ByteBuf> client = HttpClient.newClient("localhost", server.getServerPort());
-            HttpClientResponse<ByteBuf> response = client.createGet("/stream/withHeaders").toBlocking().single();
-
-            List<String> strings = response.getContent().map(byteBuf -> byteBuf.toString(Charset.defaultCharset()))
-                    .toList()
-                    .toBlocking()
-                    .single();
+            HttpClient client = HttpClient.create().port(server.port());
+            final AtomicReference<HttpClientResponse> response = new AtomicReference<>();
+            List<String> strings = client.get().uri("/stream/withHeaders").response((resp, body)->{
+                response.set(resp);
+                return body.asString();
+            }).collectList().block();
 
             assertThat(strings).hasSize(2);
             assertThat(strings.get(0)).isEqualTo("a");
             assertThat(strings.get(1)).isEqualTo("b");
-            assertThat(response.getHeader("Content-Type")).isEqualTo(MediaType.TEXT_PLAIN);
-            assertThat(response.getHeader("my-header")).isEqualTo("my-value");
+            assertThat(response.get().responseHeaders().get("Content-Type")).isEqualTo(MediaType.TEXT_PLAIN);
+            assertThat(response.get().responseHeaders().get("my-header")).isEqualTo("my-value");
         } finally {
-            server.shutdown();
+            server.disposeNow();
         }
     }
 

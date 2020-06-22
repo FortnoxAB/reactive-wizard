@@ -1,11 +1,7 @@
 package se.fortnox.reactivewizard.client;
 
-import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpMethod;
-import io.reactivex.netty.protocol.http.client.HttpClient;
-import io.reactivex.netty.protocol.http.client.HttpClientRequest;
-import io.reactivex.netty.protocol.http.client.HttpClientResponse;
-import rx.Observable;
+import reactor.core.publisher.Mono;
 
 import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
@@ -13,7 +9,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static javax.ws.rs.core.HttpHeaders.CONTENT_LENGTH;
-import static rx.Observable.just;
 
 /**
  * Represents both a client request and a server info (both host and url), which
@@ -36,17 +31,29 @@ public class RequestBuilder {
         this.key = method + " " + key;
     }
 
-    public Observable<HttpClientResponse<ByteBuf>> submit(HttpClient<ByteBuf, ByteBuf> client) {
-        HttpClientRequest<ByteBuf, ByteBuf> request = client.createRequest(method, uri);
-        for (Map.Entry<String, String> header : headers.entrySet()) {
-            request = request.addHeader(header.getKey(), header.getValue());
-        }
-        if (content != null) {
-            request = request.addHeader(CONTENT_LENGTH, content.length);
-            return request.writeBytesContent(just(content));
-        }
-        return request;
+    public Mono<RwHttpClientResponse> submit(
+        reactor.netty.http.client.HttpClient client,
+        RequestBuilder requestBuilder) {
+
+        return
+            Mono.from(client
+                .headers(entries -> {
+                    for (Map.Entry<String, String> stringStringEntry : requestBuilder.getHeaders().entrySet()) {
+                        entries.set(stringStringEntry.getKey(), stringStringEntry.getValue());
+                    }
+
+                    if (requestBuilder.getContent() != null) {
+                        entries.set(CONTENT_LENGTH, this.getContent().length);
+                    }
+                })
+                .request(requestBuilder.getHttpMethod())
+                .uri(requestBuilder.getFullUrl())
+                .send((httpClientRequest, nettyOutbound)
+                    -> nettyOutbound.sendByteArray(this.getContent() != null ? Mono.just(this.getContent()) : Mono.empty()))
+                .responseConnection((httpClientResponse, connection)
+                    -> Mono.just(new RwHttpClientResponse(httpClientResponse, connection.inbound().receive()))));
     }
+
 
     public InetSocketAddress getServerInfo() {
         return serverInfo;
@@ -111,5 +118,9 @@ public class RequestBuilder {
     public void addQueryParam(String key, String value) {
         String prefix = uri.contains("?") ? "&" : "?";
         uri += prefix + key + "=" + value;
+    }
+
+    protected byte[] getContent() {
+        return content;
     }
 }

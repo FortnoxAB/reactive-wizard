@@ -2,6 +2,7 @@ package se.fortnox.reactivewizard.jaxrs.response;
 
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import reactor.core.publisher.Flux;
 import rx.Observable;
 import rx.Single;
 import rx.functions.Func1;
@@ -24,7 +25,7 @@ public class JaxRsResultFactory<T> {
     protected final HttpResponseStatus responseStatus;
     protected final Class<T>           rawReturnType;
     protected final Func1<T, byte[]>   serializer;
-    protected final Map<String, Object> headers = new HashMap<>();
+    protected final Map<String, String> headers = new HashMap<>();
     private final ResultTransformer<T> transformers;
 
     public JaxRsResultFactory(JaxRsResource<T> resource, ResultTransformerFactories resultTransformerFactories, JsonSerializerFactory jsonSerializerFactory) {
@@ -49,7 +50,7 @@ public class JaxRsResultFactory<T> {
         }
     }
 
-    public JaxRsResult<T> createResult(Observable<T> output, Object[] args) {
+    public JaxRsResult<T> createResult(Flux<T> output, Object[] args) {
         return new JaxRsResult<>(output,
             responseStatus,
             serializer,
@@ -57,7 +58,7 @@ public class JaxRsResultFactory<T> {
         );
     }
 
-    public JaxRsResult<T> create(Observable<T> output, Object[] args) {
+    public JaxRsResult<T> create(Flux<T> output, Object[] args) {
         JaxRsResult<T> result = createResult(output, args);
         result = transformers.apply(result, args);
         return result;
