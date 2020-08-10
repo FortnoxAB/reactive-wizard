@@ -56,6 +56,9 @@ public class ConfigReader {
         StringBuffer        stringBuffer = new StringBuffer();
         do {
             String value = env.get(matcher.group(1));
+            if (value != null) {
+                value = value.replace("\\n", "\n");
+            }
             matcher.appendReplacement(stringBuffer, value == null ? "" : Matcher.quoteReplacement(value));
         }
         while (matcher.find());
