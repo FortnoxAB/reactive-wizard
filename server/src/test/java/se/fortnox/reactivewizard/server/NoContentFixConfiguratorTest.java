@@ -1,6 +1,7 @@
 package se.fortnox.reactivewizard.server;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import org.junit.Test;
 import reactor.core.publisher.Flux;
@@ -12,9 +13,34 @@ import se.fortnox.reactivewizard.RequestHandler;
 import java.util.Collections;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class NoContentFixConfiguratorTest {
+
+    @Test
+    public void shouldAddContentFixToPipelinesNotAlreadyHavingThisFix() {
+        NoContentFixConfigurator noContentFixConfigurator = new NoContentFixConfigurator();
+
+        ChannelPipeline pipeline = mock(ChannelPipeline.class);
+        noContentFixConfigurator.call(pipeline);
+        verify(pipeline).addBefore(anyString(), eq("NoContentFix"), any(NoContentFixConfigurator.NoContentBodyFix.class));
+    }
+
+    @Test
+    public void shouldNotAddContentFixToPipelinesAlreadyHavingThisFix() {
+        NoContentFixConfigurator noContentFixConfigurator = new NoContentFixConfigurator();
+
+        ChannelPipeline pipeline = mock(ChannelPipeline.class);
+        when(pipeline.get("NoContentFix")).thenReturn(new NoContentFixConfigurator.NoContentBodyFix());
+        verify(pipeline, never()).addBefore(anyString(), eq("NoContentFix"), any(NoContentFixConfigurator.NoContentBodyFix.class));
+        noContentFixConfigurator.call(pipeline);
+    }
 
     @Test
     public void shouldOnlyRemoveHeaderContentLengthIfNoBody() {

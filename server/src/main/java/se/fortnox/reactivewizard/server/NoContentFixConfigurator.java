@@ -5,7 +5,6 @@ import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
 import io.netty.handler.codec.http.DefaultHttpResponse;
-import io.netty.handler.codec.http.HttpRequestDecoder;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import rx.functions.Action1;
 
@@ -20,8 +19,13 @@ import static reactor.netty.NettyPipeline.HttpTrafficHandler;
  */
 public class NoContentFixConfigurator implements Action1<ChannelPipeline> {
 
+    private static final String NO_CONTENT_FIX = "NoContentFix";
+
     @Override
     public void call(ChannelPipeline pipeline) {
+        if (pipeline.get(NO_CONTENT_FIX) != null) {
+            return;
+        }
         pipeline.addBefore(HttpTrafficHandler, "NoContentFix", new NoContentBodyFix());
     }
 
