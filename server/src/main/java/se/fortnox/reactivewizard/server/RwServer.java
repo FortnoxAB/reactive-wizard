@@ -14,6 +14,8 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
+import static reactor.netty.channel.BootstrapHandlers.updateConfiguration;
+
 /**
  * Runs an Reactor @{@link HttpServer} with all registered @{@link RequestHandler}s.
  */
@@ -57,16 +59,22 @@ public class RwServer extends Thread {
         if (!config.isEnabled()) {
             return null;
         }
-        NoContentFixConfigurator noContentFixConfigurator = new NoContentFixConfigurator();
-        return HttpServer.create().host("localhost").port(config.getPort())
-            .tcpConfiguration(s -> {
+        return HttpServer
+            .create()
+            .host("localhost")
+            .port(config.getPort())
+            .tcpConfiguration(tcpServer -> {
                 if (loopResources != null) {
-                    s = s.runOn(loopResources);
+                    tcpServer = tcpServer.runOn(loopResources);
                 }
-                return s.doOnConnection(c ->
-                    noContentFixConfigurator.call(c.channel().pipeline())
-                );
-            }).httpRequestDecoder(d -> d
+
+                NoContentFixConfigurator noContentFixConfigurator = new NoContentFixConfigurator();
+                return tcpServer.doOnBind(serverBootstrap -> updateConfiguration(serverBootstrap, "rw-server-configuration",
+                    (connectionObserver, channel) -> {
+                        noContentFixConfigurator.call(channel.pipeline());
+                    }));
+            })
+            .httpRequestDecoder(requestDecoderSpec -> requestDecoderSpec
                 .maxInitialLineLength(config.getMaxInitialLineLengthDefault())
                 .maxHeaderSize(config.getMaxHeaderSize()));
     }

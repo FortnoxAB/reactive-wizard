@@ -19,13 +19,8 @@ import static reactor.netty.NettyPipeline.HttpTrafficHandler;
  */
 public class NoContentFixConfigurator implements Action1<ChannelPipeline> {
 
-    private static final String NO_CONTENT_FIX = "NoContentFix";
-
     @Override
     public void call(ChannelPipeline pipeline) {
-        if (pipeline.get(NO_CONTENT_FIX) != null) {
-            return;
-        }
         pipeline.addBefore(HttpTrafficHandler, "NoContentFix", new NoContentBodyFix());
     }
 
