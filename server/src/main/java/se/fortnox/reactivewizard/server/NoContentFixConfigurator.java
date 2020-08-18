@@ -26,7 +26,7 @@ public class NoContentFixConfigurator implements Action1<ChannelPipeline> {
         if (pipeline.get(NO_CONTENT_FIX) != null) {
             return;
         }
-        pipeline.addBefore(HttpTrafficHandler, "NoContentFix", new NoContentBodyFix());
+        pipeline.addBefore(HttpTrafficHandler, NO_CONTENT_FIX, new NoContentBodyFix());
     }
 
     /**
