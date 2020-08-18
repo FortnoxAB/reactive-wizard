@@ -12,7 +12,6 @@ import se.fortnox.reactivewizard.RequestHandler;
 import java.util.Collections;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 
 public class NoContentFixConfiguratorTest {
 
@@ -34,7 +33,6 @@ public class NoContentFixConfiguratorTest {
         } finally {
             rwServer.getServer().disposeNow();
         }
-
     }
 
     @Test
