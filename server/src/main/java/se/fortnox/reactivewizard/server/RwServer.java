@@ -61,7 +61,6 @@ public class RwServer extends Thread {
         }
         return HttpServer
             .create()
-            .host("localhost")
             .port(config.getPort())
             .tcpConfiguration(tcpServer -> {
                 if (loopResources != null) {
