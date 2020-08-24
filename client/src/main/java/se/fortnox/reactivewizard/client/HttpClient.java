@@ -182,7 +182,9 @@ public class HttpClient implements InvocationHandler {
         return new ObservableWithResponse(RxReactiveStreams.toObservable(publisher), rawResponse);
     }
 
-    /** Should be used with
+    /**
+     * Should be used with an observable coming directly from another api-call to get access to meta data, such as status and headers
+     * from the response.
      * @param source the source observable, must be observable returned from api call
      * @param <T> the type of data that should be returned in the call
      * @return an observable that along with the data passes the response object from netty
