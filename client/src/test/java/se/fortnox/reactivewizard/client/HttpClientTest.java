@@ -67,6 +67,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -612,7 +613,9 @@ public class HttpClientTest {
     public void shouldRedactAuthorizationHeaderInLogs() throws Exception {
         DisposableServer                   server       = startServer(BAD_REQUEST, "someError");
         HttpClientConfig                   config       = new HttpClientConfig("localhost:" + server.port());
-        config.setDevHeaders(Map.of("Authorization", "secretvalue"));
+        Map<String, String>                headers      = new HashMap<>();
+        headers.put("Authorization", "secretvalue");
+        config.setDevHeaders(headers);
         TestResource                       resource     = getHttpProxy(config);
 
         assertThatExceptionOfType(WebException.class)
