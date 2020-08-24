@@ -683,7 +683,7 @@ public class HttpClient implements InvocationHandler {
 
     /**
      * Class used when the full response is needed
-     * @param <T>
+     * @param <T> the type of data to be returned
      */
     public static class Response<T> {
         private final T data;
@@ -711,7 +711,7 @@ public class HttpClient implements InvocationHandler {
 
     /**
      * Internal class to help support getting the full response as return value when observable is returned
-     * @param <T>
+     * @param <T> the type of data to be returned
      */
     private static class ObservableWithResponse<T> extends Observable<T> {
 
@@ -732,7 +732,7 @@ public class HttpClient implements InvocationHandler {
 
     /**
      * Internal class to help support getting the full response as return value when Single is returned
-     * @param <T>
+     * @param <T> the type of data to be returned
      */
     private static class SingleWithResponse<T> extends Single<T> {
 
