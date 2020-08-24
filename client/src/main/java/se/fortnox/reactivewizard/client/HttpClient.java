@@ -187,7 +187,7 @@ public class HttpClient implements InvocationHandler {
      * from the response.
      * @param source the source observable, must be observable returned from api call
      * @param <T> the type of data that should be returned in the call
-     * @return an observable that along with the data passes the response object from netty
+     * @return an observable that along with the data passes the response meta data
      */
     public static <T> Observable<Response<T>> fullResponse(Observable<T> source) {
         if (!(source instanceof ObservableWithResponse)) {
