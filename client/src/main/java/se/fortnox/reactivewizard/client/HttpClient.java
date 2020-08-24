@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.type.TypeFactory;
+import com.google.common.collect.ImmutableMap;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.timeout.ReadTimeoutException;
 import org.reactivestreams.Publisher;
@@ -14,7 +15,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.netty.http.client.HttpClientResponse;
 import reactor.util.retry.Retry;
+import rx.Observable;
 import rx.RxReactiveStreams;
 import rx.Single;
 import se.fortnox.reactivewizard.jaxrs.ByteBufCollector;
@@ -62,6 +65,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 import static io.netty.handler.codec.http.HttpMethod.POST;
@@ -149,8 +153,10 @@ public class HttpClient implements InvocationHandler {
         Mono<RwHttpClientResponse> response = request.submit(rxClient, request);
 
         Publisher<?> publisher = null;
+        AtomicReference<HttpClientResponse> rawResponse = new AtomicReference<>();
         if (expectsByteArrayResponse(method)) {
             publisher = response.flatMap(rwHttpClientResponse -> {
+                rawResponse.set(rwHttpClientResponse.getHttpClientResponse());
                 if (rwHttpClientResponse.getHttpClientResponse().status().code() >= 400) {
                     return Mono.from(collector.collectString(rwHttpClientResponse.getContent()))
                         .map(data -> handleError(request, rwHttpClientResponse.getHttpClientResponse(), data).getBytes());
@@ -158,8 +164,10 @@ public class HttpClient implements InvocationHandler {
                 return Mono.from(collector.collectBytes(rwHttpClientResponse.getContent()));
             });
         } else {
-            publisher = response.flatMap(rwHttpClientResponse ->
-                parseResponse(method, request, rwHttpClientResponse));
+            publisher = response.flatMap(rwHttpClientResponse -> {
+                rawResponse.set(rwHttpClientResponse.getHttpClientResponse());
+                return parseResponse(method, request, rwHttpClientResponse);
+            });
         }
         publisher = measure(request, publisher);
 
@@ -169,9 +177,35 @@ public class HttpClient implements InvocationHandler {
         publisher = withRetry(request, flux).onErrorResume(e -> convertError(request, e));
 
         if (Single.class.isAssignableFrom(method.getReturnType())) {
-            return RxReactiveStreams.toSingle(publisher);
+            return new SingleWithResponse(RxReactiveStreams.toSingle(publisher), rawResponse);
         }
-        return RxReactiveStreams.toObservable(publisher);
+        return new ObservableWithResponse(RxReactiveStreams.toObservable(publisher), rawResponse);
+    }
+
+    /** Should be used with
+     * @param source the source observable, must be observable returned from api call
+     * @param <T> the type of data that should be returned in the call
+     * @return an observable that along with the data passes the response object from netty
+     */
+    public static <T> Observable<Response<T>> fullResponse(Observable<T> source) {
+        if (!(source instanceof ObservableWithResponse)) {
+            throw new IllegalArgumentException("Must be used with observable returned from api call");
+        }
+
+        return source.map(data -> new Response<>(((ObservableWithResponse<T>)source).getResponse(), data));
+    }
+
+    /** Should be used with
+     * @param source the source observable, must be observable returned from api call
+     * @param <T> the type of data that should be returned in the call
+     * @return an observable that along with the data passes the response object from netty
+     */
+    public static <T> Single<Response<T>> fullResponse(Single<T> source) {
+        if (!(source instanceof SingleWithResponse)) {
+            throw new IllegalArgumentException("Must be used with single returned from api call");
+        }
+
+        return source.map(data -> new Response<>(((SingleWithResponse<T>)source).getResponse(), data));
     }
 
     private <T> Flux<T> convertError(RequestBuilder fullReq, Throwable throwable) {
@@ -644,6 +678,76 @@ public class HttpClient implements InvocationHandler {
         public BeanParamProperty(Function<Object, Object> getter, Annotation[] annotations) {
             this.getter = getter;
             this.annotations = annotations;
+        }
+    }
+
+    /**
+     * Class used when the full response is needed
+     * @param <T>
+     */
+    public static class Response<T> {
+        private final T data;
+        private final HttpResponseStatus status;
+        private final Map<String, String> headers;
+
+        public Response(HttpClientResponse httpClientResponse, T data) {
+            this.status = httpClientResponse.status();
+            this.headers = ImmutableMap.copyOf(httpClientResponse.responseHeaders());
+            this.data = data;
+        }
+
+        public T getData() {
+            return data;
+        }
+
+        public HttpResponseStatus getStatus() {
+            return status;
+        }
+
+        public Map<String, String> getHeaders() {
+            return headers;
+        }
+    }
+
+    /**
+     * Internal class to help support getting the full response as return value when observable is returned
+     * @param <T>
+     */
+    private static class ObservableWithResponse<T> extends Observable<T> {
+
+        private final AtomicReference<HttpClientResponse> httpClientResponse;
+
+        protected ObservableWithResponse(Observable<T> inner, AtomicReference<HttpClientResponse> httpClientResponse) {
+            super(inner::unsafeSubscribe);
+            this.httpClientResponse = httpClientResponse;
+        }
+
+        public HttpClientResponse getResponse() {
+            if (httpClientResponse.get() == null) {
+                throw new IllegalStateException("This method can only be called after the response has been received");
+            }
+            return httpClientResponse.get();
+        }
+    }
+
+    /**
+     * Internal class to help support getting the full response as return value when Single is returned
+     * @param <T>
+     */
+    private static class SingleWithResponse<T> extends Single<T> {
+
+        private final AtomicReference<HttpClientResponse> httpClientResponse;
+
+        protected SingleWithResponse(Single<T> inner, AtomicReference<HttpClientResponse> httpClientResponse) {
+            super((OnSubscribe<T>)inner::subscribe);
+            this.httpClientResponse = httpClientResponse;
+        }
+
+        public HttpClientResponse getResponse() {
+            if (httpClientResponse.get() == null) {
+                throw new IllegalStateException("This method can only be called after the response has been received");
+            }
+            return httpClientResponse.get();
         }
     }
 }
