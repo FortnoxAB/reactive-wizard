@@ -14,7 +14,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.netty.http.client.HttpClientResponse;
 import reactor.util.retry.Retry;
+import rx.Observable;
 import rx.RxReactiveStreams;
 import rx.Single;
 import se.fortnox.reactivewizard.jaxrs.ByteBufCollector;
@@ -62,6 +64,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 import static io.netty.handler.codec.http.HttpMethod.POST;
@@ -149,8 +152,10 @@ public class HttpClient implements InvocationHandler {
         Mono<RwHttpClientResponse> response = request.submit(rxClient, request);
 
         Publisher<?> publisher = null;
+        AtomicReference<HttpClientResponse> rawResponse = new AtomicReference<>();
         if (expectsByteArrayResponse(method)) {
             publisher = response.flatMap(rwHttpClientResponse -> {
+                rawResponse.set(rwHttpClientResponse.getHttpClientResponse());
                 if (rwHttpClientResponse.getHttpClientResponse().status().code() >= 400) {
                     return Mono.from(collector.collectString(rwHttpClientResponse.getContent()))
                         .map(data -> handleError(request, rwHttpClientResponse.getHttpClientResponse(), data).getBytes());
@@ -158,8 +163,10 @@ public class HttpClient implements InvocationHandler {
                 return Mono.from(collector.collectBytes(rwHttpClientResponse.getContent()));
             });
         } else {
-            publisher = response.flatMap(rwHttpClientResponse ->
-                parseResponse(method, request, rwHttpClientResponse));
+            publisher = response.flatMap(rwHttpClientResponse -> {
+                rawResponse.set(rwHttpClientResponse.getHttpClientResponse());
+                return parseResponse(method, request, rwHttpClientResponse);
+            });
         }
         publisher = measure(request, publisher);
 
@@ -169,9 +176,38 @@ public class HttpClient implements InvocationHandler {
         publisher = withRetry(request, flux).onErrorResume(e -> convertError(request, e));
 
         if (Single.class.isAssignableFrom(method.getReturnType())) {
-            return RxReactiveStreams.toSingle(publisher);
+            return new SingleWithResponse(RxReactiveStreams.toSingle(publisher), rawResponse);
         }
-        return RxReactiveStreams.toObservable(publisher);
+        return new ObservableWithResponse(RxReactiveStreams.toObservable(publisher), rawResponse);
+    }
+
+    /**
+     * Should be used with an observable coming directly from another api-call to get access to meta data, such as status and headers
+     * from the response.
+     * @param source the source observable, must be observable returned from api call
+     * @param <T> the type of data that should be returned in the call
+     * @return an observable that along with the data passes the response meta data
+     */
+    public static <T> Observable<Response<T>> getFullResponse(Observable<T> source) {
+        if (!(source instanceof ObservableWithResponse)) {
+            throw new IllegalArgumentException("Must be used with observable returned from api call");
+        }
+
+        return source.map(data -> new Response<>(((ObservableWithResponse<T>)source).getResponse(), data));
+    }
+
+    /**
+     * Should be used with a Single coming directly from another api-call to get access to meta data, such as status and header
+     * @param source the source observable, must be observable returned from api call
+     * @param <T> the type of data that should be returned in the call
+     * @return an observable that along with the data passes the response object from netty
+     */
+    public static <T> Single<Response<T>> getFullResponse(Single<T> source) {
+        if (!(source instanceof SingleWithResponse)) {
+            throw new IllegalArgumentException("Must be used with single returned from api call");
+        }
+
+        return source.map(data -> new Response<>(((SingleWithResponse<T>)source).getResponse(), data));
     }
 
     private <T> Flux<T> convertError(RequestBuilder fullReq, Throwable throwable) {
@@ -646,4 +682,5 @@ public class HttpClient implements InvocationHandler {
             this.annotations = annotations;
         }
     }
+
 }

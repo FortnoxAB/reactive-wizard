@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import com.google.inject.Injector;
-import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.ssl.SslContextBuilder;
@@ -76,14 +75,24 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
-import static io.netty.handler.codec.http.HttpResponseStatus.*;
+import static io.netty.handler.codec.http.HttpResponseStatus.BAD_REQUEST;
+import static io.netty.handler.codec.http.HttpResponseStatus.CREATED;
+import static io.netty.handler.codec.http.HttpResponseStatus.GATEWAY_TIMEOUT;
+import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
+import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
+import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.*;
-import static reactor.core.publisher.Flux.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static reactor.core.publisher.Flux.defer;
+import static reactor.core.publisher.Flux.empty;
+import static reactor.core.publisher.Flux.just;
 import static se.fortnox.reactivewizard.test.TestUtil.matches;
 
 public class HttpClientTest {
@@ -520,6 +529,37 @@ public class HttpClientTest {
 
         server.disposeNow();
     }
+
+    @Test
+    public void shouldReturnFullResponseFromObservable() {
+        DisposableServer server = startServer(HttpResponseStatus.OK, "\"OK\"");
+
+        TestResource resource = getHttpProxy(server.port());
+
+        Response<String> stringResponse = HttpClient.getFullResponse(resource.getHello())
+            .toBlocking().singleOrDefault(null);
+
+        assertThat(stringResponse).isNotNull();
+        assertThat(stringResponse.getBody()).isEqualTo("OK");
+        assertThat(stringResponse.getStatus()).isEqualTo(OK);
+        assertThat(stringResponse.getHeaders().get("content-length")).isEqualTo("4");
+    }
+
+    @Test
+    public void shouldReturnFullResponseFromSingle() {
+        DisposableServer server = startServer(HttpResponseStatus.OK, "\"OK\"");
+
+        TestResource resource = getHttpProxy(server.port());
+
+        Response<String> stringResponse = HttpClient.getFullResponse(resource.getSingle())
+            .toBlocking().value();
+
+        assertThat(stringResponse).isNotNull();
+        assertThat(stringResponse.getBody()).isEqualTo("OK");
+        assertThat(stringResponse.getStatus()).isEqualTo(OK);
+        assertThat(stringResponse.getHeaders().get("content-length")).isEqualTo("4");
+    }
+
 
     @Test
     public void shouldHandleLargeResponses() {
