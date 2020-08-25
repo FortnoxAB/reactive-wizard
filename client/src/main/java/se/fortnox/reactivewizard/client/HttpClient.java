@@ -715,16 +715,16 @@ public class HttpClient implements InvocationHandler {
      * Internal class to help support getting the full response as return value when observable is returned
      * @param <T> the type of data to be returned
      */
-    private static class ObservableWithResponse<T> extends Observable<T> {
+    static class ObservableWithResponse<T> extends Observable<T> {
 
         private final AtomicReference<HttpClientResponse> httpClientResponse;
 
-        protected ObservableWithResponse(Observable<T> inner, AtomicReference<HttpClientResponse> httpClientResponse) {
+        ObservableWithResponse(Observable<T> inner, AtomicReference<HttpClientResponse> httpClientResponse) {
             super(inner::unsafeSubscribe);
             this.httpClientResponse = httpClientResponse;
         }
 
-        public HttpClientResponse getResponse() {
+        HttpClientResponse getResponse() {
             if (httpClientResponse.get() == null) {
                 throw new IllegalStateException("This method can only be called after the response has been received");
             }
@@ -736,16 +736,16 @@ public class HttpClient implements InvocationHandler {
      * Internal class to help support getting the full response as return value when Single is returned
      * @param <T> the type of data to be returned
      */
-    private static class SingleWithResponse<T> extends Single<T> {
+    static class SingleWithResponse<T> extends Single<T> {
 
         private final AtomicReference<HttpClientResponse> httpClientResponse;
 
-        protected SingleWithResponse(Single<T> inner, AtomicReference<HttpClientResponse> httpClientResponse) {
+        SingleWithResponse(Single<T> inner, AtomicReference<HttpClientResponse> httpClientResponse) {
             super((OnSubscribe<T>)inner::subscribe);
             this.httpClientResponse = httpClientResponse;
         }
 
-        public HttpClientResponse getResponse() {
+        HttpClientResponse getResponse() {
             if (httpClientResponse.get() == null) {
                 throw new IllegalStateException("This method can only be called after the response has been received");
             }
