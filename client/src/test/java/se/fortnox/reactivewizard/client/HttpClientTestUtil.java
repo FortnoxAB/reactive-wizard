@@ -28,7 +28,7 @@ public class HttpClientTestUtil {
         when(httpClientResponse.responseHeaders()).thenReturn(httpHeaders);
         when(httpClientResponse.status()).thenReturn(httpResponseStatus);
 
-        return new HttpClient.ObservableWithResponse<>(source, new AtomicReference<>(httpClientResponse));
+        return new ObservableWithResponse<>(source, new AtomicReference<>(httpClientResponse));
     }
 
     public static <T> Single<T> mockResponseWithHeaders(Single<T> source, Map<String, String> headers, HttpResponseStatus httpResponseStatus) {
@@ -39,6 +39,6 @@ public class HttpClientTestUtil {
         when(httpClientResponse.responseHeaders()).thenReturn(httpHeaders);
         when(httpClientResponse.status()).thenReturn(httpResponseStatus);
 
-        return new HttpClient.SingleWithResponse<>(source, new AtomicReference<>(httpClientResponse));
+        return new SingleWithResponse<>(source, new AtomicReference<>(httpClientResponse));
     }
 }

@@ -536,7 +536,7 @@ public class HttpClientTest {
 
         TestResource resource = getHttpProxy(server.port());
 
-        HttpClient.Response<String> stringResponse = HttpClient.getFullResponse(resource.getHello())
+        Response<String> stringResponse = HttpClient.getFullResponse(resource.getHello())
             .toBlocking().singleOrDefault(null);
 
         assertThat(stringResponse).isNotNull();
@@ -551,7 +551,7 @@ public class HttpClientTest {
 
         TestResource resource = getHttpProxy(server.port());
 
-        HttpClient.Response<String> stringResponse = HttpClient.getFullResponse(resource.getSingle())
+        Response<String> stringResponse = HttpClient.getFullResponse(resource.getSingle())
             .toBlocking().value();
 
         assertThat(stringResponse).isNotNull();

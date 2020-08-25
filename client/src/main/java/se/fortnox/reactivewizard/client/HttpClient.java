@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.type.TypeFactory;
-import com.google.common.collect.ImmutableMap;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.timeout.ReadTimeoutException;
 import org.reactivestreams.Publisher;
@@ -197,7 +196,8 @@ public class HttpClient implements InvocationHandler {
         return source.map(data -> new Response<>(((ObservableWithResponse<T>)source).getResponse(), data));
     }
 
-    /** Should be used with
+    /**
+     * Should be used with a Single coming directly from another api-call to get access to meta data, such as status and header
      * @param source the source observable, must be observable returned from api call
      * @param <T> the type of data that should be returned in the call
      * @return an observable that along with the data passes the response object from netty
@@ -683,73 +683,4 @@ public class HttpClient implements InvocationHandler {
         }
     }
 
-    /**
-     * Class used when the full response is needed
-     * @param <T> the type of data to be returned
-     */
-    public static class Response<T> {
-        private final T                  body;
-        private final HttpResponseStatus status;
-        private final Map<String, String> headers;
-
-        public Response(HttpClientResponse httpClientResponse, T body) {
-            this.status = httpClientResponse.status();
-            this.headers = ImmutableMap.copyOf(httpClientResponse.responseHeaders());
-            this.body = body;
-        }
-
-        public T getBody() {
-            return body;
-        }
-
-        public HttpResponseStatus getStatus() {
-            return status;
-        }
-
-        public Map<String, String> getHeaders() {
-            return headers;
-        }
-    }
-
-    /**
-     * Internal class to help support getting the full response as return value when observable is returned
-     * @param <T> the type of data to be returned
-     */
-    static class ObservableWithResponse<T> extends Observable<T> {
-
-        private final AtomicReference<HttpClientResponse> httpClientResponse;
-
-        ObservableWithResponse(Observable<T> inner, AtomicReference<HttpClientResponse> httpClientResponse) {
-            super(inner::unsafeSubscribe);
-            this.httpClientResponse = httpClientResponse;
-        }
-
-        HttpClientResponse getResponse() {
-            if (httpClientResponse.get() == null) {
-                throw new IllegalStateException("This method can only be called after the response has been received");
-            }
-            return httpClientResponse.get();
-        }
-    }
-
-    /**
-     * Internal class to help support getting the full response as return value when Single is returned
-     * @param <T> the type of data to be returned
-     */
-    static class SingleWithResponse<T> extends Single<T> {
-
-        private final AtomicReference<HttpClientResponse> httpClientResponse;
-
-        SingleWithResponse(Single<T> inner, AtomicReference<HttpClientResponse> httpClientResponse) {
-            super((OnSubscribe<T>)inner::subscribe);
-            this.httpClientResponse = httpClientResponse;
-        }
-
-        HttpClientResponse getResponse() {
-            if (httpClientResponse.get() == null) {
-                throw new IllegalStateException("This method can only be called after the response has been received");
-            }
-            return httpClientResponse.get();
-        }
-    }
 }
