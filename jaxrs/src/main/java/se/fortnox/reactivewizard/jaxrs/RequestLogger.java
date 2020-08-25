@@ -56,7 +56,9 @@ public class RequestLogger {
      * @return value of the header or "REDACTED" if the header contains sensitive information
      */
     public static String getHeaderValueOrRedact(Map.Entry<String, String> header) {
-        if ("Authorization".equalsIgnoreCase(header.getKey())) {
+        if(header == null) {
+            return null;
+        } else if ("Authorization".equalsIgnoreCase(header.getKey())) {
             return "REDACTED";
         }
         return header.getValue();
@@ -69,6 +71,9 @@ public class RequestLogger {
      * @return headers with sensitive information redacted
      */
     public static Set<Map.Entry<String, String>> getHeaderValuesOrRedact(Map<String, String> headers) {
+        if(headers == null) {
+            return null;
+        }
         return headers
             .entrySet()
             .stream()

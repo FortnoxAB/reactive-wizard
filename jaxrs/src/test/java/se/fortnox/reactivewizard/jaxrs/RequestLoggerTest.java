@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class RequestLoggerTest {
@@ -40,5 +41,15 @@ public class RequestLoggerTest {
         expectedValue.put("Authorization", "REDACTED");
         expectedValue.put("OtherHeader", "notasecret");
         assertTrue(CollectionUtils.isEqualCollection(result, expectedValue.entrySet()));
+    }
+
+    @Test
+    public void shouldReturnNull_getHeaderValuesOrRedact() {
+        assertNull(RequestLogger.getHeaderValuesOrRedact(null));
+    }
+
+    @Test
+    public void shouldReturnNull_getHeaderValueOrRedact() {
+        assertNull(RequestLogger.getHeaderValueOrRedact(null));
     }
 }
