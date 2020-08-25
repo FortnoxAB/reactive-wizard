@@ -536,11 +536,11 @@ public class HttpClientTest {
 
         TestResource resource = getHttpProxy(server.port());
 
-        HttpClient.Response<String> stringResponse = HttpClient.fullResponse(resource.getHello())
+        HttpClient.Response<String> stringResponse = HttpClient.getFullResponse(resource.getHello())
             .toBlocking().singleOrDefault(null);
 
         assertThat(stringResponse).isNotNull();
-        assertThat(stringResponse.getData()).isEqualTo("OK");
+        assertThat(stringResponse.getBody()).isEqualTo("OK");
         assertThat(stringResponse.getStatus()).isEqualTo(OK);
         assertThat(stringResponse.getHeaders().get("content-length")).isEqualTo("4");
     }
@@ -551,11 +551,11 @@ public class HttpClientTest {
 
         TestResource resource = getHttpProxy(server.port());
 
-        HttpClient.Response<String> stringResponse = HttpClient.fullResponse(resource.getSingle())
+        HttpClient.Response<String> stringResponse = HttpClient.getFullResponse(resource.getSingle())
             .toBlocking().value();
 
         assertThat(stringResponse).isNotNull();
-        assertThat(stringResponse.getData()).isEqualTo("OK");
+        assertThat(stringResponse.getBody()).isEqualTo("OK");
         assertThat(stringResponse.getStatus()).isEqualTo(OK);
         assertThat(stringResponse.getHeaders().get("content-length")).isEqualTo("4");
     }

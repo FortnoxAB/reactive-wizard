@@ -189,7 +189,7 @@ public class HttpClient implements InvocationHandler {
      * @param <T> the type of data that should be returned in the call
      * @return an observable that along with the data passes the response meta data
      */
-    public static <T> Observable<Response<T>> fullResponse(Observable<T> source) {
+    public static <T> Observable<Response<T>> getFullResponse(Observable<T> source) {
         if (!(source instanceof ObservableWithResponse)) {
             throw new IllegalArgumentException("Must be used with observable returned from api call");
         }
@@ -202,7 +202,7 @@ public class HttpClient implements InvocationHandler {
      * @param <T> the type of data that should be returned in the call
      * @return an observable that along with the data passes the response object from netty
      */
-    public static <T> Single<Response<T>> fullResponse(Single<T> source) {
+    public static <T> Single<Response<T>> getFullResponse(Single<T> source) {
         if (!(source instanceof SingleWithResponse)) {
             throw new IllegalArgumentException("Must be used with single returned from api call");
         }
@@ -688,18 +688,18 @@ public class HttpClient implements InvocationHandler {
      * @param <T> the type of data to be returned
      */
     public static class Response<T> {
-        private final T data;
+        private final T                  body;
         private final HttpResponseStatus status;
         private final Map<String, String> headers;
 
-        public Response(HttpClientResponse httpClientResponse, T data) {
+        public Response(HttpClientResponse httpClientResponse, T body) {
             this.status = httpClientResponse.status();
             this.headers = ImmutableMap.copyOf(httpClientResponse.responseHeaders());
-            this.data = data;
+            this.body = body;
         }
 
-        public T getData() {
-            return data;
+        public T getBody() {
+            return body;
         }
 
         public HttpResponseStatus getStatus() {
