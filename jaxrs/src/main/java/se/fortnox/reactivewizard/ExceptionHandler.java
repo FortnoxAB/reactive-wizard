@@ -22,6 +22,8 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.file.FileSystemException;
 import java.util.List;
 
+import static se.fortnox.reactivewizard.jaxrs.RequestLogger.getHeaderValueOrRedact;
+
 /**
  * Handles exceptions and writes errors to the response and the log.
  */
@@ -109,7 +111,7 @@ public class ExceptionHandler {
             msg
                 .append(header.getKey())
                 .append('=')
-                .append(header.getValue())
+                .append(getHeaderValueOrRedact(header))
                 .append(' ')
         );
         return msg.toString();

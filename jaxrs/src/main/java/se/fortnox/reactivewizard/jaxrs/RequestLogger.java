@@ -5,6 +5,11 @@ import org.slf4j.Logger;
 import reactor.netty.http.server.HttpServerRequest;
 import reactor.netty.http.server.HttpServerResponse;
 
+import java.util.Collections;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 /**
  * Logs incoming requests to a Logger.
  */
@@ -22,8 +27,11 @@ public class RequestLogger {
      * @param logLine StringBuilder to append the header content to.
      */
     public static void headersToString(HttpServerRequest request, StringBuilder logLine) {
-        request.requestHeaders().forEach(e ->
-            logLine.append(e.getKey()).append('=').append(e.getValue()).append(' ')
+        request.requestHeaders().forEach(header ->
+            logLine.append(header.getKey())
+                .append('=')
+                .append(getHeaderValueOrRedact(header))
+                .append(' ')
         );
     }
 
@@ -35,8 +43,46 @@ public class RequestLogger {
      */
     public static void headersToString(HttpServerResponse response, StringBuilder logLine) {
         response.responseHeaders().forEach(header ->
-            logLine.append(header.getKey()).append('=').append(header.getValue()).append(' ')
+            logLine.append(header.getKey())
+                .append('=')
+                .append(getHeaderValueOrRedact(header))
+                .append(' ')
         );
+    }
+
+    /**
+     * Returns the value of a header. If the header contains sensitive information the value will be replaced with "REDACTED".
+     *
+     * @param header The header to get the value from
+     * @return value of the header or "REDACTED" if the header contains sensitive information
+     */
+    public static String getHeaderValueOrRedact(Map.Entry<String, String> header) {
+        if (header == null) {
+            return null;
+        } else if ("Authorization".equalsIgnoreCase(header.getKey())) {
+            return "REDACTED";
+        }
+        return header.getValue();
+    }
+
+    /**
+     * Redact sensitive information from header values. Any header that contains sensitive information will have the value replaced with "REDACTED"
+     *
+     * @param headers The headers to map
+     * @return headers with sensitive information redacted
+     */
+    public static Set<Map.Entry<String, String>> getHeaderValuesOrRedact(Map<String, String> headers) {
+        if (headers == null) {
+            return Collections.emptySet();
+        }
+        return headers
+            .entrySet()
+            .stream()
+            .collect(Collectors.toMap(
+                Map.Entry::getKey,
+                RequestLogger::getHeaderValueOrRedact
+            ))
+            .entrySet();
     }
 
     /**

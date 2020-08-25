@@ -13,7 +13,9 @@ import io.netty.handler.ssl.util.SelfSignedCertificate;
 import org.apache.log4j.Appender;
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
+import org.junit.After;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.reactivestreams.Publisher;
@@ -65,8 +67,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -83,6 +87,7 @@ import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
@@ -93,11 +98,23 @@ import static org.mockito.Mockito.when;
 import static reactor.core.publisher.Flux.defer;
 import static reactor.core.publisher.Flux.empty;
 import static reactor.core.publisher.Flux.just;
+import static se.fortnox.reactivewizard.test.LoggingMockUtil.destroyMockedAppender;
 import static se.fortnox.reactivewizard.test.TestUtil.matches;
 
 public class HttpClientTest {
 
     private HealthRecorder healthRecorder = new HealthRecorder();
+    private Appender       mockAppender;
+
+    @Before
+    public void before() throws Exception {
+        mockAppender = LoggingMockUtil.createMockedLogAppender(HttpClient.class);
+    }
+
+    @After
+    public void after() throws Exception{
+        destroyMockedAppender(mockAppender, HttpClient.class);
+    }
 
     @Test
     public void shouldNotRetryFailedPostCalls() {
@@ -571,8 +588,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldLogErrorOnTooLargeResponse() throws NoSuchFieldException, IllegalAccessException {
-        Appender                           mockAppender = LoggingMockUtil.createMockedLogAppender(HttpClient.class);
+    public void shouldLogErrorOnTooLargeResponse() {
         DisposableServer                   server       = startServer(HttpResponseStatus.OK, generateLargeString(11));
         TestResource                       resource     = getHttpProxy(server.port());
         WebException                       e            = null;
@@ -588,6 +604,27 @@ public class HttpClientTest {
 
         verify(mockAppender).doAppend(matches(log -> {
             assertThat(log.getMessage()).isEqualTo("Failed request. Url: localhost:" + server.port() + "/hello, headers: [Host=localhost]");
+        }));
+
+        server.disposeNow();
+    }
+
+    @Test
+    public void shouldRedactAuthorizationHeaderInLogs() throws Exception {
+        DisposableServer                   server       = startServer(BAD_REQUEST, "someError");
+        HttpClientConfig                   config       = new HttpClientConfig("localhost:" + server.port());
+        Map<String, String>                headers      = new HashMap<>();
+        headers.put("Authorization", "secretvalue");
+        config.setDevHeaders(headers);
+        TestResource                       resource     = getHttpProxy(config);
+
+        assertThatExceptionOfType(WebException.class)
+            .isThrownBy(() -> resource.getHello()
+                .toBlocking()
+                .single());
+        verify(mockAppender).doAppend(matches(log -> {
+            assertThat(log.getMessage())
+                .isEqualTo("Failed request. Url: localhost:" + server.port() + "/hello, headers: [Authorization=REDACTED, Host=localhost]");
         }));
 
         server.disposeNow();
@@ -889,6 +926,8 @@ public class HttpClientTest {
     @Test
     public void shouldShouldNotGivePoolExhaustedIfServerDoesNotCloseConnection() throws URISyntaxException {
 
+        Level originalLogLevel = LogManager.getLogger(HttpClient.class)
+            .getLevel();
         LogManager.getLogger(HttpClient.class).setLevel(Level.toLevel(Level.OFF_INT));
 
         DisposableServer server = HttpServer.create().port(0)
@@ -920,6 +959,8 @@ public class HttpClientTest {
         }
 
         server.disposeNow();
+        LogManager.getLogger(HttpClient.class)
+            .setLevel(originalLogLevel);
     }
 
     @Test

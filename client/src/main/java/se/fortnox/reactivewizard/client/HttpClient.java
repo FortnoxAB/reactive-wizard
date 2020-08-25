@@ -75,6 +75,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static reactor.core.Exceptions.isRetryExhausted;
+import static se.fortnox.reactivewizard.jaxrs.RequestLogger.getHeaderValuesOrRedact;
 
 public class HttpClient implements InvocationHandler {
     private static final Logger LOG = LoggerFactory.getLogger(HttpClient.class);
@@ -211,7 +212,7 @@ public class HttpClient implements InvocationHandler {
     }
 
     private <T> Flux<T> convertError(RequestBuilder fullReq, Throwable throwable) {
-        String request = format("%s, headers: %s", fullReq.getFullUrl(), fullReq.getHeaders().entrySet());
+        String request = format("%s, headers: %s", fullReq.getFullUrl(), getHeaderValuesOrRedact(fullReq.getHeaders()));
         LOG.warn("Failed request. Url: {}", request, throwable);
 
         if (isRetryExhausted(throwable)) {
@@ -303,7 +304,7 @@ public class HttpClient implements InvocationHandler {
                 // Log the error on every retry.
                 LOG.info(format("Will retry because an error occurred. %s, headers: %s",
                     fullReq.getFullUrl(),
-                    fullReq.getHeaders().entrySet()), throwable);
+                    getHeaderValuesOrRedact(fullReq.getHeaders())), throwable);
 
                 // Retry if it's 500+ error
                 return true;

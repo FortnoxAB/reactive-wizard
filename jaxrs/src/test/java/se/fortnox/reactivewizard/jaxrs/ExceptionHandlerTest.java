@@ -46,6 +46,18 @@ public class ExceptionHandlerTest {
     }
 
     @Test
+    public void shouldRedactSensitiveHeaders(){
+        MockHttpServerRequest request = new MockHttpServerRequest("/path");
+        request.requestHeaders()
+            .add("Authorization", "secret")
+            .add("OtherHeader", "notasecret");
+        assertLog(request,
+            new WebException(HttpResponseStatus.BAD_REQUEST),
+            Level.WARN,
+            "400 Bad Request\n\tCause: -\n\tResponse: {\"id\":\"*\",\"error\":\"badrequest\"}\n\tRequest: GET /path headers: Authorization=REDACTED OtherHeader=notasecret ");
+    }
+
+    @Test
     public void shouldLog404AsDebug() {
         MockHttpServerRequest request = new MockHttpServerRequest("/path");
         String expectedLog = "404 Not Found\n" +
