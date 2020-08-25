@@ -4,6 +4,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.junit.Test;
 
 import java.util.AbstractMap;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -45,7 +46,8 @@ public class RequestLoggerTest {
 
     @Test
     public void shouldReturnNull_getHeaderValuesOrRedact() {
-        assertNull(RequestLogger.getHeaderValuesOrRedact(null));
+        Set<Map.Entry<String, String>> result = RequestLogger.getHeaderValuesOrRedact(null);
+        assertTrue(CollectionUtils.isEqualCollection(result, Collections.emptySet()));
     }
 
     @Test

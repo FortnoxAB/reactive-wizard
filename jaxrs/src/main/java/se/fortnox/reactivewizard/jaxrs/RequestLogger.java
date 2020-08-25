@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import reactor.netty.http.server.HttpServerRequest;
 import reactor.netty.http.server.HttpServerResponse;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -72,7 +73,7 @@ public class RequestLogger {
      */
     public static Set<Map.Entry<String, String>> getHeaderValuesOrRedact(Map<String, String> headers) {
         if(headers == null) {
-            return null;
+            return Collections.emptySet();
         }
         return headers
             .entrySet()
