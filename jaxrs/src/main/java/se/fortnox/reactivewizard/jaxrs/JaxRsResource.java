@@ -23,6 +23,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
@@ -98,44 +99,33 @@ public class JaxRsResource<T> implements Comparable<JaxRsResource> {
 
     @SuppressWarnings("unchecked")
     private Function<Object[], Flux<T>> createMethodCaller(Method method, Object resourceInstance) {
-        if (!Observable.class.isAssignableFrom(method.getReturnType()) && !Single.class.isAssignableFrom(method.getReturnType())) {
+        Function<Object, Flux<T>> fluxConverter = FluxRxConverter.converterToFlux(method.getReturnType());
+
+        if (fluxConverter == null) {
             throw new IllegalArgumentException(format(
-                "Can only serve methods that are reactive. %s had unsupported return type %s",
-                method, method.getReturnType()));
-        } else {
-            return args -> {
-                try {
-                    Object result = method.invoke(resourceInstance, args);
+                    "Can only serve methods that are reactive. %s had unsupported return type %s",
+                    method, method.getReturnType()));
+        }
 
-                    if (result == null) {
-                        return Flux.empty();
-                    }
+        return args -> {
+            try {
+                Object result = method.invoke(resourceInstance, args);
+                Flux<T> fluxResult =  fluxConverter.apply(result);
 
-                    if (result instanceof Single) {
-                        return observableToFlux(((Single<T>)result).toObservable());
-                    }
-
-                    return observableToFlux((Observable<T>)result);
-                } catch (InvocationTargetException e) {
-                    return Flux.error(e.getTargetException());
-                } catch (Throwable e) {
-                    return Flux.error(e);
+                // This part should be refactored so that this class does not know about decorator, but right now the meta data
+                // is lost if not handled here.
+                if (result instanceof ResponseDecorator.ObservableWithHeaders) {
+                    Map<String, String> headers = ((ResponseDecorator.ObservableWithHeaders<T>) result).getHeaders();
+                    return new ResponseDecorator.FluxWithHeaders<>(fluxResult, headers);
                 }
-            };
-        }
-    }
 
-    private Flux<T> observableToFlux(Observable<T> result) {
-        Flux<T> fluxResult = FluxRxConverter.observableToFlux(result);
-
-        // This part should be refactored so that this class does not know about decorator, but right now the meta data
-        // is lost if not handled here.
-        if (result instanceof ResponseDecorator.ObservableWithHeaders) {
-            Map<String, String> headers = ((ResponseDecorator.ObservableWithHeaders<T>) result).getHeaders();
-            return new ResponseDecorator.FluxWithHeaders<>(fluxResult, headers);
-        }
-
-        return fluxResult;
+                return fluxResult;
+            } catch (InvocationTargetException e) {
+                return Flux.error(e.getTargetException());
+            } catch (Throwable e) {
+                return Flux.error(e);
+            }
+        };
     }
 
     @SuppressWarnings("unchecked")

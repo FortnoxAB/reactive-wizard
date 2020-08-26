@@ -23,6 +23,7 @@ import se.fortnox.reactivewizard.jaxrs.JaxRsMeta;
 import se.fortnox.reactivewizard.jaxrs.WebException;
 import se.fortnox.reactivewizard.metrics.HealthRecorder;
 import se.fortnox.reactivewizard.metrics.PublisherMetrics;
+import se.fortnox.reactivewizard.util.FluxRxConverter;
 import se.fortnox.reactivewizard.util.JustMessageException;
 import se.fortnox.reactivewizard.util.ReflectionUtil;
 
@@ -171,7 +172,7 @@ public class HttpClient implements InvocationHandler {
         if (Single.class.isAssignableFrom(method.getReturnType())) {
             return RxReactiveStreams.toSingle(publisher);
         }
-        return RxReactiveStreams.toObservable(publisher);
+        return FluxRxConverter.converterFromPublisher(method.getReturnType()).apply(publisher);
     }
 
     private <T> Flux<T> convertError(RequestBuilder fullReq, Throwable throwable) {

@@ -47,8 +47,8 @@ public class ReflectionUtil {
         }
         ParameterizedType parameterizedType = (ParameterizedType)type;
         Class<?>          rawClass          = (Class<?>)parameterizedType.getRawType();
-        if (!(rawClass.equals(Observable.class)) && !(rawClass.equals(Single.class)) && !(rawClass.equals(Mono.class))) {
-            throw new RuntimeException(type + " is not an Observable or Single");
+        if (!FluxRxConverter.isReactiveType(rawClass)) {
+            throw new RuntimeException(type + " is not a reactive type");
         }
         Type[] actualTypeArguments = parameterizedType.getActualTypeArguments();
         return actualTypeArguments[0];

@@ -1,6 +1,7 @@
 package se.fortnox.reactivewizard.db;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import rx.Observable;
 import rx.Scheduler;
 import rx.internal.util.RxThreadFactory;
 import rx.schedulers.Schedulers;
@@ -11,6 +12,7 @@ import se.fortnox.reactivewizard.db.statement.DbStatementFactoryFactory;
 import se.fortnox.reactivewizard.json.JsonSerializerFactory;
 import se.fortnox.reactivewizard.metrics.Metrics;
 import se.fortnox.reactivewizard.util.DebugUtil;
+import se.fortnox.reactivewizard.util.FluxRxConverter;
 import se.fortnox.reactivewizard.util.ReflectionUtil;
 
 import javax.annotation.Nullable;
@@ -119,7 +121,9 @@ public class DbProxy implements InvocationHandler {
                 databaseConfig);
             statementFactories.put(method, observableStatementFactory);
         }
-        return observableStatementFactory.create(args, connectionProvider);
+        Observable<Object> resultObservable = observableStatementFactory.create(args, connectionProvider);
+        Function<Observable<Object>,Object> converter = FluxRxConverter.converterFromObservable(method.getReturnType());
+        return converter.apply(resultObservable);
     }
 
     private Metrics createMetrics(Method method) {
