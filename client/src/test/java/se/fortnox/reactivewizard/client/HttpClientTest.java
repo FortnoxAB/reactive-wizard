@@ -82,6 +82,7 @@ import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERR
 import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static java.lang.String.format;
+import static javax.ws.rs.core.HttpHeaders.CONTENT_LENGTH;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.Matchers.any;
@@ -542,7 +543,12 @@ public class HttpClientTest {
         assertThat(stringResponse).isNotNull();
         assertThat(stringResponse.getBody()).isEqualTo("OK");
         assertThat(stringResponse.getStatus()).isEqualTo(OK);
+
+        //Case sensitive when getting the entire map structure
         assertThat(stringResponse.getHeaders().get("content-length")).isEqualTo("4");
+
+        //Case insensitive when fething
+        assertThat(stringResponse.getHeader(CONTENT_LENGTH)).isEqualTo("4");
     }
 
     @Test
