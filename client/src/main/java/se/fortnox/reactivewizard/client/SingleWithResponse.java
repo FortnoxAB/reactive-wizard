@@ -24,4 +24,8 @@ class SingleWithResponse<T> extends Single<T> {
         }
         return httpClientResponse.get();
     }
+
+    static <T> SingleWithResponse<T> from(SingleWithResponse<T> singleWithResponse, Single<T> inner) {
+        return new SingleWithResponse<T>(inner, singleWithResponse.httpClientResponse);
+    }
 }
