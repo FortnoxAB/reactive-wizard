@@ -25,7 +25,7 @@ class ObservableWithResponse<T> extends Observable<T> {
         return httpClientResponse.get();
     }
 
-    static <T> ObservableWithResponse<T> from(ObservableWithResponse observableWithResponse, Observable<T> inner) {
+    static <T> ObservableWithResponse<T> from(ObservableWithResponse<T> observableWithResponse, Observable<T> inner) {
         return new ObservableWithResponse<T>(inner, observableWithResponse.httpClientResponse);
     }
 }
