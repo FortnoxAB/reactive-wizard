@@ -569,6 +569,29 @@ public class HttpClientTest {
     }
 
     @Test
+    public void shouldWrapAndReturnNewFullResponseObservable() {
+        DisposableServer server = startServer(HttpResponseStatus.OK, "\"OK\"");
+
+        TestResource resource = getHttpProxy(server.port());
+
+        Observable<String> hello = resource.getHello();
+
+        ObservableWithResponse<String> wrappedStringResponse = ObservableWithResponse.from((ObservableWithResponse)hello,
+            hello.doOnError(Throwable::printStackTrace));
+
+        Response<String> stringResponse = HttpClient.getFullResponse(wrappedStringResponse).toBlocking().singleOrDefault(null);
+        assertThat(stringResponse).isNotNull();
+        assertThat(stringResponse.getBody()).isEqualTo("OK");
+        assertThat(stringResponse.getStatus()).isEqualTo(OK);
+
+        //Case sensitive when getting the entire map structure
+        assertThat(stringResponse.getHeaders().get("content-length")).isEqualTo("4");
+
+        //Case insensitive when fetching
+        assertThat(stringResponse.getHeader(CONTENT_LENGTH)).isEqualTo("4");
+    }
+
+    @Test
     public void shouldReturnFullResponseFromSingle() {
         DisposableServer server = startServer(HttpResponseStatus.OK, "\"OK\"");
 
@@ -581,6 +604,30 @@ public class HttpClientTest {
         assertThat(stringResponse.getBody()).isEqualTo("OK");
         assertThat(stringResponse.getStatus()).isEqualTo(OK);
         assertThat(stringResponse.getHeaders().get("content-length")).isEqualTo("4");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void shouldWrapAndReturnNewFullResponseSingle() {
+        DisposableServer server = startServer(HttpResponseStatus.OK, "\"OK\"");
+
+        TestResource resource = getHttpProxy(server.port());
+
+        Single<String> hello = resource.getSingle();
+
+        SingleWithResponse<String> wrappedStringResponse = SingleWithResponse.from((SingleWithResponse)hello,
+            hello.doOnError(Throwable::printStackTrace));
+
+        Response<String> stringResponse = HttpClient.getFullResponse(wrappedStringResponse).toBlocking().value();
+        assertThat(stringResponse).isNotNull();
+        assertThat(stringResponse.getBody()).isEqualTo("OK");
+        assertThat(stringResponse.getStatus()).isEqualTo(OK);
+
+        //Case sensitive when getting the entire map structure
+        assertThat(stringResponse.getHeaders().get("content-length")).isEqualTo("4");
+
+        //Case insensitive when fetching
+        assertThat(stringResponse.getHeader(CONTENT_LENGTH)).isEqualTo("4");
     }
 
 
