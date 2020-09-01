@@ -663,7 +663,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldRedactAuthorizationHeaderInLogs() throws Exception {
+    public void shouldRedactAuthorizationHeaderInLogsAndExceptionMessage() throws Exception {
         DisposableServer                   server       = startServer(BAD_REQUEST, "someError");
         HttpClientConfig                   config       = new HttpClientConfig("localhost:" + server.port());
         Map<String, String>                headers      = new HashMap<>();
@@ -675,7 +675,13 @@ public class HttpClientTest {
             .isThrownBy(() -> resource.getHello()
                 .toBlocking()
                 .single());
+
         verify(mockAppender).doAppend(matches(log -> {
+            assertThat(log.getThrowableInformation().getThrowableStrRep())
+                .allSatisfy(throwableInfo -> {
+                    assertThat(throwableInfo)
+                        .doesNotContain("secretvalue");
+                });
             assertThat(log.getMessage())
                 .isEqualTo("Failed request. Url: localhost:" + server.port() + "/hello, headers: [Authorization=REDACTED, Host=localhost]");
         }));

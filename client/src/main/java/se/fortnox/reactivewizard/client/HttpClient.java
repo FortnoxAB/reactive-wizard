@@ -389,7 +389,7 @@ public class HttpClient implements InvocationHandler {
             String message = format("Error calling other service:\n\tResponse Status: %d\n\tURL: %s\n\tRequest Headers: %s\n\tResponse Headers: %s\n\tData: %s",
                 clientResponse.status().code(),
                 request.getFullUrl(),
-                request.getHeaders().entrySet(),
+                getHeaderValuesOrRedact(request.getHeaders()),
                 formatHeaders(clientResponse),
                 data);
             Throwable                detailedErrorCause = new HttpClient.ThrowableWithoutStack(message);
