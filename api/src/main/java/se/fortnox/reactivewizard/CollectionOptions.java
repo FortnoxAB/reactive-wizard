@@ -20,6 +20,8 @@ public class CollectionOptions {
     @QueryParam("order")
     private SortOrder order;
 
+    private boolean lastRecord = true;
+
     public CollectionOptions() {
     }
 
@@ -68,5 +70,13 @@ public class CollectionOptions {
 
     public void setOrder(SortOrder order) {
         this.order = order;
+    }
+
+    public boolean isLastRecord() {
+        return lastRecord;
+    }
+
+    public void setLastRecord(boolean lastRecord) {
+        this.lastRecord = lastRecord;
     }
 }
