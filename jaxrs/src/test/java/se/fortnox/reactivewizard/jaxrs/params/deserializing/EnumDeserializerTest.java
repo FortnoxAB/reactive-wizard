@@ -6,7 +6,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
 public class EnumDeserializerTest {
-    private final static Deserializer<TestEnum> DESERIALIZER = new EnumDeserializer(TestEnum.class);
+    private final static Deserializer<TestEnum> DESERIALIZER = new EnumDeserializer<>(TestEnum.class);
 
     enum TestEnum {
         FIRST, SECOND
@@ -22,6 +22,12 @@ public class EnumDeserializerTest {
     public void shouldDeserializeNull() throws DeserializerException {
         TestEnum deserialized = DESERIALIZER.deserialize(null);
         assertThat(deserialized).isNull();
+    }
+
+    @Test
+    public void shouldBeCaseInsensitive() throws DeserializerException {
+        TestEnum deserialized = DESERIALIZER.deserialize("first");
+        assertThat(deserialized).isEqualTo(TestEnum.FIRST);
     }
 
     @Test
