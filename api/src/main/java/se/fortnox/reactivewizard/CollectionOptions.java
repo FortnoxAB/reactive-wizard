@@ -76,7 +76,7 @@ public class CollectionOptions {
         return lastRecord;
     }
 
-    public void setNotLastRecord() {
-        this.lastRecord = false;
+    public void setLastRecord(boolean lastRecord) {
+        this.lastRecord = lastRecord;
     }
 }

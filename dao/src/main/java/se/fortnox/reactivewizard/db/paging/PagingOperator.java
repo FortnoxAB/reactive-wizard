@@ -43,7 +43,7 @@ public class PagingOperator<T> implements Operator<T, T> {
                 if (count <= limit) {
                     child.onNext(item);
                 } else if (collectionOptions != null) {
-                    collectionOptions.setNotLastRecord();
+                    collectionOptions.setLastRecord(false);
                 }
             }
         };
