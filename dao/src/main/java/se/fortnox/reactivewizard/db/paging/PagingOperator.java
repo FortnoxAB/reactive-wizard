@@ -6,13 +6,11 @@ import se.fortnox.reactivewizard.CollectionOptions;
 
 public class PagingOperator<T> implements Operator<T, T> {
 
-    private final int                         limit;
-    private       CollectionOptionsWithResult collectionOptions;
+    private final int               limit;
+    private final CollectionOptions collectionOptions;
 
     public PagingOperator(CollectionOptions collectionOptions) {
-        if (collectionOptions instanceof CollectionOptionsWithResult) {
-            this.collectionOptions = (CollectionOptionsWithResult)collectionOptions;
-        }
+        this.collectionOptions = collectionOptions;
         this.limit = collectionOptions.getLimit();
     }
 
