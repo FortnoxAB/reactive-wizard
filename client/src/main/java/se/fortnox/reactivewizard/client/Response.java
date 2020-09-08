@@ -8,6 +8,7 @@ import reactor.netty.http.client.HttpClientResponse;
 import java.util.List;
 import java.util.Map;
 
+import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
 
 /**
@@ -48,12 +49,18 @@ public class Response<T> {
      * @return the value(s) of the cookie
      */
     public List<String> getCookie(String cookieName) {
-        return httpClientResponse
-            .cookies()
-            .get(cookieName)
-            .stream()
-            .map(Cookie::value)
-            .collect(toList());
+
+        if (httpClientResponse.cookies().containsKey(cookieName)) {
+            return httpClientResponse
+                .cookies()
+                .get(cookieName)
+                .stream()
+                .map(Cookie::value)
+                .collect(toList());
+        }
+
+        return emptyList();
+
     }
 
     /**

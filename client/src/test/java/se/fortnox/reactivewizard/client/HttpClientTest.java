@@ -573,6 +573,8 @@ public class HttpClientTest {
 
         assertThat(stringResponse.getCookie("cookieName")).hasSize(1);
         assertThat(stringResponse.getCookie("cookieName").get(0)).isEqualTo("cookieValue");
+        assertThat(stringResponse.getCookie(null)).hasSize(0);
+        assertThat(stringResponse.getCookie("bogus")).hasSize(0);
     }
 
     @Test
