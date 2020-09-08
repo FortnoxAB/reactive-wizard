@@ -8,6 +8,7 @@ import com.google.common.collect.Sets;
 import com.google.inject.Injector;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.codec.http.cookie.DefaultCookie;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import org.apache.log4j.Appender;
@@ -24,6 +25,7 @@ import reactor.core.publisher.Mono;
 import reactor.netty.DisposableServer;
 import reactor.netty.http.server.HttpServer;
 import reactor.netty.http.server.HttpServerRequest;
+import reactor.netty.http.server.HttpServerResponse;
 import rx.Observable;
 import rx.Single;
 import rx.observers.AssertableSubscriber;
@@ -550,7 +552,9 @@ public class HttpClientTest {
 
     @Test
     public void shouldReturnFullResponseFromObservable() {
-        DisposableServer server = startServer(HttpResponseStatus.OK, "\"OK\"");
+        DisposableServer server = startServer(HttpResponseStatus.OK, Mono.just("\"OK\""), httpServerRequest -> {}, httpServerResponse -> {
+            httpServerResponse.addCookie(new DefaultCookie("cookieName", "cookieValue"));
+        });
 
         TestResource resource = getHttpProxy(server.port());
 
@@ -564,8 +568,11 @@ public class HttpClientTest {
         //Case sensitive when getting the entire map structure
         assertThat(stringResponse.getHeaders().get("content-length")).isEqualTo("4");
 
-        //Case insensitive when fething
+        //Case insensitive when fetching
         assertThat(stringResponse.getHeader(CONTENT_LENGTH)).isEqualTo("4");
+
+        assertThat(stringResponse.getCookie("cookieName")).hasSize(1);
+        assertThat(stringResponse.getCookie("cookieName").get(0)).isEqualTo("cookieValue");
     }
 
     @Test
@@ -1041,13 +1048,18 @@ public class HttpClientTest {
     }
 
     private DisposableServer startServer(HttpResponseStatus status, String body, Consumer<HttpServerRequest> callback) {
-        return startServer(status, Mono.just(body), callback);
+        return startServer(status, Mono.just(body), callback, httpServerResponse -> {});
     }
 
-    private DisposableServer startServer(HttpResponseStatus status, Publisher<String> body, Consumer<HttpServerRequest> callback) {
+    private DisposableServer startServer(HttpResponseStatus status, Publisher<String> body, Consumer<HttpServerResponse> responseCallback) {
+        return startServer(status, body, request -> {}, responseCallback);
+    }
+
+    private DisposableServer startServer(HttpResponseStatus status, Publisher<String> body, Consumer<HttpServerRequest> callback, Consumer<HttpServerResponse> responseCallback) {
         return HttpServer.create().host("localhost").port(0).handle((request, response) -> {
             callback.accept(request);
             response.status(status);
+            responseCallback.accept(response);
             return response.sendString(body);
         }).bindNow();
     }
