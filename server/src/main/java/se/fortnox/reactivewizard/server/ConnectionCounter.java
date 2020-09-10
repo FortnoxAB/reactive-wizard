@@ -6,6 +6,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Singleton
+@SuppressWarnings("checkstyle:MissingJavadocMethod")
 public class ConnectionCounter {
     private final AtomicLong connections;
     private final Semaphore connectionsZero;

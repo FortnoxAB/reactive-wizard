@@ -18,6 +18,7 @@ import java.util.regex.Pattern;
 /**
  * Handles reading and parsing configuration files in YAML format.
  */
+@SuppressWarnings("checkstyle:MissingJavadocMethod")
 public class ConfigReader {
     private static final Charset      UTF_8           = Charset.forName("UTF-8");
     private static final ObjectMapper mapper          = new ObjectMapper(new YAMLFactory()).configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);

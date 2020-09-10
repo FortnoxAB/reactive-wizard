@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+@SuppressWarnings("checkstyle:MissingJavadocMethod")
 public class ParameterizedQuery {
 
     public static final Pattern NAMED_PARAMETER_PATTERN = Pattern.compile("(?<!:):([\\w\\.]+)");

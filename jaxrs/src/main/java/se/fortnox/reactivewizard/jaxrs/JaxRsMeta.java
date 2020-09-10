@@ -15,6 +15,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.Optional;
 
+@SuppressWarnings("checkstyle:MissingJavadocMethod")
 public class JaxRsMeta {
     private HttpMethod method     = null;
     private Path       methodPath = null;

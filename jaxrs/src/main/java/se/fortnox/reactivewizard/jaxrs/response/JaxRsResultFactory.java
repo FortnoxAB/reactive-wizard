@@ -18,6 +18,7 @@ import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
 
+@SuppressWarnings("checkstyle:MissingJavadocMethod")
 public class JaxRsResultFactory<T> {
 
     private static final Charset charset        = Charset.forName("UTF-8");

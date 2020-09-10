@@ -1,5 +1,6 @@
 package se.fortnox.reactivewizard.db;
 
+@SuppressWarnings("checkstyle:MissingJavadocMethod")
 public final class DbDriver {
     private DbDriver() {
 

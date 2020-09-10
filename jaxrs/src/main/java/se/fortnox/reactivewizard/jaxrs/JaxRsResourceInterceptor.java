@@ -13,6 +13,7 @@ import java.util.Set;
  * The preHandle and postHandle methods will be run in the same thread but the execution of the call will run
  * asynchronously. Any processing of the actual call should be made on the resourceCall observable in postHandle.
  */
+@SuppressWarnings("checkstyle:MissingJavadocMethod")
 public interface JaxRsResourceInterceptor {
 
     /**

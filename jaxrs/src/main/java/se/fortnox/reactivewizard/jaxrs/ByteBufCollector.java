@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 
+@SuppressWarnings("checkstyle:MissingJavadocMethod")
 public class ByteBufCollector {
 
     private final int maxReqSize;

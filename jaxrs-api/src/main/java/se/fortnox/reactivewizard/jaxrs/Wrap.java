@@ -10,6 +10,7 @@ import java.lang.annotation.Target;
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.PARAMETER)
+@SuppressWarnings("checkstyle:MissingJavadocMethod")
 public @interface Wrap {
     Class<?> value();
 }

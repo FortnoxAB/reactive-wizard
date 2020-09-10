@@ -24,6 +24,7 @@ import java.util.function.Function;
 import static java.lang.String.format;
 import static rx.Observable.error;
 
+@SuppressWarnings("checkstyle:MissingJavadocMethod")
 public class ObservableStatementFactory {
 
     private static final  int    RECORD_BUFFER_SIZE     = 100000;

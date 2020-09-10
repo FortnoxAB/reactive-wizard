@@ -18,6 +18,7 @@ import static javax.ws.rs.core.HttpHeaders.CONTENT_LENGTH;
  * Represents a result of a call to a JaxRs resource. Contains the output but also some meta data about the call.
  * This class is passed to the output processors.
  */
+@SuppressWarnings("checkstyle:MissingJavadocMethod")
 public class JaxRsResult<T> {
     protected static final byte[] EMPTY_RESPONSE = new byte[0];
 

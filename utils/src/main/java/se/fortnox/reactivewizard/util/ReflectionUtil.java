@@ -1,6 +1,5 @@
 package se.fortnox.reactivewizard.util;
 
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import rx.Observable;
 import rx.Single;
@@ -33,6 +32,7 @@ import java.util.stream.Stream;
 
 import static java.util.Arrays.asList;
 
+@SuppressWarnings("checkstyle:MissingJavadocMethod")
 public class ReflectionUtil {
     private static final String CGLIB_CLASS_SEPARATOR = "$$";
 

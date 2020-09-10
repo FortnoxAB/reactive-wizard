@@ -8,6 +8,7 @@ import java.lang.reflect.Method;
 import static com.google.common.collect.Iterables.indexOf;
 import static java.util.Arrays.asList;
 
+@SuppressWarnings("checkstyle:MissingJavadocMethod")
 public class PagingOutput {
     private final int index;
 

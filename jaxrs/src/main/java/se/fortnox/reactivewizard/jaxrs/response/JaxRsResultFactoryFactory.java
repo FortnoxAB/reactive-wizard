@@ -6,6 +6,7 @@ import se.fortnox.reactivewizard.json.JsonSerializerFactory;
 
 import javax.inject.Inject;
 
+@SuppressWarnings("checkstyle:MissingJavadocMethod")
 public class JaxRsResultFactoryFactory {
 
     private final ResultTransformerFactories resultTransformerFactories;

@@ -27,6 +27,7 @@ import java.util.concurrent.Executors;
 import java.util.function.Function;
 
 @Singleton
+@SuppressWarnings("checkstyle:MissingJavadocMethod")
 public class DbProxy implements InvocationHandler {
 
     private final DbStatementFactoryFactory               dbStatementFactoryFactory;

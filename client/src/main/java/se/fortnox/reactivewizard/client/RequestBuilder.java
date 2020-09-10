@@ -15,6 +15,7 @@ import static javax.ws.rs.core.HttpHeaders.CONTENT_LENGTH;
  * is needed when the same http-proxy should use different hosts for different
  * calls.
  */
+@SuppressWarnings("checkstyle:MissingJavadocMethod")
 public class RequestBuilder {
 
     private static final Charset             charset = Charset.forName("UTF-8");

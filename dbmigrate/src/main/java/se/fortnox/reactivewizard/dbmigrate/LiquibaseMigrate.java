@@ -33,6 +33,7 @@ import java.util.Set;
  * Runs liquibase migrations for each file on the classpath named according to config. In a development environment this
  * is may be multiple files. In a production environment (fatjar) this is often a single file.
  */
+@SuppressWarnings("checkstyle:MissingJavadocMethod")
 public class LiquibaseMigrate {
 
     private List<Liquibase> liquibaseList;

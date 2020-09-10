@@ -13,6 +13,7 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.sql.SQLException;
 
+@SuppressWarnings("checkstyle:MissingJavadocMethod")
 public class DbStatementFactoryFactory {
 
     @Inject

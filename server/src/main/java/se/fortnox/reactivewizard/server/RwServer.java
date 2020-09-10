@@ -20,6 +20,7 @@ import static reactor.netty.channel.BootstrapHandlers.updateConfiguration;
  * Runs an Reactor @{@link HttpServer} with all registered @{@link RequestHandler}s.
  */
 @Singleton
+@SuppressWarnings("checkstyle:MissingJavadocMethod")
 public class RwServer extends Thread {
 
     private static final Logger LOG = LoggerFactory.getLogger(RwServer.class);

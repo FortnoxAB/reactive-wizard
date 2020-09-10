@@ -10,6 +10,7 @@ import java.lang.annotation.Target;
  */
 @Target({ElementType.TYPE, ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
+@SuppressWarnings("checkstyle:MissingJavadocMethod")
 public @interface SuccessStatus {
     int value();
 }

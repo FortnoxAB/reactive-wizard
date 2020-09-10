@@ -16,6 +16,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+@SuppressWarnings("checkstyle:MissingJavadocMethod")
 public class Transaction<T> {
 
     private static final Logger                                      log                 = LoggerFactory.getLogger(Transaction.class);

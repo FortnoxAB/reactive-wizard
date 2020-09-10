@@ -23,6 +23,7 @@ import java.util.List;
 /**
  * Creates param resolvers which can resolve method parameters from an incoming request.
  */
+@SuppressWarnings("checkstyle:MissingJavadocMethod")
 public class ParamResolverFactories {
 
     private final DeserializerFactory             deserializerFactory;

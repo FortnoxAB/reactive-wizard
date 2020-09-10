@@ -9,6 +9,7 @@ import java.lang.reflect.Field;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+@SuppressWarnings("checkstyle:MissingJavadocMethod")
 public class LoggingMockUtil {
     private LoggingMockUtil() {
 

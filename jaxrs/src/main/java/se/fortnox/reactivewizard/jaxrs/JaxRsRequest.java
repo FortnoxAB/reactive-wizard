@@ -23,6 +23,7 @@ import static io.netty.handler.codec.http.HttpMethod.DELETE;
 /**
  * Represents an incoming request. Helps with extracting different types of data from the request.
  */
+@SuppressWarnings("checkstyle:MissingJavadocMethod")
 public class JaxRsRequest {
     private static final Logger LOG = LoggerFactory.getLogger(JaxRsResource.class);
 

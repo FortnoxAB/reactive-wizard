@@ -18,6 +18,7 @@ import java.util.Properties;
  * Factory for initializing logging configuration and also container of logging configuration from YAML.
  */
 @Config("logging")
+@SuppressWarnings("checkstyle:MissingJavadocMethod")
 public class LoggingFactory {
 
     @Valid

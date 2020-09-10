@@ -1,6 +1,5 @@
 package se.fortnox.reactivewizard.util;
 
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.Optional;
@@ -8,6 +7,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+@SuppressWarnings("checkstyle:MissingJavadocMethod")
 public class PropertyResolver<I,T> {
     private final Type       genericType;
     private final Property[] properties;

@@ -7,6 +7,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.concurrent.atomic.AtomicReference;
 
+@SuppressWarnings("checkstyle:MissingJavadocMethod")
 public class TransactionStatement implements Batchable {
     private final AtomicReference<Statement> statement;
     private final Transaction                transaction;

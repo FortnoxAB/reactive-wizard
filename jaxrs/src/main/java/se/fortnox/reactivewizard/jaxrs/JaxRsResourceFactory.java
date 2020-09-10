@@ -12,6 +12,7 @@ import java.util.Collections;
 import java.util.List;
 
 @Singleton
+@SuppressWarnings("checkstyle:MissingJavadocMethod")
 public class JaxRsResourceFactory {
 
     protected final ParamResolverFactories    paramResolverFactories;

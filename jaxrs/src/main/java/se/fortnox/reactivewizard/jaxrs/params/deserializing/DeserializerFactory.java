@@ -22,6 +22,7 @@ import java.util.function.Supplier;
 /**
  * Creates deserializers from Strings to a given type.
  */
+@SuppressWarnings("checkstyle:MissingJavadocMethod")
 public class DeserializerFactory {
 
     private final JsonDeserializerFactory     jsonDeserializerFactory;

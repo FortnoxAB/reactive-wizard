@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 
 import static java.util.Arrays.asList;
 
+@SuppressWarnings("checkstyle:MissingJavadocMethod")
 public class ResultTransformerFactories {
 
     private final ArrayList<ResultTransformerFactory> resultTransformerFactories;

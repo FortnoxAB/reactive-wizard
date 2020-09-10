@@ -9,6 +9,7 @@ import java.lang.reflect.Method;
 import java.util.Set;
 
 @Singleton
+@SuppressWarnings("checkstyle:MissingJavadocMethod")
 public class ValidatorUtil {
 
     private final Validator validator;
