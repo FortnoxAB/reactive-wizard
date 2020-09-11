@@ -27,7 +27,6 @@ import java.util.concurrent.Executors;
 import java.util.function.Function;
 
 @Singleton
-@SuppressWarnings("checkstyle:MissingJavadocMethod")
 public class DbProxy implements InvocationHandler {
 
     private final DbStatementFactoryFactory               dbStatementFactoryFactory;
@@ -95,6 +94,7 @@ public class DbProxy implements InvocationHandler {
         return Schedulers.from(executor);
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public <T> T create(Class<T> daoInterface) {
         return (T)Proxy.newProxyInstance(daoInterface.getClassLoader(),
             new Class[]{daoInterface},

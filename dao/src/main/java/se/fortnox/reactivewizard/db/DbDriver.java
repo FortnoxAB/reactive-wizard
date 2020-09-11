@@ -1,11 +1,11 @@
 package se.fortnox.reactivewizard.db;
 
-@SuppressWarnings("checkstyle:MissingJavadocMethod")
 public final class DbDriver {
     private DbDriver() {
 
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public static void loadDriver(String url) {
         if (url.startsWith("jdbc:h2:")) {
             try {

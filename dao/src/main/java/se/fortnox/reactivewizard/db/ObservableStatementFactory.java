@@ -24,7 +24,6 @@ import java.util.function.Function;
 import static java.lang.String.format;
 import static rx.Observable.error;
 
-@SuppressWarnings("checkstyle:MissingJavadocMethod")
 public class ObservableStatementFactory {
 
     private static final  int    RECORD_BUFFER_SIZE     = 100000;
@@ -58,6 +57,7 @@ public class ObservableStatementFactory {
         }
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public Observable<Object> create(Object[] args, ConnectionProvider connectionProvider) {
         AtomicReference<TransactionStatement> transactionHolder = new AtomicReference<>();
 

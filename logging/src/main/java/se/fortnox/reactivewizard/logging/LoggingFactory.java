@@ -18,7 +18,6 @@ import java.util.Properties;
  * Factory for initializing logging configuration and also container of logging configuration from YAML.
  */
 @Config("logging")
-@SuppressWarnings("checkstyle:MissingJavadocMethod")
 public class LoggingFactory {
 
     @Valid
@@ -37,6 +36,7 @@ public class LoggingFactory {
     @JsonProperty("levels")
     Map<String, String> levels = new HashMap<>();
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public void init() {
         if (appenders == null) {
             appenders = new HashMap<>();

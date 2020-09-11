@@ -12,7 +12,6 @@ import java.util.function.Consumer;
 /**
  * Wrapper of Dropwizard metrics framework for use with observers.
  */
-@SuppressWarnings("checkstyle:MissingJavadocMethod")
 public class Metrics {
     private static final int            NS_TO_MS = 1000000;
     private static final MetricRegistry REGISTRY = new MetricRegistry();
@@ -37,6 +36,7 @@ public class Metrics {
         return measure(observable, NOOP);
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public <T> Observable<T> measure(Observable<T> observable, Consumer<Long> callback) {
         if (observable == null) {
             return null;

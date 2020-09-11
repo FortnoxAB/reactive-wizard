@@ -23,7 +23,6 @@ import static io.netty.handler.codec.http.HttpMethod.DELETE;
 /**
  * Represents an incoming request. Helps with extracting different types of data from the request.
  */
-@SuppressWarnings("checkstyle:MissingJavadocMethod")
 public class JaxRsRequest {
     private static final Logger LOG = LoggerFactory.getLogger(JaxRsResource.class);
 
@@ -66,6 +65,7 @@ public class JaxRsRequest {
         return body;
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public Mono<JaxRsRequest> loadBody() {
         HttpMethod httpMethod = req.method();
         if (POST.equals(httpMethod) || PUT.equals(httpMethod) || PATCH.equals(httpMethod) || DELETE.equals(httpMethod)) {
@@ -81,6 +81,7 @@ public class JaxRsRequest {
         return getQueryParam(key, null);
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public String getQueryParam(String key, String defaultValue) {
         if (queryParameters == null) {
             QueryStringDecoder queryStringDecoder = new QueryStringDecoder(req.uri());
@@ -97,6 +98,7 @@ public class JaxRsRequest {
         return getPathParam(key, null);
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public String getPathParam(String key, String defaultValue) {
         if (matcher == null || !matcher.pattern().pattern().contains(key)) {
             return defaultValue;
@@ -135,6 +137,7 @@ public class JaxRsRequest {
         return getCookieValue(key, null);
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public String getCookieValue(String key, String defaultValue) {
         Set<Cookie> cookies = req.cookies().get(key);
         if (cookies == null || cookies.isEmpty()) {

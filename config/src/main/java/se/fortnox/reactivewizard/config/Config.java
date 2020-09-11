@@ -11,7 +11,7 @@ import java.lang.annotation.Target;
  */
 @Target({ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@SuppressWarnings("checkstyle:MissingJavadocMethod")
 public @interface Config {
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     String value();
 }

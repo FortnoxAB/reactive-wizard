@@ -9,7 +9,6 @@ import java.lang.reflect.Method;
 import java.util.Set;
 
 @Singleton
-@SuppressWarnings("checkstyle:MissingJavadocMethod")
 public class ValidatorUtil {
 
     private final Validator validator;
@@ -32,6 +31,7 @@ public class ValidatorUtil {
         throwIfError(validator.validate(obj));
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public void validateParameters(Object object, Method method, Object[] parameterValues) {
         throwIfError(validator.forExecutables().validateParameters(object, method, parameterValues));
         for (Object obj : parameterValues) {

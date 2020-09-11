@@ -7,10 +7,11 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
-@SuppressWarnings("checkstyle:MissingJavadocMethod")
 public @interface Query {
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     String value();
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     String[] allowedSortColumns() default {};
 
     /**
@@ -20,7 +21,9 @@ public @interface Query {
      */
     String defaultSort() default "";
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     int defaultLimit() default 100;
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     int maxLimit() default 1000;
 }

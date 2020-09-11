@@ -16,7 +16,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-@SuppressWarnings("checkstyle:MissingJavadocMethod")
 public class Transaction<T> {
 
     private static final Logger                                      log                 = LoggerFactory.getLogger(Transaction.class);
@@ -37,7 +36,7 @@ public class Transaction<T> {
         statementsToSubscribe.add(transactionStatement);
     }
 
-
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public void execute() {
         if (!isAllSubscribed()) {
             // all DaoObservables have not been subscribed yet

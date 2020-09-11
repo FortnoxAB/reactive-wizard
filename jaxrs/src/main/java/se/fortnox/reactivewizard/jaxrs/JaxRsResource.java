@@ -33,7 +33,6 @@ import static java.util.Arrays.asList;
  * Represents a JaxRs resource. Maps to a method of a resource class. Use the call method with an incoming request to
  * invoke the method of the resource. Returns null if the request does not match.
  */
-@SuppressWarnings("checkstyle:MissingJavadocMethod")
 public class JaxRsResource<T> implements Comparable<JaxRsResource> {
 
     private static final RequestLogger REQUEST_LOGGER = new RequestLogger(LoggerFactory.getLogger(JaxRsResource.class));
@@ -76,6 +75,7 @@ public class JaxRsResource<T> implements Comparable<JaxRsResource> {
         return Pattern.compile(path);
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public boolean canHandleRequest(JaxRsRequest request) {
         if (!request.hasMethod(meta.getHttpMethod())) {
             return false;

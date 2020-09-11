@@ -6,7 +6,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Singleton
-@SuppressWarnings("checkstyle:MissingJavadocMethod")
 public class ConnectionCounter {
     private final AtomicLong connections;
     private final Semaphore connectionsZero;
@@ -20,18 +19,21 @@ public class ConnectionCounter {
         this.connectionsZero = connectionsZero;
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public void increase() {
         if (connections.getAndIncrement() == 0) {
             connectionsZero.tryAcquire();
         }
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public void decrease() {
         if (connections.decrementAndGet() == 0) {
             connectionsZero.release();
         }
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public boolean awaitZero(int time, TimeUnit timeUnit) {
         try {
             boolean success = connectionsZero.tryAcquire(time, timeUnit);

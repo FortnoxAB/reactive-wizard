@@ -11,7 +11,6 @@ import java.util.stream.Collectors;
 
 import static java.util.Arrays.asList;
 
-@SuppressWarnings("checkstyle:MissingJavadocMethod")
 public class ResultTransformerFactories {
 
     private final ArrayList<ResultTransformerFactory> resultTransformerFactories;
@@ -30,6 +29,7 @@ public class ResultTransformerFactories {
         this((Collection<ResultTransformerFactory>)resultTransformerFactories);
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public <T> ResultTransformer<T> createTransformers(JaxRsResource<T> resource) {
         List<ResultTransformer<T>> transformers = resultTransformerFactories
             .stream()

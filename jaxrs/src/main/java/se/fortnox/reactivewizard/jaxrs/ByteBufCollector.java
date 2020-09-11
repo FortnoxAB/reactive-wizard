@@ -13,7 +13,6 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 
-@SuppressWarnings("checkstyle:MissingJavadocMethod")
 public class ByteBufCollector {
 
     private final int maxReqSize;
@@ -26,6 +25,7 @@ public class ByteBufCollector {
         this.maxReqSize = maxReqSize;
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public Observable<String> collectString(Observable<ByteBuf> input) {
         return input
             .collect(ByteArrayOutputStream::new, this::collectChunks)
@@ -58,6 +58,7 @@ public class ByteBufCollector {
         }
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public Mono<byte[]> collectBytes(Flux<ByteBuf> content) {
         return content
             .collect(ByteArrayOutputStream::new, this::collectChunks)

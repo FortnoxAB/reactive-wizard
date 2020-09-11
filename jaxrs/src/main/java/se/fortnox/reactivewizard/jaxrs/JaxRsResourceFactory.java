@@ -12,7 +12,6 @@ import java.util.Collections;
 import java.util.List;
 
 @Singleton
-@SuppressWarnings("checkstyle:MissingJavadocMethod")
 public class JaxRsResourceFactory {
 
     protected final ParamResolverFactories    paramResolverFactories;
@@ -30,6 +29,7 @@ public class JaxRsResourceFactory {
         this.jaxRsResultFactoryFactory = jaxRsResultFactoryFactory;
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public List<JaxRsResource> createResources(Object[] services) {
         List<JaxRsResource> resources = new ArrayList<JaxRsResource>();
         for (Object service : services) {
@@ -39,6 +39,7 @@ public class JaxRsResourceFactory {
         return resources;
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public void createResources(Object service, List<JaxRsResource> resources) {
         Class<? extends Object> cls  = service.getClass();
         Path                    path = JaxRsMeta.getPath(cls);

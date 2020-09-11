@@ -32,10 +32,10 @@ import java.util.stream.Stream;
 
 import static java.util.Arrays.asList;
 
-@SuppressWarnings("checkstyle:MissingJavadocMethod")
 public class ReflectionUtil {
     private static final String CGLIB_CLASS_SEPARATOR = "$$";
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public static Type getTypeOfObservable(Method method) {
         Type type = method.getGenericReturnType();
         if (!(type instanceof ParameterizedType)) {
@@ -54,6 +54,7 @@ public class ReflectionUtil {
         return actualTypeArguments[0];
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public static Class<?> getGenericParameter(Type type) {
         if (!(type instanceof ParameterizedType)) {
             throw new RuntimeException("The sent in type " + type + " is not a ParameterizedType");
@@ -81,6 +82,7 @@ public class ReflectionUtil {
         return candidateMethod.getName().equals(method.getName()) && Arrays.equals(candidateMethod.getParameterTypes(), method.getParameterTypes());
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public static Method getOverriddenMethod(Method method) {
         Class<?> declaringClass = getUserDefinedClass(method.getDeclaringClass());
         Optional<Method> found;
@@ -105,6 +107,7 @@ public class ReflectionUtil {
         return clazz;
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public static Optional<Method> findMethodInClass(Method method, Class<?> cls) {
         for (Method candidate : cls.getDeclaredMethods()) {
             if (methodsEquals(method, candidate)) {
@@ -114,6 +117,7 @@ public class ReflectionUtil {
         return Optional.empty();
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public static <T extends Annotation> T getAnnotation(Method method, Class<T> annotationClass) {
         T annotation = method.getAnnotation(annotationClass);
 
@@ -127,6 +131,7 @@ public class ReflectionUtil {
         return annotation;
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public static List<Annotation> getAnnotations(Method method) {
         List<Annotation> result     = new LinkedList<>(asList(method.getAnnotations()));
         Method           overridden = getOverriddenMethod(method);
@@ -136,6 +141,7 @@ public class ReflectionUtil {
         return result;
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public static List<List<Annotation>> getParameterAnnotations(Method method) {
         List<List<Annotation>> result               = new LinkedList<List<Annotation>>();
         Annotation[][]         annotations          = method.getParameterAnnotations();
@@ -156,6 +162,7 @@ public class ReflectionUtil {
         return result;
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public static List<Annotation> getParameterAnnotations(Parameter parameter) {
         List<Annotation> annotations      = new ArrayList<>(asList(parameter.getAnnotations()));
         Method           method           = (Method)parameter.getDeclaringExecutable();
@@ -171,6 +178,7 @@ public class ReflectionUtil {
         return annotations;
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public static Class<?> getRawType(Type type) {
         if (type == null) {
             return null;
@@ -325,6 +333,7 @@ public class ReflectionUtil {
         }
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public static <T> Supplier<T> instantiator(Class<T> cls) {
         try {
             Constructor<?> constructor = Stream.of(cls.getDeclaredConstructors())

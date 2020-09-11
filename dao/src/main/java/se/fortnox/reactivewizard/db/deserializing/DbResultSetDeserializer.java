@@ -6,7 +6,6 @@ import java.sql.SQLException;
 
 import static se.fortnox.reactivewizard.db.deserializing.MutabilityDetector.isImmutable;
 
-@SuppressWarnings("checkstyle:MissingJavadocMethod")
 public class DbResultSetDeserializer {
     private final Class<?>     cls;
     private       Deserializer deserializer;
@@ -15,6 +14,7 @@ public class DbResultSetDeserializer {
         this.cls = cls;
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public Object deserialize(ResultSet rs) {
         try {
             if (deserializer == null) {

@@ -7,7 +7,6 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-@SuppressWarnings("checkstyle:MissingJavadocMethod")
 public class PropertyResolver<I,T> {
     private final Type       genericType;
     private final Property[] properties;
@@ -19,6 +18,7 @@ public class PropertyResolver<I,T> {
         this.properties = properties;
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public static Optional<PropertyResolver> from(Type type, String[] propertyNames) {
         Property[] property = new Property[propertyNames.length];
         Class<?>   cls      = ReflectionUtil.getRawType(type);
@@ -42,6 +42,7 @@ public class PropertyResolver<I,T> {
         return genericType;
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public Optional<PropertyResolver> subPath(String[] subPath) {
         Optional<PropertyResolver> propsToAppend = from(getPropertyType(), subPath);
         if (propsToAppend.isPresent()) {
@@ -61,6 +62,7 @@ public class PropertyResolver<I,T> {
         return Arrays.toString(properties);
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public Function<I,T> getter() {
         if (properties.length == 0) {
             return (Function<I, T>) Function.identity();

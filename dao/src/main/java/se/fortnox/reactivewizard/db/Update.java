@@ -7,9 +7,10 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
-@SuppressWarnings("checkstyle:MissingJavadocMethod")
 public @interface Update {
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     String value();
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     int minimumAffected() default 1;
 }

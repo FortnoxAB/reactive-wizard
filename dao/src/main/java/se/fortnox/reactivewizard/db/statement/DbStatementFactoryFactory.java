@@ -13,7 +13,6 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.sql.SQLException;
 
-@SuppressWarnings("checkstyle:MissingJavadocMethod")
 public class DbStatementFactoryFactory {
 
     @Inject
@@ -21,6 +20,7 @@ public class DbStatementFactoryFactory {
 
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public DbStatementFactory createStatementFactory(Method method) throws SQLException {
         Type     returnType = ReflectionUtil.getTypeOfObservable(method);
         Class<?> cls        = ReflectionUtil.getRawType(returnType);

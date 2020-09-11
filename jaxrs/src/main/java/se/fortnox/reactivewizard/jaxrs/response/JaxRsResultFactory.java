@@ -18,7 +18,6 @@ import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
 
-@SuppressWarnings("checkstyle:MissingJavadocMethod")
 public class JaxRsResultFactory<T> {
 
     private static final Charset charset        = Charset.forName("UTF-8");
@@ -51,6 +50,7 @@ public class JaxRsResultFactory<T> {
         }
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public JaxRsResult<T> createResult(Flux<T> output, Object[] args) {
         return new JaxRsResult<>(output,
             responseStatus,
@@ -59,6 +59,7 @@ public class JaxRsResultFactory<T> {
         );
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public JaxRsResult<T> create(Flux<T> output, Object[] args) {
         JaxRsResult<T> result = createResult(output, args);
         result = transformers.apply(result, args);

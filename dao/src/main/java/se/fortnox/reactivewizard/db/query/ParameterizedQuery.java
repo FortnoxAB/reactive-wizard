@@ -20,7 +20,6 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-@SuppressWarnings("checkstyle:MissingJavadocMethod")
 public class ParameterizedQuery {
 
     public static final Pattern NAMED_PARAMETER_PATTERN = Pattern.compile("(?<!:):([\\w\\.]+)");
@@ -95,6 +94,7 @@ public class ParameterizedQuery {
         return createStatement(connection, arguments, null);
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public PreparedStatement createStatement(Connection connection, Object[] arguments, Integer options)
         throws SQLException {
         StringBuilder sql = new StringBuilder();
@@ -105,6 +105,7 @@ public class ParameterizedQuery {
         return createPreparedStatement(connection, options, sql.toString());
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public void addParameters(Object[] args, PreparedStatement preparedStatement) throws SQLException {
         PreparedStatementParameters parameters = new PreparedStatementParameters(preparedStatement);
         for (QueryPart part : queryParts) {

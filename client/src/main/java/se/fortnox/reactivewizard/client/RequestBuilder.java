@@ -15,7 +15,6 @@ import static javax.ws.rs.core.HttpHeaders.CONTENT_LENGTH;
  * is needed when the same http-proxy should use different hosts for different
  * calls.
  */
-@SuppressWarnings("checkstyle:MissingJavadocMethod")
 public class RequestBuilder {
 
     private static final Charset             charset = Charset.forName("UTF-8");
@@ -32,6 +31,7 @@ public class RequestBuilder {
         this.key = method + " " + key;
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public Mono<RwHttpClientResponse> submit(
         reactor.netty.http.client.HttpClient client,
         RequestBuilder requestBuilder) {
@@ -85,6 +85,7 @@ public class RequestBuilder {
         headers.put(key, value);
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public boolean canHaveBody() {
         return method.equals(HttpMethod.POST)
             || method.equals(HttpMethod.PUT)

@@ -8,7 +8,6 @@ import java.lang.reflect.Method;
 import static com.google.common.collect.Iterables.indexOf;
 import static java.util.Arrays.asList;
 
-@SuppressWarnings("checkstyle:MissingJavadocMethod")
 public class PagingOutput {
     private final int index;
 
@@ -16,6 +15,7 @@ public class PagingOutput {
         index = indexOf(asList(method.getParameterTypes()), CollectionOptions.class::isAssignableFrom);
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public <T> Observable<T> apply(Observable<T> result, Object[] args) {
         if (index == -1) {
             return result;

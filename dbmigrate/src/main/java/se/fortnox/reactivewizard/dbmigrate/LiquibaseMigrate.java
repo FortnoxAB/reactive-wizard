@@ -33,7 +33,6 @@ import java.util.Set;
  * Runs liquibase migrations for each file on the classpath named according to config. In a development environment this
  * is may be multiple files. In a production environment (fatjar) this is often a single file.
  */
-@SuppressWarnings("checkstyle:MissingJavadocMethod")
 public class LiquibaseMigrate {
 
     private List<Liquibase> liquibaseList;
@@ -85,12 +84,14 @@ public class LiquibaseMigrate {
         }
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public void run() throws LiquibaseException {
         for (Liquibase liquibase : liquibaseList) {
             liquibase.update((String)null);
         }
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public void drop() throws DatabaseException {
         for (Liquibase liquibase : liquibaseList) {
             liquibase.dropAll();
@@ -99,6 +100,7 @@ public class LiquibaseMigrate {
         LockServiceFactory.getInstance().resetAll();
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public void forceDrop() throws DatabaseException {
         for (Liquibase liquibase : liquibaseList) {
             Database         database = liquibase.getDatabase();

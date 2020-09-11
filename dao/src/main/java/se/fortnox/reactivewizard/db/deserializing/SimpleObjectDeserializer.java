@@ -15,8 +15,8 @@ import java.util.function.Supplier;
 /**
  * A deserializer that uses reflection to instantiate an object and set values on it (using setters).
  */
-@SuppressWarnings("checkstyle:MissingJavadocMethod")
 public class SimpleObjectDeserializer {
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public static <I> Deserializer create(Class<I> cls, ResultSetMetaData metaData) throws SQLException {
         Map<String[], PropertyDeserializer> deserializers = DeserializerUtil.createPropertyDeserializers(
                 cls,
