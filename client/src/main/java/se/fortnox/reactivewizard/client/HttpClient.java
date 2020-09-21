@@ -54,7 +54,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static reactor.core.Exceptions.isRetryExhausted;
-import static rx.Observable.just;
+import static rx.Observable.fromCallable;
 import static se.fortnox.reactivewizard.jaxrs.RequestLogger.getHeaderValuesOrRedact;
 
 public class HttpClient implements InvocationHandler {
@@ -175,9 +175,7 @@ public class HttpClient implements InvocationHandler {
         }
 
         return source.map(data -> new Response<>(((ObservableWithResponse<T>)source).getResponse(), data))
-            .switchIfEmpty(Observable.defer(() ->
-                just(new Response<>(((ObservableWithResponse<T>)source).getResponse(), null)))
-            );
+            .switchIfEmpty(fromCallable(() -> new Response<>(((ObservableWithResponse<T>)source).getResponse(), null)));
     }
 
     /**
