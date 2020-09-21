@@ -41,18 +41,7 @@ import se.fortnox.reactivewizard.test.TestUtil;
 import se.fortnox.reactivewizard.util.rx.RetryWithDelay;
 
 import javax.net.ssl.SSLHandshakeException;
-import javax.ws.rs.BeanParam;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.CookieParam;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.FormParam;
-import javax.ws.rs.GET;
-import javax.ws.rs.HeaderParam;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.QueryParam;
+import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
@@ -65,14 +54,7 @@ import java.nio.charset.Charset;
 import java.security.cert.CertificateException;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -81,26 +63,14 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
-import static io.netty.handler.codec.http.HttpResponseStatus.BAD_REQUEST;
-import static io.netty.handler.codec.http.HttpResponseStatus.CREATED;
-import static io.netty.handler.codec.http.HttpResponseStatus.GATEWAY_TIMEOUT;
-import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
-import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
-import static io.netty.handler.codec.http.HttpResponseStatus.OK;
+import static io.netty.handler.codec.http.HttpResponseStatus.*;
 import static java.lang.String.format;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_LENGTH;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.assertj.core.api.Assertions.fail;
+import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static reactor.core.publisher.Flux.defer;
-import static reactor.core.publisher.Flux.empty;
-import static reactor.core.publisher.Flux.just;
+import static org.mockito.Mockito.*;
+import static reactor.core.publisher.Flux.*;
 import static se.fortnox.reactivewizard.test.LoggingMockUtil.destroyMockedAppender;
 import static se.fortnox.reactivewizard.test.TestUtil.matches;
 
@@ -575,6 +545,22 @@ public class HttpClientTest {
         assertThat(stringResponse.getCookie("cookieName").get(0)).isEqualTo("cookieValue");
         assertThat(stringResponse.getCookie(null)).hasSize(0);
         assertThat(stringResponse.getCookie("bogus")).hasSize(0);
+    }
+
+    @Test
+    public void shouldReturnFullResponseFromEmptyObservable() {
+        DisposableServer server = startServer(HttpResponseStatus.OK, Mono.just(""), httpServerRequest -> {}, httpServerResponse -> {
+            httpServerResponse.addCookie(new DefaultCookie("cookieName", "cookieValue"));
+        });
+
+        TestResource resource = getHttpProxy(server.port());
+
+        Response<String> stringResponse = HttpClient.getFullResponse(resource.getHello())
+            .toBlocking().singleOrDefault(null);
+
+        assertThat(stringResponse).isNotNull();
+        assertThat(stringResponse.getBody()).isNull();
+        assertThat(stringResponse.getStatus()).isEqualTo(OK);
     }
 
     @Test

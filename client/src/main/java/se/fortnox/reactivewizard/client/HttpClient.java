@@ -1,11 +1,7 @@
 package se.fortnox.reactivewizard.client;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.timeout.ReadTimeoutException;
@@ -29,22 +25,12 @@ import se.fortnox.reactivewizard.util.JustMessageException;
 import se.fortnox.reactivewizard.util.ReflectionUtil;
 
 import javax.inject.Inject;
-import javax.ws.rs.BeanParam;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.CookieParam;
-import javax.ws.rs.FormParam;
-import javax.ws.rs.HeaderParam;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.QueryParam;
+import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
-import java.lang.reflect.Type;
+import java.lang.reflect.*;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -54,14 +40,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalUnit;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -75,6 +54,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static reactor.core.Exceptions.isRetryExhausted;
+import static rx.Observable.just;
 import static se.fortnox.reactivewizard.jaxrs.RequestLogger.getHeaderValuesOrRedact;
 
 public class HttpClient implements InvocationHandler {
@@ -194,7 +174,10 @@ public class HttpClient implements InvocationHandler {
             throw new IllegalArgumentException("Must be used with observable returned from api call");
         }
 
-        return source.map(data -> new Response<>(((ObservableWithResponse<T>)source).getResponse(), data));
+        return source.map(data -> new Response<>(((ObservableWithResponse<T>)source).getResponse(), data))
+            .switchIfEmpty(Observable.defer(() ->
+                just(new Response<>(((ObservableWithResponse<T>)source).getResponse(), null)))
+            );
     }
 
     /**
@@ -208,7 +191,8 @@ public class HttpClient implements InvocationHandler {
             throw new IllegalArgumentException("Must be used with single returned from api call");
         }
 
-        return source.map(data -> new Response<>(((SingleWithResponse<T>)source).getResponse(), data));
+        return source
+            .map(data -> new Response<>(((SingleWithResponse<T>)source).getResponse(), data));
     }
 
     private <T> Flux<T> convertError(RequestBuilder fullReq, Throwable throwable) {
