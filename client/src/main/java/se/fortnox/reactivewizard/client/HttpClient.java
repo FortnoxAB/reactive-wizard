@@ -1,7 +1,11 @@
 package se.fortnox.reactivewizard.client;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.timeout.ReadTimeoutException;
@@ -25,12 +29,22 @@ import se.fortnox.reactivewizard.util.JustMessageException;
 import se.fortnox.reactivewizard.util.ReflectionUtil;
 
 import javax.inject.Inject;
-import javax.ws.rs.*;
+import javax.ws.rs.BeanParam;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.CookieParam;
+import javax.ws.rs.FormParam;
+import javax.ws.rs.HeaderParam;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.lang.annotation.Annotation;
-import java.lang.reflect.*;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+import java.lang.reflect.Type;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -40,7 +54,14 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalUnit;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -58,22 +79,22 @@ import static rx.Observable.fromCallable;
 import static se.fortnox.reactivewizard.jaxrs.RequestLogger.getHeaderValuesOrRedact;
 
 public class HttpClient implements InvocationHandler {
-    private static final Logger LOG = LoggerFactory.getLogger(HttpClient.class);
+    private static final Logger LOG            = LoggerFactory.getLogger(HttpClient.class);
     private static final Class  BYTEARRAY_TYPE = (new byte[0]).getClass();
-    public static final String COOKIE = "Cookie";
+    public static final  String COOKIE         = "Cookie";
 
-    protected final InetSocketAddress                                        serverInfo;
-    protected final HttpClientConfig                                         config;
-    private final   ByteBufCollector                                         collector;
-    private final   RequestParameterSerializers                              requestParameterSerializers;
-    private final   Set<PreRequestHook>                                      preRequestHooks;
-    private final   ReactorRxClientProvider                                  clientProvider;
-    private final   ObjectMapper                                             objectMapper;
-    private final   Map<Class<?>, List<HttpClient.BeanParamProperty>>        beanParamCache = new HashMap<>();
-    private final   Map<Method, JaxRsMeta>                                   jaxRsMetaMap   = new ConcurrentHashMap<>();
-    private         int                                                      timeout        = 10;
-    private TemporalUnit timeoutUnit    = ChronoUnit.SECONDS;
-    private final Duration retryDuration;
+    protected final InetSocketAddress                                 serverInfo;
+    protected final HttpClientConfig                                  config;
+    private final   ByteBufCollector                                  collector;
+    private final   RequestParameterSerializers                       requestParameterSerializers;
+    private final   Set<PreRequestHook>                               preRequestHooks;
+    private final   ReactorRxClientProvider                           clientProvider;
+    private final   ObjectMapper                                      objectMapper;
+    private final   Map<Class<?>, List<HttpClient.BeanParamProperty>> beanParamCache = new HashMap<>();
+    private final   Map<Method, JaxRsMeta>                            jaxRsMetaMap   = new ConcurrentHashMap<>();
+    private         int                                               timeout        = 10;
+    private         TemporalUnit                                      timeoutUnit    = ChronoUnit.SECONDS;
+    private final   Duration                                          retryDuration;
 
     @Inject
     public HttpClient(HttpClientConfig config,
