@@ -29,14 +29,11 @@ public class MetricsOperator<T> implements Publisher<T> {
 
     private Subscriber<T> createSubscriber(Subscriber<? super T> target, Timer timer) {
         return new Subscriber<T>() {
-            private Subscription subscription;
             private Timer.Context context;
             @Override
             public void onSubscribe(Subscription subscription) {
                 context = timer.time();
-                this.subscription = subscription;
                 target.onSubscribe(subscription);
-                this.subscription.request(Long.MAX_VALUE);
             }
 
             @Override
@@ -44,7 +41,6 @@ public class MetricsOperator<T> implements Publisher<T> {
                 if (next != null) {
                     target.onNext(next);
                 }
-                this.subscription.request(Long.MAX_VALUE);
             }
 
             @Override
