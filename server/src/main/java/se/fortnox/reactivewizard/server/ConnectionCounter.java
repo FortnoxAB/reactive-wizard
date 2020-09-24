@@ -19,18 +19,21 @@ public class ConnectionCounter {
         this.connectionsZero = connectionsZero;
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public void increase() {
         if (connections.getAndIncrement() == 0) {
             connectionsZero.tryAcquire();
         }
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public void decrease() {
         if (connections.decrementAndGet() == 0) {
             connectionsZero.release();
         }
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public boolean awaitZero(int time, TimeUnit timeUnit) {
         try {
             boolean success = connectionsZero.tryAcquire(time, timeUnit);

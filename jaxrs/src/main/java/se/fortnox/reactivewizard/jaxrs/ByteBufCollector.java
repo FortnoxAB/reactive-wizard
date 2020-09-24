@@ -25,6 +25,7 @@ public class ByteBufCollector {
         this.maxReqSize = maxReqSize;
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public Observable<String> collectString(Observable<ByteBuf> input) {
         return input
             .collect(ByteArrayOutputStream::new, this::collectChunks)
@@ -57,6 +58,7 @@ public class ByteBufCollector {
         }
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public Mono<byte[]> collectBytes(Flux<ByteBuf> content) {
         return content
             .collect(ByteArrayOutputStream::new, this::collectChunks)

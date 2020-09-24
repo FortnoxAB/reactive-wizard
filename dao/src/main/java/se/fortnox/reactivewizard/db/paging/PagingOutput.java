@@ -15,6 +15,7 @@ public class PagingOutput {
         index = indexOf(asList(method.getParameterTypes()), CollectionOptions.class::isAssignableFrom);
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public <T> Observable<T> apply(Observable<T> result, Object[] args) {
         if (index == -1) {
             return result;

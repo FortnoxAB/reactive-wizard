@@ -36,6 +36,7 @@ public class LoggingFactory {
     @JsonProperty("levels")
     Map<String, String> levels = new HashMap<>();
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public void init() {
         if (appenders == null) {
             appenders = new HashMap<>();

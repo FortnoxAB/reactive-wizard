@@ -94,6 +94,7 @@ public class RwServer extends Thread {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> shutdownHook(config, server, eventLoopGroup, connectionCounter)));
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public static void registerShutdownDependency(Runnable blockShutdownUntil) {
         if (RwServer.blockShutdownUntil != null && blockShutdownUntil != null) {
             throw new IllegalStateException("Shutdown dependency is already registered");

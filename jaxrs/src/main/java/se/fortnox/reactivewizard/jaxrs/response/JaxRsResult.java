@@ -52,6 +52,7 @@ public class JaxRsResult<T> {
         return this;
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public Publisher<Void> write(HttpServerResponse response) {
         AtomicBoolean headersWritten = new AtomicBoolean();
         return output

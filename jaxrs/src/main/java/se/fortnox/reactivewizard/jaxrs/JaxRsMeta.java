@@ -55,6 +55,7 @@ public class JaxRsMeta {
         fullPath = concatPaths(classPath, methodPath);
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public static Path getPath(Class<? extends Object> cls) {
         Path path = cls.getAnnotation(Path.class);
         if (path == null) {
@@ -68,6 +69,7 @@ public class JaxRsMeta {
         return path;
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public static String concatPaths(Path path1, Path path2) {
         final String        path1String   = path1 == null ? "" : path1.value();
         final StringBuilder stringBuilder = new StringBuilder();

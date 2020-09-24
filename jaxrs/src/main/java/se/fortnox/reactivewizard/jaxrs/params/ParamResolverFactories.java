@@ -49,6 +49,7 @@ public class ParamResolverFactories {
             new WrapSupportingParamTypeResolver());
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public List<ParamResolver> createParamResolvers(Method method, String[] consumesAnnotation) {
         List<ParamResolver> paramResolvers = new ArrayList<>();
 
@@ -92,6 +93,7 @@ public class ParamResolverFactories {
         throw new RuntimeException("Could not find any deserializer for param of type " + paramType);
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public static String findDefaultValue(List<Annotation> parameterAnnotations) {
         DefaultValue defaultValueAnnotation = findDefaultValueAnnotation(parameterAnnotations);
         if (defaultValueAnnotation == null) {
@@ -100,6 +102,7 @@ public class ParamResolverFactories {
         return defaultValueAnnotation.value();
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public static DefaultValue findDefaultValueAnnotation(List<Annotation> parameterAnnotations) {
         for (Annotation annotation : parameterAnnotations) {
             if (DefaultValue.class == annotation.annotationType()) {

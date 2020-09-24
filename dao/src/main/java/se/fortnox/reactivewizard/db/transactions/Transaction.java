@@ -36,7 +36,7 @@ public class Transaction<T> {
         statementsToSubscribe.add(transactionStatement);
     }
 
-
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public void execute() {
         if (!isAllSubscribed()) {
             // all DaoObservables have not been subscribed yet

@@ -21,6 +21,7 @@ public class JaxRsResultFactoryFactory {
         this.jsonSerializerFactory = jsonSerializerFactory;
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public <T> JaxRsResultFactory<T> createResultFactory(JaxRsResource<T> resource) {
 
         if (resource.getInstanceMethod().isAnnotationPresent(Stream.class)) {

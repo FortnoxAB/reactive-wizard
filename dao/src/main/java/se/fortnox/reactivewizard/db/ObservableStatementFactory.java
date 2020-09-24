@@ -57,6 +57,7 @@ public class ObservableStatementFactory {
         }
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public Observable<Object> create(Object[] args, ConnectionProvider connectionProvider) {
         AtomicReference<TransactionStatement> transactionHolder = new AtomicReference<>();
 

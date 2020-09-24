@@ -50,6 +50,7 @@ public class JaxRsResultFactory<T> {
         }
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public JaxRsResult<T> createResult(Flux<T> output, Object[] args) {
         return new JaxRsResult<>(output,
             responseStatus,
@@ -58,6 +59,7 @@ public class JaxRsResultFactory<T> {
         );
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public JaxRsResult<T> create(Flux<T> output, Object[] args) {
         JaxRsResult<T> result = createResult(output, args);
         result = transformers.apply(result, args);

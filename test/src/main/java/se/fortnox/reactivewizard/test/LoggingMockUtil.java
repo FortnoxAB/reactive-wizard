@@ -14,6 +14,7 @@ public class LoggingMockUtil {
 
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public static Appender createMockedLogAppender(Class cls) throws NoSuchFieldException, IllegalAccessException {
         Logger   logger       = LoggingMockUtil.getLogger(cls);
         Appender mockAppender = mock(Appender.class);
@@ -22,6 +23,7 @@ public class LoggingMockUtil {
         return mockAppender;
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public static void destroyMockedAppender(Appender appender, Class cls) throws NoSuchFieldException, IllegalAccessException {
         Logger logger = LoggingMockUtil.getLogger(cls);
         appender.close();

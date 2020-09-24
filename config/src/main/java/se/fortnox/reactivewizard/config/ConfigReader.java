@@ -66,6 +66,7 @@ public class ConfigReader {
         return stringBuffer.toString();
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public static <T> T fromTree(JsonNode tree, Class<T> cls) {
         String   fieldName = cls.getAnnotation(Config.class).value();
         JsonNode obj       = tree.get(fieldName);
@@ -85,6 +86,7 @@ public class ConfigReader {
         return cfg;
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public static JsonNode readTree(String fileName) {
         try {
             return mapper.readTree(readFile(fileName));

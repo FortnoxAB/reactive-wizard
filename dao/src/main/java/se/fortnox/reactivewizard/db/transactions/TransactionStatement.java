@@ -16,6 +16,7 @@ public class TransactionStatement implements Batchable {
         this.statement = new AtomicReference<>();
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public void markStatementSubscribed(Statement statement) {
         if (this.statement.compareAndSet(null, statement)) {
             transaction.markSubscribed(this);

@@ -10,6 +10,7 @@ import java.util.Calendar;
 import java.sql.Date;
 import java.util.List;
 
+@SuppressWarnings("checkstyle:MissingJavadocMethod")
 public class PreparedStatementParameters {
     private PreparedStatement preparedStatement;
     private int               parameterIndex = 1;

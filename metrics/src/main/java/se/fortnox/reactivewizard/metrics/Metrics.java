@@ -36,6 +36,7 @@ public class Metrics {
         return measure(observable, NOOP);
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public <T> Observable<T> measure(Observable<T> observable, Consumer<Long> callback) {
         if (observable == null) {
             return null;

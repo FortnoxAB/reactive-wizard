@@ -29,6 +29,7 @@ public class ResultTransformerFactories {
         this((Collection<ResultTransformerFactory>)resultTransformerFactories);
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public <T> ResultTransformer<T> createTransformers(JaxRsResource<T> resource) {
         List<ResultTransformer<T>> transformers = resultTransformerFactories
             .stream()

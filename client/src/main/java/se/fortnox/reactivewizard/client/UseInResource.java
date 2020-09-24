@@ -8,5 +8,6 @@ import java.lang.annotation.Target;
 @Target({ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface UseInResource {
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     Class[] value() default {};
 }

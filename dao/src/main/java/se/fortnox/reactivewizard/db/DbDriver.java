@@ -5,6 +5,7 @@ public final class DbDriver {
 
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public static void loadDriver(String url) {
         if (url.startsWith("jdbc:h2:")) {
             try {

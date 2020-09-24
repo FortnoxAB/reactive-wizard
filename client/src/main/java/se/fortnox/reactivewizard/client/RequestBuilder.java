@@ -31,6 +31,7 @@ public class RequestBuilder {
         this.key = method + " " + key;
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public Mono<RwHttpClientResponse> submit(
         reactor.netty.http.client.HttpClient client,
         RequestBuilder requestBuilder) {
@@ -84,6 +85,7 @@ public class RequestBuilder {
         headers.put(key, value);
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public boolean canHaveBody() {
         return method.equals(HttpMethod.POST)
             || method.equals(HttpMethod.PUT)

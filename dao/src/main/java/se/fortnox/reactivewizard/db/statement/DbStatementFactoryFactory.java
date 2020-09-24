@@ -20,6 +20,7 @@ public class DbStatementFactoryFactory {
 
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public DbStatementFactory createStatementFactory(Method method) throws SQLException {
         Type     returnType = ReflectionUtil.getTypeOfObservable(method);
         Class<?> cls        = ReflectionUtil.getRawType(returnType);

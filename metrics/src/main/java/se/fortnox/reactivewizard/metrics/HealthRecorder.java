@@ -12,6 +12,7 @@ public class HealthRecorder {
     private final ConcurrentHashMap<Object, Boolean> statusPerMeasurement = new ConcurrentHashMap<>();
     private final AtomicBoolean                      healthy              = new AtomicBoolean(true);
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public boolean logStatus(Object key, boolean currentStatus) {
         final Boolean previousStatus = statusPerMeasurement.put(key, currentStatus);
         if (previousStatus == null || !previousStatus.equals(currentStatus)) {

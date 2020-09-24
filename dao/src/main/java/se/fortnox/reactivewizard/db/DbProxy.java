@@ -94,6 +94,7 @@ public class DbProxy implements InvocationHandler {
         return Schedulers.from(executor);
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public <T> T create(Class<T> daoInterface) {
         return (T)Proxy.newProxyInstance(daoInterface.getClassLoader(),
             new Class[]{daoInterface},

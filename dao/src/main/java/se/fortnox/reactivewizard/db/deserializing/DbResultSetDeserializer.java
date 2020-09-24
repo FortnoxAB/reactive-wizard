@@ -14,6 +14,7 @@ public class DbResultSetDeserializer {
         this.cls = cls;
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public Object deserialize(ResultSet rs) {
         try {
             if (deserializer == null) {

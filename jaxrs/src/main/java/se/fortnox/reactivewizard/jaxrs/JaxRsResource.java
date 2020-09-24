@@ -75,6 +75,7 @@ public class JaxRsResource<T> implements Comparable<JaxRsResource> {
         return Pattern.compile(path);
     }
 
+    @SuppressWarnings("checkstyle:MissingJavadocMethod")
     public boolean canHandleRequest(JaxRsRequest request) {
         if (!request.hasMethod(meta.getHttpMethod())) {
             return false;
