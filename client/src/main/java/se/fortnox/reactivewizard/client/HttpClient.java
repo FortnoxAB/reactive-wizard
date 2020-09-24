@@ -75,25 +75,26 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static reactor.core.Exceptions.isRetryExhausted;
+import static rx.Observable.fromCallable;
 import static se.fortnox.reactivewizard.jaxrs.RequestLogger.getHeaderValuesOrRedact;
 
 public class HttpClient implements InvocationHandler {
-    private static final Logger LOG = LoggerFactory.getLogger(HttpClient.class);
+    private static final Logger LOG            = LoggerFactory.getLogger(HttpClient.class);
     private static final Class  BYTEARRAY_TYPE = (new byte[0]).getClass();
-    public static final String COOKIE = "Cookie";
+    public static final  String COOKIE         = "Cookie";
 
-    protected final InetSocketAddress                                        serverInfo;
-    protected final HttpClientConfig                                         config;
-    private final   ByteBufCollector                                         collector;
-    private final   RequestParameterSerializers                              requestParameterSerializers;
-    private final   Set<PreRequestHook>                                      preRequestHooks;
-    private final   ReactorRxClientProvider                                  clientProvider;
-    private final   ObjectMapper                                             objectMapper;
-    private final   Map<Class<?>, List<HttpClient.BeanParamProperty>>        beanParamCache = new HashMap<>();
-    private final   Map<Method, JaxRsMeta>                                   jaxRsMetaMap   = new ConcurrentHashMap<>();
-    private         int                                                      timeout        = 10;
-    private TemporalUnit timeoutUnit    = ChronoUnit.SECONDS;
-    private final Duration retryDuration;
+    protected final InetSocketAddress                                 serverInfo;
+    protected final HttpClientConfig                                  config;
+    private final   ByteBufCollector                                  collector;
+    private final   RequestParameterSerializers                       requestParameterSerializers;
+    private final   Set<PreRequestHook>                               preRequestHooks;
+    private final   ReactorRxClientProvider                           clientProvider;
+    private final   ObjectMapper                                      objectMapper;
+    private final   Map<Class<?>, List<HttpClient.BeanParamProperty>> beanParamCache = new HashMap<>();
+    private final   Map<Method, JaxRsMeta>                            jaxRsMetaMap   = new ConcurrentHashMap<>();
+    private         int                                               timeout        = 10;
+    private         TemporalUnit                                      timeoutUnit    = ChronoUnit.SECONDS;
+    private final   Duration                                          retryDuration;
 
     @Inject
     public HttpClient(HttpClientConfig config,
@@ -194,7 +195,8 @@ public class HttpClient implements InvocationHandler {
             throw new IllegalArgumentException("Must be used with observable returned from api call");
         }
 
-        return source.map(data -> new Response<>(((ObservableWithResponse<T>)source).getResponse(), data));
+        return source.map(data -> new Response<>(((ObservableWithResponse<T>)source).getResponse(), data))
+            .switchIfEmpty(fromCallable(() -> new Response<>(((ObservableWithResponse<T>)source).getResponse(), null)));
     }
 
     /**
@@ -208,7 +210,8 @@ public class HttpClient implements InvocationHandler {
             throw new IllegalArgumentException("Must be used with single returned from api call");
         }
 
-        return source.map(data -> new Response<>(((SingleWithResponse<T>)source).getResponse(), data));
+        return source
+            .map(data -> new Response<>(((SingleWithResponse<T>)source).getResponse(), data));
     }
 
     private <T> Flux<T> convertError(RequestBuilder fullReq, Throwable throwable) {
