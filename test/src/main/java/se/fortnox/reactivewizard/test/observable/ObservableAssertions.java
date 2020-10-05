@@ -10,7 +10,7 @@ import rx.Observable;
  * <pre><code class='java'>
  * Observable&lt;List&lt;Long&gt;&lt; observable = Observable.just(List.of(1L, 2L));
  * ObservableAssertions.assertThat(observable)
- *    .hasOneValue()
+ *    .singleElement()
  *    .satisfies(listOfLongs -&gt;
  *       Assertions.assertThat(listOfLongs)
  *          .contains(1l, 2L)
@@ -20,7 +20,13 @@ import rx.Observable;
  * <pre><code class='java'>
  * Observable&lt;String&lt; observable = Observable.just("one");
  * ObservableAssertions.assertThat(observable)
- *   .hasValue("one");
+ *   .containsExactly("one");
+ * </code></pre>
+ *
+ * <pre><code class='java'>
+ * Observable&lt;String&lt; observable = Observable.just("one", "two");
+ * ObservableAssertions.assertThat(observable)
+ *   .containsExactly("one","two");
  * </code></pre>
  */
 public class ObservableAssertions {

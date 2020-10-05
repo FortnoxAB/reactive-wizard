@@ -1,6 +1,5 @@
 package se.fortnox.reactivewizard.test;
 
-import org.junit.ComparisonFailure;
 import org.junit.Test;
 import rx.Observable;
 import se.fortnox.reactivewizard.test.observable.ObservableAssertions;
@@ -10,38 +9,52 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class ObservableAssertTest {
 
     @Test
-    public void shouldPassHasValueAssertionWhenSpecifiedValueIsExpected() {
+    public void shouldPassContainsExactlyAssertionWhenSpecifiedValueIsExpected() {
         Observable<String> observableUnderTest = Observable.just("one");
         ObservableAssertions.assertThat(observableUnderTest)
-            .hasValue("one");
+            .containsExactly("one");
     }
 
-    @Test(expected = ComparisonFailure.class)
-    public void shouldFailHasValueAssertionWhenValueIsUnexpected() {
-        Observable<String> observableUnderTest = Observable.just("one");
+    @Test
+    public void shouldPassContainsExactlyAssertionWhenSpecifiedValuesAreExpectedAndInOrder() {
+        Observable<String> observableUnderTest = Observable.just("one", "two", "three");
         ObservableAssertions.assertThat(observableUnderTest)
-            .hasValue("two");
+            .containsExactly("one", "two", "three");
     }
 
     @Test(expected = AssertionError.class)
-    public void shouldFailHasValueAssertionWhenMoreThanOneValue() {
+    public void shoulFailContainsExactlyAssertionWhenSpecifiedValuesAreExpectedButNotInOrder() {
+        Observable<String> observableUnderTest = Observable.just("one", "two", "three");
+        ObservableAssertions.assertThat(observableUnderTest)
+            .containsExactly("one", "three", "two");
+    }
+
+    @Test(expected = AssertionError.class)
+    public void shouldFailContainsExactlyAssertionWhenValueIsUnexpected() {
+        Observable<String> observableUnderTest = Observable.just("one");
+        ObservableAssertions.assertThat(observableUnderTest)
+            .containsExactly("two");
+    }
+
+    @Test(expected = AssertionError.class)
+    public void shouldFailContainsExactlyAssertionWhenMoreThanOneValue() {
         Observable<String> observableUnderTest = Observable.just("one", "two");
         ObservableAssertions.assertThat(observableUnderTest)
-            .hasValue("one");
+            .containsExactly("one");
     }
 
     @Test(expected = AssertionError.class)
-    public void shouldFailHasValueAssertionWhenEmpty() {
+    public void shouldFailContainsExactlyAssertionWhenEmpty() {
         Observable<String> observableUnderTest = Observable.empty();
         ObservableAssertions.assertThat(observableUnderTest)
-            .hasValue("one");
+            .containsExactly("one");
     }
 
     @Test
     public void shouldReturnAssertionForOneValue() {
         Observable<String> observableUnderTest = Observable.just("one");
         ObservableAssertions.assertThat(observableUnderTest)
-            .hasOneValue()
+            .singleElement()
             .satisfies(value -> assertThat(value)
                 .isEqualTo("one"));
     }
@@ -50,7 +63,7 @@ public class ObservableAssertTest {
     public void shouldFailToReturnAssertionForOneValueWhenMoreThanOne() {
         Observable<String> observableUnderTest = Observable.just("one", "two");
         ObservableAssertions.assertThat(observableUnderTest)
-            .hasOneValue()
+            .singleElement()
             .satisfies(value -> assertThat(value)
                 .isEqualTo("one"));
     }

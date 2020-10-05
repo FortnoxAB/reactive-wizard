@@ -2,9 +2,11 @@ package se.fortnox.reactivewizard.test.observable;
 
 import org.assertj.core.api.AbstractAssert;
 import org.assertj.core.api.Assertions;
+import org.assertj.core.api.ListAssert;
 import org.assertj.core.api.ObjectAssert;
 import rx.Observable;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -25,18 +27,15 @@ public class ObservableAssert<T> extends AbstractAssert<ObservableAssert<T>, Obs
     }
 
     /**
-     * Verifies that the Observable receives a single event with specified value and no errors.
+     * Verifies that the Observable receives exactly the values given and nothing else <b>in the same order</b>.
      *
      * @param expected expected value
-     * @return a new assertion object whose object under test is the expected value
+     * @return a new assertion object whose object under test is a list of the expected values
      */
-    public ObjectAssert<T> hasValue(T expected) {
+    public ListAssert<T> containsExactly(T... expected) {
         List<T> values = actual.test().awaitTerminalEvent().assertNoErrors().getOnNextEvents();
-        Assertions.assertThat(values)
-            .describedAs("Expected one value, but got %s.", values)
-            .hasSize(1);
-        return Assertions.assertThat(values.get(0))
-            .isEqualTo(expected);
+        return Assertions.assertThat(values)
+            .containsExactlyElementsOf(Arrays.asList(expected));
     }
 
     /**
@@ -44,7 +43,7 @@ public class ObservableAssert<T> extends AbstractAssert<ObservableAssert<T>, Obs
      *
      * @return a new assertion object whose object under test is the received event
      */
-    public ObjectAssert<T> hasOneValue() {
+    public ObjectAssert<T> singleElement() {
         List<T> values = actual.test().awaitTerminalEvent().assertNoErrors().getOnNextEvents();
         Assertions.assertThat(values)
             .describedAs("Expected one value, but got %s.", values)
