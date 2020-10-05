@@ -23,7 +23,7 @@ public class ObservableAssertTest {
     }
 
     @Test(expected = AssertionError.class)
-    public void shoulFailContainsExactlyAssertionWhenSpecifiedValuesAreExpectedButNotInOrder() {
+    public void shouldFailContainsExactlyAssertionWhenSpecifiedValuesAreExpectedButNotInOrder() {
         Observable<String> observableUnderTest = Observable.just("one", "two", "three");
         ObservableAssertions.assertThat(observableUnderTest)
             .containsExactly("one", "three", "two");
