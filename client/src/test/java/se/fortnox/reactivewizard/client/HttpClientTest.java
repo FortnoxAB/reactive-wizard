@@ -29,6 +29,7 @@ import reactor.netty.http.server.HttpServerResponse;
 import rx.Observable;
 import rx.Single;
 import rx.observers.AssertableSubscriber;
+import se.fortnox.reactivewizard.CollectionOptions;
 import se.fortnox.reactivewizard.config.TestInjector;
 import se.fortnox.reactivewizard.jaxrs.FieldError;
 import se.fortnox.reactivewizard.jaxrs.JaxRsMeta;
@@ -41,7 +42,18 @@ import se.fortnox.reactivewizard.test.TestUtil;
 import se.fortnox.reactivewizard.util.rx.RetryWithDelay;
 
 import javax.net.ssl.SSLHandshakeException;
-import javax.ws.rs.*;
+import javax.ws.rs.BeanParam;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.CookieParam;
+import javax.ws.rs.DELETE;
+import javax.ws.rs.FormParam;
+import javax.ws.rs.GET;
+import javax.ws.rs.HeaderParam;
+import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
@@ -54,7 +66,14 @@ import java.nio.charset.Charset;
 import java.security.cert.CertificateException;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -63,14 +82,26 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
-import static io.netty.handler.codec.http.HttpResponseStatus.*;
+import static io.netty.handler.codec.http.HttpResponseStatus.BAD_REQUEST;
+import static io.netty.handler.codec.http.HttpResponseStatus.CREATED;
+import static io.netty.handler.codec.http.HttpResponseStatus.GATEWAY_TIMEOUT;
+import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
+import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
+import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static java.lang.String.format;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_LENGTH;
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.*;
-import static reactor.core.publisher.Flux.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static reactor.core.publisher.Flux.defer;
+import static reactor.core.publisher.Flux.empty;
+import static reactor.core.publisher.Flux.just;
 import static se.fortnox.reactivewizard.test.LoggingMockUtil.destroyMockedAppender;
 import static se.fortnox.reactivewizard.test.TestUtil.matches;
 
@@ -500,14 +531,16 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldSupportBeanParam() throws Exception {
+    public void shouldSupportBeanParamExtendingOtherClasses() throws Exception {
         HttpClient client = new HttpClient(new HttpClientConfig("localhost"));
         Method     method = TestResource.class.getMethod("withBeanParam", TestResource.Filters.class);
         TestResource.Filters filters = new TestResource.Filters();
         filters.setFilter1("a");
         filters.setFilter2("b");
+        filters.setLimit(10);
+        filters.setOffset(15);
         String     path   = client.getPath(method, new Object[]{filters}, new JaxRsMeta(method, null));
-        assertThat(path).isEqualTo("/hello/beanParam?filter1=a&filter2=b");
+        assertThat(path).isEqualTo("/hello/beanParam?filter1=a&filter2=b&limit=10&offset=15");
     }
 
     @Test
@@ -1520,7 +1553,7 @@ public class HttpClientTest {
     @Path("/hello")
     public interface TestResource {
 
-        class Filters {
+        class Filters extends CollectionOptions {
             @QueryParam("filter1")
             private String filter1;
 

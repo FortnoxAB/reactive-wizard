@@ -578,7 +578,7 @@ public class HttpClient implements InvocationHandler {
 
     private List<BeanParamProperty> getBeanParamGetters(Class beanParamType) {
         List<BeanParamProperty> result = new ArrayList<>();
-        for (Field field : beanParamType.getDeclaredFields()) {
+        for (Field field : getDeclaredFieldsFromClassAndAncestors(beanParamType, new ArrayList<>())) {
             Optional<Function<Object, Object>> getter = ReflectionUtil.getter(beanParamType, field.getName());
             if (getter.isPresent()) {
                 result.add(new BeanParamProperty(
@@ -588,6 +588,24 @@ public class HttpClient implements InvocationHandler {
             }
         }
         return result;
+    }
+
+    /**
+     * Recursive function getting all declared fields from the passed in class and its ancestors
+     *
+     * @param clazz the clazz
+     * @param fields the fields found so far.
+     *
+     * @return list of fields
+     */
+    private List<Field> getDeclaredFieldsFromClassAndAncestors(Class clazz, List<Field> fields) {
+        fields.addAll(asList(clazz.getDeclaredFields()));
+
+        if (clazz.getSuperclass() != null && !Object.class.equals(clazz.getSuperclass())) {
+            return getDeclaredFieldsFromClassAndAncestors(clazz.getSuperclass(), fields);
+        }
+
+        return fields;
     }
 
     protected String serialize(Object value) {
