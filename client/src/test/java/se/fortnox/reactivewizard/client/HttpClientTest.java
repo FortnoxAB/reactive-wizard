@@ -540,7 +540,7 @@ public class HttpClientTest {
         filters.setLimit(10);
         filters.setOffset(15);
         String     path   = client.getPath(method, new Object[]{filters}, new JaxRsMeta(method, null));
-        assertThat(path).isEqualTo("/hello/beanParam?filter1=a&filter2=b&limit=10&offset=15");
+        assertThat(path).isEqualTo("/hello/beanParam?limit=10&offset=15&filter2=b&filter1=a");
     }
 
     @Test

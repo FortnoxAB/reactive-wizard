@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.type.TypeFactory;
+import com.google.common.collect.Sets;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.timeout.ReadTimeoutException;
 import org.reactivestreams.Publisher;
@@ -58,6 +59,7 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -578,7 +580,7 @@ public class HttpClient implements InvocationHandler {
 
     private List<BeanParamProperty> getBeanParamGetters(Class beanParamType) {
         List<BeanParamProperty> result = new ArrayList<>();
-        for (Field field : getDeclaredFieldsFromClassAndAncestors(beanParamType, new ArrayList<>())) {
+        for (Field field : getDeclaredFieldsFromClassAndAncestors(beanParamType)) {
             Optional<Function<Object, Object>> getter = ReflectionUtil.getter(beanParamType, field.getName());
             if (getter.isPresent()) {
                 result.add(new BeanParamProperty(
@@ -593,19 +595,16 @@ public class HttpClient implements InvocationHandler {
     /**
      * Recursive function getting all declared fields from the passed in class and its ancestors
      *
-     * @param clazz the clazz
-     * @param fields the fields found so far.
-     *
+     * @param clazz the clazz fetching fields from
      * @return list of fields
      */
-    private List<Field> getDeclaredFieldsFromClassAndAncestors(Class clazz, List<Field> fields) {
-        fields.addAll(asList(clazz.getDeclaredFields()));
+    private static Set<Field> getDeclaredFieldsFromClassAndAncestors(Class clazz) {
+        final HashSet<Field> declaredFields = new HashSet<>(asList(clazz.getDeclaredFields()));
 
-        if (clazz.getSuperclass() != null && !Object.class.equals(clazz.getSuperclass())) {
-            return getDeclaredFieldsFromClassAndAncestors(clazz.getSuperclass(), fields);
+        if (clazz.getSuperclass() == null || Object.class.equals(clazz.getSuperclass())) {
+            return declaredFields;
         }
-
-        return fields;
+        return Sets.union(getDeclaredFieldsFromClassAndAncestors(clazz.getSuperclass()), declaredFields);
     }
 
     protected String serialize(Object value) {
