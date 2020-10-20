@@ -13,6 +13,7 @@ public class ServerConfig {
     private int     maxInitialLineLengthDefault = 4096;
     private int     maxRequestSize              = 10 * 1024 * 1024;
     private int     shutdownTimeoutSeconds      = 20;
+    private boolean enableGzip                  = false;
 
     public int getPort() {
         return port;
@@ -60,5 +61,13 @@ public class ServerConfig {
 
     public void setShutdownTimeoutMs(int shutdownTimeoutSeconds) {
         this.shutdownTimeoutSeconds = shutdownTimeoutSeconds;
+    }
+
+    public boolean isEnableGzip() {
+        return enableGzip;
+    }
+
+    public void setEnableGzip(boolean enableGzip) {
+        this.enableGzip = enableGzip;
     }
 }
