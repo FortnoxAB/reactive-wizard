@@ -29,6 +29,12 @@ public class RwServerGzipTest {
     }
 
     @Test
+    public void shouldCompressWhenMultipleDirectivesAreCombined() {
+        Arrays.asList("text/plain; boundary=something", "text/plain; charset=UTF-8")
+            .forEach(allowedContentType -> assertCompressionForContentType(true, allowedContentType, true));
+    }
+
+    @Test
     public void shouldNotCompressAllowedContentTypeWhenGzipIsDisabled() {
         Arrays.asList("text/plain", "application/xml", "text/css", "application/x-javascript", "application/json")
             .forEach(allowedContentType -> assertCompressionForContentType(false, allowedContentType, false));
@@ -50,8 +56,8 @@ public class RwServerGzipTest {
     }
 
     @Test
-    public void shouldCompressIfMissingContentLength() {
-        assertCompressionForContentType(true, "text/plain", 5, true, true);
+    public void shouldNotCompressIfMissingContentLength() {
+        assertCompressionForContentType(true, "text/plain", 5, true, false);
     }
 
     private RwServer server(RequestHandler handler, boolean compress) {

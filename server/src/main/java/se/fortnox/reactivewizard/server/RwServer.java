@@ -1,6 +1,7 @@
 package se.fortnox.reactivewizard.server;
 
 import io.netty.handler.codec.http.HttpHeaderNames;
+import io.netty.handler.codec.http.HttpUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.netty.DisposableServer;
@@ -30,14 +31,21 @@ import static reactor.netty.channel.BootstrapHandlers.updateConfiguration;
 @Singleton
 public class RwServer extends Thread {
 
-    private static final Logger            LOG                         = LoggerFactory.getLogger(RwServer.class);
-    private static final Set<String>       COMPRESS_CONTENT_TYPES      = new HashSet<>(asList("text/plain", "application/xml", "text/css", "application/x-javascript", "application/json"));
-    private static final int               COMPRESSION_THRESHOLD_BYTES = 1000;
-    private final        ServerConfig      config;
-    private final        ConnectionCounter connectionCounter;
-    private final        LoopResources     eventLoopGroup;
-    private final        DisposableServer  server;
-    private static       Runnable          blockShutdownUntil;
+    private static final Logger      LOG                         = LoggerFactory.getLogger(RwServer.class);
+    private static final int         COMPRESSION_THRESHOLD_BYTES = 1000;
+    private static final Set<String> COMPRESSIBLE_MIME_TYPES      = new HashSet<>(asList(
+        "text/plain",
+        "application/xml",
+        "text/css",
+        "application/x-javascript",
+        "application/json"
+    ));
+
+    private final  ServerConfig      config;
+    private final  ConnectionCounter connectionCounter;
+    private final  LoopResources     eventLoopGroup;
+    private final  DisposableServer  server;
+    private static Runnable          blockShutdownUntil;
 
     @Inject
     public RwServer(ServerConfig config, CompositeRequestHandler compositeRequestHandler, ConnectionCounter connectionCounter) {
@@ -74,7 +82,7 @@ public class RwServer extends Thread {
         return HttpServer
             .create()
             .compress(COMPRESSION_THRESHOLD_BYTES)
-            .compress(isCompressionEnabled(config).and(compressableType()))
+            .compress(isCompressionEnabled(config).and(isCompressibleResponse()))
             .port(config.getPort())
             .tcpConfiguration(tcpServer -> {
                 if (loopResources != null) {
@@ -91,12 +99,17 @@ public class RwServer extends Thread {
                 .maxHeaderSize(config.getMaxHeaderSize()));
     }
 
-    private static BiPredicate<HttpServerRequest, HttpServerResponse> compressableType() {
+    private static BiPredicate<HttpServerRequest, HttpServerResponse> isCompressibleResponse() {
         return (request, response) -> {
-            String contentType = response.responseHeaders()
-                .get(HttpHeaderNames.CONTENT_TYPE);
-            return Optional.ofNullable(contentType)
-                .map(COMPRESS_CONTENT_TYPES::contains)
+            if (!response.responseHeaders().contains(HttpHeaderNames.CONTENT_LENGTH)) {
+                return false;
+            }
+            return Optional.ofNullable(response.responseHeaders()
+                .get(HttpHeaderNames.CONTENT_TYPE))
+                .map(HttpUtil::getMimeType)
+                .map(CharSequence::toString)
+                .map(String::toLowerCase)
+                .map(COMPRESSIBLE_MIME_TYPES::contains)
                 .orElse(false);
         };
     }
@@ -106,7 +119,7 @@ public class RwServer extends Thread {
     }
 
     /**
-     * Run the thread until server is shutdown
+     * Run the thread until server is shutdown.
      */
     @Override
     public void run() {
