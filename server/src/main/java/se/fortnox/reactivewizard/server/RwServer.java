@@ -1,9 +1,13 @@
 package se.fortnox.reactivewizard.server;
 
+import io.netty.handler.codec.http.HttpHeaderNames;
+import io.netty.handler.codec.http.HttpUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.netty.DisposableServer;
 import reactor.netty.http.server.HttpServer;
+import reactor.netty.http.server.HttpServerRequest;
+import reactor.netty.http.server.HttpServerResponse;
 import reactor.netty.resources.LoopResources;
 import rx.functions.Action0;
 import se.fortnox.reactivewizard.RequestHandler;
@@ -12,8 +16,13 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.HashSet;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiPredicate;
 
+import static java.util.Arrays.asList;
 import static reactor.netty.channel.BootstrapHandlers.updateConfiguration;
 
 /**
@@ -22,12 +31,21 @@ import static reactor.netty.channel.BootstrapHandlers.updateConfiguration;
 @Singleton
 public class RwServer extends Thread {
 
-    private static final Logger LOG = LoggerFactory.getLogger(RwServer.class);
-    private final ServerConfig config;
-    private final ConnectionCounter connectionCounter;
-    private final LoopResources eventLoopGroup;
-    private final DisposableServer server;
-    private static Runnable blockShutdownUntil;
+    private static final Logger      LOG                         = LoggerFactory.getLogger(RwServer.class);
+    private static final int         COMPRESSION_THRESHOLD_BYTES = 1000;
+    private static final Set<String> COMPRESSIBLE_MIME_TYPES      = new HashSet<>(asList(
+        "text/plain",
+        "application/xml",
+        "text/css",
+        "application/x-javascript",
+        "application/json"
+    ));
+
+    private final  ServerConfig      config;
+    private final  ConnectionCounter connectionCounter;
+    private final  LoopResources     eventLoopGroup;
+    private final  DisposableServer  server;
+    private static Runnable          blockShutdownUntil;
 
     @Inject
     public RwServer(ServerConfig config, CompositeRequestHandler compositeRequestHandler, ConnectionCounter connectionCounter) {
@@ -39,7 +57,8 @@ public class RwServer extends Thread {
     }
 
     RwServer(ServerConfig config, ConnectionCounter connectionCounter, HttpServer httpServer,
-             CompositeRequestHandler compositeRequestHandler, LoopResources loopResources) {
+        CompositeRequestHandler compositeRequestHandler, LoopResources loopResources
+    ) {
         super("RwServerMain");
         this.config = config;
         this.connectionCounter = connectionCounter;
@@ -47,7 +66,7 @@ public class RwServer extends Thread {
 
         if (config.isEnabled()) {
             server = httpServer.handle(compositeRequestHandler).bindNow();
-            LOG.info("Server started on port " + server.port());
+            LOG.info("Server started on port {}", server.port());
             start();
             registerShutdownHook();
         } else {
@@ -59,14 +78,16 @@ public class RwServer extends Thread {
         if (!config.isEnabled()) {
             return null;
         }
+
         return HttpServer
             .create()
+            .compress(COMPRESSION_THRESHOLD_BYTES)
+            .compress(isCompressionEnabled(config).and(isCompressibleResponse()))
             .port(config.getPort())
             .tcpConfiguration(tcpServer -> {
                 if (loopResources != null) {
                     tcpServer = tcpServer.runOn(loopResources);
                 }
-
                 NoContentFixConfigurator noContentFixConfigurator = new NoContentFixConfigurator();
                 return tcpServer.doOnBind(serverBootstrap -> updateConfiguration(serverBootstrap, "rw-server-configuration",
                     (connectionObserver, channel) -> {
@@ -78,8 +99,27 @@ public class RwServer extends Thread {
                 .maxHeaderSize(config.getMaxHeaderSize()));
     }
 
+    private static BiPredicate<HttpServerRequest, HttpServerResponse> isCompressibleResponse() {
+        return (request, response) -> {
+            if (!response.responseHeaders().contains(HttpHeaderNames.CONTENT_LENGTH)) {
+                return false;
+            }
+            return Optional.ofNullable(response.responseHeaders()
+                .get(HttpHeaderNames.CONTENT_TYPE))
+                .map(HttpUtil::getMimeType)
+                .map(CharSequence::toString)
+                .map(String::toLowerCase)
+                .map(COMPRESSIBLE_MIME_TYPES::contains)
+                .orElse(false);
+        };
+    }
+
+    private static BiPredicate<HttpServerRequest, HttpServerResponse> isCompressionEnabled(ServerConfig config) {
+        return (request, response) -> config.isEnableGzip();
+    }
+
     /**
-     * Run the thread until server is shutdown
+     * Run the thread until server is shutdown.
      */
     @Override
     public void run() {
@@ -109,7 +149,7 @@ public class RwServer extends Thread {
         int secondsLeft = Math.max(config.getShutdownTimeoutSeconds() - elapsedSeconds, 0);
         shutdownEventLoopGracefully(secondsLeft, loopResources);
         if (!connectionCounter.awaitZero(secondsLeft, TimeUnit.SECONDS)) {
-            LOG.error("Shutdown proceeded while connection count was not zero: " + connectionCounter.getCount());
+            LOG.error("Shutdown proceeded while connection count was not zero: {}", connectionCounter.getCount());
         }
         server.disposeNow(Duration.ofSeconds(config.getShutdownTimeoutSeconds()));
         LOG.info("Shutdown complete");
@@ -139,7 +179,7 @@ public class RwServer extends Thread {
             int shutdownQuietPeriodSeconds = 0;
             loopResources.disposeLater(Duration.ofSeconds(shutdownQuietPeriodSeconds), Duration.ofSeconds(shutdownTimeoutSeconds)).block();
         } catch (Exception e) {
-            LOG.error("Graceful shutdown failed" + e);
+            LOG.error("Graceful shutdown failed", e);
         }
     }
 
@@ -147,6 +187,6 @@ public class RwServer extends Thread {
         Instant start = Instant.now();
         function.call();
         Instant finish = Instant.now();
-        return (int) Duration.between(start, finish).getSeconds();
+        return (int)Duration.between(start, finish).getSeconds();
     }
 }
