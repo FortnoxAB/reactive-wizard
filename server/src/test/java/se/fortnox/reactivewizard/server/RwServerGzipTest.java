@@ -24,13 +24,13 @@ public class RwServerGzipTest {
 
     @Test
     public void shouldCompressAllowedContentTypes() {
-        Arrays.asList("text/plain", "application/xml", "text/css application/x-javascript", "application/json")
+        Arrays.asList("text/plain", "application/xml", "text/css", "application/x-javascript", "application/json")
             .forEach(allowedContentType -> assertCompressionForContentType(true, allowedContentType, true));
     }
 
     @Test
     public void shouldNotCompressAllowedContentTypeWhenGzipIsDisabled() {
-        Arrays.asList("text/plain", "application/xml", "text/css application/x-javascript", "application/json")
+        Arrays.asList("text/plain", "application/xml", "text/css", "application/x-javascript", "application/json")
             .forEach(allowedContentType -> assertCompressionForContentType(false, allowedContentType, false));
     }
 

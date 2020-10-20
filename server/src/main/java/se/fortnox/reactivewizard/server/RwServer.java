@@ -31,7 +31,7 @@ import static reactor.netty.channel.BootstrapHandlers.updateConfiguration;
 public class RwServer extends Thread {
 
     private static final Logger            LOG                         = LoggerFactory.getLogger(RwServer.class);
-    private static final Set<String>       COMPRESS_CONTENT_TYPES      = new HashSet<>(asList("text/plain", "application/xml", "text/css application/x-javascript", "application/json"));
+    private static final Set<String>       COMPRESS_CONTENT_TYPES      = new HashSet<>(asList("text/plain", "application/xml", "text/css", "application/x-javascript", "application/json"));
     private static final int               COMPRESSION_THRESHOLD_BYTES = 1000;
     private final        ServerConfig      config;
     private final        ConnectionCounter connectionCounter;
