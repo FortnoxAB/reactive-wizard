@@ -30,7 +30,7 @@ public class RwServerGzipTest {
 
     @Test
     public void shouldCompressWhenMultipleDirectivesAreCombined() {
-        Arrays.asList("text/plain; boundary=something", "text/plain; charset=UTF-8")
+        Arrays.asList("text/plain; boundary=something", "text/plain; charset=UTF-8","text/plain; charset=UTF-8; boundary=something")
             .forEach(allowedContentType -> assertCompressionForContentType(true, allowedContentType, true));
     }
 
