@@ -718,6 +718,35 @@ public class HttpClientTest {
     }
 
     @Test
+    public void shouldRedactSensitiveHeaderInLogsAndExceptionMessage() throws Exception {
+        DisposableServer                   server       = startServer(BAD_REQUEST, "someError");
+        HttpClientConfig                   config       = new HttpClientConfig("localhost:" + server.port());
+        Map<String, String>                headers      = new HashMap<>();
+        headers.put("Cookie", "pepperidge farm");
+        config.setDevHeaders(headers);
+        TestResource                       resource     = getHttpProxy(config);
+
+        HttpClient.markHeaderAsSensitive(resource, "cookie");
+
+        assertThatExceptionOfType(WebException.class)
+            .isThrownBy(() -> resource.getHello()
+                .toBlocking()
+                .single());
+
+        verify(mockAppender).doAppend(matches(log -> {
+            assertThat(log.getThrowableInformation().getThrowableStrRep())
+                .allSatisfy(throwableInfo -> {
+                    assertThat(throwableInfo)
+                        .doesNotContain("secretvalue");
+                });
+            assertThat(log.getMessage())
+                .isEqualTo("Failed request. Url: localhost:" + server.port() + "/hello, headers: [Cookie=REDACTED, Host=localhost]");
+        }));
+
+        server.disposeNow();
+    }
+
+    @Test
     public void shouldReturnBadRequestOnTooLargeResponses() throws URISyntaxException {
         DisposableServer                   server = startServer(HttpResponseStatus.OK, "\"derp\"");
         HttpClientConfig                   config = new HttpClientConfig("127.0.0.1:" + server.port());

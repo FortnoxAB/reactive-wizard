@@ -9,6 +9,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -20,14 +22,14 @@ public class RequestLoggerTest {
         Map.Entry<String,String> header = new AbstractMap.SimpleEntry<>("Authorization", "secret");
 
         String result = RequestLogger.getHeaderValueOrRedact(header);
-        assertEquals(result, "REDACTED");
+        assertEquals("REDACTED", result);
     }
 
     @Test
     public void shouldNotRedactAuthorizationValue() {
         Map.Entry<String,String> header = new AbstractMap.SimpleEntry<>("OtherHeader", "notasecret");
         String result = RequestLogger.getHeaderValueOrRedact(header);
-        assertEquals(result, "notasecret");
+        assertEquals("notasecret", result);
     }
 
     @Test
@@ -36,7 +38,7 @@ public class RequestLoggerTest {
         headers.put("Authorization", "secret");
         headers.put("OtherHeader", "notasecret");
 
-        Set<Map.Entry<String, String>> result = RequestLogger.getHeaderValuesOrRedact(headers);
+        Set<Map.Entry<String, String>> result = RequestLogger.getHeaderValuesOrRedact(headers, emptyList());
 
         Map<String, String> expectedValue = new HashMap<>();
         expectedValue.put("Authorization", "REDACTED");
@@ -45,8 +47,22 @@ public class RequestLoggerTest {
     }
 
     @Test
+    public void shouldRedactSuppliedSensitiveHeader() {
+        Map<String,String> headers = new HashMap<>();
+        headers.put("OtherHeader", "notasecret");
+        headers.put("Cookie", "oreo");
+
+        Set<Map.Entry<String, String>> result = RequestLogger.getHeaderValuesOrRedact(headers, singletonList("cookie"));
+
+        Map<String, String> expectedValue = new HashMap<>();
+        expectedValue.put("Cookie", "REDACTED");
+        expectedValue.put("OtherHeader", "notasecret");
+        assertTrue(CollectionUtils.isEqualCollection(result, expectedValue.entrySet()));
+    }
+
+    @Test
     public void shouldReturnNull_getHeaderValuesOrRedact() {
-        Set<Map.Entry<String, String>> result = RequestLogger.getHeaderValuesOrRedact(null);
+        Set<Map.Entry<String, String>> result = RequestLogger.getHeaderValuesOrRedact(null, emptyList());
         assertTrue(CollectionUtils.isEqualCollection(result, Collections.emptySet()));
     }
 
