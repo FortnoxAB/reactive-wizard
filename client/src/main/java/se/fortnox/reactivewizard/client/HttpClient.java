@@ -127,7 +127,12 @@ public class HttpClient implements InvocationHandler {
     }
 
     public static void setTimeout(Object proxy, int timeout, ChronoUnit timeoutUnit) {
-       ifHttpClientDo(proxy, httpClient -> httpClient.setTimeout(timeout, timeoutUnit));
+        ifHttpClientDo(proxy, httpClient -> httpClient.setTimeout(timeout, timeoutUnit));
+    }
+
+    public void setTimeout(int timeout, ChronoUnit timeoutUnit) {
+        this.timeout     = timeout;
+        this.timeoutUnit = timeoutUnit;
     }
 
     public static void markHeaderAsSensitive(Object proxy, String header) {
@@ -145,12 +150,6 @@ public class HttpClient implements InvocationHandler {
                 consumer.accept((HttpClient) handler);
             }
         }
-    }
-
-
-    public void setTimeout(int timeout, ChronoUnit timeoutUnit) {
-        this.timeout     = timeout;
-        this.timeoutUnit = timeoutUnit;
     }
 
     public void setSensitiveHeaders(Set<String> headers) {
