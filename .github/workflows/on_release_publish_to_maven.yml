@@ -15,16 +15,15 @@ jobs:
         with:
           java-version: 1.8
           server-id: ossrh
-          server-username: OSSRH_USER_NAME
-          server-password: OSSRH_SERVER_PASSWORD
-          gpg-private-key: GPG_KEY
+          server-username: USER_NAME
+          server-password: PASSWORD
+          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
           gpg-passphrase: GPG_PASS
       - name: set version
         run: mvn versions:set -DnewVersion=${GITHUB_REF##*/}
       - name: Publish to the Maven Central Repository
         run: mvn clean deploy -Prelease
-        env:
-          OSSRH_USER_NAME:  ${{ secrets.OSSRH_USER_NAME }}
-          OSSRH_PASSWORD:  ${{ secrets.OSSRH_TOKEN }}
-          GPG_KEY:  ${{ secrets.GPG_PRIVATE_KEY }}
+        env: 
+          USER_NAME: ${{ secrets.OSSRH_USERNAME }}
+          PASSWORD: ${{ secrets.OSSRH_TOKEN }}
           GPG_PASS:  ${{ secrets.PASSPHRASE }}
