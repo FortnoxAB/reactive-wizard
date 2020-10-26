@@ -6,12 +6,11 @@ import reactor.netty.http.server.HttpServerRequest;
 import reactor.netty.http.server.HttpServerResponse;
 
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static java.util.Collections.emptyList;
+import static java.util.Collections.emptySet;
 
 /**
  * Logs incoming requests to a Logger.
@@ -63,7 +62,7 @@ public class RequestLogger {
      * @return value of the header or "REDACTED" if the header contains sensitive information
      */
     public static String getHeaderValueOrRedact(Map.Entry<String, String> header) {
-        return getHeaderValueOrRedact(header, emptyList());
+        return getHeaderValueOrRedact(header, emptySet());
     }
 
     /**
@@ -73,12 +72,12 @@ public class RequestLogger {
      * @param sensitiveHeaders Sensitive headers to redact
      * @return value of the header or "REDACTED" if the header contains sensitive information
      */
-    public static String getHeaderValueOrRedact(Map.Entry<String, String> header, List<String> sensitiveHeaders) {
+    public static String getHeaderValueOrRedact(Map.Entry<String, String> header, Set<String> sensitiveHeaders) {
         if (header == null) {
             return null;
         } else if (AUTHORIZATION_HEADER.equalsIgnoreCase(header.getKey())) {
             return REDACTED;
-        } else if (sensitiveHeaders.stream().anyMatch(header.getKey()::equalsIgnoreCase)) {
+        } else if (sensitiveHeaders.contains(header.getKey())) {
             return REDACTED;
         }
         return header.getValue();
@@ -91,7 +90,7 @@ public class RequestLogger {
      * @return headers with sensitive information redacted
      */
     public static Set<Map.Entry<String, String>> getHeaderValuesOrRedact(Map<String, String> headers) {
-        return getHeaderValuesOrRedact(headers, emptyList());
+        return getHeaderValuesOrRedact(headers, emptySet());
     }
 
     /**
@@ -101,7 +100,7 @@ public class RequestLogger {
      * @param sensitiveHeaders Sensitive headers that should be redacted from logging
      * @return headers with sensitive information redacted
      */
-    public static Set<Map.Entry<String, String>> getHeaderValuesOrRedact(Map<String, String> headers, List<String> sensitiveHeaders) {
+    public static Set<Map.Entry<String, String>> getHeaderValuesOrRedact(Map<String, String> headers, Set<String> sensitiveHeaders) {
         if (headers == null) {
             return Collections.emptySet();
         }

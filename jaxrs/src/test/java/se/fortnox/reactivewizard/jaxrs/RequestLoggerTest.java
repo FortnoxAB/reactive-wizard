@@ -9,8 +9,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import static java.util.Collections.emptyList;
-import static java.util.Collections.singletonList;
+import static java.util.Collections.singleton;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -52,7 +51,7 @@ public class RequestLoggerTest {
         headers.put("OtherHeader", "notasecret");
         headers.put("Cookie", "oreo");
 
-        Set<Map.Entry<String, String>> result = RequestLogger.getHeaderValuesOrRedact(headers, singletonList("cookie"));
+        Set<Map.Entry<String, String>> result = RequestLogger.getHeaderValuesOrRedact(headers, singleton("cookie"));
 
         Map<String, String> expectedValue = new HashMap<>();
         expectedValue.put("Cookie", "REDACTED");

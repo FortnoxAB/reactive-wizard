@@ -57,6 +57,7 @@ import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalUnit;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -64,9 +65,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static io.netty.handler.codec.http.HttpMethod.POST;
@@ -75,7 +78,7 @@ import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERR
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
-import static java.util.Collections.singletonList;
+import static java.util.Collections.singleton;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static reactor.core.Exceptions.isRetryExhausted;
 import static rx.Observable.fromCallable;
@@ -97,7 +100,7 @@ public class HttpClient implements InvocationHandler {
     private final   Map<Method, JaxRsMeta>                            jaxRsMetaMap     = new ConcurrentHashMap<>();
     private         int                                               timeout          = 10;
     private         TemporalUnit                                      timeoutUnit      = ChronoUnit.SECONDS;
-    private         List<String>                                      sensitiveHeaders = new ArrayList<>();
+    private         Set<String>                                       sensitiveHeaders = new TreeSet<>(Comparator.comparing(String::toLowerCase));
     private final   Duration                                          retryDuration;
 
     @Inject
@@ -124,23 +127,22 @@ public class HttpClient implements InvocationHandler {
     }
 
     public static void setTimeout(Object proxy, int timeout, ChronoUnit timeoutUnit) {
-        if (Proxy.isProxyClass(proxy.getClass())) {
-            Object handler = Proxy.getInvocationHandler(proxy);
-            if (handler instanceof HttpClient) {
-                ((HttpClient) handler).setTimeout(timeout, timeoutUnit);
-            }
-        }
+       ifHttpClientDo(proxy, handler -> handler.setTimeout(timeout, timeoutUnit));
     }
 
     public static void markHeaderAsSensitive(Object proxy, String header) {
-        markHeadersAsSensitive(proxy, singletonList(header));
+        markHeadersAsSensitive(proxy, singleton(header));
     }
 
-    public static void markHeadersAsSensitive(Object proxy, List<String> headers) {
+    public static void markHeadersAsSensitive(Object proxy, Set<String> headers) {
+        ifHttpClientDo(proxy, handler -> handler.setSensitiveHeaders(headers));
+    }
+
+    private static void ifHttpClientDo(Object proxy, Consumer<HttpClient> consumer) {
         if (Proxy.isProxyClass(proxy.getClass())) {
             Object handler = Proxy.getInvocationHandler(proxy);
             if (handler instanceof HttpClient) {
-                ((HttpClient)handler).setSensitiveHeaders(headers);
+                consumer.accept((HttpClient) handler);
             }
         }
     }
@@ -151,7 +153,7 @@ public class HttpClient implements InvocationHandler {
         this.timeoutUnit = timeoutUnit;
     }
 
-    public void setSensitiveHeaders(List<String> headers) {
+    public void setSensitiveHeaders(Set<String> headers) {
         this.sensitiveHeaders = headers;
     }
 
