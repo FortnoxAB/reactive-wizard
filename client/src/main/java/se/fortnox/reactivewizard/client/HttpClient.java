@@ -572,14 +572,14 @@ public class HttpClient implements InvocationHandler {
                     } else {
                         query.append('&');
                     }
-                    query.append(((QueryParam) annotation).value());
+                    query.append(((QueryParam)annotation).value());
                     query.append('=');
                     query.append(urlEncode(serialize(value)));
                 } else if (annotation instanceof PathParam) {
-                    if (path.contains("{" + ((PathParam) annotation).value() + ":.*}")) {
-                        path = path.replaceAll("\\{" + ((PathParam) annotation).value() + ":.*\\}", this.encode(this.serialize(value)));
+                    if (path.contains("{" + ((PathParam)annotation).value() + ":.*}")) {
+                        path = path.replaceAll("\\{" + ((PathParam)annotation).value() + ":.*\\}", this.encode(this.serialize(value)));
                     } else {
-                        path = path.replaceAll("\\{" + ((PathParam) annotation).value() + "\\}", this.urlEncode(this.serialize(value)));
+                        path = path.replaceAll("\\{" + ((PathParam)annotation).value() + "\\}", this.urlEncode(this.serialize(value)));
                     }
                 } else if (annotation instanceof BeanParam) {
                     if (value == null) {
