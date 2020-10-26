@@ -127,7 +127,7 @@ public class HttpClient implements InvocationHandler {
     }
 
     public static void setTimeout(Object proxy, int timeout, ChronoUnit timeoutUnit) {
-       ifHttpClientDo(proxy, handler -> handler.setTimeout(timeout, timeoutUnit));
+       ifHttpClientDo(proxy, httpClient -> httpClient.setTimeout(timeout, timeoutUnit));
     }
 
     public static void markHeaderAsSensitive(Object proxy, String header) {
@@ -135,7 +135,7 @@ public class HttpClient implements InvocationHandler {
     }
 
     public static void markHeadersAsSensitive(Object proxy, Set<String> headers) {
-        ifHttpClientDo(proxy, handler -> handler.setSensitiveHeaders(headers));
+        ifHttpClientDo(proxy, httpClient -> httpClient.setSensitiveHeaders(headers));
     }
 
     private static void ifHttpClientDo(Object proxy, Consumer<HttpClient> consumer) {
