@@ -5,9 +5,11 @@ import org.junit.Test;
 
 import java.util.AbstractMap;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 
 import static java.util.Collections.singleton;
 import static org.junit.Assert.assertEquals;
@@ -51,7 +53,10 @@ public class RequestLoggerTest {
         headers.put("OtherHeader", "notasecret");
         headers.put("Cookie", "oreo");
 
-        Set<Map.Entry<String, String>> result = RequestLogger.getHeaderValuesOrRedact(headers, singleton("cookie"));
+        Set<String> sensitiveHeaders = new TreeSet<>(Comparator.comparing(String::toLowerCase));
+        sensitiveHeaders.add("cookie");
+
+        Set<Map.Entry<String, String>> result = RequestLogger.getHeaderValuesOrRedact(headers, sensitiveHeaders);
 
         Map<String, String> expectedValue = new HashMap<>();
         expectedValue.put("Cookie", "REDACTED");

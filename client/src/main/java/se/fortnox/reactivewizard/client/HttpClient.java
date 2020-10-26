@@ -100,7 +100,7 @@ public class HttpClient implements InvocationHandler {
     private final   Map<Method, JaxRsMeta>                            jaxRsMetaMap     = new ConcurrentHashMap<>();
     private         int                                               timeout          = 10;
     private         TemporalUnit                                      timeoutUnit      = ChronoUnit.SECONDS;
-    private         Set<String>                                       sensitiveHeaders = new TreeSet<>(Comparator.comparing(String::toLowerCase));
+    private final   Set<String>                                       sensitiveHeaders = new TreeSet<>(Comparator.comparing(String::toLowerCase));
     private final   Duration                                          retryDuration;
 
     @Inject
@@ -127,7 +127,12 @@ public class HttpClient implements InvocationHandler {
     }
 
     public static void setTimeout(Object proxy, int timeout, ChronoUnit timeoutUnit) {
-       ifHttpClientDo(proxy, httpClient -> httpClient.setTimeout(timeout, timeoutUnit));
+        ifHttpClientDo(proxy, httpClient -> httpClient.setTimeout(timeout, timeoutUnit));
+    }
+
+    public void setTimeout(int timeout, ChronoUnit timeoutUnit) {
+        this.timeout     = timeout;
+        this.timeoutUnit = timeoutUnit;
     }
 
     public static void markHeaderAsSensitive(Object proxy, String header) {
@@ -135,7 +140,7 @@ public class HttpClient implements InvocationHandler {
     }
 
     public static void markHeadersAsSensitive(Object proxy, Set<String> headers) {
-        ifHttpClientDo(proxy, httpClient -> httpClient.setSensitiveHeaders(headers));
+        ifHttpClientDo(proxy, httpClient -> httpClient.addSensitiveHeaders(headers));
     }
 
     private static void ifHttpClientDo(Object proxy, Consumer<HttpClient> consumer) {
@@ -147,14 +152,8 @@ public class HttpClient implements InvocationHandler {
         }
     }
 
-
-    public void setTimeout(int timeout, ChronoUnit timeoutUnit) {
-        this.timeout     = timeout;
-        this.timeoutUnit = timeoutUnit;
-    }
-
-    public void setSensitiveHeaders(Set<String> headers) {
-        this.sensitiveHeaders = headers;
+    public void addSensitiveHeaders(Set<String> headers) {
+        this.sensitiveHeaders.addAll(headers);
     }
 
     @SuppressWarnings("unchecked")
