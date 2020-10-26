@@ -38,7 +38,7 @@ public class RequestLoggerTest {
         headers.put("Authorization", "secret");
         headers.put("OtherHeader", "notasecret");
 
-        Set<Map.Entry<String, String>> result = RequestLogger.getHeaderValuesOrRedact(headers, emptyList());
+        Set<Map.Entry<String, String>> result = RequestLogger.getHeaderValuesOrRedact(headers);
 
         Map<String, String> expectedValue = new HashMap<>();
         expectedValue.put("Authorization", "REDACTED");
@@ -62,7 +62,7 @@ public class RequestLoggerTest {
 
     @Test
     public void shouldReturnNull_getHeaderValuesOrRedact() {
-        Set<Map.Entry<String, String>> result = RequestLogger.getHeaderValuesOrRedact(null, emptyList());
+        Set<Map.Entry<String, String>> result = RequestLogger.getHeaderValuesOrRedact(null);
         assertTrue(CollectionUtils.isEqualCollection(result, Collections.emptySet()));
     }
 

@@ -140,7 +140,7 @@ public class HttpClient implements InvocationHandler {
         if (Proxy.isProxyClass(proxy.getClass())) {
             Object handler = Proxy.getInvocationHandler(proxy);
             if (handler instanceof HttpClient) {
-                ((HttpClient) handler).setSensitiveHeaders(headers);
+                ((HttpClient)handler).setSensitiveHeaders(headers);
             }
         }
     }
@@ -157,7 +157,7 @@ public class HttpClient implements InvocationHandler {
 
     @SuppressWarnings("unchecked")
     public <T> T create(Class<T> jaxRsInterface) {
-        return (T) Proxy.newProxyInstance(jaxRsInterface.getClassLoader(), new Class[]{jaxRsInterface}, this);
+        return (T)Proxy.newProxyInstance(jaxRsInterface.getClassLoader(), new Class[]{jaxRsInterface}, this);
     }
 
     @Override
@@ -175,7 +175,7 @@ public class HttpClient implements InvocationHandler {
 
         Mono<RwHttpClientResponse> response = request.submit(rxClient, request);
 
-        Publisher<?>                        publisher   = null;
+        Publisher<?> publisher = null;
         AtomicReference<HttpClientResponse> rawResponse = new AtomicReference<>();
         if (expectsByteArrayResponse(method)) {
             publisher = response.flatMap(rwHttpClientResponse -> {
@@ -196,7 +196,7 @@ public class HttpClient implements InvocationHandler {
 
         //End of publisher
         Flux<?> flux = Flux.from(publisher);
-        flux      = flux.timeout(Duration.of(timeout, timeoutUnit));
+        flux = flux.timeout(Duration.of(timeout, timeoutUnit));
         publisher = withRetry(request, flux).onErrorResume(e -> convertError(request, e));
 
         if (Single.class.isAssignableFrom(method.getReturnType())) {
@@ -219,7 +219,7 @@ public class HttpClient implements InvocationHandler {
         }
 
         return source.map(data -> new Response<>(((ObservableWithResponse<T>) source).getResponse(), data))
-            .switchIfEmpty(fromCallable(() -> new Response<>(((ObservableWithResponse<T>) source).getResponse(), null)));
+            .switchIfEmpty(fromCallable(() -> new Response<>(((ObservableWithResponse<T>)source).getResponse(), null)));
     }
 
     /**
@@ -235,7 +235,7 @@ public class HttpClient implements InvocationHandler {
         }
 
         return source
-            .map(data -> new Response<>(((SingleWithResponse<T>) source).getResponse(), data));
+            .map(data -> new Response<>(((SingleWithResponse<T>)source).getResponse(), data));
     }
 
     private <T> Flux<T> convertError(RequestBuilder fullReq, Throwable throwable) {
@@ -366,10 +366,10 @@ public class HttpClient implements InvocationHandler {
                         requestBuilder.setContent(objectMapper.writeValueAsBytes(value));
                     } else {
                         if (value instanceof String) {
-                            requestBuilder.setContent((String) value);
+                            requestBuilder.setContent((String)value);
                             return;
                         } else if (value instanceof byte[]) {
-                            requestBuilder.setContent((byte[]) value);
+                            requestBuilder.setContent((byte[])value);
                             return;
                         }
                         throw new IllegalArgumentException("When content type is not " + MediaType.APPLICATION_JSON
@@ -396,7 +396,7 @@ public class HttpClient implements InvocationHandler {
     private FormParam getFormParam(Annotation[] annotations) {
         for (Annotation annotation : annotations) {
             if (annotation instanceof FormParam) {
-                return (FormParam) annotation;
+                return (FormParam)annotation;
             }
         }
         return null;
@@ -499,10 +499,10 @@ public class HttpClient implements InvocationHandler {
             }
             for (Annotation annotation : annotations[i]) {
                 if (annotation instanceof HeaderParam) {
-                    request.addHeader(((HeaderParam) annotation).value(), serialize(value));
+                    request.addHeader(((HeaderParam)annotation).value(), serialize(value));
                 } else if (annotation instanceof CookieParam) {
                     final String currentCookieValue = request.getHeaders().get(COOKIE);
-                    final String cookiePart         = ((CookieParam) annotation).value() + "=" + serialize(value);
+                    final String cookiePart         = ((CookieParam)annotation).value() + "=" + serialize(value);
                     if (currentCookieValue != null) {
                         request.addHeader(COOKIE, format("%s; %s", currentCookieValue, cookiePart));
                     } else {
@@ -631,14 +631,14 @@ public class HttpClient implements InvocationHandler {
 
     protected String serialize(Object value) {
         if (value instanceof Date) {
-            return String.valueOf(((Date) value).getTime());
+            return String.valueOf(((Date)value).getTime());
         }
         if (value.getClass().isArray()) {
-            value = asList((Object[]) value);
+            value = asList((Object[])value);
         }
         if (value instanceof List) {
             StringBuilder stringBuilder = new StringBuilder();
-            List          list          = (List) value;
+            List          list          = (List)value;
             for (int i = 0; i < list.size(); i++) {
                 Object entryValue = list.get(i);
                 stringBuilder.append(entryValue);
