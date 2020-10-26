@@ -10,10 +10,15 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static java.util.Collections.emptySet;
+
 /**
  * Logs incoming requests to a Logger.
  */
 public class RequestLogger {
+    private static final String AUTHORIZATION_HEADER = "Authorization";
+    private static final String REDACTED             = "REDACTED";
+
     private final Logger logger;
 
     public RequestLogger(Logger logger) {
@@ -57,10 +62,23 @@ public class RequestLogger {
      * @return value of the header or "REDACTED" if the header contains sensitive information
      */
     public static String getHeaderValueOrRedact(Map.Entry<String, String> header) {
+        return getHeaderValueOrRedact(header, emptySet());
+    }
+
+    /**
+     * Returns the value of a header. If the header contains sensitive information the value will be replaced with "REDACTED".
+     *
+     * @param header           The header to get the value from
+     * @param sensitiveHeaders Sensitive headers to redact
+     * @return value of the header or "REDACTED" if the header contains sensitive information
+     */
+    public static String getHeaderValueOrRedact(Map.Entry<String, String> header, Set<String> sensitiveHeaders) {
         if (header == null) {
             return null;
-        } else if ("Authorization".equalsIgnoreCase(header.getKey())) {
-            return "REDACTED";
+        } else if (AUTHORIZATION_HEADER.equalsIgnoreCase(header.getKey())) {
+            return REDACTED;
+        } else if (sensitiveHeaders.contains(header.getKey())) {
+            return REDACTED;
         }
         return header.getValue();
     }
@@ -72,6 +90,17 @@ public class RequestLogger {
      * @return headers with sensitive information redacted
      */
     public static Set<Map.Entry<String, String>> getHeaderValuesOrRedact(Map<String, String> headers) {
+        return getHeaderValuesOrRedact(headers, emptySet());
+    }
+
+    /**
+     * Redact sensitive information from header values. Any header that contains sensitive information will have the value replaced with "REDACTED"
+     *
+     * @param headers          The headers to map
+     * @param sensitiveHeaders Sensitive headers that should be redacted from logging
+     * @return headers with sensitive information redacted
+     */
+    public static Set<Map.Entry<String, String>> getHeaderValuesOrRedact(Map<String, String> headers, Set<String> sensitiveHeaders) {
         if (headers == null) {
             return Collections.emptySet();
         }
@@ -80,7 +109,7 @@ public class RequestLogger {
             .stream()
             .collect(Collectors.toMap(
                 Map.Entry::getKey,
-                RequestLogger::getHeaderValueOrRedact
+                header -> RequestLogger.getHeaderValueOrRedact(header, sensitiveHeaders)
             ))
             .entrySet();
     }
@@ -88,10 +117,10 @@ public class RequestLogger {
     /**
      * Append a log entry for a server access event.
      *
-     * @param request The request to log
+     * @param request  The request to log
      * @param response The response to log
      * @param duration Duration of the request
-     * @param logLine StringBuilder to append the header content to
+     * @param logLine  StringBuilder to append the header content to
      */
     public static void logAccess(HttpServerRequest request, HttpServerResponse response, long duration, StringBuilder logLine) {
         HttpResponseStatus status = response.status();
@@ -107,10 +136,10 @@ public class RequestLogger {
     /**
      * Write a log entry for a request/response pair.
      *
-     * @param request The request to log
-     * @param response The response to log
+     * @param request          The request to log
+     * @param response         The response to log
      * @param requestStartTime Duration of the request
-     * @param log The logger to write to
+     * @param log              The logger to write to
      */
     public static void logRequestResponse(HttpServerRequest request, HttpServerResponse response, long requestStartTime, Logger log) {
         long          duration = System.currentTimeMillis() - requestStartTime;

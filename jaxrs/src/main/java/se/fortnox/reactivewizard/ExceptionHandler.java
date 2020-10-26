@@ -28,9 +28,9 @@ import static se.fortnox.reactivewizard.jaxrs.RequestLogger.getHeaderValueOrReda
  * Handles exceptions and writes errors to the response and the log.
  */
 public class ExceptionHandler {
-    private static Logger LOG = LoggerFactory.getLogger(ExceptionHandler.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ExceptionHandler.class);
 
-    private ObjectMapper mapper;
+    private final ObjectMapper mapper;
 
     @Inject
     public ExceptionHandler(ObjectMapper mapper) {
@@ -68,7 +68,7 @@ public class ExceptionHandler {
         } else if (throwable instanceof WebException) {
             webException = (WebException)throwable;
         } else if (throwable instanceof ClosedChannelException) {
-            LOG.debug("ClosedChannelException: " + request.method() + " " + request.uri(), throwable);
+            LOG.debug("ClosedChannelException: {} {}", request.method(), request.uri(), throwable);
             return Flux.empty();
         } else {
             webException = new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR, throwable);
@@ -90,7 +90,7 @@ public class ExceptionHandler {
         try {
             return mapper.writeValueAsString(webException);
         } catch (JsonProcessingException e) {
-            LOG.error("Error writing json for exception " + webException, e);
+            LOG.error("Error writing json for exception {}", webException, e);
             return null;
         }
     }

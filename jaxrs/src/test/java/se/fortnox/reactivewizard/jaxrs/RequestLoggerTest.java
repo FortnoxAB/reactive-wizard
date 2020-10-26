@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import static java.util.Collections.singleton;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -20,14 +21,14 @@ public class RequestLoggerTest {
         Map.Entry<String,String> header = new AbstractMap.SimpleEntry<>("Authorization", "secret");
 
         String result = RequestLogger.getHeaderValueOrRedact(header);
-        assertEquals(result, "REDACTED");
+        assertEquals("REDACTED", result);
     }
 
     @Test
     public void shouldNotRedactAuthorizationValue() {
         Map.Entry<String,String> header = new AbstractMap.SimpleEntry<>("OtherHeader", "notasecret");
         String result = RequestLogger.getHeaderValueOrRedact(header);
-        assertEquals(result, "notasecret");
+        assertEquals("notasecret", result);
     }
 
     @Test
@@ -40,6 +41,20 @@ public class RequestLoggerTest {
 
         Map<String, String> expectedValue = new HashMap<>();
         expectedValue.put("Authorization", "REDACTED");
+        expectedValue.put("OtherHeader", "notasecret");
+        assertTrue(CollectionUtils.isEqualCollection(result, expectedValue.entrySet()));
+    }
+
+    @Test
+    public void shouldRedactSuppliedSensitiveHeader() {
+        Map<String,String> headers = new HashMap<>();
+        headers.put("OtherHeader", "notasecret");
+        headers.put("Cookie", "oreo");
+
+        Set<Map.Entry<String, String>> result = RequestLogger.getHeaderValuesOrRedact(headers, singleton("cookie"));
+
+        Map<String, String> expectedValue = new HashMap<>();
+        expectedValue.put("Cookie", "REDACTED");
         expectedValue.put("OtherHeader", "notasecret");
         assertTrue(CollectionUtils.isEqualCollection(result, expectedValue.entrySet()));
     }

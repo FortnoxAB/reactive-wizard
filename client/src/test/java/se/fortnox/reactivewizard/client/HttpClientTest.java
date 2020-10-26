@@ -39,6 +39,7 @@ import se.fortnox.reactivewizard.metrics.HealthRecorder;
 import se.fortnox.reactivewizard.server.ServerConfig;
 import se.fortnox.reactivewizard.test.LoggingMockUtil;
 import se.fortnox.reactivewizard.test.TestUtil;
+import se.fortnox.reactivewizard.test.observable.ObservableAssertions;
 import se.fortnox.reactivewizard.util.rx.RetryWithDelay;
 
 import javax.net.ssl.SSLHandshakeException;
@@ -712,6 +713,34 @@ public class HttpClientTest {
                 });
             assertThat(log.getMessage())
                 .isEqualTo("Failed request. Url: localhost:" + server.port() + "/hello, headers: [Authorization=REDACTED, Host=localhost]");
+        }));
+
+        server.disposeNow();
+    }
+
+    @Test
+    public void shouldRedactSensitiveHeaderInLogsAndExceptionMessage() throws Exception {
+        DisposableServer                   server       = startServer(BAD_REQUEST, "someError");
+        HttpClientConfig                   config       = new HttpClientConfig("localhost:" + server.port());
+        Map<String, String>                headers      = new HashMap<>();
+
+        headers.put("Cookie", "pepperidge farm");
+        config.setDevHeaders(headers);
+        TestResource                       resource     = getHttpProxy(config);
+
+        HttpClient.markHeaderAsSensitive(resource, "cookie");
+
+        ObservableAssertions.assertThatExceptionOfType(WebException.class)
+            .isEmittedBy(resource.getHello().single());
+
+        verify(mockAppender).doAppend(matches(log -> {
+            assertThat(log.getThrowableInformation().getThrowableStrRep())
+                .allSatisfy(throwableInfo -> {
+                    assertThat(throwableInfo)
+                        .doesNotContain("secretvalue");
+                });
+            assertThat(log.getMessage())
+                .isEqualTo("Failed request. Url: localhost:" + server.port() + "/hello, headers: [Cookie=REDACTED, Host=localhost]");
         }));
 
         server.disposeNow();
