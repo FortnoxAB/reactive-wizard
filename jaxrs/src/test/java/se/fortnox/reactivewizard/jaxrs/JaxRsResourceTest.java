@@ -525,6 +525,29 @@ public class JaxRsResourceTest {
     }
 
     @Test
+    public void shouldErrorForUnknownBodyType() {
+        @Path("test")
+        class InvalidQueryParam {
+            @POST
+            @Consumes("application/whatever")
+            public Observable<String> acceptsComplexQueryParam(ParamEntity paramEntity) {
+                return null;
+            }
+        }
+
+        try {
+            JaxRsTestUtil.resources(new InvalidQueryParam());
+            fail("expected exception");
+        } catch (RuntimeException e) {
+            String expected = "Could not find any deserializer for param of type class se.fortnox.reactivewizard.jaxrs.ParamEntity";
+            assertThat(e.getMessage()).isEqualTo(expected);
+            return;
+        }
+        fail("expected exception");
+
+    }
+
+    @Test
     public void shouldGiveErrorForBadEnumValue() {
         assertBadRequest(post(service, "/test/acceptsPostEnum", "myEnum=BAD"),
             "{'id':'.*','error':'validation','fields':[{'field':'myEnum','error':'validation.invalid.enum'}]}");
