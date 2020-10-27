@@ -99,6 +99,8 @@ public class DeserializerFactory {
                 return bytes -> (T)new String(bytes);
             }
             return bytes -> (T)bytes;
+        } else if (paramType.getType().equals(byte[].class)) {
+            return bytes -> (T)bytes;
         }
         return null;
     }
