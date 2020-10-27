@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.netty.channel.AbortedException;
 import reactor.netty.http.server.HttpServerRequest;
 import reactor.netty.http.server.HttpServerResponse;
 import rx.exceptions.CompositeException;
@@ -67,7 +68,7 @@ public class ExceptionHandler {
             webException = new WebException(HttpResponseStatus.BAD_REQUEST, "invalidjson", throwable.getMessage());
         } else if (throwable instanceof WebException) {
             webException = (WebException)throwable;
-        } else if (throwable instanceof ClosedChannelException) {
+        } else if (throwable instanceof ClosedChannelException || throwable instanceof AbortedException) {
             LOG.debug("ClosedChannelException: {} {}", request.method(), request.uri(), throwable);
             return Flux.empty();
         } else {
