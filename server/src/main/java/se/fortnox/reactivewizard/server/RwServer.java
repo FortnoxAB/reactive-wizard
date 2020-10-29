@@ -1,7 +1,9 @@
 package se.fortnox.reactivewizard.server;
 
+import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpUtil;
+import io.netty.util.concurrent.DefaultEventExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.netty.DisposableServer;
@@ -84,6 +86,8 @@ public class RwServer extends Thread {
             .compress(COMPRESSION_THRESHOLD_BYTES)
             .compress(isCompressionEnabled(config).and(isCompressibleResponse()))
             .port(config.getPort())
+            // Register a channel group, when invoking disposeNow() the implementation will wait for the active requests to finish
+            .channelGroup(new DefaultChannelGroup(new DefaultEventExecutor()))
             .tcpConfiguration(tcpServer -> {
                 if (loopResources != null) {
                     tcpServer = tcpServer.runOn(loopResources);
@@ -130,7 +134,7 @@ public class RwServer extends Thread {
         return server;
     }
 
-    private void registerShutdownHook() {
+    void registerShutdownHook() {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> shutdownHook(config, server, eventLoopGroup, connectionCounter)));
     }
 

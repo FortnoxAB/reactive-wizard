@@ -23,7 +23,7 @@ public class ServerConfigTest {
         serverConfig.setPort(1337);
         serverConfig.setEnabled(false);
         serverConfig.setMaxHeaderSize(123);
-        serverConfig.setShutdownTimeoutMs(4344);
+        serverConfig.setShutdownTimeout(4344);
         serverConfig.setMaxInitialLineLengthDefault(1344);
         serverConfig.setMaxRequestSize(314159);
 
