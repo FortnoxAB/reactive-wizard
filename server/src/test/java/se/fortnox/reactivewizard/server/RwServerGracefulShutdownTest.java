@@ -60,7 +60,7 @@ public class RwServerGracefulShutdownTest {
         CountDownLatch clientReceivedResponse = new CountDownLatch(1);
         serverConfig.setShutdownTimeout(20);
 
-        // start server with a endpoint that takes 30 seconds to respond
+        // start server with a endpoint that takes 1 seconds to respond
         Duration responseTime = Duration.ofSeconds(1);
         RwServer rwServer = server(withEndpoint(serverReceivedClientRequest, responseTime));
 
