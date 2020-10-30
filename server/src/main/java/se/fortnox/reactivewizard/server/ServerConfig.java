@@ -59,7 +59,7 @@ public class ServerConfig {
         return shutdownTimeoutSeconds;
     }
 
-    public void setShutdownTimeout(int shutdownTimeoutSeconds) {
+    public void setShutdownTimeoutMs(int shutdownTimeoutSeconds) {
         this.shutdownTimeoutSeconds = shutdownTimeoutSeconds;
     }
 
