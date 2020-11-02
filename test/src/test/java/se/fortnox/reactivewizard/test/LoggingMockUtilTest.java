@@ -1,13 +1,13 @@
 package se.fortnox.reactivewizard.test;
 
 import org.apache.log4j.Appender;
+import org.apache.log4j.Level;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.fail;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static se.fortnox.reactivewizard.test.TestUtil.matches;
 
@@ -21,9 +21,8 @@ public class LoggingMockUtilTest {
 
         verify(appender)
             .doAppend(matches(log -> {
-                assertThat(log.getLevel()
-                    .toString())
-                    .isEqualTo("INFO");
+                assertThat(log.getLevel())
+                    .isEqualTo(Level.INFO);
                 assertThat(log.getMessage()
                     .toString())
                     .contains("Information was logged");
