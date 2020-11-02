@@ -61,7 +61,7 @@ public class AbortedRequestHandlingTest {
 
         } catch (Exception e) {
             verify(mockedLogAppender, timeout(3000)).doAppend(matches(event -> {
-                assertThat(event.getMessage().toString()).contains("ClosedChannelException: GET /");
+                assertThat(event.getMessage().toString()).contains("Inbound connection has been closed: GET /");
             }));
             assertThat(serverFinishedWithoutError.get()).isTrue();
         }

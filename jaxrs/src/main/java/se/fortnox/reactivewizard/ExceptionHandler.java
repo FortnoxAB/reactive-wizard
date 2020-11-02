@@ -69,7 +69,7 @@ public class ExceptionHandler {
         } else if (throwable instanceof WebException) {
             webException = (WebException)throwable;
         } else if (throwable instanceof ClosedChannelException || throwable instanceof AbortedException) {
-            LOG.debug("ClosedChannelException: {} {}", request.method(), request.uri(), throwable);
+            LOG.debug("Inbound connection has been closed: {} {}", request.method(), request.uri(), throwable);
             return Flux.empty();
         } else {
             webException = new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR, throwable);
