@@ -95,7 +95,7 @@ public class RwServerTest {
     }
 
     @Test
-    public void shouldLogThatShutDownIsRegistered() throws NoSuchFieldException, IllegalAccessException {
+    public void shouldLogThatShutDownIsRegistered() {
         Appender mockAppender = LoggingMockUtil.createMockedLogAppender(RwServer.class);
 
         LoopResources loopResources = mock(LoopResources.class);
@@ -147,7 +147,7 @@ public class RwServerTest {
     }
 
     @Test
-    public void shouldLogErrorIfShutdownIsPerformedWhileConnectionCountIsNotZero() throws NoSuchFieldException, IllegalAccessException {
+    public void shouldLogErrorIfShutdownIsPerformedWhileConnectionCountIsNotZero() {
         Appender mockAppender = LoggingMockUtil.createMockedLogAppender(RwServer.class);
 
         LoopResources loopResources = mock(LoopResources.class);
@@ -189,14 +189,14 @@ public class RwServerTest {
     }
 
     @Test
-    public void shouldSkipAwaitingShutdownDependencyIfNotSet() throws NoSuchFieldException, IllegalAccessException {
+    public void shouldSkipAwaitingShutdownDependencyIfNotSet() {
         Appender mockAppender = LoggingMockUtil.createMockedLogAppender(RwServer.class);
         RwServer.awaitShutdownDependency(new ServerConfig().getShutdownTimeoutSeconds());
         verify(mockAppender, never()).doAppend(any());
     }
 
     @Test
-    public void shouldAwaitShutdownDependency() throws NoSuchFieldException, IllegalAccessException {
+    public void shouldAwaitShutdownDependency() {
         Appender mockAppender = LoggingMockUtil.createMockedLogAppender(RwServer.class);
         Supplier supplier = mock(Supplier.class);
 

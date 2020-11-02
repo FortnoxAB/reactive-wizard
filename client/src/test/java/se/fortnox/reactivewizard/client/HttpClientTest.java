@@ -112,12 +112,12 @@ public class HttpClientTest {
     private Appender       mockAppender;
 
     @Before
-    public void before() throws Exception {
+    public void before() {
         mockAppender = LoggingMockUtil.createMockedLogAppender(HttpClient.class);
     }
 
     @After
-    public void after() throws Exception{
+    public void after() {
         destroyMockedAppender(mockAppender, HttpClient.class);
     }
 
