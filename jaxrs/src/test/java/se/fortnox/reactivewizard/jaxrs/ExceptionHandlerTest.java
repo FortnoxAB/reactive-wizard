@@ -1,6 +1,5 @@
 package se.fortnox.reactivewizard.jaxrs;
 
-import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import org.apache.log4j.Appender;
@@ -74,7 +73,7 @@ public class ExceptionHandlerTest {
         assertLog(new MockHttpServerRequest("/path"),
             new ClosedChannelException(),
             Level.DEBUG,
-            "ClosedChannelException: GET /path");
+            "Inbound connection has been closed: GET /path");
     }
 
     @Test
