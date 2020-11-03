@@ -89,7 +89,7 @@ public class ParamResolverFactories {
             return request -> Mono.just(deserializeBody(bodyDeserializer, request.getBody()));
         }
 
-        throw new RuntimeException("Could not find any deserializer for param of type " + paramType);
+        throw new RuntimeException("Could not find any deserializer for param of type " + paramType.getType());
     }
 
     public static String findDefaultValue(List<Annotation> parameterAnnotations) {

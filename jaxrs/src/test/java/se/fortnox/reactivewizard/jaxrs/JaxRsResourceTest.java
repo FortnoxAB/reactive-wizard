@@ -517,6 +517,37 @@ public class JaxRsResourceTest {
     }
 
     @Test
+    public void shouldAcceptByteArrayInputAnyMimeType() {
+        String                 text = "my bytes";
+        MockHttpServerResponse resp = post(service, "/test/byteArrayAnyType", text);
+        assertThat(resp.status()).isEqualTo(HttpResponseStatus.CREATED);
+        assertThat(resp.getOutp()).isEqualTo("\"" + text + "\"");
+    }
+
+    @Test
+    public void shouldErrorForUnknownBodyType() {
+        @Path("test")
+        class InvalidQueryParam {
+            @POST
+            @Consumes("application/whatever")
+            public Observable<String> acceptsComplexQueryParam(ParamEntity paramEntity) {
+                return null;
+            }
+        }
+
+        try {
+            JaxRsTestUtil.resources(new InvalidQueryParam());
+            fail("expected exception");
+        } catch (RuntimeException e) {
+            String expected = "Could not find any deserializer for param of type class se.fortnox.reactivewizard.jaxrs.ParamEntity";
+            assertThat(e.getMessage()).isEqualTo(expected);
+            return;
+        }
+        fail("expected exception");
+
+    }
+
+    @Test
     public void shouldGiveErrorForBadEnumValue() {
         assertBadRequest(post(service, "/test/acceptsPostEnum", "myEnum=BAD"),
             "{'id':'.*','error':'validation','fields':[{'field':'myEnum','error':'validation.invalid.enum'}]}");
@@ -941,6 +972,11 @@ public class JaxRsResourceTest {
         @Consumes(MediaType.APPLICATION_OCTET_STREAM)
         Observable<String> byteArray(byte[] input);
 
+        @POST
+        @Path("byteArrayAnyType")
+        @Consumes("application/whatever")
+        Observable<String> byteArrayAnyType(byte[] input);
+
         @GET
         @Path("acceptsUuid")
         Observable<String> acceptsUuidQueryParam(@QueryParam("id") UUID id);
@@ -1201,6 +1237,11 @@ public class JaxRsResourceTest {
 
         @Override
         public Observable<String> byteArray(byte[] input) {
+            return just(new String(input));
+        }
+
+        @Override
+        public Observable<String> byteArrayAnyType(byte[] input) {
             return just(new String(input));
         }
 
