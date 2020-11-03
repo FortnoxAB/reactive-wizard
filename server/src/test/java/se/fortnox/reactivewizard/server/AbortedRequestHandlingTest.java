@@ -17,7 +17,8 @@ import se.fortnox.reactivewizard.test.LoggingMockUtil;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import java.util.Collections;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
@@ -32,14 +33,14 @@ import static se.fortnox.reactivewizard.test.TestUtil.matches;
 public class AbortedRequestHandlingTest {
 
     @Test
-    public void shouldHandleAbortedRequestGracefully() throws NoSuchFieldException, IllegalAccessException {
+    public void shouldHandleAbortedRequestGracefully() throws NoSuchFieldException, IllegalAccessException, InterruptedException {
 
         final Appender mockedLogAppender = LoggingMockUtil.createMockedLogAppender(ExceptionHandler.class);
         LogManager.getLogger(ExceptionHandler.class).setLevel(Level.DEBUG);
 
         RwServer      rwServer                   = null;
-        AtomicBoolean serverFinishedWithoutError = new AtomicBoolean(false);
 
+        CountDownLatch countSuccessfulServerHandlings = new CountDownLatch(1);
         try {
             JaxRsRequestHandler jaxRsRequestHandler = new JaxRsRequestHandler(new Object[]{new TestResourceImpl()}, new JaxRsResourceFactory(), new ExceptionHandler(), false);
 
@@ -47,9 +48,7 @@ public class AbortedRequestHandlingTest {
                 httpServerRequest.withConnection(connection -> {
                     connection.channel().close();
                 });
-                return Flux.from(jaxRsRequestHandler.apply(httpServerRequest, httpServerResponse)).doOnComplete(() -> {
-                    serverFinishedWithoutError.set(true);
-                });
+                return Flux.from(jaxRsRequestHandler.apply(httpServerRequest, httpServerResponse)).doOnComplete(countSuccessfulServerHandlings::countDown);
             });
 
             HttpClient.create()
@@ -60,10 +59,12 @@ public class AbortedRequestHandlingTest {
             fail("Should throw exception since client connection is closed");
 
         } catch (Exception e) {
-            verify(mockedLogAppender, timeout(3000)).doAppend(matches(event -> {
+            verify(mockedLogAppender, timeout(10000)).doAppend(matches(event -> {
                 assertThat(event.getMessage().toString()).contains("Inbound connection has been closed: GET /");
             }));
-            assertThat(serverFinishedWithoutError.get()).isTrue();
+
+            final boolean await = countSuccessfulServerHandlings.await(10, TimeUnit.SECONDS);
+            assertThat(await).isTrue();
         }
         finally {
             if (rwServer != null) {
