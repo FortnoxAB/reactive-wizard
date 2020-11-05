@@ -21,11 +21,11 @@ public abstract class WaitingTestUtils {
 
     private WaitingTestUtils() {}
 
-    public static void assertConditionIsTrueWithin5Seconds(BooleanSupplier condition) {
+    public static void assertConditionIsTrueWithinDefaultTime(BooleanSupplier condition) {
         assertConditionIsTrueWithinTime(DEFAULT_WAITING_SECONDS, DEFAULT_WAITING_TIME_UNIT, condition, DEFAULT_ERROR_MESSAGE);
     }
 
-    public static void assertConditionIsTrueWithin5Seconds(BooleanSupplier condition, String message) {
+    public static void assertConditionIsTrueWithinDefaultTime(BooleanSupplier condition, String message) {
         assertConditionIsTrueWithinTime(DEFAULT_WAITING_SECONDS, DEFAULT_WAITING_TIME_UNIT, condition, message);
     }
 

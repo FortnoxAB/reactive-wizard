@@ -17,7 +17,7 @@ public class WaitingTestUtilsTest {
     public void shouldFailTestIfConditionIsNotMetWithinDefaultTime() {
         Error assertionError = null;
         try {
-            WaitingTestUtils.assertConditionIsTrueWithin5Seconds(() -> false);
+            WaitingTestUtils.assertConditionIsTrueWithinDefaultTime(() -> false);
         } catch (Error error) {
             assertionError = error;
         }
@@ -30,7 +30,7 @@ public class WaitingTestUtilsTest {
         Error assertionError = null;
         String errorMessage = UUID.randomUUID().toString();
         try {
-            WaitingTestUtils.assertConditionIsTrueWithin5Seconds(() -> false, errorMessage);
+            WaitingTestUtils.assertConditionIsTrueWithinDefaultTime(() -> false, errorMessage);
         } catch (AssertionError error) {
             assertionError = error;
         }
@@ -43,7 +43,7 @@ public class WaitingTestUtilsTest {
     public void shouldFailTestIfConditionIsNotMetWithinTime() {
         Error assertionError = null;
         try {
-            WaitingTestUtils.assertConditionIsTrueWithinTime(3000, TimeUnit.MILLISECONDS, () -> false);
+            WaitingTestUtils.assertConditionIsTrueWithinTime(200, TimeUnit.MILLISECONDS, () -> false);
         } catch (Error error) {
             assertionError = error;
         }
