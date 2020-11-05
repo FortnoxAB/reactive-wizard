@@ -54,6 +54,7 @@ public abstract class WaitingTestUtils {
                 Assert.fail(message);
             }
         } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
             Assert.fail();
         } finally {
             subscribe.unsubscribe();
