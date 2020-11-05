@@ -6,7 +6,7 @@ import org.mockito.Mockito;
 
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
+import java.util.function.BooleanSupplier;
 
 import static org.fest.assertions.Assertions.assertThat;
 import static org.mockito.Mockito.when;
@@ -55,8 +55,8 @@ public class WaitingTestUtilsTest {
     @Test
     public void shouldNotFailTestIfConditionIsMetWithinTime() {
         try {
-            final Supplier<Boolean> mock = Mockito.mock(Supplier.class);
-            when(mock.get()).thenReturn(false).thenReturn(false).thenReturn(true);
+            final BooleanSupplier mock = Mockito.mock(BooleanSupplier.class);
+            when(mock.getAsBoolean()).thenReturn(false).thenReturn(false).thenReturn(true);
             WaitingTestUtils.assertConditionIsTrueWithinTime(1000, TimeUnit.MILLISECONDS, mock);
         } catch (Error assertionError) {
             Assert.fail("This should not throw an assertionexception");
