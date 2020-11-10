@@ -13,7 +13,7 @@ public class ServerConfig {
     private int     maxInitialLineLengthDefault = 4096;
     private int     maxRequestSize              = 10 * 1024 * 1024;
     private int     shutdownTimeoutSeconds      = 20;
-    private boolean enableGzip                  = false;
+    private boolean enableGzip                  = true;
 
     public int getPort() {
         return port;
