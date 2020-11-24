@@ -395,12 +395,12 @@ public class HttpClientTest {
 
         TestResource testResource = reactorHttpClient.create(TestResource.class);
 
-        //First nine should not cause the client to be unhealthy
-        range(1, 10)
+        //First ten should not cause the client to be unhealthy
+        range(1, 11)
             .forEach(value -> testResource.postHello().test().awaitTerminalEvent());
         assertThat(healthRecorder.isHealthy()).isTrue();
 
-        //next one should
+        //but the eleventh should
         testResource.postHello().test().awaitTerminalEvent();
         assertThat(healthRecorder.isHealthy()).isFalse();
 
@@ -426,8 +426,8 @@ public class HttpClientTest {
             e.printStackTrace();
         }
 
-        //And should accept another 9 errors
-        range(1, 10)
+        //And should accept another 10 errors
+        range(1, 11)
             .forEach(value -> testResource.postHello().test().awaitTerminalEvent());
         assertThat(healthRecorder.isHealthy()).isTrue();
     }

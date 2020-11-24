@@ -67,7 +67,7 @@ public class ReactorRxClientProvider {
                 healthRecorder.logStatus(connectionProvider, true);
             })
             .doOnError((httpClientRequest, throwable) -> {
-                healthRecorder.logStatus(connectionProvider, errorCount.incrementAndGet() < config.getNumberOfConnectionFailuresAllowed());
+                healthRecorder.logStatus(connectionProvider, errorCount.incrementAndGet() <= config.getNumberOfConnectionFailuresAllowed());
             }, (httpClientResponse, throwable) -> { })
             .followRedirect(false);
 
