@@ -11,8 +11,10 @@ import se.fortnox.reactivewizard.metrics.HealthRecorder;
 import javax.inject.Inject;
 import java.net.InetSocketAddress;
 import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class ReactorRxClientProvider {
     private final ConcurrentHashMap<InetSocketAddress, HttpClient> clients = new ConcurrentHashMap<>();
@@ -46,9 +48,11 @@ public class ReactorRxClientProvider {
             .builder("http-connections")
             .maxConnections(config.getMaxConnections())
             .pendingAcquireMaxCount(-1)
+            .maxIdleTime(Duration.of(config.getConnectionMaxIdleTimeInMs(), ChronoUnit.MILLIS))
             .pendingAcquireTimeout(Duration.ofMillis(config.getPoolAcquireTimeoutMs()))
             .build();
 
+        final AtomicInteger errorCount = new AtomicInteger(0);
 
         HttpClient client = HttpClient
             .create(connectionProvider)
@@ -58,8 +62,13 @@ public class ReactorRxClientProvider {
                 })
             )
             .port(config.getPort())
-            .doOnRequest((httpClientRequest, connection) -> healthRecorder.logStatus(connectionProvider, true))
-            .doOnError((httpClientRequest, throwable) -> healthRecorder.logStatus(connectionProvider, false), (httpClientResponse, throwable) -> { })
+            .doOnRequest((httpClientRequest, connection) -> {
+                errorCount.set(0);
+                healthRecorder.logStatus(connectionProvider, true);
+            })
+            .doOnError((httpClientRequest, throwable) -> {
+                healthRecorder.logStatus(connectionProvider, errorCount.incrementAndGet() < config.getNumberOfConnectionFailuresAllowed());
+            }, (httpClientResponse, throwable) -> { })
             .followRedirect(false);
 
         if (config.isHttps()) {

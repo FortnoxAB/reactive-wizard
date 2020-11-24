@@ -90,6 +90,8 @@ import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERR
 import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static java.lang.String.format;
+import static java.util.Collections.EMPTY_SET;
+import static java.util.stream.IntStream.range;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_LENGTH;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
@@ -380,31 +382,54 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldReportUnhealthyWhenConnectionCannotBeAquiredBeforeTimeout() throws URISyntaxException {
-
-        DisposableServer server = HttpServer.create().port(0)
-            .handle((request, response) -> Flux.defer(() -> {
-                response.status(HttpResponseStatus.OK);
-                return Flux.<Void>empty();
-            }).delaySubscription(Duration.ofMillis(1000)))
-            .bindNow();
+    public void shouldReportUnhealthyWhenConnectionCannotBeAquiredBeforeTimeoutAndAfter10Attempts() throws URISyntaxException {
 
         HttpClientConfig httpClientConfig = new HttpClientConfig();
-        httpClientConfig.setUrl("http://localhost:" + server.port());
-        httpClientConfig.setPoolAcquireTimeoutMs(100);
+        httpClientConfig.setUrl("http://localhost:8080");
         httpClientConfig.setMaxConnections(1);
+        httpClientConfig.setConnectionMaxIdleTimeInMs(10);
 
         ReactorRxClientProvider reactorRxClientProvider = new ReactorRxClientProvider(httpClientConfig, healthRecorder);
-        HttpClient reactorHttpClient = new HttpClient(httpClientConfig, reactorRxClientProvider, new ObjectMapper(), new RequestParameterSerializers(), Collections.EMPTY_SET);
+        HttpClient reactorHttpClient = new HttpClient(httpClientConfig, reactorRxClientProvider, new ObjectMapper(),
+            new RequestParameterSerializers(), EMPTY_SET);
 
         TestResource testResource = reactorHttpClient.create(TestResource.class);
 
-        Observable<String> hello = testResource.getHello();
-        Observable<String> hello2 = testResource.getHello();
+        //First nine should not cause the client to be unhealthy
+        range(1, 10)
+            .forEach(value -> testResource.postHello().test().awaitTerminalEvent());
+        assertThat(healthRecorder.isHealthy()).isTrue();
 
-        Observable
-            .merge(hello, hello2).test().awaitTerminalEvent();
+        //next one should
+        testResource.postHello().test().awaitTerminalEvent();
         assertThat(healthRecorder.isHealthy()).isFalse();
+
+        //And a successful connection should reset the healthRecorder to healthy again
+        DisposableServer server = HttpServer.create().port(8080)
+            .handle((request, response) -> defer(() -> {
+                response.status(OK);
+                return Flux.<Void>empty();
+            }))
+            .bindNow();
+
+        try {
+            testResource.postHello().test().awaitTerminalEvent();
+            assertThat(healthRecorder.isHealthy()).isTrue();
+        } finally {
+            server.disposeNow();
+        }
+
+        //Sleep over the max idle time
+        try {
+            Thread.sleep(httpClientConfig.getConnectionMaxIdleTimeInMs() + 10);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        //And should accept another 9 errors
+        range(1, 10)
+            .forEach(value -> testResource.postHello().test().awaitTerminalEvent());
+        assertThat(healthRecorder.isHealthy()).isTrue();
     }
 
     @Test
