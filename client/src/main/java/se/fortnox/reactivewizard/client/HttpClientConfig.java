@@ -52,6 +52,9 @@ public class HttpClientConfig {
     @JsonProperty("validateCertificates")
     private boolean isValidateCertificates = true;
 
+    private long connectionMaxIdleTimeInMs         = TimeUnit.MILLISECONDS.convert(10, MINUTES);
+    private int  numberOfConnectionFailuresAllowed = 10;
+
     private BasicAuthConfig basicAuth;
 
     public HttpClientConfig() {
@@ -197,5 +200,21 @@ public class HttpClientConfig {
 
     public void setPoolAcquireTimeoutMs(int poolAcquireTimeoutMs) {
         this.poolAcquireTimeoutMs = poolAcquireTimeoutMs;
+    }
+
+    public long getConnectionMaxIdleTimeInMs() {
+        return connectionMaxIdleTimeInMs;
+    }
+
+    public void setConnectionMaxIdleTimeInMs(long connectionMaxIdleTimeInMs) {
+        this.connectionMaxIdleTimeInMs = connectionMaxIdleTimeInMs;
+    }
+
+    public int getNumberOfConnectionFailuresAllowed() {
+        return numberOfConnectionFailuresAllowed;
+    }
+
+    public void setNumberOfConnectionFailuresAllowed(int numberOfConnectionFailuresAllowed) {
+        this.numberOfConnectionFailuresAllowed = numberOfConnectionFailuresAllowed;
     }
 }
