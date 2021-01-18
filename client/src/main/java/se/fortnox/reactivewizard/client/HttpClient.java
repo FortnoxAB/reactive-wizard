@@ -88,8 +88,8 @@ import static se.fortnox.reactivewizard.jaxrs.RequestLogger.getHeaderValuesOrRed
 public class HttpClient implements InvocationHandler {
     private static final Logger LOG            = LoggerFactory.getLogger(HttpClient.class);
     private static final Class  BYTEARRAY_TYPE = (new byte[0]).getClass();
-    private static final String COOKIE         = "Cookie";
-    private static final String QOUTES         = "\"";
+    private static final String COOKIE = "Cookie";
+    private static final String QUOTE  = "\"";
 
     protected final InetSocketAddress                                 serverInfo;
     protected final HttpClientConfig                                  config;
@@ -530,7 +530,7 @@ public class HttpClient implements InvocationHandler {
             return Mono.empty();
         }
 
-        if (String.class.equals(type) && !string.startsWith(QOUTES) && !"null".equalsIgnoreCase(string)) {
+        if (String.class.equals(type) && !string.startsWith(QUOTE) && !"null".equalsIgnoreCase(string)) {   
             return just(string);
         }
 
