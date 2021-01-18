@@ -81,13 +81,15 @@ import static java.util.Collections.emptySet;
 import static java.util.Collections.singleton;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static reactor.core.Exceptions.isRetryExhausted;
+import static reactor.core.publisher.Mono.just;
 import static rx.Observable.fromCallable;
 import static se.fortnox.reactivewizard.jaxrs.RequestLogger.getHeaderValuesOrRedact;
 
 public class HttpClient implements InvocationHandler {
     private static final Logger LOG            = LoggerFactory.getLogger(HttpClient.class);
     private static final Class  BYTEARRAY_TYPE = (new byte[0]).getClass();
-    public static final  String COOKIE         = "Cookie";
+    private static final String COOKIE         = "Cookie";
+    private static final String QOUTES         = "\"";
 
     protected final InetSocketAddress                                 serverInfo;
     protected final HttpClientConfig                                  config;
@@ -526,6 +528,10 @@ public class HttpClient implements InvocationHandler {
 
         if (Void.class.equals(type)) {
             return Mono.empty();
+        }
+
+        if (String.class.equals(type) && !string.startsWith(QOUTES)) {
+            return just(string);
         }
 
         try {
