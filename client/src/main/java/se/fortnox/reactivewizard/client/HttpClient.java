@@ -530,7 +530,7 @@ public class HttpClient implements InvocationHandler {
             return Mono.empty();
         }
 
-        if (String.class.equals(type) && !string.startsWith(QOUTES)) {
+        if (String.class.equals(type) && !string.startsWith(QOUTES) && !"null".equalsIgnoreCase(string)) {
             return just(string);
         }
 
