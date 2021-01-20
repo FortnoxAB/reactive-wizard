@@ -75,6 +75,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -962,6 +963,18 @@ public class HttpClientTest {
     }
 
     @Test
+    public void shouldDeserializeSimpleStringWithoutJsonQuotes() {
+        final String     body   = UUID.randomUUID().toString();
+        DisposableServer server = startServer(HttpResponseStatus.CREATED, body);
+
+        TestResource resource = getHttpProxy(server.port());
+        final String s        = resource.getString().toBlocking().singleOrDefault(null);
+
+        assertThat(s).isEqualTo(body);
+        server.disposeNow();
+    }
+
+    @Test
     public void shouldShutDownConnectionOnTimeoutBeforeHeaders() throws URISyntaxException {
         Consumer<String>             serverLog = mock(Consumer.class);
         DisposableServer server    = createTestServer(serverLog);
@@ -1668,6 +1681,9 @@ public class HttpClientTest {
 
         @POST
         Observable<Void> getVoid();
+
+        @GET
+        Observable<String> getString();
 
         @POST
         Observable<String> postForm(@FormParam("paramA") String a,
