@@ -59,7 +59,6 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Comparator;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -98,7 +97,7 @@ public class HttpClient implements InvocationHandler {
     private final   Set<PreRequestHook>                               preRequestHooks;
     private final   ReactorRxClientProvider                           clientProvider;
     private final   ObjectMapper                                      objectMapper;
-    private final   Map<Class<?>, List<HttpClient.BeanParamProperty>> beanParamCache   = new HashMap<>();
+    private final   Map<Class<?>, List<HttpClient.BeanParamProperty>> beanParamCache   = new ConcurrentHashMap<>();
     private final   Map<Method, JaxRsMeta>                            jaxRsMetaMap     = new ConcurrentHashMap<>();
     private         int                                               timeout          = 10;
     private         TemporalUnit                                      timeoutUnit      = ChronoUnit.SECONDS;
