@@ -29,6 +29,7 @@ public class JaxRsRequest {
     private final HttpServerRequest   req;
     private final byte[]              body;
     private final String              path;
+    private final String              uri;
     private       Matcher             matcher;
     private final ByteBufCollector    collector;
     private Map<String, List<String>> queryParameters;
@@ -38,6 +39,7 @@ public class JaxRsRequest {
         this.matcher   = matcher;
         this.body      = body;
         this.collector = collector; // 10 MB as default
+        this.uri       = req.uri();
         try {
             this.path = req.fullPath();
         } catch (IllegalArgumentException e) {
@@ -145,6 +147,8 @@ public class JaxRsRequest {
     public String getPath() {
         return path;
     }
+
+    public String getUri() { return uri; }
 
     public boolean matchesPath(Pattern pathPattern) {
         matcher = pathPattern.matcher(getPath());
