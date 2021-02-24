@@ -76,6 +76,13 @@ public class JaxRsRequestTest {
         assertThat(req.getCookieValue("test", "default")).isEqualTo("default");
     }
 
+    @Test
+    public void testUri() throws Exception {
+        MockHttpServerRequest serverReq = new MockHttpServerRequest("https://localhost:8080/path?query");
+        JaxRsRequest          req       = new JaxRsRequest(serverReq, null, new byte[0], new ByteBufCollector());
+        assertThat(req.getUri()).isEqualTo(serverReq.uri());
+    }
+
 
     private String generateLargeString(int sizeInMB) {
         String largeString = IntStream.range(1, sizeInMB * 1024 * 1024 - 1)
