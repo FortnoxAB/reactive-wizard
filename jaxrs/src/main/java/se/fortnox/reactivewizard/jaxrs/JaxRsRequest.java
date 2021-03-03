@@ -148,7 +148,9 @@ public class JaxRsRequest {
         return path;
     }
 
-    public String getUri() { return uri; }
+    public String getUri() {
+        return uri;
+    }
 
     public boolean matchesPath(Pattern pathPattern) {
         matcher = pathPattern.matcher(getPath());
