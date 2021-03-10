@@ -41,7 +41,6 @@ public class RwServer extends Thread {
         "application/x-javascript",
         "application/json"
     ));
-    private static final long SECONDS_WAIT_BEFORE_SHUTDOWN = 5;
 
     private final ServerConfig config;
     private final ConnectionCounter connectionCounter;
@@ -137,11 +136,12 @@ public class RwServer extends Thread {
     }
 
     static void shutdownHook(ServerConfig config, DisposableServer server, ConnectionCounter connectionCounter) {
-        LOG.info("Shutdown requested. Waiting {} seconds before commencing.", SECONDS_WAIT_BEFORE_SHUTDOWN);
+        LOG.info("Shutdown requested. Waiting {} seconds before commencing.", config.getShutdownDelaySeconds());
         try {
-            Thread.sleep(SECONDS_WAIT_BEFORE_SHUTDOWN * 1000);
+            Thread.sleep(config.getShutdownDelaySeconds() * 1000);
         } catch (InterruptedException e) {
             LOG.error("Interrupted while waiting for shutdown to commence.", e);
+            Thread.currentThread().interrupt();
         }
         LOG.info("Shutdown commencing. Will wait up to {} seconds for ongoing requests to complete.", config.getShutdownTimeoutSeconds());
         int elapsedSeconds = measureElapsedSeconds(() ->
@@ -168,6 +168,7 @@ public class RwServer extends Thread {
             thread.join(Duration.ofSeconds(shutdownTimeoutSeconds).toMillis());
         } catch (InterruptedException e) {
             LOG.error("Fail while waiting shutdown dependency", e);
+            Thread.currentThread().interrupt();
         }
         LOG.info("Shutdown dependency completed, continue...");
     }

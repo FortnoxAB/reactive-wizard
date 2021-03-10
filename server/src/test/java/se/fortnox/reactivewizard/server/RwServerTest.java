@@ -114,6 +114,7 @@ public class RwServerTest {
         try {
             final ServerConfig config = new ServerConfig();
             config.setPort(0);
+            config.setShutdownDelaySeconds(3);
             rwServer = new RwServer(config, compositeRequestHandler, connectionCounter);
             RwServer.shutdownHook(config, rwServer.getServer(), connectionCounter);
 
@@ -121,7 +122,7 @@ public class RwServerTest {
 
             assertThat(logCaptor.getAllValues())
                 .extracting(LoggingEvent::getMessage)
-                .contains("Shutdown requested. Waiting 5 seconds before commencing.")
+                .contains("Shutdown requested. Waiting 3 seconds before commencing.")
                 .contains("Shutdown commencing. Will wait up to 20 seconds for ongoing requests to complete.")
                 .contains("Shutdown complete");
         } finally {

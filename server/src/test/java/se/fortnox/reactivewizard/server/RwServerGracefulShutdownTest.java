@@ -56,12 +56,23 @@ public class RwServerGracefulShutdownTest {
     }
 
     @Test
-    public void shouldWaitFiveSecondsBeforeDisposingServer() {
+    public void shouldWaitFiveSecondsAsDefaultBeforeDisposingServer() {
         RwServer rwServer = server(withEndpoint(Duration.ofSeconds(1)));
         Thread shutdown = new Thread(() -> RwServer.shutdownHook(serverConfig, rwServer.getServer(), new ConnectionCounter()));
         shutdown.start();
         await("Server should not be disposed until after five seconds")
             .atLeast(5, SECONDS)
+            .until(() -> rwServer.getServer().isDisposed());
+    }
+
+    @Test
+    public void shouldWaitSpecifiedNumberOfSecondsBeforeDisposingServer() {
+        serverConfig.setShutdownDelaySeconds(1);
+        RwServer rwServer = server(withEndpoint(Duration.ofSeconds(1)));
+        Thread shutdown = new Thread(() -> RwServer.shutdownHook(serverConfig, rwServer.getServer(), new ConnectionCounter()));
+        shutdown.start();
+        await("Server should be disposed in two seconds")
+            .atMost(2, SECONDS)
             .until(() -> rwServer.getServer().isDisposed());
     }
 
