@@ -10,7 +10,6 @@ import reactor.netty.DisposableServer;
 import reactor.netty.http.server.HttpServer;
 import reactor.netty.http.server.HttpServerRequest;
 import reactor.netty.http.server.HttpServerResponse;
-import reactor.netty.resources.LoopResources;
 import rx.functions.Action0;
 import se.fortnox.reactivewizard.RequestHandler;
 
@@ -171,18 +170,6 @@ public class RwServer extends Thread {
             LOG.error("Fail while waiting shutdown dependency", e);
         }
         LOG.info("Shutdown dependency completed, continue...");
-    }
-
-    static void shutdownEventLoopGracefully(int shutdownTimeoutSeconds, LoopResources loopResources) {
-        if (loopResources == null) {
-            return;
-        }
-        try {
-            int shutdownQuietPeriodSeconds = 0;
-            loopResources.disposeLater(Duration.ofSeconds(shutdownQuietPeriodSeconds), Duration.ofSeconds(shutdownTimeoutSeconds)).block();
-        } catch (Exception e) {
-            LOG.error("Graceful shutdown failed", e);
-        }
     }
 
     static int measureElapsedSeconds(Action0 function) {
