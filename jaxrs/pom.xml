@@ -115,6 +115,11 @@
             <groupId>io.projectreactor.netty</groupId>
             <artifactId>reactor-netty</artifactId>
         </dependency>
+		<dependency>
+			<groupId>se.fortnox.reactivewizard</groupId>
+			<artifactId>reactivewizard-config</artifactId>
+            <version>${project.version}</version>
+		</dependency>
 	</dependencies>
 
 	<build>
@@ -182,6 +187,6 @@
 					<argLine>${argLine} -Dfile.encoding=UTF-8 -Xmx96m -XX:+HeapDumpOnOutOfMemoryError</argLine>
 				</configuration>
 			</plugin>
-		</plugins>
+        </plugins>
 	</build>
 </project>

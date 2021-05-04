@@ -1,20 +1,19 @@
 package se.fortnox.reactivewizard.jaxrs;
 
-import io.netty.buffer.ByteBuf;
 import org.reactivestreams.Publisher;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.netty.http.server.HttpServerRequest;
 import reactor.netty.http.server.HttpServerResponse;
-import rx.Observable;
 import se.fortnox.reactivewizard.ExceptionHandler;
 import se.fortnox.reactivewizard.RequestHandler;
 import se.fortnox.reactivewizard.jaxrs.response.JaxRsResult;
+import se.fortnox.reactivewizard.jaxrs.startupchecks.StartupCheck;
 import se.fortnox.reactivewizard.util.DebugUtil;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Collections;
+import java.util.Set;
 
 /**
  * Handles incoming requests. If the request matches a resource an Observable which completes the request is returned.
@@ -31,14 +30,17 @@ public class JaxRsRequestHandler implements RequestHandler {
                                JaxRsResourceFactory jaxRsResourceFactory,
                                ExceptionHandler exceptionHandler,
                                ByteBufCollector collector,
-                               JaxRsResourceInterceptors requestInterceptors
+                               JaxRsResourceInterceptors requestInterceptors,
+                               Set<StartupCheck> startupChecks
     ) {
         this(services.getResources(),
             jaxRsResourceFactory,
             exceptionHandler,
             collector,
             null,
-            requestInterceptors);
+            requestInterceptors,
+            startupChecks
+        );
     }
 
     public JaxRsRequestHandler(JaxRsResourcesProvider services,
@@ -46,7 +48,7 @@ public class JaxRsRequestHandler implements RequestHandler {
         ExceptionHandler exceptionHandler,
         ByteBufCollector collector) {
         this(services.getResources(), jaxRsResourceFactory, exceptionHandler, collector, null,
-            new JaxRsResourceInterceptors(Collections.emptySet()));
+            new JaxRsResourceInterceptors(Collections.emptySet()), Collections.emptySet());
     }
 
     public JaxRsRequestHandler(Object[] services,
@@ -62,7 +64,7 @@ public class JaxRsRequestHandler implements RequestHandler {
         Boolean classReloading,
         JaxRsResourceInterceptors requestInterceptors
     ) {
-        this(services, jaxRsResourceFactory, exceptionHandler, new ByteBufCollector(), classReloading, requestInterceptors);
+        this(services, jaxRsResourceFactory, exceptionHandler, new ByteBufCollector(), classReloading, requestInterceptors, Collections.emptySet());
     }
 
     public JaxRsRequestHandler(Object[] services,
@@ -70,14 +72,15 @@ public class JaxRsRequestHandler implements RequestHandler {
         ExceptionHandler exceptionHandler,
         ByteBufCollector collector,
         Boolean classReloading,
-        JaxRsResourceInterceptors requestInterceptors
+        JaxRsResourceInterceptors requestInterceptors,
+        Set<StartupCheck> startupChecks
     ) {
         this.collector = collector;
         this.exceptionHandler = exceptionHandler;
         if (classReloading == null) {
             classReloading = DebugUtil.IS_DEBUG;
         }
-        this.resources = new JaxRsResources(services, jaxRsResourceFactory, classReloading);
+        this.resources = new JaxRsResources(services, jaxRsResourceFactory, classReloading, startupChecks);
         this.requestInterceptors = requestInterceptors;
     }
 

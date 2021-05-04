@@ -10,6 +10,7 @@ import se.fortnox.reactivewizard.mocks.MockHttpServerResponse;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import java.util.Collections;
 
 import static java.util.Collections.singleton;
 import static org.fest.assertions.Assertions.assertThat;
@@ -27,7 +28,8 @@ public class JaxRsRequestHandlerTest {
             new ExceptionHandler(),
             new ByteBufCollector(),
             null,
-            new JaxRsResourceInterceptors(singleton(interceptor)));
+            new JaxRsResourceInterceptors(singleton(interceptor)),
+            Collections.emptySet());
     }
 
     @Test

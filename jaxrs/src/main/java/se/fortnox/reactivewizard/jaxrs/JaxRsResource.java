@@ -35,16 +35,17 @@ import static java.util.Arrays.asList;
  */
 public class JaxRsResource<T> implements Comparable<JaxRsResource> {
 
-    private static final RequestLogger REQUEST_LOGGER = new RequestLogger(LoggerFactory.getLogger(JaxRsResource.class));
-    private static final Object EMPTY_ARG = new Object();
-    private final Pattern                           pathPattern;
-    private final Method                            method;
-    private final Method                            instanceMethod;
-    private final Integer                           paramCount;
-    private final List<ParamResolver>               argumentExtractors;
-    private final JaxRsResultFactory<T>             resultFactory;
-    private final JaxRsMeta                         meta;
-    private final Function<Object[], Flux<T>> methodCaller;
+    private static final RequestLogger               REQUEST_LOGGER     = new RequestLogger(LoggerFactory.getLogger(JaxRsResource.class));
+    private static final Object                      EMPTY_ARG          = new Object();
+    private final        Pattern                     pathPattern;
+    private              Pattern                     comparablePattern;
+    private final        Method                      method;
+    private final        Method                      instanceMethod;
+    private final        Integer                     paramCount;
+    private final        List<ParamResolver>         argumentExtractors;
+    private final        JaxRsResultFactory<T>       resultFactory;
+    private final        JaxRsMeta                   meta;
+    private final        Function<Object[], Flux<T>> methodCaller;
 
     public JaxRsResource(Method method,
         Object resourceInstance,
@@ -67,8 +68,10 @@ public class JaxRsResource<T> implements Comparable<JaxRsResource> {
     private static Pattern createPathPattern(String path) {
         // Vars with custom regex, like this: {myvar:myregex}
         path = path.replaceAll("\\{([^}]+):([^}]+)\\}", "(?<$1>$2)");
+
         // Vars without custom regex, like this: {myvar}
         path = path.replaceAll("\\{([^}]+)\\}", "(?<$1>[^/]+)");
+
         // Allow trailing slash
         path = "^" + path + "[/\\s]*$";
 
@@ -131,7 +134,7 @@ public class JaxRsResource<T> implements Comparable<JaxRsResource> {
         // This part should be refactored so that this class does not know about decorator, but right now the meta data
         // is lost if not handled here.
         if (result instanceof ResponseDecorator.ObservableWithHeaders) {
-            Map<String, String> headers = ((ResponseDecorator.ObservableWithHeaders<T>) result).getHeaders();
+            Map<String, String> headers = ((ResponseDecorator.ObservableWithHeaders<T>)result).getHeaders();
             return new ResponseDecorator.FluxWithHeaders<>(fluxResult, headers);
         }
 
@@ -215,5 +218,13 @@ public class JaxRsResource<T> implements Comparable<JaxRsResource> {
 
     public String getPath() {
         return meta.getFullPath();
+    }
+
+    public Pattern getComparablePattern() {
+        return comparablePattern;
+    }
+
+    public void setComparablePattern(Pattern comparablePattern) {
+        this.comparablePattern = comparablePattern;
     }
 }

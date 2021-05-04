@@ -1,17 +1,17 @@
 package se.fortnox.reactivewizard.jaxrs;
 
-import reactor.core.publisher.Flux;
-import reactor.netty.http.server.HttpServerRequest;
-import reactor.netty.http.server.HttpServerResponse;
-import se.fortnox.reactivewizard.ExceptionHandler;
 import io.netty.handler.codec.http.HttpMethod;
 import org.junit.Test;
+import reactor.core.publisher.Flux;
+import reactor.netty.http.server.HttpServerRequest;
 import rx.Observable;
+import se.fortnox.reactivewizard.ExceptionHandler;
 import se.fortnox.reactivewizard.mocks.MockHttpServerRequest;
 import se.fortnox.reactivewizard.mocks.MockHttpServerResponse;
 
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+import java.util.Collections;
 
 import static java.util.Collections.emptySet;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -67,7 +67,8 @@ public class WrappedParamTest {
                 new ExceptionHandler(),
                 new ByteBufCollector(),
                 false,
-                new JaxRsResourceInterceptors(emptySet())
+                new JaxRsResourceInterceptors(emptySet()),
+	            Collections.emptySet()
         );
     }
 

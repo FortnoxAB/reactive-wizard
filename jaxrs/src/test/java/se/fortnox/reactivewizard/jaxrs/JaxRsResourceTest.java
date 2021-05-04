@@ -12,12 +12,23 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.cookie.DefaultCookie;
+import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.Mockito;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import rx.Observable;
 import rx.Single;
+import se.fortnox.reactivewizard.jaxrs.CollidingTestInterfaces.CustomRegexPathParam;
+import se.fortnox.reactivewizard.jaxrs.CollidingTestInterfaces.NoPathParamAnnotation;
+import se.fortnox.reactivewizard.jaxrs.CollidingTestInterfaces.One;
+import se.fortnox.reactivewizard.jaxrs.CollidingTestInterfaces.OtherParametersAreTheSame;
+import se.fortnox.reactivewizard.jaxrs.CollidingTestInterfaces.OtherParametersAreTheSameInDifferentOrder;
+import se.fortnox.reactivewizard.jaxrs.CollidingTestInterfaces.OtherParametersDiffer;
+import se.fortnox.reactivewizard.jaxrs.CollidingTestInterfaces.SamePathAndVerbDifferentType;
+import se.fortnox.reactivewizard.jaxrs.CollidingTestInterfaces.SamePathDifferentVerb;
+import se.fortnox.reactivewizard.jaxrs.CollidingTestInterfaces.Two;
+import se.fortnox.reactivewizard.jaxrs.CollidingTestInterfaces.VerbDiffers;
 import se.fortnox.reactivewizard.jaxrs.params.ParamResolver;
 import se.fortnox.reactivewizard.jaxrs.params.ParamResolverFactories;
 import se.fortnox.reactivewizard.jaxrs.params.ParamResolverFactory;
@@ -28,6 +39,10 @@ import se.fortnox.reactivewizard.jaxrs.params.deserializing.DeserializerFactory;
 import se.fortnox.reactivewizard.jaxrs.response.JaxRsResult;
 import se.fortnox.reactivewizard.jaxrs.response.JaxRsResultFactoryFactory;
 import se.fortnox.reactivewizard.jaxrs.response.ResultTransformerFactories;
+import se.fortnox.reactivewizard.jaxrs.startupchecks.CheckForDuplicatePaths;
+import se.fortnox.reactivewizard.jaxrs.startupchecks.CheckForMissingPathParams;
+import se.fortnox.reactivewizard.jaxrs.startupchecks.StartupCheck;
+import se.fortnox.reactivewizard.jaxrs.startupchecks.StartupCheckConfig;
 import se.fortnox.reactivewizard.mocks.MockHttpServerRequest;
 import se.fortnox.reactivewizard.mocks.MockHttpServerResponse;
 import se.fortnox.reactivewizard.utils.JaxRsTestUtil;
@@ -62,6 +77,8 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -78,11 +95,11 @@ import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.put;
 
 public class JaxRsResourceTest {
 
-	public enum TestEnum {
-		ONE, TWO, THREE
-	}
+    public enum TestEnum {
+        ONE, TWO, THREE
+    }
 
-	private final TestresourceInterface service = new TestresourceImpl();
+    private final TestresourceInterface service = new TestresourceImpl();
 
     @Test
     public void shouldConcatPaths() throws InvocationTargetException, IllegalAccessException {
@@ -113,9 +130,85 @@ public class JaxRsResourceTest {
     }
 
     @Test
+    public void shouldHandleCustomRegexPathParam() {
+        assertNoCollision(new CustomRegexPathParam() {}, new One() {});
+    }
+
+    @Test
     public void shouldHandleInterfaceAnnotations() throws Exception {
         assertThat(body(get(service, "/test/accepts?myarg=hepp")))
             .isEqualTo("\"accepts from interface: hepp\"");
+    }
+
+    @Test
+    public void testCollidingLogic() {
+        assertCollision(new SamePathAndVerbDifferentType() {});
+
+        assertNoCollision(new VerbDiffers() {});
+
+        assertNoCollision(new One() {}, new Two() {});
+    }
+
+    @Test
+    public void testExceptionWhenPathParamAnnotationIsMissed() {
+        try {
+            newJaxRsResources(new Object[]{new NoPathParamAnnotation() {}, new One() {}});
+            Assert.fail();
+        } catch (IllegalStateException e) {
+            assertThat(e.getMessage()).contains("Could not find @PathParam annotated parameter for date");
+        }
+    }
+
+    @Test
+    public void shouldNotCollideOnSamePathButDifferentVerb() {
+        assertNoCollision(new SamePathDifferentVerb(){});
+    }
+
+    @Test
+    public void shoulNotCollideOnSamePathButDifferingCookieParam() {
+        assertNoCollision(new OtherParametersDiffer() {}, new One() {});
+    }
+
+    @Test
+    public void shouldCollideWhenCookieParamValueIsTheSame() {
+        assertCollision(new OtherParametersAreTheSame() {});
+    }
+
+    @Test
+    public void shouldCollideWhenCookieParamsAreTheSameButInDifferentOrder() {
+        assertCollision(new OtherParametersAreTheSameInDifferentOrder() {}, new One() {});
+    }
+
+    private JaxRsResources newJaxRsResources(Object[] services) {
+        final StartupCheckConfig startupCheckConfig = new StartupCheckConfig();
+        return new JaxRsResources(
+            services,
+            new JaxRsResourceFactory(
+                new ParamResolverFactories(
+                    new DeserializerFactory(),
+                    new ParamResolvers(Collections.EMPTY_SET, Collections.EMPTY_SET),
+                    new AnnotatedParamResolverFactories(),
+                    new WrapSupportingParamTypeResolver()),
+                new JaxRsResultFactoryFactory()),
+            false,
+            Set.of(new CheckForDuplicatePaths(startupCheckConfig), new CheckForMissingPathParams(startupCheckConfig)));
+    }
+
+    private void assertCollision(Object... service) {
+        try {
+            newJaxRsResources(service);
+            Assert.fail();
+        } catch (IllegalStateException illegalStateException) {
+            assertThat(illegalStateException).hasMessageContaining("duplicates");
+        }
+    }
+
+    private void assertNoCollision(Object... service) {
+        try {
+            newJaxRsResources(service);
+        } catch (IllegalStateException illegalStateException) {
+            Assert.fail("Didnt expect exception: " + illegalStateException.getMessage());
+        }
     }
 
     @Test
@@ -123,7 +216,7 @@ public class JaxRsResourceTest {
         IllegalArgumentException, InvocationTargetException, JsonProcessingException {
 
         MockHttpServerRequest req = new MockHttpServerRequest("/test/accepts/res?fid=5678");
-        req.cookies().put("fnox_5678", new HashSet<>(asList(new DefaultCookie("fnox_5678","888"))));
+        req.cookies().put("fnox_5678", new HashSet<>(asList(new DefaultCookie("fnox_5678", "888"))));
 
         Foo foo = Mockito.mock(Foo.class);
         when(foo.getStr()).thenReturn("5678");
@@ -146,7 +239,7 @@ public class JaxRsResourceTest {
                     new WrapSupportingParamTypeResolver()),
                 new JaxRsResultFactoryFactory()),
             false);
-        JaxRsRequest                         jaxRsRequest = new JaxRsRequest(req, new ByteBufCollector());
+        JaxRsRequest                   jaxRsRequest = new JaxRsRequest(req, new ByteBufCollector());
         Mono<? extends JaxRsResult<?>> result       = jaxRsResources.findResource(jaxRsRequest).call(jaxRsRequest);
 
         MockHttpServerResponse response = new MockHttpServerResponse();
@@ -423,7 +516,6 @@ public class JaxRsResourceTest {
         }
     }
 
-
     @Test
     public void shouldSupportCustomDates() throws Exception {
         Module customDateModule = new AbstractModule() {
@@ -442,6 +534,7 @@ public class JaxRsResourceTest {
                     .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
                     .setDateFormat(new CustomDateFormat()));
                 Multibinder.newSetBinder(binder(), JaxRsResourceInterceptor.class);
+                Multibinder.newSetBinder(binder(), StartupCheck.class);
             }
         };
         Injector            injector = Guice.createInjector(customDateModule);
@@ -740,6 +833,21 @@ public class JaxRsResourceTest {
     @Test
     public void shouldAcceptBeanParamInherited() {
         assertThat(get(service, "/test/acceptsBeanParamInherited?name=foo&age=3&items=1,2&inherited=YES").getOutp()).isEqualTo("\"foo - 3 2 - YES\"");
+    }
+
+    @Test
+    public void test() {
+        try {
+            final Pattern compile = Pattern.compile("\\{(\\w*)\\}");
+            final Matcher matcher = compile.matcher("/test/test/{param}/{param2}");
+
+            while (matcher.find()) {
+                System.out.println(matcher.group(1));
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Path("test")
@@ -1112,7 +1220,7 @@ public class JaxRsResourceTest {
 
         @Override
         public Observable<String> acceptsStringPath(String myarg) {
-            return just("String: "+myarg);
+            return just("String: " + myarg);
         }
 
         @Override
@@ -1447,6 +1555,6 @@ public class JaxRsResourceTest {
 
 interface Foo {
 
-	String getStr();
+    String getStr();
 
 }
