@@ -130,11 +130,11 @@ public class LiquibaseAutoBindModuleTest {
                 ServerConfig serverConfig = new ServerConfig() {{
                     setEnabled(false);
                 }};
-                when(configFactory.get(eq(ServerConfig.class))).thenReturn(serverConfig);
+                when(configFactory.get(ServerConfig.class)).thenReturn(serverConfig);
                 bind(ServerConfig.class).toInstance(serverConfig);
 
                 StartupCheckConfig startupCheckConfig = new StartupCheckConfig();
-                when(configFactory.get(eq(StartupCheckConfig.class))).thenReturn(startupCheckConfig);
+                when(configFactory.get(StartupCheckConfig.class)).thenReturn(startupCheckConfig);
 
                 LiquibaseConfig liquibaseConfig = new LiquibaseConfig();
                 liquibaseConfig.setUrl("jdbc:h2:mem:test");

@@ -73,8 +73,6 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.UUID;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -198,7 +196,7 @@ public class JaxRsResourceTest {
 
             Assert.fail();
         } catch (IllegalStateException illegalStateException) {
-            assertThat(illegalStateException).hasMessageContaining("duplicates");
+            assertThat(illegalStateException).hasMessageContaining("collides");
         }
     }
 
@@ -215,7 +213,7 @@ public class JaxRsResourceTest {
         final JaxRsRequestHandler mockedRequestHandler = mock(JaxRsRequestHandler.class);
         when(mockedRequestHandler.getResources())
             .thenReturn(jaxRsResources);
-        new CheckForDuplicatePaths(new StartupCheckConfig(), mockedRequestHandler);
+        new CheckForCollidingPaths(new StartupCheckConfig(), mockedRequestHandler);
         new CheckForMissingPathParams(new StartupCheckConfig(), mockedRequestHandler);
     }
 
@@ -841,21 +839,6 @@ public class JaxRsResourceTest {
     @Test
     public void shouldAcceptBeanParamInherited() {
         assertThat(get(service, "/test/acceptsBeanParamInherited?name=foo&age=3&items=1,2&inherited=YES").getOutp()).isEqualTo("\"foo - 3 2 - YES\"");
-    }
-
-    @Test
-    public void test() {
-        try {
-            final Pattern compile = Pattern.compile("\\{(\\w*)\\}");
-            final Matcher matcher = compile.matcher("/test/test/{param}/{param2}");
-
-            while (matcher.find()) {
-                System.out.println(matcher.group(1));
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 
     @Path("test")

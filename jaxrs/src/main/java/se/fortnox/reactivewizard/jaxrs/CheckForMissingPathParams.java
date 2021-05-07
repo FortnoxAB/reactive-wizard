@@ -10,8 +10,8 @@ import java.lang.reflect.Type;
 import java.util.List;
 import java.util.regex.Matcher;
 
-import static se.fortnox.reactivewizard.jaxrs.CheckForDuplicatePaths.PATH_PARAM_PATTERN;
-import static se.fortnox.reactivewizard.jaxrs.CheckForDuplicatePaths.findParamWithPathParamAnnotation;
+import static se.fortnox.reactivewizard.jaxrs.CheckForCollidingPaths.PATH_PARAM_PATTERN;
+import static se.fortnox.reactivewizard.jaxrs.CheckForCollidingPaths.findParamWithPathParamAnnotation;
 
 public class CheckForMissingPathParams extends StartupCheck {
     private static final Logger             LOG = LoggerFactory.getLogger(CheckForMissingPathParams.class);
