@@ -6,11 +6,8 @@ import rx.Observable;
 import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.fail;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.Mockito.*;
 import static rx.Observable.just;
 
 public class IfThenElseTest {

@@ -10,9 +10,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static se.fortnox.reactivewizard.test.TestUtil.assertException;
-import static se.fortnox.reactivewizard.test.TestUtil.assertNestedException;
-import static se.fortnox.reactivewizard.test.TestUtil.matches;
+import static se.fortnox.reactivewizard.test.TestUtil.*;
 
 public class TestUtilTest {
     @Test
@@ -34,7 +32,7 @@ public class TestUtilTest {
         } catch (ArgumentsAreDifferent comparisonFailure) {
             assertThat(comparisonFailure.getActual()).isEqualTo("testClass.doNothing(\n" +
                     "    \"unexpected\"\n" +
-                    ");");
+                    ");\n");
             assertThat(comparisonFailure.getExpected()).isEqualTo("testClass.doNothing(\n" +
                 "    expected:<\"[]expected\"> but was:<\"[un]expected\">\n" +
                 ");");
@@ -44,7 +42,7 @@ public class TestUtilTest {
                     "    expected:<\"[]expected\"> but was:<\"[un]expected\">\n" +
                     ");\n" +
                     "-> at se.fortnox.reactivewizard.test.TestUtilTest.testMatchesFailure(TestUtilTest.java:32)\n" +
-                    "Actual invocation has different arguments:\n" +
+                    "Actual invocations have different arguments:\n" +
                     "testClass.doNothing(\n" +
                     "    \"unexpected\"\n" +
                     ");\n" +

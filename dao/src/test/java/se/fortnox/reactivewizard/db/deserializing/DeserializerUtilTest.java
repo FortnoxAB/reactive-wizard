@@ -8,7 +8,7 @@ import java.sql.SQLException;
 import java.sql.Types;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static se.fortnox.reactivewizard.test.LoggingMockUtil.createMockedLogAppender;
