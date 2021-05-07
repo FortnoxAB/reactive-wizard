@@ -1,8 +1,7 @@
-package se.fortnox.reactivewizard.jaxrs.startupchecks;
+package se.fortnox.reactivewizard.jaxrs;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import se.fortnox.reactivewizard.jaxrs.JaxRsResource;
 import se.fortnox.reactivewizard.util.ReflectionUtil;
 
 import javax.inject.Inject;
@@ -11,20 +10,24 @@ import java.lang.reflect.Type;
 import java.util.List;
 import java.util.regex.Matcher;
 
-import static se.fortnox.reactivewizard.jaxrs.startupchecks.CheckForDuplicatePaths.PATH_PARAM_PATTERN;
-import static se.fortnox.reactivewizard.jaxrs.startupchecks.CheckForDuplicatePaths.findParamWithPathParamAnnotation;
+import static se.fortnox.reactivewizard.jaxrs.CheckForDuplicatePaths.PATH_PARAM_PATTERN;
+import static se.fortnox.reactivewizard.jaxrs.CheckForDuplicatePaths.findParamWithPathParamAnnotation;
 
-public class CheckForMissingPathParams implements StartupCheck {
+public class CheckForMissingPathParams extends StartupCheck {
     private static final Logger             LOG = LoggerFactory.getLogger(CheckForMissingPathParams.class);
     private final        StartupCheckConfig startupCheckConfig;
 
     @Inject
-    public CheckForMissingPathParams(StartupCheckConfig startupCheckConfig) {
+    public CheckForMissingPathParams(StartupCheckConfig startupCheckConfig,
+        JaxRsRequestHandler jaxRsRequestHandler
+    ) {
         this.startupCheckConfig = startupCheckConfig;
+        final List<JaxRsResource> resources = jaxRsRequestHandler.getResources().getResources();
+
+        check(resources);
     }
 
-    @Override
-    public void check(List<JaxRsResource> resources) {
+    void check(List<JaxRsResource> resources) {
         resources.forEach(resource -> {
             Matcher matcher = PATH_PARAM_PATTERN.matcher(resource.getPath());
             while (matcher.find()) {

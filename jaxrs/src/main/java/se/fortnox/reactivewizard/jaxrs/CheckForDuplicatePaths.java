@@ -1,8 +1,7 @@
-package se.fortnox.reactivewizard.jaxrs.startupchecks;
+package se.fortnox.reactivewizard.jaxrs;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import se.fortnox.reactivewizard.jaxrs.JaxRsResource;
 import se.fortnox.reactivewizard.util.ReflectionUtil;
 
 import javax.inject.Inject;
@@ -17,45 +16,52 @@ import java.lang.reflect.Type;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class CheckForDuplicatePaths implements StartupCheck {
+public class CheckForDuplicatePaths extends StartupCheck {
 
     private final        StartupCheckConfig startupCheckConfig;
     private static final Logger             LOG                = LoggerFactory.getLogger(CheckForDuplicatePaths.class);
     public static final  Pattern            PATH_PARAM_PATTERN = Pattern.compile("\\{(\\w*)\\}");
 
     @Inject
-    public CheckForDuplicatePaths(StartupCheckConfig startupCheckConfig) {
+    public CheckForDuplicatePaths(StartupCheckConfig startupCheckConfig, JaxRsRequestHandler jaxRsRequestHandler) {
         this.startupCheckConfig = startupCheckConfig;
+        final List<JaxRsResource> resources = jaxRsRequestHandler.getResources().getResources();
+
+        check(resources);
     }
 
-    @Override
-    public void check(List<JaxRsResource> resources) {
-        resources.forEach(jaxRsResource -> {
-            final Optional<JaxRsResource> duplicate = resources.stream()
-                .filter(res -> res != jaxRsResource && pathParamCollides(res, jaxRsResource))
-                .findFirst();
-
-            if (duplicate.isPresent()) {
-                String errorMessage = String.format("%s duplicates %s on path %s",
-                    duplicate.get().getResourceMethod(),
-                    jaxRsResource.getResourceMethod(),
-                    duplicate.get().getPath());
-                if (startupCheckConfig.isFailOnError()) {
-                    throw new IllegalStateException(errorMessage);
-                } else {
-                    LOG.warn(errorMessage);
+    void check(List<JaxRsResource> resources) {
+        for (int i = 0; i < resources.size() - 1; i++) {
+            JaxRsResource testedResource = resources.get(i);
+            for (int j = i + 1; j < resources.size(); j++) {
+                JaxRsResource otherResource = resources.get(j);
+                if (pathParamCollides(testedResource, otherResource)) {
+                    String errorMessage = String.format("%s duplicates %s on path %s",
+                        testedResource.getResourceMethod(),
+                        otherResource.getResourceMethod(),
+                        testedResource.getPath()
+                    );
+                    if (startupCheckConfig.isFailOnError()) {
+                        throw new IllegalStateException(errorMessage);
+                    } else {
+                        LOG.warn(errorMessage);
+                    }
                 }
             }
-        });
+        }
     }
 
     public static boolean pathParamCollides(JaxRsResource jaxRsResource1, JaxRsResource jaxRsResource2) {
         if (jaxRsResource2 == null) {
+            return false;
+        }
+
+        //Different verbs causes no collision
+        if (!jaxRsResource1.getHttpMethod().equals(jaxRsResource2.getHttpMethod())) {
             return false;
         }
 
@@ -70,11 +76,6 @@ public class CheckForDuplicatePaths implements StartupCheck {
             if (!Objects.equals(thisPathParamType, thatPathParamType)) {
                 pathParamCollision = true;
             }
-        }
-
-        //Different verbs causes no collision
-        if (!jaxRsResource1.getHttpMethod().equals(jaxRsResource2.getHttpMethod())) {
-            return false;
         }
 
         final String thisPath          = createPathPattern(jaxRsResource1.getPath()).toString();

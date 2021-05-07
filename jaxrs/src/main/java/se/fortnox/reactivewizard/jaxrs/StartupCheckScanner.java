@@ -1,4 +1,4 @@
-package se.fortnox.reactivewizard.jaxrs.startupchecks;
+package se.fortnox.reactivewizard.jaxrs;
 
 import se.fortnox.reactivewizard.binding.scanners.AbstractClassScanner;
 import se.fortnox.reactivewizard.binding.scanners.ClassScanner;
@@ -13,7 +13,7 @@ public class StartupCheckScanner extends AbstractClassScanner {
 
     @Override
     public void visit(ClassScanner classpathScanner) {
-        classpathScanner.findClassesImplementing(StartupCheck.class).forEach(startupChecks::add);
+        classpathScanner.findSubclassesOf(StartupCheck.class).forEach(startupChecks::add);
     }
 
     public Set<Class<? extends StartupCheck>> getStartupChecks() {

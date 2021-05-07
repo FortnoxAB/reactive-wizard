@@ -1,4 +1,4 @@
-package se.fortnox.reactivewizard.jaxrs.startupchecks;
+package se.fortnox.reactivewizard.jaxrs;
 
 import se.fortnox.reactivewizard.config.Config;
 

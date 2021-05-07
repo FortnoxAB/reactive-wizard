@@ -2,11 +2,8 @@ package se.fortnox.reactivewizard.jaxrs;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import se.fortnox.reactivewizard.jaxrs.startupchecks.StartupCheck;
 
-import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 
 public class JaxRsResources {
     private static final Logger LOG = LoggerFactory.getLogger(JaxRsResources.class);
@@ -16,10 +13,6 @@ public class JaxRsResources {
     private       JaxRsResourceFactory jaxRsResourceFactory;
 
     public JaxRsResources(Object[] services, JaxRsResourceFactory jaxRsResourceFactory, Boolean classReloading) {
-        this(services, jaxRsResourceFactory, classReloading, Collections.emptySet());
-    }
-
-    public JaxRsResources(Object[] services, JaxRsResourceFactory jaxRsResourceFactory, Boolean classReloading, Set<StartupCheck> startupChecks) {
         this.services = services;
         this.reloadClasses = classReloading;
         this.jaxRsResourceFactory = jaxRsResourceFactory;
@@ -33,10 +26,6 @@ public class JaxRsResources {
             sb.append(r.toString());
         }
         LOG.info(sb.toString());
-
-        startupChecks.forEach(startupCheck -> {
-            startupCheck.check(resources);
-        });
     }
 
     public JaxRsResource<?> findResource(JaxRsRequest request) {
@@ -50,5 +39,9 @@ public class JaxRsResources {
             }
         }
         return null;
+    }
+
+    List<JaxRsResource> getResources() {
+        return resources;
     }
 }

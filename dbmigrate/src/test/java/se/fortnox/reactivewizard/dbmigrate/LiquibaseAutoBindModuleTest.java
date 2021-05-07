@@ -1,7 +1,6 @@
 package se.fortnox.reactivewizard.dbmigrate;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.CreationException;
 import com.google.inject.Guice;
 import com.google.inject.name.Names;
 import com.google.inject.util.Modules;
@@ -12,6 +11,7 @@ import org.junit.Test;
 import se.fortnox.reactivewizard.binding.AutoBindModules;
 import se.fortnox.reactivewizard.config.ConfigFactory;
 import se.fortnox.reactivewizard.config.TestInjector;
+import se.fortnox.reactivewizard.jaxrs.StartupCheckConfig;
 import se.fortnox.reactivewizard.server.ServerConfig;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -132,6 +132,9 @@ public class LiquibaseAutoBindModuleTest {
                 }};
                 when(configFactory.get(eq(ServerConfig.class))).thenReturn(serverConfig);
                 bind(ServerConfig.class).toInstance(serverConfig);
+
+                StartupCheckConfig startupCheckConfig = new StartupCheckConfig();
+                when(configFactory.get(eq(StartupCheckConfig.class))).thenReturn(startupCheckConfig);
 
                 LiquibaseConfig liquibaseConfig = new LiquibaseConfig();
                 liquibaseConfig.setUrl("jdbc:h2:mem:test");

@@ -15,7 +15,6 @@ import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.QueryParam;
-import java.util.Collections;
 
 import static java.util.Collections.emptySet;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -30,8 +29,8 @@ public class StatusTest {
         exceptionHandler,
         new ByteBufCollector(),
         false,
-        new JaxRsResourceInterceptors(emptySet()),
-        Collections.emptySet());
+        new JaxRsResourceInterceptors(emptySet())
+    );
 
     @Test
     public void shouldReturn200ForGetPutPatch() {

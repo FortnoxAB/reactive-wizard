@@ -39,10 +39,6 @@ import se.fortnox.reactivewizard.jaxrs.params.deserializing.DeserializerFactory;
 import se.fortnox.reactivewizard.jaxrs.response.JaxRsResult;
 import se.fortnox.reactivewizard.jaxrs.response.JaxRsResultFactoryFactory;
 import se.fortnox.reactivewizard.jaxrs.response.ResultTransformerFactories;
-import se.fortnox.reactivewizard.jaxrs.startupchecks.CheckForDuplicatePaths;
-import se.fortnox.reactivewizard.jaxrs.startupchecks.CheckForMissingPathParams;
-import se.fortnox.reactivewizard.jaxrs.startupchecks.StartupCheck;
-import se.fortnox.reactivewizard.jaxrs.startupchecks.StartupCheckConfig;
 import se.fortnox.reactivewizard.mocks.MockHttpServerRequest;
 import se.fortnox.reactivewizard.mocks.MockHttpServerResponse;
 import se.fortnox.reactivewizard.utils.JaxRsTestUtil;
@@ -83,6 +79,7 @@ import java.util.regex.Pattern;
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static rx.Observable.just;
 import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.body;
@@ -131,7 +128,7 @@ public class JaxRsResourceTest {
 
     @Test
     public void shouldHandleCustomRegexPathParam() {
-        assertNoCollision(new CustomRegexPathParam() {}, new One() {});
+        assertStartupChecksPassed(new CustomRegexPathParam() {}, new One() {});
     }
 
     @Test
@@ -144,29 +141,30 @@ public class JaxRsResourceTest {
     public void testCollidingLogic() {
         assertCollision(new SamePathAndVerbDifferentType() {});
 
-        assertNoCollision(new VerbDiffers() {});
+        assertStartupChecksPassed(new VerbDiffers() {});
 
-        assertNoCollision(new One() {}, new Two() {});
+        assertStartupChecksPassed(new One() {}, new Two() {});
     }
 
     @Test
     public void testExceptionWhenPathParamAnnotationIsMissed() {
         try {
-            newJaxRsResources(new Object[]{new NoPathParamAnnotation() {}, new One() {}});
+            runStartupChecks(new Object[]{new NoPathParamAnnotation() {}});
+
             Assert.fail();
-        } catch (IllegalStateException e) {
-            assertThat(e.getMessage()).contains("Could not find @PathParam annotated parameter for date");
+        } catch (IllegalStateException illegalStateException) {
+            assertThat(illegalStateException).hasMessageContaining("Could not find @PathParam annotated parameter for date");
         }
     }
 
     @Test
     public void shouldNotCollideOnSamePathButDifferentVerb() {
-        assertNoCollision(new SamePathDifferentVerb(){});
+        assertStartupChecksPassed(new SamePathDifferentVerb(){});
     }
 
     @Test
     public void shoulNotCollideOnSamePathButDifferingCookieParam() {
-        assertNoCollision(new OtherParametersDiffer() {}, new One() {});
+        assertStartupChecksPassed(new OtherParametersDiffer() {}, new One() {});
     }
 
     @Test
@@ -190,25 +188,35 @@ public class JaxRsResourceTest {
                     new AnnotatedParamResolverFactories(),
                     new WrapSupportingParamTypeResolver()),
                 new JaxRsResultFactoryFactory()),
-            false,
-            Set.of(new CheckForDuplicatePaths(startupCheckConfig), new CheckForMissingPathParams(startupCheckConfig)));
+            false
+        );
     }
 
     private void assertCollision(Object... service) {
         try {
-            newJaxRsResources(service);
+            runStartupChecks(service);
+
             Assert.fail();
         } catch (IllegalStateException illegalStateException) {
             assertThat(illegalStateException).hasMessageContaining("duplicates");
         }
     }
 
-    private void assertNoCollision(Object... service) {
+    private void assertStartupChecksPassed(Object... service) {
         try {
-            newJaxRsResources(service);
+            runStartupChecks(service);
         } catch (IllegalStateException illegalStateException) {
             Assert.fail("Didnt expect exception: " + illegalStateException.getMessage());
         }
+    }
+
+    private void runStartupChecks(Object[] service) {
+        JaxRsResources            jaxRsResources       = newJaxRsResources(service);
+        final JaxRsRequestHandler mockedRequestHandler = mock(JaxRsRequestHandler.class);
+        when(mockedRequestHandler.getResources())
+            .thenReturn(jaxRsResources);
+        new CheckForDuplicatePaths(new StartupCheckConfig(), mockedRequestHandler);
+        new CheckForMissingPathParams(new StartupCheckConfig(), mockedRequestHandler);
     }
 
     @Test

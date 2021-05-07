@@ -11,7 +11,6 @@ import se.fortnox.reactivewizard.mocks.MockHttpServerResponse;
 
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
-import java.util.Collections;
 
 import static java.util.Collections.emptySet;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -67,8 +66,7 @@ public class WrappedParamTest {
                 new ExceptionHandler(),
                 new ByteBufCollector(),
                 false,
-                new JaxRsResourceInterceptors(emptySet()),
-	            Collections.emptySet()
+                new JaxRsResourceInterceptors(emptySet())
         );
     }
 

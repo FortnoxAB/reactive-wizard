@@ -7,13 +7,11 @@ import reactor.netty.http.server.HttpServerResponse;
 import se.fortnox.reactivewizard.ExceptionHandler;
 import se.fortnox.reactivewizard.RequestHandler;
 import se.fortnox.reactivewizard.jaxrs.response.JaxRsResult;
-import se.fortnox.reactivewizard.jaxrs.startupchecks.StartupCheck;
 import se.fortnox.reactivewizard.util.DebugUtil;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Collections;
-import java.util.Set;
 
 /**
  * Handles incoming requests. If the request matches a resource an Observable which completes the request is returned.
@@ -27,19 +25,17 @@ public class JaxRsRequestHandler implements RequestHandler {
 
     @Inject
     public JaxRsRequestHandler(JaxRsResourcesProvider services,
-                               JaxRsResourceFactory jaxRsResourceFactory,
-                               ExceptionHandler exceptionHandler,
-                               ByteBufCollector collector,
-                               JaxRsResourceInterceptors requestInterceptors,
-                               Set<StartupCheck> startupChecks
+        JaxRsResourceFactory jaxRsResourceFactory,
+        ExceptionHandler exceptionHandler,
+        ByteBufCollector collector,
+        JaxRsResourceInterceptors requestInterceptors
     ) {
         this(services.getResources(),
             jaxRsResourceFactory,
             exceptionHandler,
             collector,
             null,
-            requestInterceptors,
-            startupChecks
+            requestInterceptors
         );
     }
 
@@ -48,7 +44,7 @@ public class JaxRsRequestHandler implements RequestHandler {
         ExceptionHandler exceptionHandler,
         ByteBufCollector collector) {
         this(services.getResources(), jaxRsResourceFactory, exceptionHandler, collector, null,
-            new JaxRsResourceInterceptors(Collections.emptySet()), Collections.emptySet());
+            new JaxRsResourceInterceptors(Collections.emptySet()));
     }
 
     public JaxRsRequestHandler(Object[] services,
@@ -64,7 +60,7 @@ public class JaxRsRequestHandler implements RequestHandler {
         Boolean classReloading,
         JaxRsResourceInterceptors requestInterceptors
     ) {
-        this(services, jaxRsResourceFactory, exceptionHandler, new ByteBufCollector(), classReloading, requestInterceptors, Collections.emptySet());
+        this(services, jaxRsResourceFactory, exceptionHandler, new ByteBufCollector(), classReloading, requestInterceptors);
     }
 
     public JaxRsRequestHandler(Object[] services,
@@ -72,15 +68,14 @@ public class JaxRsRequestHandler implements RequestHandler {
         ExceptionHandler exceptionHandler,
         ByteBufCollector collector,
         Boolean classReloading,
-        JaxRsResourceInterceptors requestInterceptors,
-        Set<StartupCheck> startupChecks
+        JaxRsResourceInterceptors requestInterceptors
     ) {
         this.collector = collector;
         this.exceptionHandler = exceptionHandler;
         if (classReloading == null) {
             classReloading = DebugUtil.IS_DEBUG;
         }
-        this.resources = new JaxRsResources(services, jaxRsResourceFactory, classReloading, startupChecks);
+        this.resources = new JaxRsResources(services, jaxRsResourceFactory, classReloading);
         this.requestInterceptors = requestInterceptors;
     }
 
@@ -132,5 +127,9 @@ public class JaxRsRequestHandler implements RequestHandler {
             return result.write(response);
         }
         return Mono.empty();
+    }
+
+    JaxRsResources getResources() {
+        return resources;
     }
 }
