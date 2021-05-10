@@ -9,15 +9,10 @@ import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static rx.Observable.empty;
-import static rx.Observable.error;
-import static rx.Observable.just;
-import static rx.Observable.range;
+import static org.mockito.Mockito.*;
+import static rx.Observable.*;
 import static se.fortnox.reactivewizard.util.rx.RxUtils.first;
 
 public class FirstThenTest {

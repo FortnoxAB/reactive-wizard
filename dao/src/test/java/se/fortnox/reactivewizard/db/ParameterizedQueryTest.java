@@ -1,25 +1,19 @@
 package se.fortnox.reactivewizard.db;
 
-import se.fortnox.reactivewizard.db.config.DatabaseConfig;
 import com.google.common.collect.Lists;
 import org.junit.Test;
 import rx.Observable;
+import se.fortnox.reactivewizard.db.config.DatabaseConfig;
 
 import java.sql.Array;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
-import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
 
 public class ParameterizedQueryTest {
 

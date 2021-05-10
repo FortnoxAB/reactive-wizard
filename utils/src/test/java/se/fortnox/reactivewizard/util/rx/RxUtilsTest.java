@@ -1,7 +1,6 @@
 package se.fortnox.reactivewizard.util.rx;
 
 import org.junit.Test;
-import org.mockito.Mockito;
 import rx.Observable;
 
 import java.util.*;
@@ -9,14 +8,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static rx.Observable.empty;
-import static rx.Observable.error;
-import static rx.Observable.just;
+import static org.mockito.Mockito.*;
+import static rx.Observable.*;
 
 public class RxUtilsTest {
     @Test
@@ -54,7 +49,7 @@ public class RxUtilsTest {
         Consumer<Boolean> thenMock = mock(Consumer.class);
         RxUtils.doIfEmpty(observable, () -> thenMock.accept(true)).toBlocking().subscribe();
 
-        verify(thenMock).accept(eq(true));
+        verify(thenMock).accept(true);
     }
 
 

@@ -1,16 +1,14 @@
 package se.fortnox.reactivewizard.server;
 
-import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import reactor.core.publisher.Flux;
 import reactor.netty.http.server.HttpServerRequest;
 import reactor.netty.http.server.HttpServerResponse;
-import rx.Observable;
 import se.fortnox.reactivewizard.ExceptionHandler;
 import se.fortnox.reactivewizard.RequestHandler;
 import se.fortnox.reactivewizard.jaxrs.WebException;
@@ -20,10 +18,8 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
 public class CompositeRequestHandlerTest {
@@ -84,8 +80,6 @@ public class CompositeRequestHandlerTest {
     @Test
     public void exceptionHandlerShallBeInvokedWhenNoRequestHandlerIsGiven() {
         when(exceptionHandler.handleException(any(), any(), any())).thenReturn(Flux.empty());
-        IllegalArgumentException illegalArgumentException = new IllegalArgumentException("expected exception");
-        when(exceptionHandler.handleException(request, response, illegalArgumentException)).thenReturn(Flux.empty());
 
         Flux.from(compositeRequestHandler.apply(request, response)).count().block();
 

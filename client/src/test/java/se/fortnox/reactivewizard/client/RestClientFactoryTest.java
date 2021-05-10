@@ -1,11 +1,8 @@
 package se.fortnox.reactivewizard.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.inject.AbstractModule;
-import com.google.inject.Binder;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
 import com.google.inject.Module;
+import com.google.inject.*;
 import com.google.inject.name.Names;
 import com.google.inject.util.Modules;
 import org.junit.Assert;
@@ -31,7 +28,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static com.google.common.collect.ImmutableSet.of;
 import static org.fest.assertions.Assertions.assertThat;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 public class RestClientFactoryTest {
@@ -53,7 +50,7 @@ public class RestClientFactoryTest {
             mockResourcesOnClassPath(binder, of(TestResource.class));
 
             when(httpClientProvider.createClient(any(HttpClientConfig.class))).thenAnswer(invocation -> {
-                HttpClientConfig httpClientConfig = invocation.getArgumentAt(0, HttpClientConfig.class);
+                HttpClientConfig httpClientConfig = invocation.getArgument(0, HttpClientConfig.class);
                 httpClientSpy.set(Mockito.spy(new HttpClient(httpClientConfig)));
                 return httpClientSpy.get();
             });
@@ -85,7 +82,7 @@ public class RestClientFactoryTest {
             HttpClientProvider httpClientProvider = mock(HttpClientProvider.class);
 
             when(httpClientProvider.createClient(any())).thenAnswer(invocation -> {
-                HttpClientConfig httpClientConfig = invocation.getArgumentAt(0, HttpClientConfig.class);
+                HttpClientConfig httpClientConfig = invocation.getArgument(0, HttpClientConfig.class);
                 HttpClient httpClient = spy(new HttpClient(httpClientConfig));
                 if (httpClientConfig instanceof CustomHttpClientConfig) {
                     mockCustomClient.set(httpClient);
@@ -107,7 +104,7 @@ public class RestClientFactoryTest {
         customTestResource.testCall();
         verify(mockCustomClient.get(), times(1)).invoke(any(), any(), any());
 
-        verifyZeroInteractions(mockClient.get());
+        verifyNoInteractions(mockClient.get());
 
         //Resetting the custom mock to be able
         reset(mockCustomClient.get());
@@ -117,7 +114,7 @@ public class RestClientFactoryTest {
 
         testResource.testCall();
         verify(mockClient.get(), times(1)).invoke(any(), any(), any());
-        verifyZeroInteractions(mockCustomClient.get());
+        verifyNoInteractions(mockCustomClient.get());
 
         reset(mockClient.get());
     }

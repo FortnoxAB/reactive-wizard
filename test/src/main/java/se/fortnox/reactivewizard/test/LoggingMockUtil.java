@@ -7,7 +7,6 @@ import org.slf4j.impl.Log4jLoggerAdapter;
 import java.lang.reflect.Field;
 
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class LoggingMockUtil {
     private LoggingMockUtil() {
@@ -17,8 +16,6 @@ public class LoggingMockUtil {
     public static Appender createMockedLogAppender(Class cls) {
         Logger   logger       = LoggingMockUtil.getLogger(cls);
         Appender mockAppender = mock(Appender.class);
-        when(mockAppender.getName())
-            .thenReturn("mockAppender");
         logger.addAppender(mockAppender);
         return mockAppender;
     }
