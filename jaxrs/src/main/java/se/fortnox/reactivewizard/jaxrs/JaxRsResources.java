@@ -26,6 +26,9 @@ public class JaxRsResources {
             sb.append(r.toString());
         }
         log.info(sb.toString());
+
+        CheckForCollidingPaths.check(this.resources);
+        CheckForMissingPathParams.check(this.resources);
     }
 
     public JaxRsResource<?> findResource(JaxRsRequest request) {
