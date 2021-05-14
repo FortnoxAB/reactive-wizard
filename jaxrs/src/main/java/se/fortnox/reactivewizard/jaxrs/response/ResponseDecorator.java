@@ -208,7 +208,7 @@ public class ResponseDecorator {
          * @return this
          */
         @Nonnull
-        public DecoratedResponseBuilder<T> withStatus(@Nullable AtomicReference<HttpResponseStatus> status) {
+        public DecoratedResponseBuilder<T> withStatus(@Nonnull AtomicReference<HttpResponseStatus> status) {
             this.decorations.setStatus(status);
             return this;
         }
@@ -244,7 +244,7 @@ public class ResponseDecorator {
             this.status.set(status);
         }
 
-        public void setStatus(@Nullable AtomicReference<HttpResponseStatus> status) {
+        public void setStatus(@Nonnull AtomicReference<HttpResponseStatus> status) {
             this.status = status;
         }
 
