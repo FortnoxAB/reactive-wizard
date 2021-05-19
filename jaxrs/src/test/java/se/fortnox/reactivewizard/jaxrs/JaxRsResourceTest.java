@@ -12,12 +12,23 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.cookie.DefaultCookie;
+import org.junit.Assert;
 import org.junit.Test;
-import org.mockito.Mockito;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import rx.Observable;
 import rx.Single;
+import se.fortnox.reactivewizard.jaxrs.CollidingTestInterfaces.CustomRegexPathParam;
+import se.fortnox.reactivewizard.jaxrs.CollidingTestInterfaces.IgnoreErrorsWhenSuppressAnnotated;
+import se.fortnox.reactivewizard.jaxrs.CollidingTestInterfaces.NoPathParamAnnotation;
+import se.fortnox.reactivewizard.jaxrs.CollidingTestInterfaces.One;
+import se.fortnox.reactivewizard.jaxrs.CollidingTestInterfaces.OtherParametersAreTheSame;
+import se.fortnox.reactivewizard.jaxrs.CollidingTestInterfaces.OtherParametersAreTheSameInDifferentOrder;
+import se.fortnox.reactivewizard.jaxrs.CollidingTestInterfaces.OtherParametersDiffer;
+import se.fortnox.reactivewizard.jaxrs.CollidingTestInterfaces.SamePathAndVerbDifferentType;
+import se.fortnox.reactivewizard.jaxrs.CollidingTestInterfaces.SamePathDifferentVerb;
+import se.fortnox.reactivewizard.jaxrs.CollidingTestInterfaces.Two;
+import se.fortnox.reactivewizard.jaxrs.CollidingTestInterfaces.VerbDiffers;
 import se.fortnox.reactivewizard.jaxrs.params.ParamResolver;
 import se.fortnox.reactivewizard.jaxrs.params.ParamResolverFactories;
 import se.fortnox.reactivewizard.jaxrs.params.ParamResolverFactory;
@@ -66,6 +77,7 @@ import java.util.UUID;
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static rx.Observable.just;
 import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.body;
@@ -125,7 +137,7 @@ public class JaxRsResourceTest {
         MockHttpServerRequest req = new MockHttpServerRequest("/test/accepts/res?fid=5678");
         req.cookies().put("fnox_5678", new HashSet<>(asList(new DefaultCookie("fnox_5678","888"))));
 
-        Foo foo = Mockito.mock(Foo.class);
+        Foo foo = mock(Foo.class);
         when(foo.getStr()).thenReturn("5678");
         ParamResolver<Foo> fooResolver = new ParamResolver<Foo>() {
             @Override
@@ -740,6 +752,87 @@ public class JaxRsResourceTest {
     @Test
     public void shouldAcceptBeanParamInherited() {
         assertThat(get(service, "/test/acceptsBeanParamInherited?name=foo&age=3&items=1,2&inherited=YES").getOutp()).isEqualTo("\"foo - 3 2 - YES\"");
+    }
+
+    @Test
+    public void shouldHandleCustomRegexPathParam() {
+        assertStartupChecksPassed(new CustomRegexPathParam() {}, new One() {});
+    }
+
+    @Test
+    public void testCollidingLogic() {
+        assertCollision(new SamePathAndVerbDifferentType() {});
+
+        assertStartupChecksPassed(new VerbDiffers() {});
+
+        assertStartupChecksPassed(new One() {}, new Two() {});
+    }
+
+    @Test
+    public void testExceptionWhenPathParamAnnotationIsMissed() {
+        try {
+            newJaxRsResources(new Object[]{new NoPathParamAnnotation() {}});
+
+            Assert.fail();
+        } catch (IllegalStateException illegalStateException) {
+            assertThat(illegalStateException).hasMessageContaining("Could not find @PathParam annotated parameter for date");
+        }
+    }
+
+    @Test
+    public void shouldNotCollideOnSamePathButDifferentVerb() {
+        assertStartupChecksPassed(new SamePathDifferentVerb(){});
+    }
+
+    @Test
+    public void shoulNotCollideOnSamePathButDifferingCookieParam() {
+        assertStartupChecksPassed(new OtherParametersDiffer() {}, new One() {});
+    }
+
+    @Test
+    public void shouldCollideWhenCookieParamValueIsTheSame() {
+        assertCollision(new OtherParametersAreTheSame() {});
+    }
+
+    @Test
+    public void shouldCollideWhenCookieParamsAreTheSameButInDifferentOrder() {
+        assertCollision(new OtherParametersAreTheSameInDifferentOrder() {}, new One() {});
+    }
+
+    @Test
+    public void shouldNotCollideWhenResourceMethodIsSuppressAnnotated() {
+        assertStartupChecksPassed(new IgnoreErrorsWhenSuppressAnnotated() {});
+    }
+
+    private JaxRsResources newJaxRsResources(Object[] services) {
+        return new JaxRsResources(
+            services,
+            new JaxRsResourceFactory(
+                new ParamResolverFactories(
+                    new DeserializerFactory(),
+                    new ParamResolvers(Collections.EMPTY_SET, Collections.EMPTY_SET),
+                    new AnnotatedParamResolverFactories(),
+                    new WrapSupportingParamTypeResolver()),
+                new JaxRsResultFactoryFactory()),
+            false
+        );
+    }
+
+    private void assertCollision(Object... services) {
+        try {
+            newJaxRsResources(services);
+            Assert.fail();
+        } catch (IllegalStateException illegalStateException) {
+            assertThat(illegalStateException).hasMessageContaining("collides");
+        }
+    }
+
+    private void assertStartupChecksPassed(Object... services) {
+        try {
+            newJaxRsResources(services);
+        } catch (IllegalStateException illegalStateException) {
+            Assert.fail("Didnt expect exception: " + illegalStateException.getMessage());
+        }
     }
 
     @Path("test")
