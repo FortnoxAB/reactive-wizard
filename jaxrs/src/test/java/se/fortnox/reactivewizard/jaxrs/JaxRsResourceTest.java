@@ -821,7 +821,6 @@ public class JaxRsResourceTest {
     private void assertCollision(Object... services) {
         try {
             newJaxRsResources(services);
-
             Assert.fail();
         } catch (IllegalStateException illegalStateException) {
             assertThat(illegalStateException).hasMessageContaining("collides");

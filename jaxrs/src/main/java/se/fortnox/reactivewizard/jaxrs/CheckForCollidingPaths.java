@@ -11,8 +11,8 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.Type;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -29,21 +29,21 @@ public class CheckForCollidingPaths {
             })
             .collect(Collectors.toList());
 
-        Iterator<JaxRsResource> iterator = resourcesToCheck.iterator();
-        if (iterator.hasNext()) {
-            JaxRsResource current = iterator.next();
-            iterator.forEachRemaining(suspect -> checkIfColliding(current, suspect));
+        ListIterator<JaxRsResource> iterator = resourcesToCheck.listIterator();
+        while (iterator.hasNext()) {
+            JaxRsResource currentResource = iterator.next();
+            resourcesToCheck.listIterator(iterator.nextIndex())
+                .forEachRemaining(suspect -> checkIfColliding(currentResource, suspect));
         }
     }
 
-    private static void checkIfColliding(JaxRsResource current, JaxRsResource suspect) {
-        if (pathParamCollides(current, suspect)) {
+    private static void checkIfColliding(JaxRsResource resource1, JaxRsResource resource2) {
+        if (pathParamCollides(resource1, resource2)) {
             String errorMessage = String.format("%s collides with %s on path %s",
-                current.getResourceMethod(),
-                suspect.getResourceMethod(),
-                current.getPath()
+                resource1.getInstanceMethod(),
+                resource2.getInstanceMethod(),
+                resource1.getPath()
             );
-
             throw new IllegalStateException(errorMessage);
         }
     }
@@ -71,7 +71,6 @@ public class CheckForCollidingPaths {
                 return parameter.getType();
             }
         }
-
         return null;
     }
 
