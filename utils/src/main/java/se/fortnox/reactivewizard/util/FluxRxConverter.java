@@ -18,7 +18,7 @@ public class FluxRxConverter {
     public static <T> Function<Object, Flux<T>> converterToFlux(Class<?> returnType) {
 
         if (Flux.class.isAssignableFrom(returnType)) {
-            return result->{
+            return result -> {
                 if (result == null) {
                     return Flux.empty();
                 }
@@ -26,21 +26,21 @@ public class FluxRxConverter {
             };
 
         } else if (Mono.class.isAssignableFrom(returnType)) {
-            return result->{
+            return result -> {
                 if (result == null) {
                     return Flux.empty();
                 }
                 return ((Mono<T>)result).flux();
             };
         } else if (Observable.class.isAssignableFrom(returnType)) {
-            return result->{
+            return result -> {
                 if (result == null) {
                     return Flux.empty();
                 }
                 return observableToFlux((Observable<T>)result);
             };
         } else if (Single.class.isAssignableFrom(returnType)) {
-            return result->{
+            return result -> {
                 if (result == null) {
                     return Flux.empty();
                 }

@@ -77,7 +77,7 @@ public class JaxRsResultFactory<T> {
             } else {
                 return flux -> {
                     AtomicBoolean first = new AtomicBoolean(true);
-                    Flux<byte[]> items = flux.concatMap(item->{
+                    Flux<byte[]> items = flux.concatMap(item -> {
                         if (first.getAndSet(false)) {
                             return just(byteSerializer.apply(item));
                         } else {

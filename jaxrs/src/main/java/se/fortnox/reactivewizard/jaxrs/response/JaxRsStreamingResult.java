@@ -15,9 +15,9 @@ public class JaxRsStreamingResult<T> extends JaxRsResult<T> {
 
     @Override
     public Publisher<Void> write(HttpServerResponse response) {
-        return output.switchOnFirst((s, outputBuffered)->{
-            if (s.isOnError()) {
-                return Flux.error(s.getThrowable());
+        return output.switchOnFirst((signal, outputBuffered) -> {
+            if (signal.isOnError()) {
+                return Flux.error(signal.getThrowable());
             }
             response.status(responseStatus);
             headers.forEach(response::addHeader);

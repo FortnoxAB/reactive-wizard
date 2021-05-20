@@ -17,7 +17,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.assertj.core.api.Assertions.assertThat;
 import static rx.Observable.just;
 import static se.fortnox.reactivewizard.jaxrs.response.ResponseDecorator.withHeaders;
-import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.*;
+import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.testServer;
 
 public class StreamingDataTest {
     private StreamingResource   streamingResource   = new StreamingResourceImpl();
@@ -48,10 +48,6 @@ public class StreamingDataTest {
         assertThat(strings).hasSize(1);
         assertThat(strings.get(0)).isEqualTo("a");
         assertThat(response.get().responseHeaders().get("Content-Type")).isEqualTo(MediaType.TEXT_PLAIN);
-
-        //But at the end of the day
-        assertThat(body(get(streamingResource, "/stream"))).isEqualTo("ab");
-        assertThat(body(get(noStreamingResource, "/nostream"))).isEqualTo("a");
     }
 
     @Test
