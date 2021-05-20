@@ -23,6 +23,7 @@ import rx.Single;
 import se.fortnox.reactivewizard.jaxrs.ByteBufCollector;
 import se.fortnox.reactivewizard.jaxrs.FieldError;
 import se.fortnox.reactivewizard.jaxrs.JaxRsMeta;
+import se.fortnox.reactivewizard.jaxrs.Stream;
 import se.fortnox.reactivewizard.jaxrs.WebException;
 import se.fortnox.reactivewizard.metrics.HealthRecorder;
 import se.fortnox.reactivewizard.metrics.PublisherMetrics;
@@ -80,7 +81,6 @@ import static java.util.Collections.emptySet;
 import static java.util.Collections.singleton;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static reactor.core.Exceptions.isRetryExhausted;
-import static reactor.core.publisher.Mono.just;
 import static rx.Observable.fromCallable;
 import static se.fortnox.reactivewizard.jaxrs.RequestLogger.getHeaderValuesOrRedact;
 
@@ -177,28 +177,22 @@ public class HttpClient implements InvocationHandler {
 
         Mono<RwHttpClientResponse> response = request.submit(rxClient, request);
 
-        Publisher<?> publisher = null;
         AtomicReference<HttpClientResponse> rawResponse = new AtomicReference<>();
-        if (expectsByteArrayResponse(method)) {
-            publisher = response.flatMap(rwHttpClientResponse -> {
-                rawResponse.set(rwHttpClientResponse.getHttpClientResponse());
-                if (rwHttpClientResponse.getHttpClientResponse().status().code() >= 400) {
-                    return Mono.from(collector.collectString(rwHttpClientResponse.getContent()))
-                        .map(data -> handleError(request, rwHttpClientResponse.getHttpClientResponse(), data).getBytes());
-                }
-                return Mono.from(collector.collectBytes(rwHttpClientResponse.getContent()));
-            });
-        } else {
-            publisher = response.flatMap(rwHttpClientResponse -> {
-                rawResponse.set(rwHttpClientResponse.getHttpClientResponse());
-                return parseResponse(method, request, rwHttpClientResponse);
-            });
-        }
+
+        Publisher<?> publisher = response.flatMapMany(rwHttpClientResponse -> {
+            rawResponse.set(rwHttpClientResponse.getHttpClientResponse());
+
+            if (rwHttpClientResponse.getHttpClientResponse().status().code() >= 400) {
+                return parseErrorResponse(method, request, rwHttpClientResponse);
+            }
+
+            return parseResponse(method, request, rwHttpClientResponse);
+        });
+
         publisher = measure(request, publisher);
 
-        //End of publisher
         Flux<?> flux = Flux.from(publisher);
-        flux = flux.timeout(Duration.of(timeout, timeoutUnit));
+        flux      = flux.timeout(Duration.of(timeout, timeoutUnit));
         publisher = withRetry(request, flux).onErrorResume(e -> convertError(request, e));
 
         if (Single.class.isAssignableFrom(method.getReturnType())) {
@@ -220,7 +214,7 @@ public class HttpClient implements InvocationHandler {
             throw new IllegalArgumentException("Must be used with observable returned from api call");
         }
 
-        return source.map(data -> new Response<>(((ObservableWithResponse<T>) source).getResponse(), data))
+        return source.map(data -> new Response<>(((ObservableWithResponse<T>)source).getResponse(), data))
             .switchIfEmpty(fromCallable(() -> new Response<>(((ObservableWithResponse<T>)source).getResponse(), null)));
     }
 
@@ -258,10 +252,34 @@ public class HttpClient implements InvocationHandler {
         return Flux.error(throwable);
     }
 
-    protected Mono<Object> parseResponse(Method method, RequestBuilder request, RwHttpClientResponse response) {
-        return Mono.from(collector.collectString(response.getContent()))
-            .map(stringContent -> handleError(request, response.getHttpClientResponse(), stringContent))
-            .flatMap(stringContent -> this.deserialize(method, stringContent));
+    protected Flux<?> parseResponse(Method method, RequestBuilder request, RwHttpClientResponse response) {
+        if (method.isAnnotationPresent(Stream.class)) {
+            if (expectsByteArrayResponse(method)) {
+                return response.getContent().asByteArray();
+            } else {
+                return response.getContent().asString()
+                    .flatMap(stringChunk -> this.deserialize(method, stringChunk));
+            }
+        } else {
+            if (expectsByteArrayResponse(method)) {
+                return Flux.from(collector.collectBytes(response.getContent()));
+            } else {
+                return Flux.from(collector.collectString(response.getContent()))
+                    .flatMap(stringContent -> this.deserialize(method, stringContent));
+            }
+        }
+    }
+
+    protected Flux<?> parseErrorResponse(Method method, RequestBuilder request, RwHttpClientResponse rwHttpClientResponse) {
+        return Flux.from(collector.collectString(rwHttpClientResponse.getContent()))
+            .map(data -> handleError(request, rwHttpClientResponse.getHttpClientResponse(), data))
+            .map(responseString -> {
+                if (expectsByteArrayResponse(method)) {
+                    return responseString.getBytes();
+                } else {
+                    return responseString;
+                }
+            });
     }
 
     private boolean expectsByteArrayResponse(Method method) {
@@ -328,7 +346,7 @@ public class HttpClient implements InvocationHandler {
             if (!(throwable instanceof WebException)) {
                 return true;
             }
-            if (((WebException) throwable).getStatus().code() >= 500) {
+            if (((WebException)throwable).getStatus().code() >= 500) {
 
                 // Log the error on every retry.
                 LOG.info(format("Will retry because an error occurred. %s, headers: %s",
@@ -519,25 +537,25 @@ public class HttpClient implements InvocationHandler {
         }
     }
 
-    protected Mono<Object> deserialize(Method method, String string) {
+    protected Flux<Object> deserialize(Method method, String string) {
         if (string == null || string.isEmpty()) {
-            return Mono.empty();
+            return Flux.empty();
         }
         Type type = ReflectionUtil.getTypeOfObservable(method);
 
         if (Void.class.equals(type)) {
-            return Mono.empty();
+            return Flux.empty();
         }
 
-        if (String.class.equals(type) && !string.startsWith(QUOTE) && !"null".equalsIgnoreCase(string)) {   
-            return just(string);
+        if (String.class.equals(type) && !string.startsWith(QUOTE) && !"null".equalsIgnoreCase(string)) {
+            return Flux.just(string);
         }
 
         try {
             JavaType     javaType = TypeFactory.defaultInstance().constructType(type);
             ObjectReader reader   = objectMapper.readerFor(javaType);
-            Object       value    = reader.readValue(string);
-            return Mono.justOrEmpty(value);
+            List<Object> value    = reader.readValues(string).readAll();
+            return Flux.fromArray(value.toArray());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

@@ -1,5 +1,6 @@
 package se.fortnox.reactivewizard.client;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -34,6 +35,8 @@ import se.fortnox.reactivewizard.config.TestInjector;
 import se.fortnox.reactivewizard.jaxrs.FieldError;
 import se.fortnox.reactivewizard.jaxrs.JaxRsMeta;
 import se.fortnox.reactivewizard.jaxrs.PATCH;
+import se.fortnox.reactivewizard.jaxrs.PATCH;
+import se.fortnox.reactivewizard.jaxrs.Stream;
 import se.fortnox.reactivewizard.jaxrs.WebException;
 import se.fortnox.reactivewizard.metrics.HealthRecorder;
 import se.fortnox.reactivewizard.server.ServerConfig;
@@ -64,6 +67,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import static io.netty.handler.codec.http.HttpResponseStatus.*;
 import static java.lang.String.format;
@@ -179,7 +183,10 @@ public class HttpClientTest {
 
     protected void withServer(Consumer<DisposableServer> serverConsumer) {
         final DisposableServer server = startServer(HttpResponseStatus.OK, "\"OK\"");
+        withServer(server, serverConsumer);
+    }
 
+    protected void withServer(DisposableServer server, Consumer<DisposableServer> serverConsumer) {
         LogManager.getLogger(RetryWithDelay.class).setLevel(Level.toLevel(Level.OFF_INT));
 
         try {
@@ -1585,6 +1592,156 @@ public class HttpClientTest {
         server.disposeNow();
     }
 
+    @Test
+    public void shouldStreamStrings() {
+        runStreamingResponseTest(
+            TestResource::streamingStrings,
+            10,
+            r -> range(0, 10).forEach(i ->
+                assertThat(r.get(i)).isEqualTo(Integer.toString(i))
+            )
+        );
+    }
+
+    @Test
+    public void shouldStreamPojos() {
+        runStreamingResponseTest(
+            TestResource::streamingPojos,
+            10,
+            r -> range(0, 10).forEach(i ->
+                assertThat(r.get(i).getName()).isEqualTo(Integer.toString(i))
+            )
+        );
+    }
+
+    @Test
+    public void shouldStreamBytes() {
+        runStreamingResponseTest(
+            TestResource::streamingBytes,
+            10,
+            r -> range(0, 10).forEach(i ->
+                assertThat(r.get(i)[0]).isEqualTo((byte)i)
+            )
+        );
+    }
+
+    @Test
+    public void shouldParseStreamedPojosWithoutAnnotation() {
+        // Verifies that we can read eagerly collected JSON streams like "{\"name\":"1"}{\"name\":"2"}{\"name\":"3"}"
+
+        withServer(startStreamingServer(100, 10), server -> {
+            TestResource resource = getHttpProxy(server.port());
+            List<Pojo> result = resource.streamingPojosWithoutAnnotation().toList().toBlocking().single();
+            range(0, 10).forEach(i ->
+                assertThat(result.get(i).getName()).isEqualTo(Integer.toString(i))
+            );
+        });
+    }
+
+    @Test
+    public void shouldHandleErrorsInStreamingResponses() {
+        int outputIntervalMs = 500;
+
+        withServer(startStreamingServer(outputIntervalMs, 1), server -> {
+            TestResource resource = getHttpProxy(server.port());
+            try {
+                resource.streamingNotFound().toList().toBlocking().single();
+                fail("expected exception");
+            } catch (WebException e) {
+                assertThat(e.getStatus()).isEqualTo(NOT_FOUND);
+                assertThat(e.getError()).isEqualTo("notfound");
+                assertThat(e.getCause().getMessage()).isEqualTo("Detailed error description.");
+                assertThat(((HttpClient.DetailedError)e.getCause()).getError()).isEqualTo("1");
+                assertThat(((HttpClient.DetailedError)e.getCause()).getCode()).isEqualTo(100);
+            }
+        });
+    }
+
+    public <T> void runStreamingResponseTest(
+        Function<TestResource, Observable<T>> resourceCall,
+        int numElements,
+        Consumer<List<T>> assertBlock
+    ) {
+        int outputIntervalMs = 500;
+
+        withServer(startStreamingServer(outputIntervalMs, numElements), server -> {
+            TestResource resource = getHttpProxy(server.port());
+            AtomicLong previousOutputTime   = new AtomicLong(System.currentTimeMillis());
+            List<Long> intervals  = new ArrayList<>();
+
+            List<T> result = resourceCall.apply(resource)
+                .doOnEach(it -> {
+                    if (!it.isOnNext()) {
+                        return;
+                    }
+
+                    long now = System.currentTimeMillis();
+                    intervals.add(now - previousOutputTime.get());
+                    previousOutputTime.set(now);
+                })
+                .toList()
+                .toBlocking()
+                .single();
+
+            assertBlock.accept(result);
+
+            // We don't bother checking the first element since the time to first output is very variable
+            assertThat(intervals.get(1)).isBetween(350L, 650L);
+            assertThat(intervals.get(2)).isBetween(350L, 650L);
+        });
+    }
+
+    private DisposableServer startStreamingServer(int outputIntervalMs, int numElements) {
+        return HttpServer.create().port(0)
+            .handle((request, response) -> {
+                if (request.path().contains("string-stream")) {
+                    response.status(OK);
+                    response.header("Content-Type", "text/plain");
+                    return response.sendString(
+                        interval(Duration.ofMillis(outputIntervalMs))
+                            .take(numElements)
+                            .map(Object::toString)
+                    );
+                } else if (request.path().contains("pojo-stream")) {
+                    response.status(OK);
+                    response.header("Content-Type", "application/json");
+                    try {
+                        return response.sendString(
+                            interval(Duration.ofMillis(outputIntervalMs))
+                                .take(numElements)
+                                .map(it -> serialize(new Pojo(it.toString())))
+                        );
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                } else if (request.path().contains("bytes-stream")) {
+                    response.status(OK);
+                    response.header("Content-Type", "application/octet-stream");
+                    return response.sendByteArray(
+                        interval(Duration.ofMillis(outputIntervalMs))
+                            .take(numElements)
+                            .map(it -> new byte[] { it.byteValue() })
+                    );
+                } else {
+                    response.status(NOT_FOUND);
+                    return response.sendString(just(
+                        "{\"error\":1,\"mess",
+                        "age\":\"Detailed error descri",
+                        "ption.\",\"code\":100}"
+                    ));
+                }
+            }).bindNow();
+    }
+
+    private String serialize(Object obj) {
+        final ObjectMapper objectMapper = new ObjectMapper();
+        try {
+            return objectMapper.writeValueAsString(obj);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     @Path("/hello")
     public interface TestResource {
 
@@ -1694,9 +1851,35 @@ public class HttpClientTest {
         @POST
         @Consumes("application/xml")
         Observable<Void> sendXml(Pojo pojo);
+
+        @GET
+        @Path("string-stream")
+        @Produces("text/plain")
+        @Stream
+        Observable<String> streamingStrings();
+
+        @GET
+        @Path("pojo-stream")
+        @Stream
+        Observable<Pojo> streamingPojos();
+
+        @GET
+        @Path("pojo-stream")
+        Observable<Pojo> streamingPojosWithoutAnnotation();
+
+        @GET
+        @Path("bytes-stream")
+        @Produces("application/octet-stream")
+        @Stream
+        Observable<byte[]> streamingBytes();
+
+        @GET
+        @Path("not-found-stream")
+        @Stream
+        Observable<String> streamingNotFound();
     }
 
-    class Wrapper {
+    static class Wrapper {
         private Pojo result;
 
         public Pojo getResult() {
@@ -1708,8 +1891,15 @@ public class HttpClientTest {
         }
     }
 
-    class Pojo {
+    static class Pojo {
         private String name;
+
+        public Pojo() {
+        }
+
+        public Pojo(String name) {
+            this.setName(name);
+        }
 
         public String getName() {
             return name;
