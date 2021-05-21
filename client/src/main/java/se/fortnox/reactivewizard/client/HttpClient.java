@@ -7,7 +7,9 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.type.TypeFactory;
+import com.fasterxml.jackson.databind.util.TokenBuffer;
 import com.google.common.collect.Sets;
+import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.timeout.ReadTimeoutException;
 import org.reactivestreams.Publisher;
@@ -55,7 +57,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalUnit;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Comparator;
@@ -85,10 +86,10 @@ import static rx.Observable.fromCallable;
 import static se.fortnox.reactivewizard.jaxrs.RequestLogger.getHeaderValuesOrRedact;
 
 public class HttpClient implements InvocationHandler {
-    private static final Logger LOG            = LoggerFactory.getLogger(HttpClient.class);
-    private static final Class  BYTEARRAY_TYPE = (new byte[0]).getClass();
-    private static final String COOKIE = "Cookie";
-    private static final String QUOTE  = "\"";
+    private static final Logger        LOG            = LoggerFactory.getLogger(HttpClient.class);
+    private static final Class<byte[]> BYTEARRAY_TYPE = byte[].class;
+    private static final String        COOKIE         = "Cookie";
+    private static final String        QUOTE          = "\"";
 
     protected final InetSocketAddress                                 serverInfo;
     protected final HttpClientConfig                                  config;
@@ -99,10 +100,10 @@ public class HttpClient implements InvocationHandler {
     private final   ObjectMapper                                      objectMapper;
     private final   Map<Class<?>, List<HttpClient.BeanParamProperty>> beanParamCache   = new ConcurrentHashMap<>();
     private final   Map<Method, JaxRsMeta>                            jaxRsMetaMap     = new ConcurrentHashMap<>();
-    private         int                                               timeout          = 10;
-    private         TemporalUnit                                      timeoutUnit      = ChronoUnit.SECONDS;
     private final   Set<String>                                       sensitiveHeaders = new TreeSet<>(Comparator.comparing(String::toLowerCase));
     private final   Duration                                          retryDuration;
+
+    private Duration timeout = Duration.of(10, ChronoUnit.SECONDS);
 
     @Inject
     public HttpClient(HttpClientConfig config,
@@ -132,8 +133,7 @@ public class HttpClient implements InvocationHandler {
     }
 
     public void setTimeout(int timeout, ChronoUnit timeoutUnit) {
-        this.timeout     = timeout;
-        this.timeoutUnit = timeoutUnit;
+        this.timeout = Duration.of(timeout, timeoutUnit);
     }
 
     public static void markHeaderAsSensitive(Object proxy, String header) {
@@ -148,7 +148,7 @@ public class HttpClient implements InvocationHandler {
         if (Proxy.isProxyClass(proxy.getClass())) {
             Object handler = Proxy.getInvocationHandler(proxy);
             if (handler instanceof HttpClient) {
-                consumer.accept((HttpClient) handler);
+                consumer.accept((HttpClient)handler);
             }
         }
     }
@@ -192,7 +192,7 @@ public class HttpClient implements InvocationHandler {
         publisher = measure(request, publisher);
 
         Flux<?> flux = Flux.from(publisher);
-        flux      = flux.timeout(Duration.of(timeout, timeoutUnit));
+        flux      = flux.timeout(timeout);
         publisher = withRetry(request, flux).onErrorResume(e -> convertError(request, e));
 
         if (Single.class.isAssignableFrom(method.getReturnType())) {
@@ -243,7 +243,7 @@ public class HttpClient implements InvocationHandler {
         }
 
         if (throwable instanceof TimeoutException || throwable instanceof ReadTimeoutException) {
-            String message = format("Timeout after %d ms calling %s", Duration.of(timeout, timeoutUnit).toMillis(), request);
+            String message = format("Timeout after %d ms calling %s", timeout.toMillis(), request);
             return Flux.error(new WebException(GATEWAY_TIMEOUT, new JustMessageException(message), false));
         } else if (!(throwable instanceof WebException)) {
             String message = format("Error calling %s", request);
@@ -253,9 +253,12 @@ public class HttpClient implements InvocationHandler {
     }
 
     protected Flux<?> parseResponse(Method method, RequestBuilder request, RwHttpClientResponse response) {
-        if (method.isAnnotationPresent(Stream.class)) {
+        if (expectsStreamingResponse(method)) {
             if (expectsByteArrayResponse(method)) {
                 return response.getContent().asByteArray();
+            } else if (isJsonResponse(response)) {
+                return JsonTokenBufferer.buffer(response.getContent().asByteArray(), objectMapper)
+                    .flatMap(tokenBuffer -> this.deserialize(method, tokenBuffer));
             } else {
                 return response.getContent().asString()
                     .flatMap(stringChunk -> this.deserialize(method, stringChunk));
@@ -285,6 +288,15 @@ public class HttpClient implements InvocationHandler {
     private boolean expectsByteArrayResponse(Method method) {
         Type type = ReflectionUtil.getTypeOfObservable(method);
         return type.equals(BYTEARRAY_TYPE);
+    }
+
+
+    private boolean expectsStreamingResponse(Method method) {
+        return method.isAnnotationPresent(Stream.class); // TODO check for Flux:ed return value instead
+    }
+
+    private boolean isJsonResponse(RwHttpClientResponse response) {
+        return response.getHttpClientResponse().responseHeaders().get(HttpHeaderNames.CONTENT_TYPE).startsWith(MediaType.APPLICATION_JSON);
     }
 
     private void addDevOverrides(RequestBuilder fullRequest) {
@@ -551,14 +563,32 @@ public class HttpClient implements InvocationHandler {
             return Flux.just(string);
         }
 
-        try {
-            JavaType     javaType = TypeFactory.defaultInstance().constructType(type);
-            ObjectReader reader   = objectMapper.readerFor(javaType);
-            List<Object> value    = reader.readValues(string).readAll();
-            return Flux.fromArray(value.toArray());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        if (string.equalsIgnoreCase("null")) {
+            return Flux.empty();
         }
+
+        JavaType     javaType = TypeFactory.defaultInstance().constructType(type);
+        ObjectReader reader   = objectMapper.readerFor(javaType);
+
+        return Flux.fromStream(() -> {
+            try {
+                return reader.readValues(string).readAll().stream();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    protected Flux<Object> deserialize(Method method, TokenBuffer tokenBuffer) {
+        Type type = ReflectionUtil.getTypeOfObservable(method);
+
+        if (Void.class.equals(type)) {
+            return Flux.empty();
+        }
+
+        JavaType     javaType = TypeFactory.defaultInstance().constructType(type);
+        ObjectReader reader   = objectMapper.readerFor(javaType);
+        return Mono.fromCallable(() -> reader.readValue(tokenBuffer.asParser())).flux();
     }
 
     protected String encode(String path) {

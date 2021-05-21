@@ -35,7 +35,6 @@ import se.fortnox.reactivewizard.config.TestInjector;
 import se.fortnox.reactivewizard.jaxrs.FieldError;
 import se.fortnox.reactivewizard.jaxrs.JaxRsMeta;
 import se.fortnox.reactivewizard.jaxrs.PATCH;
-import se.fortnox.reactivewizard.jaxrs.PATCH;
 import se.fortnox.reactivewizard.jaxrs.Stream;
 import se.fortnox.reactivewizard.jaxrs.WebException;
 import se.fortnox.reactivewizard.metrics.HealthRecorder;
@@ -1639,6 +1638,28 @@ public class HttpClientTest {
     }
 
     @Test
+    public void shouldParseStreamedPojosInUnevenChunks() {
+        runStreamingResponseTest(
+            TestResource::streamingPojosUnevenChunks,
+            10,
+            r -> range(0, 10).forEach(i ->
+                assertThat(r.get(i).getName()).isEqualTo(Integer.toString(i))
+            )
+        );
+    }
+
+    @Test
+    public void shouldParseStreamedPojosWithNullsAsEmpty() {
+        withServer(startStreamingServer(100, 10), server -> {
+            TestResource resource = getHttpProxy(server.port());
+            List<Pojo> result = resource.streamingPojosAllNull()
+                .toList().toBlocking().single();
+
+            assertThat(result).isEmpty();
+        });
+    }
+
+    @Test
     public void shouldHandleErrorsInStreamingResponses() {
         int outputIntervalMs = 500;
 
@@ -1694,7 +1715,7 @@ public class HttpClientTest {
     private DisposableServer startStreamingServer(int outputIntervalMs, int numElements) {
         return HttpServer.create().port(0)
             .handle((request, response) -> {
-                if (request.path().contains("string-stream")) {
+                if (request.path().equals("hello/string-stream")) {
                     response.status(OK);
                     response.header("Content-Type", "text/plain");
                     return response.sendString(
@@ -1702,7 +1723,7 @@ public class HttpClientTest {
                             .take(numElements)
                             .map(Object::toString)
                     );
-                } else if (request.path().contains("pojo-stream")) {
+                } else if (request.path().equals("hello/pojo-stream")) {
                     response.status(OK);
                     response.header("Content-Type", "application/json");
                     try {
@@ -1714,7 +1735,36 @@ public class HttpClientTest {
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }
-                } else if (request.path().contains("bytes-stream")) {
+                } else if (request.path().equals("hello/pojo-stream-uneven-chunks")) {
+                    response.status(OK);
+                    response.header("Content-Type", "application/json");
+                    try {
+                        return response.sendString(
+                            interval(Duration.ofMillis(outputIntervalMs))
+                                .take(numElements)
+                                .flatMap(it -> {
+                                    String full = serialize(new Pojo(it.toString()));
+                                    String split1 = full.substring(0, 7);
+                                    String split2 = full.substring(7, full.length());
+                                    return Flux.just(split1, split2);
+                                })
+                        );
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                }else if (request.path().equals("hello/pojo-stream-single-null")) {
+                    response.status(OK);
+                    response.header("Content-Type", "application/json");
+                    try {
+                        return response.sendString(
+                            interval(Duration.ofMillis(outputIntervalMs))
+                                .take(numElements)
+                                .map(it -> serialize(null))
+                        );
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                } else if (request.path().equals("hello/bytes-stream")) {
                     response.status(OK);
                     response.header("Content-Type", "application/octet-stream");
                     return response.sendByteArray(
@@ -1868,10 +1918,25 @@ public class HttpClientTest {
         Observable<Pojo> streamingPojosWithoutAnnotation();
 
         @GET
+        @Path("pojo-stream-uneven-chunks")
+        @Stream
+        Observable<Pojo> streamingPojosUnevenChunks();
+
+        @GET
+        @Path("pojo-stream-single-null")
+        @Stream
+        Observable<Pojo> streamingPojosAllNull();
+
+        @GET
         @Path("bytes-stream")
         @Produces("application/octet-stream")
         @Stream
         Observable<byte[]> streamingBytes();
+
+        @GET
+        @Path("int-stream")
+        @Stream
+        Observable<Integer> streamingIntegers();
 
         @GET
         @Path("not-found-stream")
