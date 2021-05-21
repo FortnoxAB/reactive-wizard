@@ -55,7 +55,11 @@ public class JaxRsResult<T> {
     public Publisher<Void> write(HttpServerResponse response) {
         AtomicBoolean headersWritten = new AtomicBoolean();
         return serializer.call(output)
-            .defaultIfEmpty(EMPTY_RESPONSE)
+            .switchIfEmpty(Flux.defer(() -> {
+                response.status(HttpResponseStatus.NO_CONTENT);
+                response.addHeader(CONTENT_LENGTH, "0");
+                return Flux.empty();
+            }))
             .flatMap(bytes -> {
                 int contentLength = getContentLength(bytes);
 

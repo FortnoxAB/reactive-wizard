@@ -72,6 +72,7 @@ import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static reactor.core.Exceptions.isRetryExhausted;
 
 public class HttpClient implements InvocationHandler {
@@ -159,7 +160,7 @@ public class HttpClient implements InvocationHandler {
                 return Mono.from(collector.collectBytes(rwHttpClientResponse.getContent()));
             });
         } else {
-            publisher = response.flatMap(rwHttpClientResponse ->
+            publisher = response.flatMapMany(rwHttpClientResponse ->
                 parseResponse(method, request, rwHttpClientResponse));
         }
         publisher = measure(request, publisher);
@@ -193,10 +194,17 @@ public class HttpClient implements InvocationHandler {
         return Flux.error(throwable);
     }
 
-    protected Mono<Object> parseResponse(Method method, RequestBuilder request, RwHttpClientResponse response) {
-        return Mono.from(collector.collectString(response.getContent()))
-            .map(stringContent -> handleError(request, response.getHttpClientResponse(), stringContent))
-            .flatMap(stringContent -> this.deserialize(method, stringContent));
+    protected Publisher<Object> parseResponse(Method method, RequestBuilder request, RwHttpClientResponse response) {
+        if (FluxRxConverter.isSingleType(method.getReturnType())) {
+            return Mono.from(collector.collectString(response.getContent()))
+                .map(stringContent -> handleError(request, response.getHttpClientResponse(), stringContent))
+                .flatMap(stringContent -> this.deserialize(method, stringContent));
+        } else if (response.getHttpClientResponse().responseHeaders().get(CONTENT_TYPE).equals(APPLICATION_JSON)) {
+            JsonArrayDeserializer deserializer = new JsonArrayDeserializer(objectMapper, method);
+            return response.getContent().asByteArray().concatMap(deserializer::process);
+        } else {
+            return response.getContent().asByteArray().cast(Object.class);
+        }
     }
 
     private boolean expectsByteArrayResponse(Method method) {
@@ -297,9 +305,9 @@ public class HttpClient implements InvocationHandler {
             } else if (isBodyArg(types[i], annotations[i])) {
                 try {
                     if (!requestBuilder.getHeaders().containsKey(CONTENT_TYPE)) {
-                        requestBuilder.getHeaders().put(CONTENT_TYPE, MediaType.APPLICATION_JSON);
+                        requestBuilder.getHeaders().put(CONTENT_TYPE, APPLICATION_JSON);
                     }
-                    if (requestBuilder.getHeaders().get(CONTENT_TYPE).startsWith(MediaType.APPLICATION_JSON)) {
+                    if (requestBuilder.getHeaders().get(CONTENT_TYPE).startsWith(APPLICATION_JSON)) {
                         requestBuilder.setContent(objectMapper.writeValueAsBytes(value));
                     } else {
                         if (value instanceof String) {
@@ -309,7 +317,7 @@ public class HttpClient implements InvocationHandler {
                             requestBuilder.setContent((byte[])value);
                             return;
                         }
-                        throw new IllegalArgumentException("When content type is not " + MediaType.APPLICATION_JSON
+                        throw new IllegalArgumentException("When content type is not " + APPLICATION_JSON
                             + " the body param must be String or byte[], but was " + value.getClass());
                     }
                     return;

@@ -11,11 +11,6 @@ import se.fortnox.reactivewizard.jaxrs.JaxRsResource;
 public class NoContentTransformer implements ResultTransformerFactory {
     @Override
     public <T> ResultTransformer<T> create(JaxRsResource<T> resource) {
-        return (result, args) -> result.map(output -> {
-            return output.switchIfEmpty(Flux.defer(() -> {
-                result.responseStatus = HttpResponseStatus.NO_CONTENT;
-                return Flux.empty();
-            }));
-        });
+        return (result, args) -> result;
     }
 }

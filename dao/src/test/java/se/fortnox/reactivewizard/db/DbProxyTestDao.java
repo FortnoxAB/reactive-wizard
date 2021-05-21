@@ -1,5 +1,7 @@
 package se.fortnox.reactivewizard.db;
 
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import rx.Observable;
 
 import java.time.LocalDate;
@@ -15,6 +17,12 @@ public interface DbProxyTestDao {
 
     @Query("select * from table where key=:key")
     Observable<DbTestObj> select(String key);
+
+    @Query("select * from table where key=:key")
+    Flux<DbTestObj> selectFlux(String key);
+
+    @Query("select * from table where key=:key")
+    Mono<DbTestObj> selectMono(String key);
 
     @Update("insert into table")
     Observable<GeneratedKey<Long>> insert();
