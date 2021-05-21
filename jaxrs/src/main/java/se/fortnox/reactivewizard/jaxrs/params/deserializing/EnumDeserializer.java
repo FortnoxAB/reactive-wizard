@@ -3,8 +3,8 @@ package se.fortnox.reactivewizard.jaxrs.params.deserializing;
 /**
  * Deserializes enums.
  */
-public class EnumDeserializer<T extends Enum> implements Deserializer<T> {
-    private final Class<?> paramType;
+public class EnumDeserializer<T extends Enum<T>> implements Deserializer<T> {
+    private final Class<T> paramType;
 
     public EnumDeserializer(Class<T> paramType) {
         this.paramType = paramType;
@@ -16,9 +16,14 @@ public class EnumDeserializer<T extends Enum> implements Deserializer<T> {
             return null;
         }
         try {
-            return (T)Enum.valueOf((Class)paramType, value);
+            return Enum.valueOf(paramType, value);
         } catch (Exception parseException) {
-            throw new DeserializerException("invalid.enum");
+            try {
+                return Enum.valueOf(paramType, value.toUpperCase());
+            } catch (Exception e) {
+                throw new DeserializerException("invalid.enum");
+            }
+
         }
     }
 }

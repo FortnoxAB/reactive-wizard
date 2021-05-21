@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.netty.channel.AbortedException;
 import reactor.netty.http.server.HttpServerRequest;
 import reactor.netty.http.server.HttpServerResponse;
 import rx.exceptions.CompositeException;
@@ -22,13 +23,15 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.file.FileSystemException;
 import java.util.List;
 
+import static se.fortnox.reactivewizard.jaxrs.RequestLogger.getHeaderValueOrRedact;
+
 /**
  * Handles exceptions and writes errors to the response and the log.
  */
 public class ExceptionHandler {
-    private static Logger LOG = LoggerFactory.getLogger(ExceptionHandler.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ExceptionHandler.class);
 
-    private ObjectMapper mapper;
+    private final ObjectMapper mapper;
 
     @Inject
     public ExceptionHandler(ObjectMapper mapper) {
@@ -65,8 +68,10 @@ public class ExceptionHandler {
             webException = new WebException(HttpResponseStatus.BAD_REQUEST, "invalidjson", throwable.getMessage());
         } else if (throwable instanceof WebException) {
             webException = (WebException)throwable;
-        } else if (throwable instanceof ClosedChannelException) {
-            LOG.debug("ClosedChannelException: " + request.method() + " " + request.uri(), throwable);
+        } else if (throwable instanceof ClosedChannelException || throwable instanceof AbortedException) {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Inbound connection has been closed: {} {}", request.method(), request.uri(), throwable);
+            }
             return Flux.empty();
         } else {
             webException = new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR, throwable);
@@ -88,7 +93,7 @@ public class ExceptionHandler {
         try {
             return mapper.writeValueAsString(webException);
         } catch (JsonProcessingException e) {
-            LOG.error("Error writing json for exception " + webException, e);
+            LOG.error("Error writing json for exception {}", webException, e);
             return null;
         }
     }
@@ -109,7 +114,7 @@ public class ExceptionHandler {
             msg
                 .append(header.getKey())
                 .append('=')
-                .append(header.getValue())
+                .append(getHeaderValueOrRedact(header))
                 .append(' ')
         );
         return msg.toString();

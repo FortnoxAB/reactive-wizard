@@ -8,7 +8,7 @@ import java.sql.SQLException;
 import java.sql.Types;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static se.fortnox.reactivewizard.test.LoggingMockUtil.createMockedLogAppender;
@@ -17,7 +17,7 @@ import static se.fortnox.reactivewizard.test.TestUtil.matches;
 
 public class DeserializerUtilTest {
     @Test
-    public void shouldLogWarnIfNoPropertyDeserializerWasFound() throws SQLException, NoSuchFieldException, IllegalAccessException {
+    public void shouldLogWarnIfNoPropertyDeserializerWasFound() throws SQLException {
         SimpleResultSet resultSet = new SimpleResultSet();
         resultSet.addColumn("test_a", Types.VARCHAR, 255, 0);
 
@@ -33,7 +33,7 @@ public class DeserializerUtilTest {
     }
 
     @Test
-    public void shouldNotWarnForFoundProperties() throws SQLException, NoSuchFieldException, IllegalAccessException {
+    public void shouldNotWarnForFoundProperties() throws SQLException {
         SimpleResultSet resultSet = new SimpleResultSet();
         resultSet.addColumn("test_b", Types.VARCHAR, 255, 0);
 

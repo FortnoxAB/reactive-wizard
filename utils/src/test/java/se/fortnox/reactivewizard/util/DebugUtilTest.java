@@ -7,7 +7,6 @@ import java.net.MalformedURLException;
 import java.net.URL;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.when;
 
 public class DebugUtilTest {
@@ -21,7 +20,7 @@ public class DebugUtilTest {
     @Test
     public void testIsIdePresent() throws MalformedURLException {
         ClassLoader classLoaderWithIdeaDebugger = Mockito.mock(ClassLoader.class);
-        when(classLoaderWithIdeaDebugger.getResource(eq("com/intellij")))
+        when(classLoaderWithIdeaDebugger.getResource("com/intellij"))
                 .thenReturn(new URL("jar:file:/path/to/debugger-agent-storage.jar!/com/intellij"));
 
         assertThat(DebugUtil.isIdePresent(classLoaderWithIdeaDebugger)).isTrue();

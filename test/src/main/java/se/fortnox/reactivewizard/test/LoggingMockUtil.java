@@ -7,22 +7,20 @@ import org.slf4j.impl.Log4jLoggerAdapter;
 import java.lang.reflect.Field;
 
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class LoggingMockUtil {
     private LoggingMockUtil() {
 
     }
 
-    public static Appender createMockedLogAppender(Class cls) throws NoSuchFieldException, IllegalAccessException {
+    public static Appender createMockedLogAppender(Class cls) {
         Logger   logger       = LoggingMockUtil.getLogger(cls);
         Appender mockAppender = mock(Appender.class);
-        when(mockAppender.getName()).thenReturn("mockAppender");
         logger.addAppender(mockAppender);
         return mockAppender;
     }
 
-    public static void destroyMockedAppender(Appender appender, Class cls) throws NoSuchFieldException, IllegalAccessException {
+    public static void destroyMockedAppender(Appender appender, Class cls) {
         Logger logger = LoggingMockUtil.getLogger(cls);
         appender.close();
         logger.removeAppender(appender);
@@ -34,12 +32,17 @@ public class LoggingMockUtil {
      *
      * @return the logger instance used in the class
      */
-    static Logger getLogger(Class cls) throws NoSuchFieldException, IllegalAccessException {
-        Field logField = cls.getDeclaredField("LOG");
-        logField.setAccessible(true);
-        Log4jLoggerAdapter loggerAdapter = (Log4jLoggerAdapter)logField.get(null);
-        Field              innerLogField = loggerAdapter.getClass().getDeclaredField("logger");
-        innerLogField.setAccessible(true);
-        return (Logger)innerLogField.get(loggerAdapter);
+    static Logger getLogger(Class cls) {
+        try {
+            Field logField = cls.getDeclaredField("LOG");
+            logField.setAccessible(true);
+            Log4jLoggerAdapter loggerAdapter = (Log4jLoggerAdapter)logField.get(null);
+            Field innerLogField = loggerAdapter.getClass()
+                .getDeclaredField("logger");
+            innerLogField.setAccessible(true);
+            return (Logger)innerLogField.get(loggerAdapter);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

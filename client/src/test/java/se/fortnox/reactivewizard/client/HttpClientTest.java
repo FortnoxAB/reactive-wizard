@@ -6,15 +6,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import com.google.inject.Injector;
-import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.codec.http.cookie.DefaultCookie;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import org.apache.log4j.Appender;
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
+import org.junit.After;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.reactivestreams.Publisher;
@@ -23,9 +25,11 @@ import reactor.core.publisher.Mono;
 import reactor.netty.DisposableServer;
 import reactor.netty.http.server.HttpServer;
 import reactor.netty.http.server.HttpServerRequest;
+import reactor.netty.http.server.HttpServerResponse;
 import rx.Observable;
 import rx.Single;
 import rx.observers.AssertableSubscriber;
+import se.fortnox.reactivewizard.CollectionOptions;
 import se.fortnox.reactivewizard.config.TestInjector;
 import se.fortnox.reactivewizard.jaxrs.FieldError;
 import se.fortnox.reactivewizard.jaxrs.JaxRsMeta;
@@ -35,21 +39,11 @@ import se.fortnox.reactivewizard.metrics.HealthRecorder;
 import se.fortnox.reactivewizard.server.ServerConfig;
 import se.fortnox.reactivewizard.test.LoggingMockUtil;
 import se.fortnox.reactivewizard.test.TestUtil;
+import se.fortnox.reactivewizard.test.observable.ObservableAssertions;
 import se.fortnox.reactivewizard.util.rx.RetryWithDelay;
 
 import javax.net.ssl.SSLHandshakeException;
-import javax.ws.rs.BeanParam;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.CookieParam;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.FormParam;
-import javax.ws.rs.GET;
-import javax.ws.rs.HeaderParam;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.QueryParam;
+import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
@@ -62,12 +56,7 @@ import java.nio.charset.Charset;
 import java.security.cert.CertificateException;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -78,17 +67,30 @@ import java.util.function.Consumer;
 
 import static io.netty.handler.codec.http.HttpResponseStatus.*;
 import static java.lang.String.format;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static java.util.Collections.EMPTY_SET;
+import static java.util.stream.IntStream.range;
+import static javax.ws.rs.core.HttpHeaders.CONTENT_LENGTH;
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static reactor.core.publisher.Flux.*;
+import static se.fortnox.reactivewizard.test.LoggingMockUtil.destroyMockedAppender;
 import static se.fortnox.reactivewizard.test.TestUtil.matches;
 
 public class HttpClientTest {
 
     private HealthRecorder healthRecorder = new HealthRecorder();
+    private Appender       mockAppender;
+
+    @Before
+    public void before() {
+        mockAppender = LoggingMockUtil.createMockedLogAppender(HttpClient.class);
+    }
+
+    @After
+    public void after() {
+        destroyMockedAppender(mockAppender, HttpClient.class);
+    }
 
     @Test
     public void shouldNotRetryFailedPostCalls() {
@@ -349,31 +351,54 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldReportUnhealthyWhenConnectionCannotBeAquiredBeforeTimeout() throws URISyntaxException {
-
-        DisposableServer server = HttpServer.create().port(0)
-            .handle((request, response) -> Flux.defer(() -> {
-                response.status(HttpResponseStatus.OK);
-                return Flux.<Void>empty();
-            }).delaySubscription(Duration.ofMillis(1000)))
-            .bindNow();
+    public void shouldReportUnhealthyWhenConnectionCannotBeAquiredBeforeTimeoutAndAfter10Attempts() throws URISyntaxException {
 
         HttpClientConfig httpClientConfig = new HttpClientConfig();
-        httpClientConfig.setUrl("http://localhost:" + server.port());
-        httpClientConfig.setPoolAcquireTimeoutMs(100);
+        httpClientConfig.setUrl("http://localhost:8080");
         httpClientConfig.setMaxConnections(1);
+        httpClientConfig.setConnectionMaxIdleTimeInMs(10);
 
         ReactorRxClientProvider reactorRxClientProvider = new ReactorRxClientProvider(httpClientConfig, healthRecorder);
-        HttpClient reactorHttpClient = new HttpClient(httpClientConfig, reactorRxClientProvider, new ObjectMapper(), new RequestParameterSerializers(), Collections.EMPTY_SET);
+        HttpClient reactorHttpClient = new HttpClient(httpClientConfig, reactorRxClientProvider, new ObjectMapper(),
+            new RequestParameterSerializers(), EMPTY_SET);
 
         TestResource testResource = reactorHttpClient.create(TestResource.class);
 
-        Observable<String> hello = testResource.getHello();
-        Observable<String> hello2 = testResource.getHello();
+        //First ten should not cause the client to be unhealthy
+        range(1, 11)
+            .forEach(value -> testResource.postHello().test().awaitTerminalEvent());
+        assertThat(healthRecorder.isHealthy()).isTrue();
 
-        Observable
-            .merge(hello, hello2).test().awaitTerminalEvent();
+        //but the eleventh should
+        testResource.postHello().test().awaitTerminalEvent();
         assertThat(healthRecorder.isHealthy()).isFalse();
+
+        //And a successful connection should reset the healthRecorder to healthy again
+        DisposableServer server = HttpServer.create().port(8080)
+            .handle((request, response) -> defer(() -> {
+                response.status(OK);
+                return Flux.<Void>empty();
+            }))
+            .bindNow();
+
+        try {
+            testResource.postHello().test().awaitTerminalEvent();
+            assertThat(healthRecorder.isHealthy()).isTrue();
+        } finally {
+            server.disposeNow();
+        }
+
+        //Sleep over the max idle time
+        try {
+            Thread.sleep(httpClientConfig.getConnectionMaxIdleTimeInMs() + 10);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        //And should accept another 10 errors
+        range(1, 11)
+            .forEach(value -> testResource.postHello().test().awaitTerminalEvent());
+        assertThat(healthRecorder.isHealthy()).isTrue();
     }
 
     @Test
@@ -501,14 +526,16 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldSupportBeanParam() throws Exception {
+    public void shouldSupportBeanParamExtendingOtherClasses() throws Exception {
         HttpClient client = new HttpClient(new HttpClientConfig("localhost"));
         Method     method = TestResource.class.getMethod("withBeanParam", TestResource.Filters.class);
         TestResource.Filters filters = new TestResource.Filters();
         filters.setFilter1("a");
         filters.setFilter2("b");
+        filters.setLimit(10);
+        filters.setOffset(15);
         String     path   = client.getPath(method, new Object[]{filters}, new JaxRsMeta(method, null));
-        assertThat(path).isEqualTo("/hello/beanParam?filter1=a&filter2=b");
+        assertThat(path).isEqualTo("/hello/beanParam?limit=10&offset=15&filter2=b&filter1=a");
     }
 
     @Test
@@ -522,6 +549,112 @@ public class HttpClientTest {
     }
 
     @Test
+    public void shouldReturnFullResponseFromObservable() {
+        DisposableServer server = startServer(HttpResponseStatus.OK, Mono.just("\"OK\""), httpServerRequest -> {}, httpServerResponse -> {
+            httpServerResponse.addCookie(new DefaultCookie("cookieName", "cookieValue"));
+        });
+
+        TestResource resource = getHttpProxy(server.port());
+
+        Response<String> stringResponse = HttpClient.getFullResponse(resource.getHello())
+            .toBlocking().singleOrDefault(null);
+
+        assertThat(stringResponse).isNotNull();
+        assertThat(stringResponse.getBody()).isEqualTo("OK");
+        assertThat(stringResponse.getStatus()).isEqualTo(OK);
+
+        //Case sensitive when getting the entire map structure
+        assertThat(stringResponse.getHeaders().get("content-length")).isEqualTo("4");
+
+        //Case insensitive when fetching
+        assertThat(stringResponse.getHeader(CONTENT_LENGTH)).isEqualTo("4");
+
+        assertThat(stringResponse.getCookie("cookieName")).hasSize(1);
+        assertThat(stringResponse.getCookie("cookieName").get(0)).isEqualTo("cookieValue");
+        assertThat(stringResponse.getCookie(null)).hasSize(0);
+        assertThat(stringResponse.getCookie("bogus")).hasSize(0);
+    }
+
+    @Test
+    public void shouldReturnFullResponseFromEmptyObservable() {
+        DisposableServer server = startServer(HttpResponseStatus.OK, Mono.just(""), httpServerRequest -> {}, httpServerResponse -> {
+            httpServerResponse.addCookie(new DefaultCookie("cookieName", "cookieValue"));
+        });
+
+        TestResource resource = getHttpProxy(server.port());
+
+        Response<String> stringResponse = HttpClient.getFullResponse(resource.getHello())
+            .toBlocking().singleOrDefault(null);
+
+        assertThat(stringResponse).isNotNull();
+        assertThat(stringResponse.getBody()).isNull();
+        assertThat(stringResponse.getStatus()).isEqualTo(OK);
+    }
+
+    @Test
+    public void shouldWrapAndReturnNewFullResponseObservable() {
+        DisposableServer server = startServer(HttpResponseStatus.OK, "\"OK\"");
+
+        TestResource resource = getHttpProxy(server.port());
+
+        Observable<String> hello = resource.getHello();
+
+        ObservableWithResponse<String> wrappedStringResponse = ObservableWithResponse.from((ObservableWithResponse)hello,
+            hello.doOnError(Throwable::printStackTrace));
+
+        Response<String> stringResponse = HttpClient.getFullResponse(wrappedStringResponse).toBlocking().singleOrDefault(null);
+        assertThat(stringResponse).isNotNull();
+        assertThat(stringResponse.getBody()).isEqualTo("OK");
+        assertThat(stringResponse.getStatus()).isEqualTo(OK);
+
+        //Case sensitive when getting the entire map structure
+        assertThat(stringResponse.getHeaders().get("content-length")).isEqualTo("4");
+
+        //Case insensitive when fetching
+        assertThat(stringResponse.getHeader(CONTENT_LENGTH)).isEqualTo("4");
+    }
+
+    @Test
+    public void shouldReturnFullResponseFromSingle() {
+        DisposableServer server = startServer(HttpResponseStatus.OK, "\"OK\"");
+
+        TestResource resource = getHttpProxy(server.port());
+
+        Response<String> stringResponse = HttpClient.getFullResponse(resource.getSingle())
+            .toBlocking().value();
+
+        assertThat(stringResponse).isNotNull();
+        assertThat(stringResponse.getBody()).isEqualTo("OK");
+        assertThat(stringResponse.getStatus()).isEqualTo(OK);
+        assertThat(stringResponse.getHeaders().get("content-length")).isEqualTo("4");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void shouldWrapAndReturnNewFullResponseSingle() {
+        DisposableServer server = startServer(HttpResponseStatus.OK, "\"OK\"");
+
+        TestResource resource = getHttpProxy(server.port());
+
+        Single<String> hello = resource.getSingle();
+
+        SingleWithResponse<String> wrappedStringResponse = SingleWithResponse.from((SingleWithResponse)hello,
+            hello.doOnError(Throwable::printStackTrace));
+
+        Response<String> stringResponse = HttpClient.getFullResponse(wrappedStringResponse).toBlocking().value();
+        assertThat(stringResponse).isNotNull();
+        assertThat(stringResponse.getBody()).isEqualTo("OK");
+        assertThat(stringResponse.getStatus()).isEqualTo(OK);
+
+        //Case sensitive when getting the entire map structure
+        assertThat(stringResponse.getHeaders().get("content-length")).isEqualTo("4");
+
+        //Case insensitive when fetching
+        assertThat(stringResponse.getHeader(CONTENT_LENGTH)).isEqualTo("4");
+    }
+
+
+    @Test
     public void shouldHandleLargeResponses() {
         DisposableServer                   server   = startServer(HttpResponseStatus.OK, generateLargeString(10));
         TestResource                       resource = getHttpProxy(server.port());
@@ -531,8 +664,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldLogErrorOnTooLargeResponse() throws NoSuchFieldException, IllegalAccessException {
-        Appender                           mockAppender = LoggingMockUtil.createMockedLogAppender(HttpClient.class);
+    public void shouldLogErrorOnTooLargeResponse() {
         DisposableServer                   server       = startServer(HttpResponseStatus.OK, generateLargeString(11));
         TestResource                       resource     = getHttpProxy(server.port());
         WebException                       e            = null;
@@ -548,6 +680,61 @@ public class HttpClientTest {
 
         verify(mockAppender).doAppend(matches(log -> {
             assertThat(log.getMessage()).isEqualTo("Failed request. Url: localhost:" + server.port() + "/hello, headers: [Host=localhost]");
+        }));
+
+        server.disposeNow();
+    }
+
+    @Test
+    public void shouldRedactAuthorizationHeaderInLogsAndExceptionMessage() throws Exception {
+        DisposableServer                   server       = startServer(BAD_REQUEST, "someError");
+        HttpClientConfig                   config       = new HttpClientConfig("localhost:" + server.port());
+        Map<String, String>                headers      = new HashMap<>();
+        headers.put("Authorization", "secretvalue");
+        config.setDevHeaders(headers);
+        TestResource                       resource     = getHttpProxy(config);
+
+        assertThatExceptionOfType(WebException.class)
+            .isThrownBy(() -> resource.getHello()
+                .toBlocking()
+                .single());
+
+        verify(mockAppender).doAppend(matches(log -> {
+            assertThat(log.getThrowableInformation().getThrowableStrRep())
+                .allSatisfy(throwableInfo -> {
+                    assertThat(throwableInfo)
+                        .doesNotContain("secretvalue");
+                });
+            assertThat(log.getMessage())
+                .isEqualTo("Failed request. Url: localhost:" + server.port() + "/hello, headers: [Authorization=REDACTED, Host=localhost]");
+        }));
+
+        server.disposeNow();
+    }
+
+    @Test
+    public void shouldRedactSensitiveHeaderInLogsAndExceptionMessage() throws Exception {
+        DisposableServer                   server       = startServer(BAD_REQUEST, "someError");
+        HttpClientConfig                   config       = new HttpClientConfig("localhost:" + server.port());
+        Map<String, String>                headers      = new HashMap<>();
+
+        headers.put("Cookie", "pepperidge farm");
+        config.setDevHeaders(headers);
+        TestResource                       resource     = getHttpProxy(config);
+
+        HttpClient.markHeaderAsSensitive(resource, "cookie");
+
+        ObservableAssertions.assertThatExceptionOfType(WebException.class)
+            .isEmittedBy(resource.getHello().single());
+
+        verify(mockAppender).doAppend(matches(log -> {
+            assertThat(log.getThrowableInformation().getThrowableStrRep())
+                .allSatisfy(throwableInfo -> {
+                    assertThat(throwableInfo)
+                        .doesNotContain("secretvalue");
+                });
+            assertThat(log.getMessage())
+                .isEqualTo("Failed request. Url: localhost:" + server.port() + "/hello, headers: [Cookie=REDACTED, Host=localhost]");
         }));
 
         server.disposeNow();
@@ -744,6 +931,18 @@ public class HttpClientTest {
     }
 
     @Test
+    public void shouldDeserializeSimpleStringWithoutJsonQuotes() {
+        final String     body   = UUID.randomUUID().toString();
+        DisposableServer server = startServer(HttpResponseStatus.CREATED, body);
+
+        TestResource resource = getHttpProxy(server.port());
+        final String s        = resource.getString().toBlocking().singleOrDefault(null);
+
+        assertThat(s).isEqualTo(body);
+        server.disposeNow();
+    }
+
+    @Test
     public void shouldShutDownConnectionOnTimeoutBeforeHeaders() throws URISyntaxException {
         Consumer<String>             serverLog = mock(Consumer.class);
         DisposableServer server    = createTestServer(serverLog);
@@ -849,6 +1048,8 @@ public class HttpClientTest {
     @Test
     public void shouldShouldNotGivePoolExhaustedIfServerDoesNotCloseConnection() throws URISyntaxException {
 
+        Level originalLogLevel = LogManager.getLogger(HttpClient.class)
+            .getLevel();
         LogManager.getLogger(HttpClient.class).setLevel(Level.toLevel(Level.OFF_INT));
 
         DisposableServer server = HttpServer.create().port(0)
@@ -880,6 +1081,8 @@ public class HttpClientTest {
         }
 
         server.disposeNow();
+        LogManager.getLogger(HttpClient.class)
+            .setLevel(originalLogLevel);
     }
 
     @Test
@@ -901,13 +1104,18 @@ public class HttpClientTest {
     }
 
     private DisposableServer startServer(HttpResponseStatus status, String body, Consumer<HttpServerRequest> callback) {
-        return startServer(status, Mono.just(body), callback);
+        return startServer(status, Mono.just(body), callback, httpServerResponse -> {});
     }
 
-    private DisposableServer startServer(HttpResponseStatus status, Publisher<String> body, Consumer<HttpServerRequest> callback) {
+    private DisposableServer startServer(HttpResponseStatus status, Publisher<String> body, Consumer<HttpServerResponse> responseCallback) {
+        return startServer(status, body, request -> {}, responseCallback);
+    }
+
+    private DisposableServer startServer(HttpResponseStatus status, Publisher<String> body, Consumer<HttpServerRequest> callback, Consumer<HttpServerResponse> responseCallback) {
         return HttpServer.create().host("localhost").port(0).handle((request, response) -> {
             callback.accept(request);
             response.status(status);
+            responseCallback.accept(response);
             return response.sendString(body);
         }).bindNow();
     }
@@ -1101,7 +1309,7 @@ public class HttpClientTest {
 
         TestResource testResource = injector.getInstance(TestResource.class);
         HttpClient.setTimeout(testResource, 1300, ChronoUnit.MILLIS);
-        verify(mockClient, times(1)).setTimeout(eq(1300), eq(ChronoUnit.MILLIS));
+        verify(mockClient, times(1)).setTimeout(1300, ChronoUnit.MILLIS);
     }
 
     @Test
@@ -1380,7 +1588,7 @@ public class HttpClientTest {
     @Path("/hello")
     public interface TestResource {
 
-        class Filters {
+        class Filters extends CollectionOptions {
             @QueryParam("filter1")
             private String filter1;
 
@@ -1441,6 +1649,9 @@ public class HttpClientTest {
 
         @POST
         Observable<Void> getVoid();
+
+        @GET
+        Observable<String> getString();
 
         @POST
         Observable<String> postForm(@FormParam("paramA") String a,

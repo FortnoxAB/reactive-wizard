@@ -1,29 +1,18 @@
 package se.fortnox.reactivewizard.db;
 
+import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.OngoingStubbing;
 import org.mockito.stubbing.Stubber;
 import se.fortnox.reactivewizard.db.config.DatabaseConfig;
 
-import java.sql.Connection;
-import java.sql.ParameterMetaData;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.sql.Timestamp;
+import java.sql.*;
 import java.util.Calendar;
 import java.util.TimeZone;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.withSettings;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 public class MockDb {
 
@@ -40,6 +29,8 @@ public class MockDb {
     private int            rows;
     private int            connectionsUsed;
     private int            parameterCount;
+
+    ArgumentCaptor<String> generatedKeysCaptor = ArgumentCaptor.forClass(String.class);
 
     public MockDb() {
         databaseConfig = new DatabaseConfig();
@@ -63,7 +54,7 @@ public class MockDb {
             when(ps.getParameterMetaData()).thenReturn(parameterMetaData);
 
             Stubber answer = doAnswer(inv -> {
-                int index = inv.getArgumentAt(0, int.class);
+                int index = inv.getArgument(0);
                 if (index >= parameterCount) {
                     parameterCount = index;
                 }
@@ -71,7 +62,7 @@ public class MockDb {
             });
 
             answer.when(ps).setObject(anyInt(), any());
-        } catch (SQLException e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
@@ -82,6 +73,15 @@ public class MockDb {
                 when(rs.next()).thenReturn(true);
                 return;
             }
+            AtomicInteger count = new AtomicInteger();
+            when(rs.next())
+                .thenAnswer(invocation -> {
+                    count.incrementAndGet();
+                    if(count.incrementAndGet() < rows) {
+                        return true;
+                    }
+                    return false;
+                });
             OngoingStubbing<Boolean> rsNext = when(rs.next());
             for (int i = 0; i < rows; i++) {
                 rsNext = rsNext.thenReturn(true);
@@ -147,12 +147,16 @@ public class MockDb {
             } else if (args[i].getClass().equals(Timestamp.class)) {
                 Calendar cal = getCalendar();
                 cal.setTimeInMillis(((Timestamp)args[i]).getTime());
-                verify(ps).setTimestamp(eq(i + 1), eq((Timestamp)args[i]), eq(cal));
+                verify(ps).setTimestamp(i + 1, (Timestamp)args[i], cal);
             } else {
                 verify(ps).setObject(i + 1, args[i]);
             }
         }
-        if (generatedKeys) {
+
+        verify(con, atLeast(0)).prepareStatement(generatedKeysCaptor.capture(),
+            eq(Statement.RETURN_GENERATED_KEYS));
+
+        if (!generatedKeysCaptor.getAllValues().isEmpty()) {
             verify(con).prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
         } else {
             verify(con).prepareStatement(query);
@@ -167,7 +171,7 @@ public class MockDb {
             } else if (args[i].getClass().equals(Timestamp.class)) {
                 Calendar cal = getCalendar();
                 cal.setTimeInMillis(((Timestamp)args[i]).getTime());
-                verify(ps).setTimestamp(eq(i + 1), eq((Timestamp)args[i]), eq(cal));
+                verify(ps).setTimestamp(i + 1, (Timestamp)args[i], cal);
             } else {
                 verify(ps).setObject(i + 1, args[i]);
             }

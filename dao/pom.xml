@@ -35,6 +35,7 @@
             <groupId>se.fortnox.reactivewizard</groupId>
             <artifactId>reactivewizard-test</artifactId>
             <version>${project.version}</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>se.fortnox.reactivewizard</groupId>
@@ -107,7 +108,7 @@
         <dependency>
             <groupId>net.bytebuddy</groupId>
             <artifactId>byte-buddy</artifactId>
-            <version>1.9.3</version>
+            <version>${byte-buddy.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

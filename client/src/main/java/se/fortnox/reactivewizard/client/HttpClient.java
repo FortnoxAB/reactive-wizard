@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.type.TypeFactory;
+import com.google.common.collect.Sets;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.timeout.ReadTimeoutException;
 import org.reactivestreams.Publisher;
@@ -14,7 +15,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.netty.http.client.HttpClientResponse;
 import reactor.util.retry.Retry;
+import rx.Observable;
 import rx.RxReactiveStreams;
 import rx.Single;
 import se.fortnox.reactivewizard.jaxrs.ByteBufCollector;
@@ -55,14 +58,18 @@ import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalUnit;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Comparator;
 import java.util.Date;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static io.netty.handler.codec.http.HttpMethod.POST;
@@ -71,45 +78,51 @@ import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERR
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
+import static java.util.Collections.singleton;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static reactor.core.Exceptions.isRetryExhausted;
+import static reactor.core.publisher.Mono.just;
+import static rx.Observable.fromCallable;
+import static se.fortnox.reactivewizard.jaxrs.RequestLogger.getHeaderValuesOrRedact;
 
 public class HttpClient implements InvocationHandler {
-    private static final Logger LOG = LoggerFactory.getLogger(HttpClient.class);
+    private static final Logger LOG            = LoggerFactory.getLogger(HttpClient.class);
     private static final Class  BYTEARRAY_TYPE = (new byte[0]).getClass();
-    public static final String COOKIE = "Cookie";
+    private static final String COOKIE = "Cookie";
+    private static final String QUOTE  = "\"";
 
-    protected final InetSocketAddress                                        serverInfo;
-    protected final HttpClientConfig                                         config;
-    private final   ByteBufCollector                                         collector;
-    private final   RequestParameterSerializers                              requestParameterSerializers;
-    private final   Set<PreRequestHook>                                      preRequestHooks;
-    private final   ReactorRxClientProvider                                  clientProvider;
-    private final   ObjectMapper                                             objectMapper;
-    private final   Map<Class<?>, List<HttpClient.BeanParamProperty>>        beanParamCache = new HashMap<>();
-    private final   Map<Method, JaxRsMeta>                                   jaxRsMetaMap   = new ConcurrentHashMap<>();
-    private         int                                                      timeout        = 10;
-    private TemporalUnit timeoutUnit    = ChronoUnit.SECONDS;
-    private final Duration retryDuration;
+    protected final InetSocketAddress                                 serverInfo;
+    protected final HttpClientConfig                                  config;
+    private final   ByteBufCollector                                  collector;
+    private final   RequestParameterSerializers                       requestParameterSerializers;
+    private final   Set<PreRequestHook>                               preRequestHooks;
+    private final   ReactorRxClientProvider                           clientProvider;
+    private final   ObjectMapper                                      objectMapper;
+    private final   Map<Class<?>, List<HttpClient.BeanParamProperty>> beanParamCache   = new ConcurrentHashMap<>();
+    private final   Map<Method, JaxRsMeta>                            jaxRsMetaMap     = new ConcurrentHashMap<>();
+    private         int                                               timeout          = 10;
+    private         TemporalUnit                                      timeoutUnit      = ChronoUnit.SECONDS;
+    private final   Set<String>                                       sensitiveHeaders = new TreeSet<>(Comparator.comparing(String::toLowerCase));
+    private final   Duration                                          retryDuration;
 
     @Inject
     public HttpClient(HttpClientConfig config,
-                             ReactorRxClientProvider clientProvider,
-                             ObjectMapper objectMapper,
-                             RequestParameterSerializers requestParameterSerializers,
-                             Set<PreRequestHook> preRequestHooks
+                      ReactorRxClientProvider clientProvider,
+                      ObjectMapper objectMapper,
+                      RequestParameterSerializers requestParameterSerializers,
+                      Set<PreRequestHook> preRequestHooks
     ) {
-        this.config = config;
+        this.config         = config;
         this.clientProvider = clientProvider;
-        this.objectMapper = objectMapper;
+        this.objectMapper   = objectMapper;
         this.objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         this.requestParameterSerializers = requestParameterSerializers;
 
-        serverInfo = new InetSocketAddress(config.getHost(), config.getPort());
-        collector = new ByteBufCollector(config.getMaxResponseSize());
+        serverInfo           = new InetSocketAddress(config.getHost(), config.getPort());
+        collector            = new ByteBufCollector(config.getMaxResponseSize());
         this.preRequestHooks = preRequestHooks;
-        this.retryDuration = Duration.ofMillis(config.getRetryDelayMs());
+        this.retryDuration   = Duration.ofMillis(config.getRetryDelayMs());
     }
 
     public HttpClient(HttpClientConfig config) {
@@ -117,17 +130,33 @@ public class HttpClient implements InvocationHandler {
     }
 
     public static void setTimeout(Object proxy, int timeout, ChronoUnit timeoutUnit) {
+        ifHttpClientDo(proxy, httpClient -> httpClient.setTimeout(timeout, timeoutUnit));
+    }
+
+    public void setTimeout(int timeout, ChronoUnit timeoutUnit) {
+        this.timeout     = timeout;
+        this.timeoutUnit = timeoutUnit;
+    }
+
+    public static void markHeaderAsSensitive(Object proxy, String header) {
+        markHeadersAsSensitive(proxy, singleton(header));
+    }
+
+    public static void markHeadersAsSensitive(Object proxy, Set<String> headers) {
+        ifHttpClientDo(proxy, httpClient -> httpClient.addSensitiveHeaders(headers));
+    }
+
+    private static void ifHttpClientDo(Object proxy, Consumer<HttpClient> consumer) {
         if (Proxy.isProxyClass(proxy.getClass())) {
             Object handler = Proxy.getInvocationHandler(proxy);
             if (handler instanceof HttpClient) {
-                ((HttpClient)handler).setTimeout(timeout, timeoutUnit);
+                consumer.accept((HttpClient) handler);
             }
         }
     }
 
-    public void setTimeout(int timeout, ChronoUnit timeoutUnit) {
-        this.timeout = timeout;
-        this.timeoutUnit = timeoutUnit;
+    public void addSensitiveHeaders(Set<String> headers) {
+        this.sensitiveHeaders.addAll(headers);
     }
 
     @SuppressWarnings("unchecked")
@@ -151,8 +180,10 @@ public class HttpClient implements InvocationHandler {
         Mono<RwHttpClientResponse> response = request.submit(rxClient, request);
 
         Publisher<?> publisher = null;
+        AtomicReference<HttpClientResponse> rawResponse = new AtomicReference<>();
         if (expectsByteArrayResponse(method)) {
             publisher = response.flatMap(rwHttpClientResponse -> {
+                rawResponse.set(rwHttpClientResponse.getHttpClientResponse());
                 if (rwHttpClientResponse.getHttpClientResponse().status().code() >= 400) {
                     return Mono.from(collector.collectString(rwHttpClientResponse.getContent()))
                         .map(data -> handleError(request, rwHttpClientResponse.getHttpClientResponse(), data).getBytes());
@@ -160,8 +191,10 @@ public class HttpClient implements InvocationHandler {
                 return Mono.from(collector.collectBytes(rwHttpClientResponse.getContent()));
             });
         } else {
-            publisher = response.flatMapMany(rwHttpClientResponse ->
-                parseResponse(method, request, rwHttpClientResponse));
+            publisher = response.flatMapMany(rwHttpClientResponse -> {
+                rawResponse.set(rwHttpClientResponse.getHttpClientResponse());
+                return parseResponse(method, request, rwHttpClientResponse);
+            });
         }
         publisher = measure(request, publisher);
 
@@ -170,14 +203,87 @@ public class HttpClient implements InvocationHandler {
         flux = flux.timeout(Duration.of(timeout, timeoutUnit));
         publisher = withRetry(request, flux).onErrorResume(e -> convertError(request, e));
 
-        if (Single.class.isAssignableFrom(method.getReturnType())) {
-            return RxReactiveStreams.toSingle(publisher);
+        Class<?> returnType = method.getReturnType();
+        if (Observable.class.isAssignableFrom(returnType)) {
+            return new ObservableWithResponse(RxReactiveStreams.toObservable(publisher), rawResponse);
+        } else if (Single.class.isAssignableFrom(returnType)) {
+            return new SingleWithResponse(RxReactiveStreams.toSingle(publisher), rawResponse);
+        } else if (Flux.class.isAssignableFrom(returnType)) {
+            return new FluxWithResponse(Flux.from(publisher), rawResponse);
+        } else if (Mono.class.isAssignableFrom(returnType)) {
+            return new MonoWithResponse(Mono.from(publisher), rawResponse);
+        } else {
+            throw new IllegalArgumentException(returnType + " is not supported reactive streams return type");
         }
-        return FluxRxConverter.converterFromPublisher(method.getReturnType()).apply(publisher);
+    }
+
+    /**
+     * Should be used with an observable coming directly from another api-call to get access to meta data, such as status and headers
+     * from the response.
+     *
+     * @param source the source observable, must be observable returned from api call
+     * @param <T>    the type of data that should be returned in the call
+     * @return an observable that along with the data passes the response meta data
+     */
+    public static <T> Observable<Response<T>> getFullResponse(Observable<T> source) {
+        if (!(source instanceof ObservableWithResponse)) {
+            throw new IllegalArgumentException("Must be used with observable returned from api call");
+        }
+
+        return source.map(data -> new Response<>(((ObservableWithResponse<T>) source).getResponse(), data))
+            .switchIfEmpty(fromCallable(() -> new Response<>(((ObservableWithResponse<T>)source).getResponse(), null)));
+    }
+
+    /**
+     * Should be used with a Single coming directly from another api-call to get access to meta data, such as status and header
+     *
+     * @param source the source observable, must be observable returned from api call
+     * @param <T>    the type of data that should be returned in the call
+     * @return an observable that along with the data passes the response object from netty
+     */
+    public static <T> Single<Response<T>> getFullResponse(Single<T> source) {
+        if (!(source instanceof SingleWithResponse)) {
+            throw new IllegalArgumentException("Must be used with single returned from api call");
+        }
+
+        return source
+            .map(data -> new Response<>(((SingleWithResponse<T>)source).getResponse(), data));
+    }
+
+    /**
+     * Should be used with a Flux coming directly from another api-call to get access to meta data, such as status and header
+     *
+     * @param source the source observable, must be observable returned from api call
+     * @param <T>    the type of data that should be returned in the call
+     * @return an observable that along with the data passes the response object from netty
+     */
+    public static <T> Flux<Response<T>> getFullResponse(Flux<T> source) {
+        if (!(source instanceof FluxWithResponse)) {
+            throw new IllegalArgumentException("Must be used with Flux returned from api call");
+        }
+
+        return source
+            .map(data -> new Response<>(((FluxWithResponse<T>)source).getResponse(), data));
+    }
+
+    /**
+     * Should be used with a Mono coming directly from another api-call to get access to meta data, such as status and header
+     *
+     * @param source the source observable, must be observable returned from api call
+     * @param <T>    the type of data that should be returned in the call
+     * @return an observable that along with the data passes the response object from netty
+     */
+    public static <T> Mono<Response<T>> getFullResponse(Mono<T> source) {
+        if (!(source instanceof MonoWithResponse)) {
+            throw new IllegalArgumentException("Must be used with Mono returned from api call");
+        }
+
+        return source
+            .map(data -> new Response<>(((MonoWithResponse<T>)source).getResponse(), data));
     }
 
     private <T> Flux<T> convertError(RequestBuilder fullReq, Throwable throwable) {
-        String request = format("%s, headers: %s", fullReq.getFullUrl(), fullReq.getHeaders().entrySet());
+        String request = format("%s, headers: %s", fullReq.getFullUrl(), getHeaderValuesOrRedact(fullReq.getHeaders(), sensitiveHeaders));
         LOG.warn("Failed request. Url: {}", request, throwable);
 
         if (isRetryExhausted(throwable)) {
@@ -271,12 +377,12 @@ public class HttpClient implements InvocationHandler {
             if (!(throwable instanceof WebException)) {
                 return true;
             }
-            if (((WebException)throwable).getStatus().code() >= 500) {
+            if (((WebException) throwable).getStatus().code() >= 500) {
 
                 // Log the error on every retry.
                 LOG.info(format("Will retry because an error occurred. %s, headers: %s",
                     fullReq.getFullUrl(),
-                    fullReq.getHeaders().entrySet()), throwable);
+                    getHeaderValuesOrRedact(fullReq.getHeaders(), sensitiveHeaders)), throwable);
 
                 // Retry if it's 500+ error
                 return true;
@@ -361,7 +467,7 @@ public class HttpClient implements InvocationHandler {
             String message = format("Error calling other service:\n\tResponse Status: %d\n\tURL: %s\n\tRequest Headers: %s\n\tResponse Headers: %s\n\tData: %s",
                 clientResponse.status().code(),
                 request.getFullUrl(),
-                request.getHeaders().entrySet(),
+                getHeaderValuesOrRedact(request.getHeaders(), sensitiveHeaders),
                 formatHeaders(clientResponse),
                 data);
             Throwable                detailedErrorCause = new HttpClient.ThrowableWithoutStack(message);
@@ -472,10 +578,14 @@ public class HttpClient implements InvocationHandler {
             return Mono.empty();
         }
 
+        if (String.class.equals(type) && !string.startsWith(QUOTE) && !"null".equalsIgnoreCase(string)) {   
+            return just(string);
+        }
+
         try {
             JavaType     javaType = TypeFactory.defaultInstance().constructType(type);
             ObjectReader reader   = objectMapper.readerFor(javaType);
-            Object value = reader.readValue(string);
+            Object       value    = reader.readValue(string);
             return Mono.justOrEmpty(value);
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -501,9 +611,9 @@ public class HttpClient implements InvocationHandler {
     protected String getPath(Method method, Object[] arguments, JaxRsMeta meta) {
         String path = meta.getFullPath();
 
-        StringBuilder  query       = null;
-        Class<?>[]     types       = method.getParameterTypes();
-        List<Object> args = new ArrayList<>(asList(arguments));
+        StringBuilder      query               = null;
+        Class<?>[]         types               = method.getParameterTypes();
+        List<Object>       args                = new ArrayList<>(asList(arguments));
         List<Annotation[]> argumentAnnotations = new ArrayList<>(asList(method.getParameterAnnotations()));
         for (int i = 0; i < args.size(); i++) {
             Object value = args.get(i);
@@ -547,7 +657,7 @@ public class HttpClient implements InvocationHandler {
 
     private List<BeanParamProperty> getBeanParamGetters(Class beanParamType) {
         List<BeanParamProperty> result = new ArrayList<>();
-        for (Field field : beanParamType.getDeclaredFields()) {
+        for (Field field : getDeclaredFieldsFromClassAndAncestors(beanParamType)) {
             Optional<Function<Object, Object>> getter = ReflectionUtil.getter(beanParamType, field.getName());
             if (getter.isPresent()) {
                 result.add(new BeanParamProperty(
@@ -559,6 +669,21 @@ public class HttpClient implements InvocationHandler {
         return result;
     }
 
+    /**
+     * Recursive function getting all declared fields from the passed in class and its ancestors
+     *
+     * @param clazz the clazz fetching fields from
+     * @return list of fields
+     */
+    private static Set<Field> getDeclaredFieldsFromClassAndAncestors(Class clazz) {
+        final HashSet<Field> declaredFields = new HashSet<>(asList(clazz.getDeclaredFields()));
+
+        if (clazz.getSuperclass() == null || Object.class.equals(clazz.getSuperclass())) {
+            return declaredFields;
+        }
+        return Sets.union(getDeclaredFieldsFromClassAndAncestors(clazz.getSuperclass()), declaredFields);
+    }
+
     protected String serialize(Object value) {
         if (value instanceof Date) {
             return String.valueOf(((Date)value).getTime());
@@ -567,8 +692,8 @@ public class HttpClient implements InvocationHandler {
             value = asList((Object[])value);
         }
         if (value instanceof List) {
-            StringBuilder stringBuilder     = new StringBuilder();
-            List          list = (List)value;
+            StringBuilder stringBuilder = new StringBuilder();
+            List          list          = (List)value;
             for (int i = 0; i < list.size(); i++) {
                 Object entryValue = list.get(i);
                 stringBuilder.append(entryValue);
@@ -648,11 +773,12 @@ public class HttpClient implements InvocationHandler {
 
     private static class BeanParamProperty {
         final Function<Object, Object> getter;
-        final Annotation[] annotations;
+        final Annotation[]             annotations;
 
         public BeanParamProperty(Function<Object, Object> getter, Annotation[] annotations) {
-            this.getter = getter;
+            this.getter      = getter;
             this.annotations = annotations;
         }
     }
+
 }

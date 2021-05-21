@@ -1,7 +1,6 @@
 package se.fortnox.reactivewizard.dbmigrate;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.CreationException;
 import com.google.inject.Guice;
 import com.google.inject.name.Names;
 import com.google.inject.util.Modules;
@@ -16,12 +15,7 @@ import se.fortnox.reactivewizard.server.ServerConfig;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 public class LiquibaseAutoBindModuleTest {
     @Test
@@ -130,13 +124,13 @@ public class LiquibaseAutoBindModuleTest {
                 ServerConfig serverConfig = new ServerConfig() {{
                     setEnabled(false);
                 }};
-                when(configFactory.get(eq(ServerConfig.class))).thenReturn(serverConfig);
+                when(configFactory.get(ServerConfig.class)).thenReturn(serverConfig);
                 bind(ServerConfig.class).toInstance(serverConfig);
 
                 LiquibaseConfig liquibaseConfig = new LiquibaseConfig();
                 liquibaseConfig.setUrl("jdbc:h2:mem:test");
 
-                when(configFactory.get(eq(LiquibaseConfig.class))).thenReturn(liquibaseConfig);
+                when(configFactory.get(LiquibaseConfig.class)).thenReturn(liquibaseConfig);
                 bind(ConfigFactory.class).toInstance(configFactory);
 
                 bind(String[].class)

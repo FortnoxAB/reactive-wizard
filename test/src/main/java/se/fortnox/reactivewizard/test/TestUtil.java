@@ -2,14 +2,13 @@ package se.fortnox.reactivewizard.test;
 
 import org.assertj.core.api.AbstractThrowableAssert;
 import org.fest.assertions.ThrowableAssert;
-import org.hamcrest.Description;
 import org.mockito.ArgumentMatcher;
-import org.mockito.Mockito;
 
 import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
+import static org.mockito.ArgumentMatchers.argThat;
 
 /**
  * Utility functions for building tests.
@@ -35,7 +34,7 @@ public final class TestUtil {
      * @param <T>      is the type of consumer value
      */
     public static <T> T matches(Consumer<T> asserter) {
-        return Mockito.argThat(new ArgumentMatcher<T>() {
+        return argThat(new ArgumentMatcher<T>() {
             Error error;
 
             @SuppressWarnings("unchecked")
@@ -51,10 +50,11 @@ public final class TestUtil {
             }
 
             @Override
-            public void describeTo(Description description) {
+            public String toString() {
                 if (error != null) {
-                    description.appendText(error.getMessage());
+                    return error.getMessage();
                 }
+                return "";
             }
         });
     }
