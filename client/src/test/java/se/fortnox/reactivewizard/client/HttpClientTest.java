@@ -67,6 +67,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static io.netty.handler.codec.http.HttpResponseStatus.*;
 import static java.lang.String.format;
@@ -1603,6 +1604,17 @@ public class HttpClientTest {
     }
 
     @Test
+    public void shouldStreamJsonStrings() {
+        runStreamingResponseTest(
+            TestResource::streamingJsonStrings,
+            10,
+            r -> range(0, 10).forEach(i ->
+                assertThat(r.get(i)).isEqualTo(Integer.toString(i))
+            )
+        );
+    }
+
+    @Test
     public void shouldStreamPojos() {
         runStreamingResponseTest(
             TestResource::streamingPojos,
@@ -1628,7 +1640,7 @@ public class HttpClientTest {
     public void shouldParseStreamedPojosWithoutAnnotation() {
         // Verifies that we can read eagerly collected JSON streams like "{\"name\":"1"}{\"name\":"2"}{\"name\":"3"}"
 
-        withServer(startStreamingServer(100, 10), server -> {
+        withServer(startStreamingServer(10, 10), server -> {
             TestResource resource = getHttpProxy(server.port());
             List<Pojo> result = resource.streamingPojosWithoutAnnotation().toList().toBlocking().single();
             range(0, 10).forEach(i ->
@@ -1650,7 +1662,7 @@ public class HttpClientTest {
 
     @Test
     public void shouldParseStreamedPojosWithNullsAsEmpty() {
-        withServer(startStreamingServer(100, 10), server -> {
+        withServer(startStreamingServer(10, 10), server -> {
             TestResource resource = getHttpProxy(server.port());
             List<Pojo> result = resource.streamingPojosAllNull()
                 .toList().toBlocking().single();
@@ -1660,10 +1672,21 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldHandleErrorsInStreamingResponses() {
-        int outputIntervalMs = 500;
+    public void shouldHandleErrorsDueToStreamedPojosWithBrokenJson() {
+        withServer(startStreamingServer(10, 10), server -> {
+            TestResource resource = getHttpProxy(server.port());
+            try {
+                resource.streamingPojosBrokenJson().toList().toBlocking().single();
+                fail("expected exception");
+            } catch (WebException e) {
+                assertThat(e.getCause().getCause().getMessage()).contains("Unexpected character");
+            }
+        });
+    }
 
-        withServer(startStreamingServer(outputIntervalMs, 1), server -> {
+    @Test
+    public void shouldHandleErrorsInStreamingResponses() {
+        withServer(startStreamingServer(10, 1), server -> {
             TestResource resource = getHttpProxy(server.port());
             try {
                 resource.streamingNotFound().toList().toBlocking().single();
@@ -1713,30 +1736,29 @@ public class HttpClientTest {
     }
 
     private DisposableServer startStreamingServer(int outputIntervalMs, int numElements) {
+        Function<Function<Long, String>, Publisher<String>> generateStrings = factory ->
+            interval(Duration.ofMillis(outputIntervalMs))
+                .take(numElements)
+                .map(factory);
+
+        Function<Function<Long, byte[]>, Publisher<byte[]>> generateByteArrays = factory ->
+            interval(Duration.ofMillis(outputIntervalMs))
+                .take(numElements)
+                .map(factory);
+
         return HttpServer.create().port(0)
             .handle((request, response) -> {
+                response.status(OK);
                 if (request.path().equals("hello/string-stream")) {
-                    response.status(OK);
                     response.header("Content-Type", "text/plain");
-                    return response.sendString(
-                        interval(Duration.ofMillis(outputIntervalMs))
-                            .take(numElements)
-                            .map(Object::toString)
-                    );
-                } else if (request.path().equals("hello/pojo-stream")) {
-                    response.status(OK);
+                    return response.sendString(generateStrings.apply(Object::toString));
+                } else if (request.path().equals("hello/json-string-stream")) {
                     response.header("Content-Type", "application/json");
-                    try {
-                        return response.sendString(
-                            interval(Duration.ofMillis(outputIntervalMs))
-                                .take(numElements)
-                                .map(it -> serialize(new Pojo(it.toString())))
-                        );
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
+                    return response.sendString(generateStrings.apply(it -> serialize(it.toString())));
+                } else if (request.path().equals("hello/pojo-stream")) {
+                    response.header("Content-Type", "application/json");
+                    return response.sendString(generateStrings.apply(it -> serialize(new Pojo(it.toString()))));
                 } else if (request.path().equals("hello/pojo-stream-uneven-chunks")) {
-                    response.status(OK);
                     response.header("Content-Type", "application/json");
                     try {
                         return response.sendString(
@@ -1752,26 +1774,15 @@ public class HttpClientTest {
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }
-                }else if (request.path().equals("hello/pojo-stream-single-null")) {
-                    response.status(OK);
+                } else if (request.path().equals("hello/pojo-stream-all-null")) {
                     response.header("Content-Type", "application/json");
-                    try {
-                        return response.sendString(
-                            interval(Duration.ofMillis(outputIntervalMs))
-                                .take(numElements)
-                                .map(it -> serialize(null))
-                        );
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
+                    return response.sendString(generateStrings.apply(it -> serialize(null)));
+                } else if (request.path().equals("hello/pojo-stream-broken-json")) {
+                    response.header("Content-Type", "application/json");
+                    return response.sendString(generateStrings.apply(it -> "{\"name\": \"brok"));
                 } else if (request.path().equals("hello/bytes-stream")) {
-                    response.status(OK);
                     response.header("Content-Type", "application/octet-stream");
-                    return response.sendByteArray(
-                        interval(Duration.ofMillis(outputIntervalMs))
-                            .take(numElements)
-                            .map(it -> new byte[] { it.byteValue() })
-                    );
+                    return response.sendByteArray(generateByteArrays.apply(it -> new byte[] { it.byteValue() }));
                 } else {
                     response.status(NOT_FOUND);
                     return response.sendString(just(
@@ -1909,6 +1920,12 @@ public class HttpClientTest {
         Observable<String> streamingStrings();
 
         @GET
+        @Path("json-string-stream")
+        @Produces("application/json")
+        @Stream
+        Observable<String> streamingJsonStrings();
+
+        @GET
         @Path("pojo-stream")
         @Stream
         Observable<Pojo> streamingPojos();
@@ -1923,9 +1940,14 @@ public class HttpClientTest {
         Observable<Pojo> streamingPojosUnevenChunks();
 
         @GET
-        @Path("pojo-stream-single-null")
+        @Path("pojo-stream-all-null")
         @Stream
         Observable<Pojo> streamingPojosAllNull();
+
+        @GET
+        @Path("pojo-stream-broken-json")
+        @Stream
+        Observable<Pojo> streamingPojosBrokenJson();
 
         @GET
         @Path("bytes-stream")
