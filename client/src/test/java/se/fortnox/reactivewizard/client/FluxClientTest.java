@@ -1,5 +1,6 @@
 package se.fortnox.reactivewizard.client;
 
+import io.netty.handler.codec.http.HttpResponseStatus;
 import org.junit.Test;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -20,9 +21,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static javax.ws.rs.core.Response.Status.OK;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 public class FluxClientTest {
     FluxResource fluxServerResource = mock(FluxResource.class);
@@ -129,6 +130,53 @@ public class FluxClientTest {
             // It seems to become 152 requests all the time, but the important part is that it will avoid emitting all
             // 10000 strings, so if this fails in the future we could change it to ensure that is less than 1000 or so
             assertThat(emitted.get()).isLessThanOrEqualTo(152);
+        } finally {
+            server.disposeNow();
+        }
+    }
+
+    @Test
+    public void shouldSupportGettingResponseHeadersFromFlux() throws URISyntaxException {
+        DisposableServer server = HttpServer.create().handle(handler).bindNow();
+        AtomicInteger subscriptions = new AtomicInteger();
+        Flux<String> resultToReturn = Flux.just("a", "b").doOnSubscribe(s->subscriptions.incrementAndGet());
+        when(fluxServerResource.arrayOfStrings()).thenReturn(resultToReturn);
+
+        try {
+            FluxResource fluxClientResource = client(server);
+
+            Flux<String> result = fluxClientResource.arrayOfStrings();
+            Mono<Response<Flux<String>>> fullResponse = HttpClient.getFullResponse(result);
+            Response<Flux<String>> awaitedResponse = fullResponse.block();
+            assertThat(awaitedResponse.getStatus()).isEqualTo(HttpResponseStatus.OK);
+            assertThat(awaitedResponse.getHeaders()).isNotEmpty();
+
+            List<String> bodyResult = awaitedResponse.getBody().collectList().block();
+            assertThat(bodyResult).hasSize(2);
+            assertThat(bodyResult.get(0)).isEqualTo("a");
+
+            verify(fluxServerResource).arrayOfStrings();
+
+            assertThat(subscriptions.get()).isEqualTo(1);
+        } finally {
+            server.disposeNow();
+        }
+    }
+
+    @Test
+    public void shouldSupportGettingResponseHeadersFromMono() throws URISyntaxException {
+        DisposableServer server = HttpServer.create().handle(handler).bindNow();
+        when(fluxServerResource.monoString()).thenReturn(Mono.just("hej"));
+
+        try {
+            FluxResource fluxClientResource = client(server);
+
+            Mono<String> result = fluxClientResource.monoString();
+            Mono<Response<String>> fullResponse = HttpClient.getFullResponse(result);
+            Response<String> awaitedResponse = fullResponse.block();
+            assertThat(awaitedResponse.getStatus()).isEqualTo(HttpResponseStatus.OK);
+            assertThat(awaitedResponse.getHeaders()).isNotEmpty();
+            assertThat(awaitedResponse.getBody()).isEqualTo("hej");
         } finally {
             server.disposeNow();
         }

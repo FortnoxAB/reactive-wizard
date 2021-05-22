@@ -257,13 +257,16 @@ public class HttpClient implements InvocationHandler {
      * @param <T>    the type of data that should be returned in the call
      * @return an observable that along with the data passes the response object from netty
      */
-    public static <T> Flux<Response<T>> getFullResponse(Flux<T> source) {
+    public static <T> Mono<Response<Flux<T>>> getFullResponse(Flux<T> source) {
         if (!(source instanceof FluxWithResponse)) {
             throw new IllegalArgumentException("Must be used with Flux returned from api call");
         }
 
+        FluxWithResponse<T> withResponse = (FluxWithResponse<T>) source;
+
         return source
-            .map(data -> new Response<>(((FluxWithResponse<T>)source).getResponse(), data));
+            .switchOnFirst((signal, inner) -> Mono.just(new Response<>(withResponse.getResponse(), inner)), false)
+            .single();
     }
 
     /**
