@@ -179,10 +179,10 @@ public class HttpClient implements InvocationHandler {
 
         Mono<RwHttpClientResponse> response = request.submit(rxClient, request);
 
-        Publisher<?> publisher = null;
+        Mono<?> result = null;
         AtomicReference<HttpClientResponse> rawResponse = new AtomicReference<>();
         if (expectsByteArrayResponse(method)) {
-            publisher = response.flatMap(rwHttpClientResponse -> {
+            result = response.flatMap(rwHttpClientResponse -> {
                 rawResponse.set(rwHttpClientResponse.getHttpClientResponse());
                 if (rwHttpClientResponse.getHttpClientResponse().status().code() >= 400) {
                     return Mono.from(collector.collectString(rwHttpClientResponse.getContent()))
@@ -191,27 +191,34 @@ public class HttpClient implements InvocationHandler {
                 return Mono.from(collector.collectBytes(rwHttpClientResponse.getContent()));
             });
         } else {
-            publisher = response.flatMapMany(rwHttpClientResponse -> {
+            result = response.flatMap(rwHttpClientResponse -> {
                 rawResponse.set(rwHttpClientResponse.getHttpClientResponse());
                 return parseResponse(method, request, rwHttpClientResponse);
             });
         }
-        publisher = measure(request, publisher);
-
-        //End of publisher
-        Flux<?> flux = Flux.from(publisher);
-        flux = flux.timeout(Duration.of(timeout, timeoutUnit));
-        publisher = withRetry(request, flux).onErrorResume(e -> convertError(request, e));
+        result = measure(request, result)
+                    .timeout(Duration.of(timeout, timeoutUnit))
+                    .retryWhen(withRetry(request))
+                    .onErrorResume(e -> convertError(request, e));
 
         Class<?> returnType = method.getReturnType();
         if (Observable.class.isAssignableFrom(returnType)) {
-            return new ObservableWithResponse(RxReactiveStreams.toObservable(publisher), rawResponse);
+            return new ObservableWithResponse(RxReactiveStreams.toObservable(result), rawResponse);
         } else if (Single.class.isAssignableFrom(returnType)) {
-            return new SingleWithResponse(RxReactiveStreams.toSingle(publisher), rawResponse);
+            return new SingleWithResponse(RxReactiveStreams.toSingle(result), rawResponse);
         } else if (Flux.class.isAssignableFrom(returnType)) {
-            return new FluxWithResponse(Flux.from(publisher), rawResponse);
+            Mono<Response<Flux<?>>> responseFlux = response.map(rwHttpClientResponse -> new Response<>(
+                rwHttpClientResponse.getHttpClientResponse(),
+                Flux.from(parseResponseStream(method, request, rwHttpClientResponse))
+            ));
+            responseFlux = measure(request, responseFlux)
+                .timeout(Duration.of(timeout, timeoutUnit))
+                .retryWhen(withRetry(request))
+                .onErrorResume(e -> convertError(request, e));
+
+            return new FluxWithResponse(responseFlux);
         } else if (Mono.class.isAssignableFrom(returnType)) {
-            return new MonoWithResponse(Mono.from(publisher), rawResponse);
+            return new MonoWithResponse(Mono.from(result), rawResponse);
         } else {
             throw new IllegalArgumentException(returnType + " is not supported reactive streams return type");
         }
@@ -264,9 +271,7 @@ public class HttpClient implements InvocationHandler {
 
         FluxWithResponse<T> withResponse = (FluxWithResponse<T>) source;
 
-        return source
-            .switchOnFirst((signal, inner) -> Mono.just(new Response<>(withResponse.getResponse(), inner)), false)
-            .single();
+        return withResponse.getResponse();
     }
 
     /**
@@ -285,7 +290,7 @@ public class HttpClient implements InvocationHandler {
             .map(data -> new Response<>(((MonoWithResponse<T>)source).getResponse(), data));
     }
 
-    private <T> Flux<T> convertError(RequestBuilder fullReq, Throwable throwable) {
+    private <T> Mono<T> convertError(RequestBuilder fullReq, Throwable throwable) {
         String request = format("%s, headers: %s", fullReq.getFullUrl(), getHeaderValuesOrRedact(fullReq.getHeaders(), sensitiveHeaders));
         LOG.warn("Failed request. Url: {}", request, throwable);
 
@@ -295,20 +300,22 @@ public class HttpClient implements InvocationHandler {
 
         if (throwable instanceof TimeoutException || throwable instanceof ReadTimeoutException) {
             String message = format("Timeout after %d ms calling %s", Duration.of(timeout, timeoutUnit).toMillis(), request);
-            return Flux.error(new WebException(GATEWAY_TIMEOUT, new JustMessageException(message), false));
+            return Mono.error(new WebException(GATEWAY_TIMEOUT, new JustMessageException(message), false));
         } else if (!(throwable instanceof WebException)) {
             String message = format("Error calling %s", request);
-            return Flux.error(new WebException(INTERNAL_SERVER_ERROR, new JustMessageException(message, throwable), false));
+            return Mono.error(new WebException(INTERNAL_SERVER_ERROR, new JustMessageException(message, throwable), false));
         }
-        return Flux.error(throwable);
+        return Mono.error(throwable);
     }
 
-    protected Publisher<Object> parseResponse(Method method, RequestBuilder request, RwHttpClientResponse response) {
-        if (FluxRxConverter.isSingleType(method.getReturnType())) {
-            return Mono.from(collector.collectString(response.getContent()))
-                .map(stringContent -> handleError(request, response.getHttpClientResponse(), stringContent))
-                .flatMap(stringContent -> this.deserialize(method, stringContent));
-        } else if (response.getHttpClientResponse().responseHeaders().get(CONTENT_TYPE).equals(APPLICATION_JSON)) {
+    protected Mono<Object> parseResponse(Method method, RequestBuilder request, RwHttpClientResponse response) {
+        return Mono.from(collector.collectString(response.getContent()))
+            .map(stringContent -> handleError(request, response.getHttpClientResponse(), stringContent))
+            .flatMap(stringContent -> this.deserialize(method, stringContent));
+    }
+
+    protected Flux<Object> parseResponseStream(Method method, RequestBuilder request, RwHttpClientResponse response) {
+        if (response.getHttpClientResponse().responseHeaders().get(CONTENT_TYPE).equals(APPLICATION_JSON)) {
             JsonArrayDeserializer deserializer = new JsonArrayDeserializer(objectMapper, method);
             return response.getContent().asByteArray().concatMap(deserializer::process);
         } else {
@@ -363,8 +370,12 @@ public class HttpClient implements InvocationHandler {
         return PublisherMetrics.get("OUT_res:" + fullRequest.getKey()).measure(output);
     }
 
-    protected <T> Flux<T> withRetry(RequestBuilder fullReq, Flux<T> response) {
-        return response.retryWhen(Retry.backoff(config.getRetryCount(), this.retryDuration).filter(throwable -> {
+    protected <T> Mono<T> measure(RequestBuilder fullRequest, Mono<T> output) {
+        return PublisherMetrics.get("OUT_res:" + fullRequest.getKey()).measure(output);
+    }
+
+    protected Retry withRetry(RequestBuilder fullReq) {
+        return Retry.backoff(config.getRetryCount(), this.retryDuration).filter(throwable -> {
             if (fullReq.getHttpMethod().equals(POST)) {
                 // Don't retry if it was a POST, as it is not idempotent
                 return false;
@@ -392,7 +403,7 @@ public class HttpClient implements InvocationHandler {
             }
             // Don't retry if it is a 400 error or something like that
             return false;
-        }));
+        });
     }
 
     protected void addContent(Method method, Object[] arguments, RequestBuilder requestBuilder) {

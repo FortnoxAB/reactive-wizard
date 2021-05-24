@@ -2,6 +2,7 @@ package se.fortnox.reactivewizard.client;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import reactor.netty.http.client.HttpClientResponse;
 import rx.Observable;
 
@@ -13,27 +14,18 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 class FluxWithResponse<T> extends Flux<T> {
 
-    private final Flux<T> inner;
-    private final AtomicReference<HttpClientResponse> httpClientResponse;
+    private final Mono<Response<Flux<T>>> inner;
 
-    FluxWithResponse(Flux<T> inner, AtomicReference<HttpClientResponse> httpClientResponse) {
+    public FluxWithResponse(Mono<Response<Flux<T>>> inner) {
         this.inner = inner;
-        this.httpClientResponse = httpClientResponse;
-    }
-
-    HttpClientResponse getResponse() {
-        if (httpClientResponse.get() == null) {
-            throw new IllegalStateException("This method can only be called after the response has been received");
-        }
-        return httpClientResponse.get();
-    }
-
-    static <T> FluxWithResponse<T> from(FluxWithResponse<T> observableWithResponse, Flux<T> inner) {
-        return new FluxWithResponse<T>(inner, observableWithResponse.httpClientResponse);
     }
 
     @Override
     public void subscribe(CoreSubscriber<? super T> coreSubscriber) {
-        inner.subscribe(coreSubscriber);
+        inner.flatMapMany(Response::getBody).subscribe(coreSubscriber);
+    }
+
+    public Mono<Response<Flux<T>>> getResponse() {
+        return inner;
     }
 }
