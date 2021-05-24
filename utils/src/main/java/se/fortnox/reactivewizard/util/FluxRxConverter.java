@@ -1,6 +1,5 @@
 package se.fortnox.reactivewizard.util;
 
-import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import rx.Observable;
@@ -72,19 +71,6 @@ public class FluxRxConverter {
             return FluxRxConverter::observableToFlux;
         } else if (Mono.class.isAssignableFrom(targetReactiveType)) {
             return result -> observableToFlux(result).single();
-        }
-        return null;
-    }
-
-    public static Function<Publisher<?>, Object> converterFromPublisher(Class<?> targetReactiveType) {
-        if (Observable.class.isAssignableFrom(targetReactiveType)) {
-            return RxReactiveStreams::toObservable;
-        } else if (Single.class.isAssignableFrom(targetReactiveType)) {
-            return RxReactiveStreams::toSingle;
-        } else if (Flux.class.isAssignableFrom(targetReactiveType)) {
-            return Flux::from;
-        } else if (Mono.class.isAssignableFrom(targetReactiveType)) {
-            return Mono::from;
         }
         return null;
     }
