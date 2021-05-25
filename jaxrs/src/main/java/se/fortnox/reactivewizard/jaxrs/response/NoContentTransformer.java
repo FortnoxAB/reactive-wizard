@@ -1,8 +1,5 @@
 package se.fortnox.reactivewizard.jaxrs.response;
 
-import io.netty.handler.codec.http.HttpResponseStatus;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 import se.fortnox.reactivewizard.jaxrs.JaxRsResource;
 
 /**

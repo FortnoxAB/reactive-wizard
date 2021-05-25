@@ -3,7 +3,6 @@ package se.fortnox.reactivewizard.jaxrs.response;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import reactor.core.publisher.Flux;
-import reactor.util.function.Tuple2;
 import rx.functions.Func1;
 import se.fortnox.reactivewizard.jaxrs.Headers;
 import se.fortnox.reactivewizard.jaxrs.JaxRsResource;

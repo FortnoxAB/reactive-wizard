@@ -3,10 +3,6 @@ package se.fortnox.reactivewizard.client;
 import reactor.core.CoreSubscriber;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.netty.http.client.HttpClientResponse;
-import rx.Observable;
-
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Internal class to help support getting the full response as return value when observable is returned

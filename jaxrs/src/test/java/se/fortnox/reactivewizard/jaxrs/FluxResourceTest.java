@@ -1,10 +1,12 @@
 package se.fortnox.reactivewizard.jaxrs;
 
+import io.netty.handler.codec.http.HttpResponseStatus;
 import org.junit.Test;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.netty.DisposableServer;
 import reactor.netty.http.client.HttpClient;
+import reactor.netty.http.client.HttpClientResponse;
 import reactor.netty.http.server.HttpServer;
 import se.fortnox.reactivewizard.ExceptionHandler;
 
@@ -31,6 +33,22 @@ public class FluxResourceTest {
     public void shouldReturnEmptyArray() {
         when(fluxResource.arrayOfStrings()).thenReturn(Flux.empty());
         assertResponse("/flux/strings", "[]");
+    }
+
+    @Test
+    public void shouldReturnError() {
+        when(fluxResource.arrayOfStrings()).thenReturn(Flux.error(new WebException(HttpResponseStatus.PAYMENT_REQUIRED, "error")));
+
+        DisposableServer server = HttpServer.create().handle(handler).bindNow();
+        try {
+            HttpClientResponse response = httpClient.get()
+                .uri("http://localhost:" + server.port() + "/flux/strings").response()
+                .block();
+
+            assertThat(response.status()).isEqualTo(HttpResponseStatus.PAYMENT_REQUIRED);
+        } finally {
+            server.disposeNow();
+        }
     }
 
     @Test

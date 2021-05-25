@@ -6,8 +6,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.netty.http.server.HttpServerRequest;
 import reactor.netty.http.server.HttpServerResponse;
-import rx.Observable;
-import rx.Single;
 import se.fortnox.reactivewizard.jaxrs.params.ParamResolver;
 import se.fortnox.reactivewizard.jaxrs.params.ParamResolverFactories;
 import se.fortnox.reactivewizard.jaxrs.response.JaxRsResult;
@@ -23,7 +21,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
