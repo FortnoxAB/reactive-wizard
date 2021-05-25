@@ -22,7 +22,6 @@ import javax.ws.rs.core.MediaType;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
@@ -131,8 +130,8 @@ public class JaxRsResource<T> implements Comparable<JaxRsResource> {
         // This part should be refactored so that this class does not know about decorator, but right now the meta data
         // is lost if not handled here.
         if (result instanceof ResponseDecorator.ObservableWithHeaders) {
-            Map<String, String> headers = ((ResponseDecorator.ObservableWithHeaders<T>) result).getHeaders();
-            return new ResponseDecorator.FluxWithHeaders<>(fluxResult, headers);
+            ResponseDecorator.ResponseDecorations decorations = ((ResponseDecorator.ObservableWithHeaders<T>) result).getDecorations();
+            return new ResponseDecorator.FluxWithHeaders<>(fluxResult, decorations);
         }
 
         return fluxResult;
