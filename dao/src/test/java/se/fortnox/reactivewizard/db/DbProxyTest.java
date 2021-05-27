@@ -59,28 +59,6 @@ public class DbProxyTest {
     }
 
     @Test
-    public void shouldReturnDataFromDbForQueryWithMono() throws SQLException {
-        mockDb.addRowColumn(1, 1, "sql_val", String.class, "myname");
-        assertThat(dbProxyTestDao.selectMono("mykey").single().block().getSqlVal()).isEqualTo("myname");
-        mockDb.verifySelect("select * from table where key=?", "mykey");
-
-        verify(mockDb.getPreparedStatement()).close();
-        verify(mockDb.getResultSet()).close();
-        verify(mockDb.getConnection()).close();
-    }
-
-    @Test
-    public void shouldReturnDataFromDbForQueryWithSingle() throws SQLException {
-        mockDb.addRowColumn(1, 1, "sql_val", String.class, "myname");
-        assertThat(dbProxyTestDao.selectSingle("mykey").toBlocking().value().getSqlVal()).isEqualTo("myname");
-        mockDb.verifySelect("select * from table where key=?", "mykey");
-
-        verify(mockDb.getPreparedStatement()).close();
-        verify(mockDb.getResultSet()).close();
-        verify(mockDb.getConnection()).close();
-    }
-
-    @Test
     public void shouldUpdateDbWithInputAndReturnAffectedRows() throws SQLException {
         mockDb.setUpdatedRows(1);
         assertThat(dbProxyTestDao.update("mykey", "myval").toBlocking().single()).isEqualTo(1);

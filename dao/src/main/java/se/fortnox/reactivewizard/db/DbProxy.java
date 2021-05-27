@@ -1,6 +1,7 @@
 package se.fortnox.reactivewizard.db;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import reactor.core.publisher.Flux;
 import rx.Observable;
 import rx.Scheduler;
 import rx.internal.util.RxThreadFactory;
@@ -9,10 +10,11 @@ import se.fortnox.reactivewizard.db.config.DatabaseConfig;
 import se.fortnox.reactivewizard.db.paging.PagingOutput;
 import se.fortnox.reactivewizard.db.statement.DbStatementFactory;
 import se.fortnox.reactivewizard.db.statement.DbStatementFactoryFactory;
+import se.fortnox.reactivewizard.db.transactions.DaoFlux;
+import se.fortnox.reactivewizard.db.transactions.DaoObservable;
 import se.fortnox.reactivewizard.json.JsonSerializerFactory;
 import se.fortnox.reactivewizard.metrics.Metrics;
 import se.fortnox.reactivewizard.util.DebugUtil;
-import se.fortnox.reactivewizard.util.FluxRxConverter;
 import se.fortnox.reactivewizard.util.ReflectionUtil;
 
 import javax.annotation.Nullable;
@@ -122,8 +124,14 @@ public class DbProxy implements InvocationHandler {
             statementFactories.put(method, observableStatementFactory);
         }
         Observable<Object> resultObservable = observableStatementFactory.create(args, connectionProvider);
-        Function<Observable<Object>,Object> converter = FluxRxConverter.converterFromObservable(method.getReturnType());
-        return converter.apply(resultObservable);
+        Class<?> returnType = method.getReturnType();
+        if (Observable.class.isAssignableFrom(returnType)) {
+            return resultObservable;
+        } else if (Flux.class.isAssignableFrom(returnType)) {
+            return new DaoFlux((DaoObservable)resultObservable);
+        } else {
+            throw new IllegalArgumentException("Only Observable and Flux return types are implemented for dao");
+        }
     }
 
     private Metrics createMetrics(Method method) {

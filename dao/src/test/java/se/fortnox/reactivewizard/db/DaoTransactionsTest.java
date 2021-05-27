@@ -3,12 +3,15 @@ package se.fortnox.reactivewizard.db;
 import org.fest.assertions.Fail;
 import org.junit.Test;
 import org.mockito.InOrder;
+import reactor.core.publisher.Flux;
 import rx.Observable;
 import rx.Observer;
 import se.fortnox.reactivewizard.db.config.DatabaseConfig;
 import se.fortnox.reactivewizard.db.statement.MinimumAffectedRowsException;
 import se.fortnox.reactivewizard.db.transactions.DaoObservable;
 import se.fortnox.reactivewizard.db.transactions.DaoTransactions;
+import se.fortnox.reactivewizard.db.transactions.DaoTransactionsFlux;
+import se.fortnox.reactivewizard.db.transactions.DaoTransactionsFluxImpl;
 import se.fortnox.reactivewizard.db.transactions.DaoTransactionsImpl;
 import se.fortnox.reactivewizard.db.transactions.TransactionAlreadyExecutedException;
 import se.fortnox.reactivewizard.test.TestUtil;
@@ -34,6 +37,7 @@ public class DaoTransactionsTest {
     private DbProxy            dbProxy            = new DbProxy(new DatabaseConfig(), connectionProvider);
     private TestDao            dao                = dbProxy.create(TestDao.class);
     private DaoTransactions    daoTransactions    = new DaoTransactionsImpl();
+    private DaoTransactionsFlux daoTransactionsFlux    = new DaoTransactionsFluxImpl();
 
     @Test
     public void shouldRunTwoQueriesInOneTransaction() throws SQLException {
@@ -48,6 +52,20 @@ public class DaoTransactionsTest {
         verify(db.getConnection(), times(0)).prepareStatement(any());
 
         find2.toBlocking().singleOrDefault(null);
+
+        db.verifyConnectionsUsed(1);
+        verify(db.getConnection(), times(1)).setAutoCommit(false);
+        verify(db.getConnection(), times(1)).commit();
+        verify(db.getConnection(), times(2)).prepareStatement("select * from test");
+        verify(db.getConnection(), timeout(500)).setAutoCommit(true);
+        verify(db.getConnection(), times(1)).close();
+        verify(db.getPreparedStatement(), times(2)).close();
+        verify(db.getResultSet(), times(2)).close();
+    }
+
+    @Test
+    public void shouldSupportFlux() throws SQLException {
+        daoTransactionsFlux.executeTransaction(dao.fluxFind(), dao.fluxFind()).count().block();
 
         db.verifyConnectionsUsed(1);
         verify(db.getConnection(), times(1)).setAutoCommit(false);
@@ -315,6 +333,9 @@ public class DaoTransactionsTest {
 
         @Update(value = "update foo set key=val", minimumAffected = 0)
         Observable<GeneratedKey<Long>> updateSuccessResultSet();
+
+        @Query("select * from test")
+        Flux<String> fluxFind();
     }
 
 }

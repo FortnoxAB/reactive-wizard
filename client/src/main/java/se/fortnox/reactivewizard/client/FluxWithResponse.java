@@ -5,7 +5,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 /**
- * Internal class to help support getting the full response as return value when observable is returned
+ * Internal class to help support getting the full response as return value when Flux is returned
  * @param <T> the type of data to be returned
  */
 class FluxWithResponse<T> extends Flux<T> {
