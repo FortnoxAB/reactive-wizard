@@ -3,7 +3,7 @@ package se.fortnox.reactivewizard.jaxrs.response;
 import se.fortnox.reactivewizard.jaxrs.JaxRsResource;
 
 /**
- * Sets the response status to 204 NO CONTENT if the returned Observable is empty
+ * Kept only to avoid breaking changes. Logic moved to JaxRsResult.
  */
 public class NoContentTransformer implements ResultTransformerFactory {
     @Override

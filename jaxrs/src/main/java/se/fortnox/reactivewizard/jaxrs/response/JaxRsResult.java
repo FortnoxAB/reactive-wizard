@@ -1,6 +1,7 @@
 package se.fortnox.reactivewizard.jaxrs.response;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.codec.http.HttpStatusClass;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -56,7 +57,10 @@ public class JaxRsResult<T> {
         AtomicBoolean headersWritten = new AtomicBoolean();
         return serializer.call(output)
             .switchIfEmpty(Flux.defer(() -> {
-                response.status(HttpResponseStatus.NO_CONTENT);
+                if (responseStatus.codeClass() == HttpStatusClass.SUCCESS) {
+                    responseStatus = HttpResponseStatus.NO_CONTENT;
+                }
+                response.status(responseStatus);
                 response.addHeader(CONTENT_LENGTH, "0");
                 return Flux.empty();
             }))
