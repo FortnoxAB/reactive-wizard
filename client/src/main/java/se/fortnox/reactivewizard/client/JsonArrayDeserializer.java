@@ -21,6 +21,8 @@ public class JsonArrayDeserializer {
     private final ObjectReader reader;
     private final JsonParser parser;
     private final ByteArrayFeeder inputFeeder;
+    private TokenBuffer tokenBuffer;
+    private int depth = -1;
 
     public JsonArrayDeserializer(ObjectMapper objectMapper, Method method) {
         Type type = ReflectionUtil.getTypeOfObservable(method);
@@ -42,17 +44,39 @@ public class JsonArrayDeserializer {
             List<Object> items = null;
             Object item = null;
             JsonToken token;
+
             while ((token = parser.nextToken()) != JsonToken.NOT_AVAILABLE) {
-                if (token == JsonToken.START_ARRAY || token == JsonToken.END_ARRAY) {
-                    continue;
+                if (tokenBuffer == null) {
+                    tokenBuffer = new TokenBuffer(parser);
+                    if (token == JsonToken.START_ARRAY && depth == -1) {
+                        depth++;
+                        continue;
+                    }
                 }
                 if (item != null && items == null) {
                     items = new ArrayList<>();
                     items.add(item);
                 }
-                item = reader.readValue(TokenBuffer.asCopyOfValue(parser).asParser());
-                if (items != null) {
-                    items.add(item);
+                try {
+                    tokenBuffer.copyCurrentEvent(parser);
+                    if (token == JsonToken.START_ARRAY || token == JsonToken.START_OBJECT) {
+                        depth++;
+                    } else if (token == JsonToken.END_ARRAY || token == JsonToken.END_OBJECT ) {
+                        depth--;
+                    }
+                    if (depth == 0) {
+                        item = reader.readValue(tokenBuffer.asParser());
+                        if (item == null) {
+                            continue;
+                        }
+                        tokenBuffer = null;
+                        if (items != null) {
+                            items.add(item);
+                        }
+                    }
+                } catch (Exception e) {
+                    // Expected when reading fragments
+                    continue;
                 }
             }
             if (items != null) {

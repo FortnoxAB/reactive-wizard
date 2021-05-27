@@ -19,6 +19,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static java.util.Arrays.asList;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.Response.Status.OK;
@@ -31,10 +32,9 @@ public class FluxClientTest {
     JaxRsRequestHandler handler = new JaxRsRequestHandler(new Object[]{fluxServerResource}, new JaxRsResourceFactory(), new ExceptionHandler(), false);
 
     @Test
-    public void shouldDecodeJsonArrayAsFlux() throws URISyntaxException {
+    public void shouldDecodeJsonArrayOfStringsAsFlux() throws URISyntaxException {
         DisposableServer server = HttpServer.create().handle(handler).bindNow();
         when(fluxServerResource.arrayOfStrings()).thenReturn(Flux.just("a", "b"));
-        when(fluxServerResource.arrayOfEntities()).thenReturn(Flux.just(new Entity(), new Entity(), new Entity()));
 
         try {
             FluxResource fluxClientResource = client(server);
@@ -43,6 +43,18 @@ public class FluxClientTest {
             assertThat(result).hasSize(2);
             assertThat(result.get(0)).isEqualTo("a");
             assertThat(result.get(1)).isEqualTo("b");
+        } finally {
+            server.disposeNow();
+        }
+    }
+
+    @Test
+    public void shouldDecodeJsonArrayOfEntitiesAsFlux() throws URISyntaxException {
+        DisposableServer server = HttpServer.create().handle(handler).bindNow();
+        when(fluxServerResource.arrayOfEntities()).thenReturn(Flux.just(new Entity(), new Entity(), new Entity()));
+
+        try {
+            FluxResource fluxClientResource = client(server);
 
             List<Entity> entitiesResult = fluxClientResource.arrayOfEntities().collectList().block();
             assertThat(entitiesResult).hasSize(3);
@@ -93,6 +105,47 @@ public class FluxClientTest {
         }
     }
 
+
+    @Test
+    public void shouldDecodeNestedJsonArraysAsFlux() throws URISyntaxException {
+        DisposableServer server = HttpServer.create().handle(handler).bindNow();
+        when(fluxServerResource.arrayOfArray()).thenReturn(Flux.just(asList("a", "b")).repeat(1));
+
+        try {
+            FluxResource fluxClientResource = client(server);
+            List<List<String>> result = fluxClientResource.arrayOfArray().collectList().block();
+            assertThat(result).hasSize(2);
+            assertThat(result.get(0)).hasSize(2);
+            assertThat(result.get(0).get(0)).isEqualTo("a");
+            assertThat(result.get(0).get(1)).isEqualTo("b");
+        } finally {
+            server.disposeNow();
+        }
+    }
+
+    @Test
+    public void shouldDecodeNestedJsonArraysAsFluxInMultipleChunks() throws URISyntaxException {
+        DisposableServer server = HttpServer.create().handle((req, resp)->{
+            resp.header(CONTENT_TYPE, APPLICATION_JSON);
+            return resp.sendString(Flux.just(
+                "[   \t",
+                "[\"",
+                "a\"\r\n\r\n,",
+                "\"b",
+                "\"]]"));
+        }).bindNow();
+
+        try {
+            FluxResource fluxClientResource = client(server);
+            List<List<String>> result = fluxClientResource.arrayOfArray().collectList().block();
+            assertThat(result).hasSize(1);
+            assertThat(result.get(0)).hasSize(2);
+            assertThat(result.get(0).get(0)).isEqualTo("a");
+            assertThat(result.get(0).get(1)).isEqualTo("b");
+        } finally {
+            server.disposeNow();
+        }
+    }
 
     @Test
     public void shouldDecodeJsonObjectAsMonoInMultipleChunks() throws URISyntaxException {
@@ -197,6 +250,10 @@ public class FluxClientTest {
         Flux<String> arrayOfStrings();
 
         @GET
+        @Path("arraysofarray")
+        Flux<List<String>> arrayOfArray();
+
+        @GET
         @Path("entities")
         Flux<Entity> arrayOfEntities();
 
@@ -222,8 +279,11 @@ public class FluxClientTest {
     }
 
     public static class Entity {
+        private static int counter = 0;
         private double someDouble = 3.1415;
         private String someString = "åäö123";
+        private Entity child;
+        private int nbr = counter++;
 
         public double getSomeDouble() {
             return someDouble;
@@ -239,6 +299,32 @@ public class FluxClientTest {
 
         public void setSomeString(String someString) {
             this.someString = someString;
+        }
+
+        public Entity getChild() {
+            return child;
+        }
+
+        public void setChild(Entity child) {
+            this.child = child;
+        }
+
+        public int getNbr() {
+            return nbr;
+        }
+
+        public void setNbr(int nbr) {
+            this.nbr = nbr;
+        }
+
+        @Override
+        public String toString() {
+            return "Entity{" +
+                "someDouble=" + someDouble +
+                ", someString='" + someString + '\'' +
+                ", child=" + child +
+                ", nbr=" + nbr +
+                '}';
         }
     }
 }
