@@ -13,6 +13,8 @@ import se.fortnox.reactivewizard.jaxrs.JaxRsResourceFactory;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
 
 import java.net.URISyntaxException;
 import java.time.temporal.ChronoUnit;
@@ -22,7 +24,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static java.util.Arrays.asList;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-import static javax.ws.rs.core.Response.Status.OK;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
@@ -235,6 +236,42 @@ public class FluxClientTest {
         }
     }
 
+    @Test
+    public void shouldSupportByteArrayResponsesAsJson() throws URISyntaxException {
+        DisposableServer server = HttpServer.create().handle(handler).bindNow();
+        when(fluxServerResource.fluxByteArrayAsJson()).thenReturn(Flux.just("abc".getBytes(), "def".getBytes()));
+
+        try {
+            FluxResource fluxClientResource = client(server);
+
+            Flux<byte[]> result = fluxClientResource.fluxByteArrayAsJson();
+            List<byte[]> byteArrays = result.collectList().block();
+            assertThat(byteArrays).hasSize(2);
+            assertThat(new String(byteArrays.get(0))).isEqualTo("abc");
+            assertThat(new String(byteArrays.get(1))).isEqualTo("def");
+        } finally {
+            server.disposeNow();
+        }
+    }
+
+    @Test
+    public void shouldSupportByteArrayResponses() throws URISyntaxException {
+        DisposableServer server = HttpServer.create().handle(handler).bindNow();
+        when(fluxServerResource.fluxByteArray()).thenReturn(Flux.just("abc".getBytes(), "def".getBytes()));
+
+        try {
+            FluxResource fluxClientResource = client(server);
+
+            Flux<byte[]> result = fluxClientResource.fluxByteArray();
+            List<byte[]> byteArrays = result.collectList().block();
+            assertThat(byteArrays).hasSize(2);
+            assertThat(new String(byteArrays.get(0))).isEqualTo("abc");
+            assertThat(new String(byteArrays.get(1))).isEqualTo("def");
+        } finally {
+            server.disposeNow();
+        }
+    }
+
     private FluxResource client(DisposableServer server) throws URISyntaxException {
         HttpClientConfig config = new HttpClientConfig("http://localhost:"+server.port());
         config.setReadTimeoutMs(1000000);
@@ -265,6 +302,14 @@ public class FluxClientTest {
         @Path("entity")
         Mono<Entity> monoEntity();
 
+        @GET
+        @Path("bytesJson")
+        Flux<byte[]> fluxByteArrayAsJson();
+
+        @GET
+        @Path("bytes")
+        @Produces(MediaType.APPLICATION_OCTET_STREAM)
+        Flux<byte[]> fluxByteArray();
     }
 
     @Path("/")
