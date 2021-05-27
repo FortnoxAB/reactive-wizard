@@ -6,6 +6,7 @@ import org.junit.Test;
 import reactor.core.publisher.Flux;
 import rx.Observable;
 import se.fortnox.reactivewizard.ExceptionHandler;
+import se.fortnox.reactivewizard.jaxrs.response.ResponseDecorator;
 import se.fortnox.reactivewizard.mocks.MockHttpServerRequest;
 import se.fortnox.reactivewizard.mocks.MockHttpServerResponse;
 
@@ -100,6 +101,21 @@ public class StatusTest {
         assertStatus("/test/post-custom", HttpMethod.POST, HttpResponseStatus.OK);
     }
 
+    @Test
+    public void shouldNotModifyStatusOnEmptyRedirects() {
+        assertStatus("/test/empty-redirect", HttpMethod.POST, HttpResponseStatus.SEE_OTHER);
+    }
+
+    @Test
+    public void shouldNotModifyStatusOnEmptyClientErrors() {
+        assertStatus("/test/empty-client-error", HttpMethod.POST, HttpResponseStatus.GONE);
+    }
+
+    @Test
+    public void shouldNotModifyStatusOnEmptyServerErrors() {
+        assertStatus("/test/empty-server-error", HttpMethod.POST, HttpResponseStatus.SERVICE_UNAVAILABLE);
+    }
+
     private void assertStatus(String url, HttpMethod httpMethod, HttpResponseStatus status) {
         assertStatus(url, httpMethod, status, null);
     }
@@ -149,6 +165,18 @@ public class StatusTest {
         @Path("get-content-disposition")
         @GET
         Observable<String> getContentDisposition();
+
+        @Path("empty-redirect")
+        @POST
+        Observable<Void> emptyRedirect();
+
+        @Path("empty-client-error")
+        @POST
+        Observable<Void> emptyClientError();
+
+        @Path("empty-server-error")
+        @POST
+        Observable<Void> emptyServerError();
     }
 
     class TestresourceImpl implements TestresourceInterface {
@@ -192,6 +220,28 @@ public class StatusTest {
         @Headers({"Content-Disposition: attachment; filename=\"export.csv\"", "test:test"})
         public Observable<String> getContentDisposition() {
             return just("content-disposition-ok");
+        }
+
+        @Override
+        public Observable<Void> emptyRedirect() {
+            return ResponseDecorator.of(Observable.<Void>empty())
+                .withStatus(HttpResponseStatus.SEE_OTHER)
+                .withHeader("Location", "/somewhere-else")
+                .build();
+        }
+        
+        @Override
+        public Observable<Void> emptyClientError() {
+            return ResponseDecorator.of(Observable.<Void>empty())
+                .withStatus(HttpResponseStatus.GONE)
+                .build();
+        }
+
+        @Override
+        public Observable<Void> emptyServerError() {
+            return ResponseDecorator.of(Observable.<Void>empty())
+                .withStatus(HttpResponseStatus.SERVICE_UNAVAILABLE)
+                .build();
         }
     }
 }
