@@ -4,11 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.util.StdDateFormat;
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
 import com.google.inject.Module;
-import com.google.inject.TypeLiteral;
+import com.google.inject.*;
 import com.google.inject.multibindings.Multibinder;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.cookie.DefaultCookie;
@@ -18,22 +15,8 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import rx.Observable;
 import rx.Single;
-import se.fortnox.reactivewizard.jaxrs.CollidingTestInterfaces.CustomRegexPathParam;
-import se.fortnox.reactivewizard.jaxrs.CollidingTestInterfaces.IgnoreErrorsWhenSuppressAnnotated;
-import se.fortnox.reactivewizard.jaxrs.CollidingTestInterfaces.NoPathParamAnnotation;
-import se.fortnox.reactivewizard.jaxrs.CollidingTestInterfaces.One;
-import se.fortnox.reactivewizard.jaxrs.CollidingTestInterfaces.OtherParametersAreTheSame;
-import se.fortnox.reactivewizard.jaxrs.CollidingTestInterfaces.OtherParametersAreTheSameInDifferentOrder;
-import se.fortnox.reactivewizard.jaxrs.CollidingTestInterfaces.OtherParametersDiffer;
-import se.fortnox.reactivewizard.jaxrs.CollidingTestInterfaces.SamePathAndVerbDifferentType;
-import se.fortnox.reactivewizard.jaxrs.CollidingTestInterfaces.SamePathDifferentVerb;
-import se.fortnox.reactivewizard.jaxrs.CollidingTestInterfaces.Two;
-import se.fortnox.reactivewizard.jaxrs.CollidingTestInterfaces.VerbDiffers;
-import se.fortnox.reactivewizard.jaxrs.params.ParamResolver;
-import se.fortnox.reactivewizard.jaxrs.params.ParamResolverFactories;
-import se.fortnox.reactivewizard.jaxrs.params.ParamResolverFactory;
-import se.fortnox.reactivewizard.jaxrs.params.ParamResolvers;
-import se.fortnox.reactivewizard.jaxrs.params.WrapSupportingParamTypeResolver;
+import se.fortnox.reactivewizard.jaxrs.CollidingTestInterfaces.*;
+import se.fortnox.reactivewizard.jaxrs.params.*;
 import se.fortnox.reactivewizard.jaxrs.params.annotated.AnnotatedParamResolverFactories;
 import se.fortnox.reactivewizard.jaxrs.params.deserializing.DeserializerFactory;
 import se.fortnox.reactivewizard.jaxrs.response.JaxRsResult;
@@ -43,19 +26,7 @@ import se.fortnox.reactivewizard.mocks.MockHttpServerRequest;
 import se.fortnox.reactivewizard.mocks.MockHttpServerResponse;
 import se.fortnox.reactivewizard.utils.JaxRsTestUtil;
 
-import javax.ws.rs.BeanParam;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.CookieParam;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.DefaultValue;
-import javax.ws.rs.FormParam;
-import javax.ws.rs.GET;
-import javax.ws.rs.HeaderParam;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.QueryParam;
+import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Proxy;
@@ -64,15 +35,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Set;
-import java.util.TimeZone;
-import java.util.UUID;
+import java.util.*;
 
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -80,13 +43,7 @@ import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static rx.Observable.just;
-import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.body;
-import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.delete;
-import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.get;
-import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.getWithHeaders;
-import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.patch;
-import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.post;
-import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.put;
+import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.*;
 
 public class JaxRsResourceTest {
 
@@ -785,8 +742,13 @@ public class JaxRsResourceTest {
     }
 
     @Test
-    public void shoulNotCollideOnSamePathButDifferingCookieParam() {
+    public void shouldNotCollideOnSamePathButDifferingCookieParam() {
         assertStartupChecksPassed(new OtherParametersDiffer() {}, new One() {});
+    }
+
+    @Test
+    public void shouldNotCollideOnDuplicateResource() {
+        assertStartupChecksPassed(new One() {}, new Two() {}, new One() {});
     }
 
     @Test
