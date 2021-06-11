@@ -113,15 +113,6 @@ public class CollidingTestInterfaces {
     }
 
     @Path("1")
-    interface NoPathParamAnnotation {
-        @GET
-        @Path("/test/{date}")
-        default Observable<String> getDate(LocalDate date) {
-            return empty();
-        }
-    }
-
-    @Path("1")
     interface One {
         @GET()
         @Path("{id}")
