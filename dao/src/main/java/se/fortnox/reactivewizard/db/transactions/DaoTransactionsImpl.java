@@ -1,8 +1,11 @@
 package se.fortnox.reactivewizard.db.transactions;
 
 import rx.Observable;
+import se.fortnox.reactivewizard.util.ReactiveDecorator;
 
 import javax.inject.Inject;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static java.util.Arrays.asList;
 import static rx.Observable.empty;
@@ -28,17 +31,15 @@ public class DaoTransactionsImpl implements DaoTransactions {
             return;
         }
 
-        for (Observable statement : daoCalls) {
-            if (!(statement instanceof DaoObservable)) {
+        Transaction transaction = new Transaction(daoCalls);
+        for (Observable daoCall : daoCalls) {
+            Optional<AtomicReference<TransactionStatement>> statement = ReactiveDecorator.getDecoration(daoCall);
+            if (!statement.isPresent()) {
                 String statementString  = statement == null ? "null" : statement.getClass().toString();
                 String exceptionMessage = "All parameters to createTransaction needs to be observables coming from a Dao-class. Statement was %s.";
                 throw new RuntimeException(String.format(exceptionMessage, statementString));
             }
-        }
-
-        Transaction transaction = new Transaction(daoCalls);
-        for (Observable statement : daoCalls) {
-            transaction.add((DaoObservable)statement);
+            transaction.add(statement.get());
         }
     }
 

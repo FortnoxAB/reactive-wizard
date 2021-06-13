@@ -18,6 +18,7 @@ import se.fortnox.reactivewizard.metrics.Metrics;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -89,7 +90,7 @@ public class ObservableStatementFactoryTest {
 
     @Test
     public void shouldReleaseSchedulerWorkers() {
-        Observable<Object> stmt = statementFactory.create(new Object[0], () -> mock(Connection.class));
+        Observable<Object> stmt = statementFactory.create(new Object[0], () -> mock(Connection.class), new AtomicReference<>());
         stmt.toBlocking().single();
         verify(scheduler, times(1)).createWorker();
         verify(worker).unsubscribe();

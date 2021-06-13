@@ -10,12 +10,10 @@ import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.google.common.collect.Sets;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.timeout.ReadTimeoutException;
-import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.netty.http.client.HttpClientResponse;
 import reactor.util.retry.Retry;
 import rx.Observable;
 import rx.RxReactiveStreams;
@@ -26,7 +24,9 @@ import se.fortnox.reactivewizard.jaxrs.JaxRsMeta;
 import se.fortnox.reactivewizard.jaxrs.WebException;
 import se.fortnox.reactivewizard.metrics.HealthRecorder;
 import se.fortnox.reactivewizard.metrics.PublisherMetrics;
+import se.fortnox.reactivewizard.util.FluxRxConverter;
 import se.fortnox.reactivewizard.util.JustMessageException;
+import se.fortnox.reactivewizard.util.ReactiveDecorator;
 import se.fortnox.reactivewizard.util.ReflectionUtil;
 
 import javax.inject.Inject;
@@ -67,7 +67,6 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -82,7 +81,6 @@ import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static reactor.core.Exceptions.isRetryExhausted;
 import static reactor.core.publisher.Mono.just;
-import static rx.Observable.fromCallable;
 import static se.fortnox.reactivewizard.jaxrs.RequestLogger.getHeaderValuesOrRedact;
 
 public class HttpClient implements InvocationHandler {
@@ -178,49 +176,43 @@ public class HttpClient implements InvocationHandler {
 
         Mono<RwHttpClientResponse> response = request.submit(rxClient, request);
 
-        Mono<?> result = null;
-        AtomicReference<HttpClientResponse> rawResponse = new AtomicReference<>();
-        if (expectsByteArrayResponse(method)) {
-            result = response.flatMap(rwHttpClientResponse -> {
-                rawResponse.set(rwHttpClientResponse.getHttpClientResponse());
-                if (rwHttpClientResponse.getHttpClientResponse().status().code() >= 400) {
-                    return Mono.from(collector.collectString(rwHttpClientResponse.getContent()))
-                        .map(data -> handleError(request, rwHttpClientResponse.getHttpClientResponse(), data).getBytes());
-                }
-                return Mono.from(collector.collectBytes(rwHttpClientResponse.getContent()));
-            });
-        } else {
-            result = response.flatMap(rwHttpClientResponse -> {
-                rawResponse.set(rwHttpClientResponse.getHttpClientResponse());
-                return parseResponse(method, request, rwHttpClientResponse);
-            });
-        }
-        result = measure(request, result)
-                    .timeout(Duration.of(timeout, timeoutUnit))
-                    .retryWhen(withRetry(request))
-                    .onErrorResume(e -> convertError(request, e));
-
         Class<?> returnType = method.getReturnType();
-        if (Observable.class.isAssignableFrom(returnType)) {
-            return new ObservableWithResponse(RxReactiveStreams.toObservable(result), rawResponse);
-        } else if (Single.class.isAssignableFrom(returnType)) {
-            return new SingleWithResponse(RxReactiveStreams.toSingle(result), rawResponse);
-        } else if (Flux.class.isAssignableFrom(returnType)) {
-            Mono<Response<Flux<?>>> responseFlux = response.map(rwHttpClientResponse -> new Response<>(
-                rwHttpClientResponse.getHttpClientResponse(),
-                Flux.from(parseResponseStream(method, request, rwHttpClientResponse))
-            ));
-            responseFlux = measure(request, responseFlux)
-                .timeout(Duration.of(timeout, timeoutUnit))
-                .retryWhen(withRetry(request))
-                .onErrorResume(e -> convertError(request, e));
 
-            return new FluxWithResponse(responseFlux);
-        } else if (Mono.class.isAssignableFrom(returnType)) {
-            return new MonoWithResponse(Mono.from(result), rawResponse);
-        } else {
-            throw new IllegalArgumentException(returnType + " is not supported reactive streams return type");
-        }
+        Mono<Response<Flux<?>>> responseWithResult = createResponseWithResult(method, request, response);
+        Flux<?> resultOnly = responseWithResult.flatMapMany(Response::getBody);
+
+        Function<Flux, Object> converter = FluxRxConverter.converterFromFlux(returnType);
+        return ReactiveDecorator.decorated(converter.apply(resultOnly), responseWithResult);
+    }
+
+    private Mono<Response<Flux<?>>> createResponseWithResult(Method method, RequestBuilder request, Mono<RwHttpClientResponse> responseMono) {
+        boolean isSingle = FluxRxConverter.isSingleType(method.getReturnType());
+        Mono<Response<Flux<?>>> result = responseMono.flatMap(response -> {
+            Mono<Response<Flux<?>>> error = handleError(request, response);
+            if (error != null) {
+                return error;
+            }
+            Flux<Object> body;
+            if (isSingle) {
+                body = parseResponseSingle(method, response);
+            } else {
+                body = parseResponseStream(method, response);
+            }
+            body = body.onErrorResume(e -> convertError(request, e));
+            return Mono.just(new Response<>(response.getHttpClientResponse(), body));
+        });
+        return measure(request, result)
+            .timeout(Duration.of(timeout, timeoutUnit))
+            .retryWhen(withRetry(request))
+            .onErrorResume(e -> convertError(request, e));
+    }
+
+    private static <T> Mono<Response<T>> flattenResponse(Mono<Response<Flux<T>>> responseFlux) {
+        return responseFlux.flatMap(response -> response.getBody()
+            .singleOrEmpty()
+            .map(response::withBody)
+            .switchIfEmpty(Mono.fromCallable(response::withNoBody))
+        );
     }
 
     /**
@@ -232,12 +224,11 @@ public class HttpClient implements InvocationHandler {
      * @return an observable that along with the data passes the response meta data
      */
     public static <T> Observable<Response<T>> getFullResponse(Observable<T> source) {
-        if (!(source instanceof ObservableWithResponse)) {
-            throw new IllegalArgumentException("Must be used with observable returned from api call");
+        Optional<Mono<Response<Flux<T>>>> responseFlux = ReactiveDecorator.getDecoration(source);
+        if (!responseFlux.isPresent()) {
+            throw new IllegalArgumentException("Must be used with Observable returned from api call");
         }
-
-        return source.map(data -> new Response<>(((ObservableWithResponse<T>) source).getResponse(), data))
-            .switchIfEmpty(fromCallable(() -> new Response<>(((ObservableWithResponse<T>)source).getResponse(), null)));
+        return RxReactiveStreams.toObservable(flattenResponse(responseFlux.get()));
     }
 
     /**
@@ -248,12 +239,11 @@ public class HttpClient implements InvocationHandler {
      * @return an observable that along with the data passes the response object from netty
      */
     public static <T> Single<Response<T>> getFullResponse(Single<T> source) {
-        if (!(source instanceof SingleWithResponse)) {
-            throw new IllegalArgumentException("Must be used with single returned from api call");
+        Optional<Mono<Response<Flux<T>>>> responseFlux = ReactiveDecorator.getDecoration(source);
+        if (!responseFlux.isPresent()) {
+            throw new IllegalArgumentException("Must be used with Single returned from api call");
         }
-
-        return source
-            .map(data -> new Response<>(((SingleWithResponse<T>)source).getResponse(), data));
+        return RxReactiveStreams.toSingle(flattenResponse(responseFlux.get()));
     }
 
     /**
@@ -264,13 +254,11 @@ public class HttpClient implements InvocationHandler {
      * @return an observable that along with the data passes the response object from netty
      */
     public static <T> Mono<Response<Flux<T>>> getFullResponse(Flux<T> source) {
-        if (!(source instanceof FluxWithResponse)) {
+        Optional<Mono<Response<Flux<T>>>> responseFlux = ReactiveDecorator.getDecoration(source);
+        if (!responseFlux.isPresent()) {
             throw new IllegalArgumentException("Must be used with Flux returned from api call");
         }
-
-        FluxWithResponse<T> withResponse = (FluxWithResponse<T>) source;
-
-        return withResponse.getResponse();
+        return responseFlux.get();
     }
 
     /**
@@ -281,12 +269,11 @@ public class HttpClient implements InvocationHandler {
      * @return an observable that along with the data passes the response object from netty
      */
     public static <T> Mono<Response<T>> getFullResponse(Mono<T> source) {
-        if (!(source instanceof MonoWithResponse)) {
+        Optional<Mono<Response<Flux<T>>>> responseFlux = ReactiveDecorator.getDecoration(source);
+        if (!responseFlux.isPresent()) {
             throw new IllegalArgumentException("Must be used with Mono returned from api call");
         }
-
-        return source
-            .map(data -> new Response<>(((MonoWithResponse<T>)source).getResponse(), data));
+        return flattenResponse(responseFlux.get());
     }
 
     private <T> Mono<T> convertError(RequestBuilder fullReq, Throwable throwable) {
@@ -307,13 +294,15 @@ public class HttpClient implements InvocationHandler {
         return Mono.error(throwable);
     }
 
-    protected Mono<Object> parseResponse(Method method, RequestBuilder request, RwHttpClientResponse response) {
-        return Mono.from(collector.collectString(response.getContent()))
-            .map(stringContent -> handleError(request, response.getHttpClientResponse(), stringContent))
-            .flatMap(stringContent -> this.deserialize(method, stringContent));
+    protected Flux<Object> parseResponseSingle(Method method, RwHttpClientResponse response) {
+        if (expectsByteArrayResponse(method)) {
+            return Flux.from(collector.collectBytes(response.getContent()));
+        }
+        return Flux.from(collector.collectString(response.getContent())
+            .flatMap(stringContent -> this.deserialize(method, stringContent)));
     }
 
-    protected Flux<Object> parseResponseStream(Method method, RequestBuilder request, RwHttpClientResponse response) {
+    protected Flux<Object> parseResponseStream(Method method, RwHttpClientResponse response) {
         if (response.getHttpClientResponse().responseHeaders().get(CONTENT_TYPE).equals(APPLICATION_JSON)) {
             JsonArrayDeserializer deserializer = new JsonArrayDeserializer(objectMapper, method);
             return response.getContent().asByteArray().concatMap(deserializer::process);
@@ -363,10 +352,6 @@ public class HttpClient implements InvocationHandler {
         String  authString  = config.getBasicAuth().getUsername() + ":" + config.getBasicAuth().getPassword();
         byte[]  encodedAuth = Base64.getEncoder().encode(authString.getBytes(charset));
         return "Basic " + new String(encodedAuth);
-    }
-
-    protected <T> Publisher<T> measure(RequestBuilder fullRequest, Publisher<T> output) {
-        return PublisherMetrics.get("OUT_res:" + fullRequest.getKey()).measure(output);
     }
 
     protected <T> Mono<T> measure(RequestBuilder fullRequest, Mono<T> output) {
@@ -475,24 +460,32 @@ public class HttpClient implements InvocationHandler {
         return true;
     }
 
-    protected String handleError(RequestBuilder request, reactor.netty.http.client.HttpClientResponse clientResponse, String data) {
-        if (clientResponse.status().code() >= 400) {
-            String message = format("Error calling other service:\n\tResponse Status: %d\n\tURL: %s\n\tRequest Headers: %s\n\tResponse Headers: %s\n\tData: %s",
-                clientResponse.status().code(),
-                request.getFullUrl(),
-                getHeaderValuesOrRedact(request.getHeaders(), sensitiveHeaders),
-                formatHeaders(clientResponse),
-                data);
-            Throwable                detailedErrorCause = new HttpClient.ThrowableWithoutStack(message);
-            HttpClient.DetailedError detailedError      = getDetailedError(data, detailedErrorCause);
-            String                   reasonPhrase       = detailedError.hasReason() ? detailedError.reason() : clientResponse.status().reasonPhrase();
-            HttpResponseStatus responseStatus = new HttpResponseStatus(clientResponse.status()
-                .code(),
-                reasonPhrase);
+    protected Mono<Response<Flux<?>>> handleError(RequestBuilder request, RwHttpClientResponse response) {
+        HttpResponseStatus status = response.getHttpClientResponse().status();
+        if (status.code() >= 400) {
+            return collector.collectString(response.getContent()).onErrorReturn("").map(data -> {
+                String message = format("Error calling other service:\n" +
+                        "\tResponse Status: %d\n" +
+                        "\tURL: %s\n" +
+                        "\tRequest Headers: %s\n" +
+                        "\tResponse Headers: %s\n" +
+                        "\tData: %s",
+                    status.code(),
+                    request.getFullUrl(),
+                    getHeaderValuesOrRedact(request.getHeaders(), sensitiveHeaders),
+                    formatHeaders(response.getHttpClientResponse()),
+                    data);
+                Throwable detailedErrorCause = new HttpClient.ThrowableWithoutStack(message);
+                HttpClient.DetailedError detailedError = getDetailedError(data, detailedErrorCause);
+                String reasonPhrase = detailedError.hasReason() ? detailedError.reason() : status.reasonPhrase();
+                HttpResponseStatus responseStatus = new HttpResponseStatus(status
+                    .code(),
+                    reasonPhrase);
 
-            throw new WebException(responseStatus, detailedError, false);
+                throw new WebException(responseStatus, detailedError, false);
+            });
         }
-        return data;
+        return null;
     }
 
     private String formatHeaders(reactor.netty.http.client.HttpClientResponse clientResponse) {

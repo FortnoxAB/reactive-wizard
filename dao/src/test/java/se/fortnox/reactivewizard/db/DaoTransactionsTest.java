@@ -8,13 +8,13 @@ import rx.Observable;
 import rx.Observer;
 import se.fortnox.reactivewizard.db.config.DatabaseConfig;
 import se.fortnox.reactivewizard.db.statement.MinimumAffectedRowsException;
-import se.fortnox.reactivewizard.db.transactions.DaoObservable;
 import se.fortnox.reactivewizard.db.transactions.DaoTransactions;
 import se.fortnox.reactivewizard.db.transactions.DaoTransactionsFlux;
 import se.fortnox.reactivewizard.db.transactions.DaoTransactionsFluxImpl;
 import se.fortnox.reactivewizard.db.transactions.DaoTransactionsImpl;
 import se.fortnox.reactivewizard.db.transactions.TransactionAlreadyExecutedException;
 import se.fortnox.reactivewizard.test.TestUtil;
+import se.fortnox.reactivewizard.util.ReactiveDecorator;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -82,12 +82,25 @@ public class DaoTransactionsTest {
         when(db.getPreparedStatement().executeBatch())
             .thenReturn(new int[]{1, 1});
 
-        final boolean[] cbExecuted   = {false};
-        DaoObservable   daoObsWithCb = ((DaoObservable)dao.updateSuccess()).doOnTransactionCompleted(() -> cbExecuted[0] = true);
+        Runnable runnable = mock(Runnable.class);
+        Observable<Integer>   daoObsWithCb = ReactiveDecorator.keepDecoration(dao.updateSuccess(), obs->obs.doOnCompleted(runnable::run));
 
         daoTransactions.executeTransaction(dao.updateSuccess(), daoObsWithCb).toBlocking().singleOrDefault(null);
 
-        assertThat(cbExecuted[0]).isTrue();
+        verify(runnable).run();
+    }
+
+    @Test
+    public void shouldRunOnTransactionCompletedCallbackForFlux() throws SQLException {
+        when(db.getPreparedStatement().executeBatch())
+            .thenReturn(new int[]{1, 1});
+
+        Runnable runnable = mock(Runnable.class);
+        Flux<Integer>   daoObsWithCb = ReactiveDecorator.keepDecoration(dao.updateSuccessFlux(), obs->obs.doOnComplete(runnable));
+
+        daoTransactionsFlux.executeTransaction(dao.updateSuccessFlux(), daoObsWithCb).count().block();
+
+        verify(runnable).run();
     }
 
     @Test
@@ -336,6 +349,9 @@ public class DaoTransactionsTest {
 
         @Query("select * from test")
         Flux<String> fluxFind();
+
+        @Update(value = "update foo set key=val", minimumAffected = 0)
+        Flux<Integer> updateSuccessFlux();
     }
 
 }

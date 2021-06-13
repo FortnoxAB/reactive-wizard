@@ -29,14 +29,20 @@ public class FluxRxConverter {
                 if (result == null) {
                     return Flux.empty();
                 }
-                return ((Mono<T>)result).flux();
+                Flux<T> flux = ((Mono<T>) result).flux();
+                return ReactiveDecorator.getDecoration((Mono)result)
+                    .map(state -> ReactiveDecorator.decorated(flux, state))
+                    .orElse(flux);
             };
         } else if (Observable.class.isAssignableFrom(returnType)) {
             return result -> {
                 if (result == null) {
                     return Flux.empty();
                 }
-                return observableToFlux((Observable<T>)result);
+                Flux<T> flux = observableToFlux((Observable<T>) result);
+                return ReactiveDecorator.getDecoration((Observable<?>)result)
+                    .map(state -> ReactiveDecorator.decorated(flux, state))
+                    .orElse(flux);
             };
         } else if (Single.class.isAssignableFrom(returnType)) {
             return result -> {
@@ -44,10 +50,27 @@ public class FluxRxConverter {
                     return Flux.empty();
                 }
 
-                return Flux.from(RxReactiveStreams.toPublisher((Single<T>)result));
+                Flux<T> flux = Flux.from(RxReactiveStreams.toPublisher((Single<T>) result));
+                return ReactiveDecorator.getDecoration((Single<?>)result)
+                    .map(state -> ReactiveDecorator.decorated(flux, state))
+                    .orElse(flux);
             };
         } else {
             return null;
+        }
+    }
+
+    public static Function<Flux, Object> converterFromFlux(Class<?> returnType) {
+        if (Observable.class.isAssignableFrom(returnType)) {
+            return (flux) -> RxReactiveStreams.toObservable(flux);
+        } else if (Single.class.isAssignableFrom(returnType)) {
+            return (flux) -> RxReactiveStreams.toSingle(flux);
+        } else if (Flux.class.isAssignableFrom(returnType)) {
+            return (flux) -> flux;
+        } else if (Mono.class.isAssignableFrom(returnType)) {
+            return (flux) -> Mono.from(flux);
+        } else {
+            throw new IllegalArgumentException("Only Observable/Single and Flux/Mono return types are implemented for converters");
         }
     }
 

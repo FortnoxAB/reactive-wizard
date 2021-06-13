@@ -11,7 +11,6 @@ import se.fortnox.reactivewizard.jaxrs.params.ParamResolverFactories;
 import se.fortnox.reactivewizard.jaxrs.response.JaxRsResult;
 import se.fortnox.reactivewizard.jaxrs.response.JaxRsResultFactory;
 import se.fortnox.reactivewizard.jaxrs.response.JaxRsResultFactoryFactory;
-import se.fortnox.reactivewizard.jaxrs.response.ResponseDecorator;
 import se.fortnox.reactivewizard.util.FluxRxConverter;
 import se.fortnox.reactivewizard.util.ReflectionUtil;
 
@@ -106,16 +105,7 @@ public class JaxRsResource<T> implements Comparable<JaxRsResource> {
         return args -> {
             try {
                 Object result = method.invoke(resourceInstance, args);
-                Flux<T> fluxResult =  fluxConverter.apply(result);
-
-                // This part should be refactored so that this class does not know about decorator, but right now the meta data
-                // is lost if not handled here.
-                if (result instanceof ResponseDecorator.ObservableWithHeaders) {
-                    ResponseDecorator.ResponseDecorations decorations = ((ResponseDecorator.ObservableWithHeaders<T>) result).getDecorations();
-                    return new ResponseDecorator.FluxWithHeaders<>(fluxResult, decorations);
-                }
-
-                return fluxResult;
+                return fluxConverter.apply(result);
             } catch (InvocationTargetException e) {
                 return Flux.error(e.getTargetException());
             } catch (Throwable e) {

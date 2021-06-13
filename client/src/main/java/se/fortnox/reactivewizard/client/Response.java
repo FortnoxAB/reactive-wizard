@@ -32,6 +32,14 @@ public class Response<T> {
         return httpClientResponse.status();
     }
 
+    <S> Response<S> withBody(S body) {
+        return new Response<>(httpClientResponse, body);
+    }
+
+    <S> Response<S> withNoBody() {
+        return new Response<>(httpClientResponse, null);
+    }
+
     /**
      * Case insensitive fetching a header value
      * @param header the header name

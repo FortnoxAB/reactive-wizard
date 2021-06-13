@@ -1,8 +1,11 @@
 package se.fortnox.reactivewizard.db.transactions;
 
 import reactor.core.publisher.Flux;
+import se.fortnox.reactivewizard.util.ReactiveDecorator;
 
 import javax.inject.Inject;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static java.util.Arrays.asList;
 
@@ -16,17 +19,15 @@ public class DaoTransactionsFluxImpl implements DaoTransactionsFlux {
             return;
         }
 
-        for (Flux statement : daoCalls) {
-            if (!(statement instanceof DaoFlux)) {
+        Transaction transaction = new Transaction(daoCalls);
+        for (Flux daoCall : daoCalls) {
+            Optional<AtomicReference<TransactionStatement>> statement = ReactiveDecorator.getDecoration(daoCall);
+            if (!statement.isPresent()) {
                 String statementString  = statement == null ? "null" : statement.getClass().toString();
                 String exceptionMessage = "All parameters to createTransaction needs to be Fluxs coming from a Dao-class. Statement was %s.";
                 throw new RuntimeException(String.format(exceptionMessage, statementString));
             }
-        }
-
-        Transaction transaction = new Transaction(daoCalls);
-        for (Flux statement : daoCalls) {
-            transaction.add(((DaoFlux)statement).toDaoObservable());
+            transaction.add(statement.get());
         }
     }
 
