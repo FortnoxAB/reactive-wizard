@@ -32,7 +32,7 @@ public class CheckForMissingPathParams {
                 if (type == null) {
                     final String message = String.format(
                         "Could not find @PathParam annotated parameter for %s on method %s. " +
-                            "If this is intended, the error can be suppressed with @SupressMissingPathParam.",
+                            "If this is intended, the error can be suppressed with @SuppressMissingPathParam.",
                         paramName,
                         method.toGenericString()
                     );
@@ -45,13 +45,13 @@ public class CheckForMissingPathParams {
     private static boolean shouldSuppressErrors(JaxRsResource resource, Method method, String paramName) {
         SuppressMissingPathParam methodAnnotation = ReflectionUtil.getAnnotation(resource.getInstanceMethod(), SuppressMissingPathParam.class);
         if (methodAnnotation != null) {
-            return Arrays.asList(methodAnnotation.paramName())
+            return Arrays.asList(methodAnnotation.paramNames())
                 .contains(paramName);
         }
 
         Class<?>                 declaringClass  = method.getDeclaringClass();
         SuppressMissingPathParam classAnnotation = declaringClass.getAnnotation(SuppressMissingPathParam.class);
-        return classAnnotation != null && Arrays.asList(classAnnotation.paramName())
+        return classAnnotation != null && Arrays.asList(classAnnotation.paramNames())
             .contains(paramName);
     }
 }

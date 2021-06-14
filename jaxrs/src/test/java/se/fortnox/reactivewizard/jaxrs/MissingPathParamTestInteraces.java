@@ -22,7 +22,7 @@ public class MissingPathParamTestInteraces {
     interface AnnotatedMethodShouldSuppressMissingPathParams {
         @GET
         @Path("/test/{param1}/{param2}")
-        @SuppressMissingPathParam(paramName = {"param1", "param2"})
+        @SuppressMissingPathParam(paramNames = {"param1", "param2"})
         default Observable<String> getParam() {
             return empty();
         }
@@ -32,14 +32,14 @@ public class MissingPathParamTestInteraces {
     interface AnnotatedMethodShouldOnlySuppressSuppliedParamName {
         @GET
         @Path("/test/{param1}/{param2}")
-        @SuppressMissingPathParam(paramName = "param1")
+        @SuppressMissingPathParam(paramNames = "param1")
         default Observable<String> getParam() {
             return empty();
         }
     }
 
     @Path("4/{param1}")
-    @SuppressMissingPathParam(paramName = {"param1", "param2"})
+    @SuppressMissingPathParam(paramNames = {"param1", "param2"})
     interface AnnotatedClassShouldSuppressOnAllEndpoints {
         @GET
         @Path("/test/{param2}")
@@ -57,7 +57,7 @@ public class MissingPathParamTestInteraces {
     }
 
     @Path("5")
-    @SuppressMissingPathParam(paramName = "param1")
+    @SuppressMissingPathParam(paramNames = "param1")
     interface AnnotatedClassShouldOnlySuppressSuppliedParamName {
         @GET
         @Path("/test/{param1}/{param2}")
