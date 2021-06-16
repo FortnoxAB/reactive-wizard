@@ -22,7 +22,7 @@ jobs:
         java-version: '11'
         distribution: 'adopt'
     - name: Build with Maven
-      run: mvn sonar:sonar -Dsonar.projectKey=reactive-wizard -Dsonar.organization=fortnoxab -Dsonar.login=$SONAR_TOKEN -Dsonar.host.url=https://sonarcloud.io
+      run: mvn sonar:sonar -Dsonar.organization=fortnoxab -Dsonar.host.url=https://sonarcloud.io
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
