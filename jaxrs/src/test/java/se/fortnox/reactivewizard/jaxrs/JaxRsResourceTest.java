@@ -16,7 +16,6 @@ import reactor.core.publisher.Mono;
 import rx.Observable;
 import rx.Single;
 import se.fortnox.reactivewizard.jaxrs.CollidingTestInterfaces.*;
-import se.fortnox.reactivewizard.jaxrs.MissingPathParamTestInteraces.*;
 import se.fortnox.reactivewizard.jaxrs.params.*;
 import se.fortnox.reactivewizard.jaxrs.params.annotated.AnnotatedParamResolverFactories;
 import se.fortnox.reactivewizard.jaxrs.params.deserializing.DeserializerFactory;
@@ -727,37 +726,6 @@ public class JaxRsResourceTest {
     }
 
     @Test
-    public void testExceptionWhenPathParamAnnotationIsMissed() {
-        try {
-            newJaxRsResources(new Object[]{new NoPathParamAnnotation() {}});
-
-            Assert.fail();
-        } catch (IllegalStateException illegalStateException) {
-            assertThat(illegalStateException).hasMessageContaining("Could not find @PathParam annotated parameter for param");
-        }
-    }
-
-    @Test
-    public void missingPathParam_methodAnnotation_shouldSuppressMissingPathParam() {
-        assertStartupChecksPassed(new AnnotatedMethodShouldSuppressMissingPathParams() {});
-    }
-
-    @Test
-    public void missingPathParam_methodAnnotation_shouldOnlySuppressSuppliedParamName() {
-        assertMissingPathParam("param2", new AnnotatedMethodShouldOnlySuppressSuppliedParamName() {});
-    }
-
-    @Test
-    public void missingPathParam_classAnnotation_shouldSuppressOnAllEndpoints() {
-        assertStartupChecksPassed( new AnnotatedClassShouldSuppressOnAllEndpoints() {});
-    }
-
-    @Test
-    public void missingPathParam_classAnnotation_shouldOnlySuppressSuppliedParamName() {
-        assertMissingPathParam("param", new AnnotatedClassShouldOnlySuppressSuppliedParamName() {});
-    }
-
-    @Test
     public void shouldNotCollideOnSamePathButDifferentVerb() {
         assertStartupChecksPassed(new SamePathDifferentVerb(){});
     }
@@ -807,16 +775,6 @@ public class JaxRsResourceTest {
             Assert.fail();
         } catch (IllegalStateException illegalStateException) {
             assertThat(illegalStateException).hasMessageContaining("collides");
-        }
-    }
-
-    private void assertMissingPathParam(String nameOfMissingParam, Object... services) {
-        try{
-            newJaxRsResources(services);
-            Assert.fail();
-        } catch (IllegalStateException illegalStateException) {
-            assertThat(illegalStateException)
-                .hasMessageContaining("Could not find @PathParam annotated parameter for %s", nameOfMissingParam);
         }
     }
 
