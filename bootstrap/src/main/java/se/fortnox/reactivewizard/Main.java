@@ -32,7 +32,6 @@ public class Main {
                 @Override
                 protected void configure() {
                     bind(String[].class).annotatedWith(Names.named("args")).toInstance(args);
-                    bind(ConfigFactory.class).toInstance(configFactory);
                 }
             };
             Guice.createInjector(new AutoBindModules(bootstrap));

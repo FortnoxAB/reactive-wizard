@@ -1,9 +1,11 @@
 package se.fortnox.reactivewizard.validation;
 
 import com.google.inject.Injector;
+import com.google.inject.Provider;
 import com.google.inject.ProvisionException;
 import org.junit.Test;
 import se.fortnox.reactivewizard.config.Config;
+import se.fortnox.reactivewizard.config.ConfigFactory;
 import se.fortnox.reactivewizard.config.TestInjector;
 
 import javax.validation.constraints.NotEmpty;
@@ -29,6 +31,8 @@ public class ConfigValidationTest {
     public void shouldReturnConfigForCorrectConfig() {
         Injector injector = TestInjector.create("src/test/resources/correctconfig.yml");
         injector.getInstance(ValidatedConfig.class);
+        ConfigFactory configFactory = injector.getInstance(ConfigFactory.class);
+        assertThat(configFactory).isInstanceOf(ValidatingConfigFactory.class);
     }
 
     @Config("myconfig")
