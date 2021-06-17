@@ -69,6 +69,7 @@
         <module>client</module>
         <module>validation</module>
         <module>dbmigrate</module>
+        <module>file-server</module>
     </modules>
 
     <properties>
