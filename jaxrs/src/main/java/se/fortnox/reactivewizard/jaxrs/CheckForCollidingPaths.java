@@ -13,7 +13,11 @@ import java.lang.reflect.Type;
 import java.util.HashSet;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -23,6 +27,7 @@ public class CheckForCollidingPaths {
 
     static void check(List<JaxRsResource> resources) {
         List<JaxRsResource> resourcesToCheck = resources.stream()
+            .filter(distinctByKey(JaxRsResource::getResourceMethod))
             .filter(resource -> {
                 SuppressPathCollision annotation = ReflectionUtil.getAnnotation(resource.getInstanceMethod(), SuppressPathCollision.class);
                 return annotation == null;
@@ -95,19 +100,19 @@ public class CheckForCollidingPaths {
     }
 
     private static Set<String> extractParameterAnnotations(Method method) {
-        Set<String>    params          = new HashSet<>();
+        Set<String> params = new HashSet<>();
         Annotation[][] annotationArray = method.getParameterAnnotations();
 
         for (Annotation[] annotationRow : annotationArray) {
             for (Annotation annotation : annotationRow) {
                 if (annotation instanceof QueryParam) {
-                    QueryParam param = (QueryParam)annotation;
+                    QueryParam param = (QueryParam) annotation;
                     params.add("QueryParam: " + param.value());
                 } else if (annotation instanceof HeaderParam) {
-                    HeaderParam param = (HeaderParam)annotation;
+                    HeaderParam param = (HeaderParam) annotation;
                     params.add("HeaderParam: " + param.value());
                 } else if (annotation instanceof CookieParam) {
-                    CookieParam param = (CookieParam)annotation;
+                    CookieParam param = (CookieParam) annotation;
                     params.add("CookieParam: " + param.value());
                 }
             }
@@ -128,4 +133,8 @@ public class CheckForCollidingPaths {
         return Pattern.compile(path);
     }
 
+    private static <T> Predicate<T> distinctByKey(Function<? super T, ?> keyExtractor) {
+        Map<Object, Boolean> seen = new ConcurrentHashMap<>();
+        return t -> seen.putIfAbsent(keyExtractor.apply(t), Boolean.TRUE) == null;
+    }
 }
