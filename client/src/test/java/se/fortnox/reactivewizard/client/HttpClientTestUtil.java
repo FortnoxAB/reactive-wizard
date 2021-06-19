@@ -6,15 +6,18 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.cookie.Cookie;
 import io.netty.handler.codec.http.cookie.DefaultCookie;
 import org.mockito.Mockito;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import reactor.netty.http.client.HttpClientResponse;
 import rx.Observable;
+import rx.RxReactiveStreams;
 import rx.Single;
+import se.fortnox.reactivewizard.util.ReactiveDecorator;
 
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static org.mockito.Mockito.when;
 
@@ -33,7 +36,8 @@ public class HttpClientTestUtil {
         when(httpClientResponse.responseHeaders()).thenReturn(httpHeaders);
         when(httpClientResponse.status()).thenReturn(httpResponseStatus);
 
-        return new ObservableWithResponse<>(source, new AtomicReference<>(httpClientResponse));
+        Mono<Response<Flux<?>>> response = Mono.just(new Response<>(httpClientResponse, Flux.from(RxReactiveStreams.toPublisher(source))));
+        return ReactiveDecorator.decorated(source, response);
     }
 
     public static <T> Observable<T> mockResponseWithHeadersAndCookies(Observable<T> source, Map<String, String> headers, Map<String, String> cookies, HttpResponseStatus httpResponseStatus) {
@@ -49,8 +53,8 @@ public class HttpClientTestUtil {
         when(httpClientResponse.cookies()).thenReturn(cookieMap);
         when(httpClientResponse.status()).thenReturn(httpResponseStatus);
 
-
-        return new ObservableWithResponse<>(source, new AtomicReference<>(httpClientResponse));
+        Mono<Response<Flux<?>>> response = Mono.just(new Response<>(httpClientResponse, Flux.from(RxReactiveStreams.toPublisher(source))));
+        return ReactiveDecorator.decorated(source, response);
     }
 
     public static <T> Single<T> mockResponseWithHeaders(Single<T> source, Map<String, String> headers, HttpResponseStatus httpResponseStatus) {
@@ -61,7 +65,8 @@ public class HttpClientTestUtil {
         when(httpClientResponse.responseHeaders()).thenReturn(httpHeaders);
         when(httpClientResponse.status()).thenReturn(httpResponseStatus);
 
-        return new SingleWithResponse<>(source, new AtomicReference<>(httpClientResponse));
+        Mono<Response<Flux<?>>> response = Mono.just(new Response<>(httpClientResponse, Flux.from(RxReactiveStreams.toPublisher(source))));
+        return ReactiveDecorator.decorated(source, response);
     }
 
     public static <T> Single<T> mockResponseWithHeadersAndCookies(Single<T> source, Map<String, String> headers, Map<String, String> cookies, HttpResponseStatus httpResponseStatus) {
@@ -78,6 +83,7 @@ public class HttpClientTestUtil {
         when(httpClientResponse.status()).thenReturn(httpResponseStatus);
 
 
-        return new SingleWithResponse<>(source, new AtomicReference<>(httpClientResponse));
+        Mono<Response<Flux<?>>> response = Mono.just(new Response<>(httpClientResponse, Flux.from(RxReactiveStreams.toPublisher(source))));
+        return ReactiveDecorator.decorated(source, response);
     }
 }
