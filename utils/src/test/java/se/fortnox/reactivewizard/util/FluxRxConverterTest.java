@@ -9,11 +9,9 @@ import rx.Single;
 import rx.subjects.Subject;
 
 import java.util.List;
-import java.util.function.Function;
 
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
-import static rx.Observable.just;
 
 public class FluxRxConverterTest {
 
@@ -41,6 +39,21 @@ public class FluxRxConverterTest {
         assertThat(fluxResult.collectList().block()).isEqualTo(nbrs);
 
         Mono<String> monoResult = (Mono<String>) FluxRxConverter.converterFromObservable(Mono.class).apply(Observable.just(nbrSingle));
+        assertThat(monoResult.block()).isEqualTo(nbrSingle);
+    }
+
+    @Test
+    public void testConverterFromFlux() {
+        Observable<String> observableResult = (Observable<String>) FluxRxConverter.converterFromFlux(Observable.class).apply(Flux.fromIterable(nbrs));
+        assertThat(observableResult.toList().toBlocking().single()).isEqualTo(nbrs);
+
+        Single<String> singleResult = (Single<String>) FluxRxConverter.converterFromFlux(Single.class).apply(Flux.just(nbrSingle));
+        assertThat(singleResult.toBlocking().value()).isEqualTo(nbrSingle);
+
+        Flux<String> fluxResult = (Flux<String>) FluxRxConverter.converterFromFlux(Flux.class).apply(Flux.fromIterable(nbrs));
+        assertThat(fluxResult.collectList().block()).isEqualTo(nbrs);
+
+        Mono<String> monoResult = (Mono<String>) FluxRxConverter.converterFromFlux(Mono.class).apply(Flux.just(nbrSingle));
         assertThat(monoResult.block()).isEqualTo(nbrSingle);
     }
 

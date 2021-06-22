@@ -5,24 +5,12 @@ import reactor.core.CoreSubscriber;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import rx.Observable;
-import rx.RxReactiveStreams;
 import rx.Single;
 
 import java.util.Optional;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 
 public class ReactiveDecorator {
-
-    public static <R,S> BiFunction<Observable<R>, S, Object> converterFromObservableDecorated(Class<?> returnType) {
-        if (Observable.class.isAssignableFrom(returnType)) {
-            return (observable, state) -> new DecoratedObservable(observable, state);
-        } else if (Flux.class.isAssignableFrom(returnType)) {
-            return (observable, state) -> new DecoratedFlux(RxReactiveStreams.toPublisher(observable), state);
-        } else {
-            throw new IllegalArgumentException("Return type needs to be a reactive type (Flux, Mono, Observable, Single) but was " + returnType);
-        }
-    }
 
     public static <T,S> T decorated(T inner, S decoration) {
         if (inner instanceof Observable) {

@@ -23,7 +23,7 @@ public class DaoTransactionsFluxImpl implements DaoTransactionsFlux {
         for (Flux daoCall : daoCalls) {
             Optional<AtomicReference<TransactionStatement>> statement = ReactiveDecorator.getDecoration(daoCall);
             if (!statement.isPresent()) {
-                String statementString  = statement == null ? "null" : statement.getClass().toString();
+                String statementString  = daoCall == null ? "null" : daoCall.getClass().toString();
                 String exceptionMessage = "All parameters to createTransaction needs to be Fluxs coming from a Dao-class. Statement was %s.";
                 throw new RuntimeException(String.format(exceptionMessage, statementString));
             }
