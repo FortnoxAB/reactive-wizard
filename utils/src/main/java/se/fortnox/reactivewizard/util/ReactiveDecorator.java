@@ -124,4 +124,13 @@ public class ReactiveDecorator {
     public static <T,R> Flux<R> keepDecoration(Flux<T> source, Function<Flux<T>, Flux<R>> transformation) {
         return new DecoratedFlux<>(transformation.apply(source), getDecoration(source).orElse(null));
     }
+
+    public static <T,R> Mono<R> keepDecoration(Mono<T> source, Function<Mono<T>, Mono<R>> transformation) {
+        return new DecoratedMono<>(transformation.apply(source), getDecoration(source).orElse(null));
+    }
+
+    public static <T,R> Single<R> keepDecoration(Single<T> source, Function<Single<T>, Single<R>> transformation) {
+        return new DecoratedSingle<>(transformation.apply(source), getDecoration(source).orElse(null));
+    }
+
 }

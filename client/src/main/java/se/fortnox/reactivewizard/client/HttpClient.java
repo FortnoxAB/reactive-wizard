@@ -201,9 +201,7 @@ public class HttpClient implements InvocationHandler {
             body = body.onErrorResume(e -> convertError(request, e));
             return Mono.just(new Response<>(response.getHttpClientResponse(), body));
         });
-        return measure(request, result)
-            .timeout(Duration.of(timeout, timeoutUnit))
-            .retryWhen(withRetry(request))
+        return withRetry(request, measure(request, result).timeout(Duration.of(timeout, timeoutUnit)))
             .onErrorResume(e -> convertError(request, e));
     }
 
@@ -358,8 +356,8 @@ public class HttpClient implements InvocationHandler {
         return PublisherMetrics.get("OUT_res:" + fullRequest.getKey()).measure(output);
     }
 
-    protected Retry withRetry(RequestBuilder fullReq) {
-        return Retry.backoff(config.getRetryCount(), this.retryDuration).filter(throwable -> {
+    protected Mono<Response<Flux<?>>> withRetry(RequestBuilder fullReq, Mono<Response<Flux<?>>> responseMono) {
+        return responseMono.retryWhen(Retry.backoff(config.getRetryCount(), this.retryDuration).filter(throwable -> {
             if (fullReq.getHttpMethod().equals(POST)) {
                 // Don't retry if it was a POST, as it is not idempotent
                 return false;
@@ -387,7 +385,7 @@ public class HttpClient implements InvocationHandler {
             }
             // Don't retry if it is a 400 error or something like that
             return false;
-        });
+        }));
     }
 
     protected void addContent(Method method, Object[] arguments, RequestBuilder requestBuilder) {
