@@ -38,8 +38,7 @@ import java.time.LocalTime;
 import java.util.*;
 
 import static java.util.Arrays.asList;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
+import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static rx.Observable.just;
@@ -753,6 +752,23 @@ public class JaxRsResourceTest {
     @Test
     public void shouldNotCollideWhenResourceMethodIsSuppressAnnotated() {
         assertStartupChecksPassed(new IgnoreErrorsWhenSuppressAnnotated() {});
+    }
+
+    @Test
+    public void shouldThrowExceptionForMethodsThatAreNotReactive() {
+        assertThatThrownBy(()->newJaxRsResources(new Object[]{new NonReactive()}))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessage("Can only serve methods that are reactive. public java.lang.String " +
+                "se.fortnox.reactivewizard.jaxrs.JaxRsResourceTest$NonReactive.nonReactive() had unsupported return " +
+                "type class java.lang.String");
+    }
+
+    @Path("")
+    public static class NonReactive {
+        @GET
+        public String nonReactive(){
+            return "test";
+        }
     }
 
     private JaxRsResources newJaxRsResources(Object[] services) {

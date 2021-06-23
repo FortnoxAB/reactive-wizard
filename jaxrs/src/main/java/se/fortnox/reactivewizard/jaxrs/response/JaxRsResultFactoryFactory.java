@@ -3,6 +3,7 @@ package se.fortnox.reactivewizard.jaxrs.response;
 import se.fortnox.reactivewizard.jaxrs.JaxRsResource;
 import se.fortnox.reactivewizard.jaxrs.Stream;
 import se.fortnox.reactivewizard.json.JsonSerializerFactory;
+import se.fortnox.reactivewizard.util.FluxRxConverter;
 
 import javax.inject.Inject;
 
@@ -23,7 +24,8 @@ public class JaxRsResultFactoryFactory {
 
     public <T> JaxRsResultFactory<T> createResultFactory(JaxRsResource<T> resource) {
 
-        if (resource.getInstanceMethod().isAnnotationPresent(Stream.class)) {
+        boolean isSingleType = FluxRxConverter.isSingleType(resource.getInstanceMethod().getReturnType());
+        if (resource.getInstanceMethod().isAnnotationPresent(Stream.class) || !isSingleType) {
             return new JaxRsStreamingResultFactory<>(resource, resultTransformerFactories, jsonSerializerFactory);
         }
 

@@ -1,6 +1,7 @@
 package se.fortnox.reactivewizard.jaxrs.response;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.codec.http.HttpStatusClass;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -21,12 +22,12 @@ import static javax.ws.rs.core.HttpHeaders.CONTENT_LENGTH;
 public class JaxRsResult<T> {
     protected static final byte[] EMPTY_RESPONSE = new byte[0];
 
-    protected final Func1<T, byte[]>    serializer;
+    protected final Func1<Flux<T>, Flux<byte[]>>    serializer;
     protected final Map<String, String> headers = new HashMap<>();
     protected       Flux<T>       output;
     protected       HttpResponseStatus  responseStatus;
 
-    public JaxRsResult(Flux<T> output, HttpResponseStatus responseStatus, Func1<T, byte[]> serializer, Map<String, String> headers) {
+    public JaxRsResult(Flux<T> output, HttpResponseStatus responseStatus, Func1<Flux<T>, Flux<byte[]>> serializer, Map<String, String> headers) {
         this.output = output;
         this.responseStatus = responseStatus;
         this.serializer = serializer;
@@ -54,9 +55,15 @@ public class JaxRsResult<T> {
 
     public Publisher<Void> write(HttpServerResponse response) {
         AtomicBoolean headersWritten = new AtomicBoolean();
-        return output
-            .map(serializer::call)
-            .defaultIfEmpty(EMPTY_RESPONSE)
+        return serializer.call(output)
+            .switchIfEmpty(Flux.defer(() -> {
+                if (responseStatus.codeClass() == HttpStatusClass.SUCCESS) {
+                    responseStatus = HttpResponseStatus.NO_CONTENT;
+                }
+                response.status(responseStatus);
+                response.addHeader(CONTENT_LENGTH, "0");
+                return Flux.empty();
+            }))
             .flatMap(bytes -> {
                 int contentLength = getContentLength(bytes);
 

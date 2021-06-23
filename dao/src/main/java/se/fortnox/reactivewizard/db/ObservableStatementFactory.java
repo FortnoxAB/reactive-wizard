@@ -10,7 +10,6 @@ import se.fortnox.reactivewizard.db.config.DatabaseConfig;
 import se.fortnox.reactivewizard.db.paging.PagingOutput;
 import se.fortnox.reactivewizard.db.statement.DbStatementFactory;
 import se.fortnox.reactivewizard.db.statement.Statement;
-import se.fortnox.reactivewizard.db.transactions.DaoObservable;
 import se.fortnox.reactivewizard.db.transactions.Transaction;
 import se.fortnox.reactivewizard.db.transactions.TransactionStatement;
 import se.fortnox.reactivewizard.metrics.Metrics;
@@ -57,9 +56,7 @@ public class ObservableStatementFactory {
         }
     }
 
-    public Observable<Object> create(Object[] args, ConnectionProvider connectionProvider) {
-        AtomicReference<TransactionStatement> transactionHolder = new AtomicReference<>();
-
+    public Observable<Object> create(Object[] args, ConnectionProvider connectionProvider, AtomicReference<TransactionStatement> transactionHolder) {
         Observable<Object> result = Observable.unsafeCreate(subscription -> {
             try {
                 Statement dbStatement = statementFactory.create(args, subscription);
@@ -94,7 +91,7 @@ public class ObservableStatementFactory {
         result = metrics.measure(result, time -> logSlowQuery(transactionHolder.get(), time, args));
         result = result.onBackpressureBuffer(RECORD_BUFFER_SIZE);
 
-        return new DaoObservable<>(result, transactionHolder);
+        return result;
     }
 
     private void scheduleWorker(Subscriber<?> subscription, Action0 action) {

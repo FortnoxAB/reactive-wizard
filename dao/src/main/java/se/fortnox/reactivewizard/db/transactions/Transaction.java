@@ -29,9 +29,9 @@ public class Transaction<T> {
         this.daoCalls = daoCalls;
     }
 
-    void add(DaoObservable daoObservable) {
+    void add(AtomicReference<TransactionStatement> transactionStatementHolder) {
         TransactionStatement transactionStatement = new TransactionStatement(this);
-        daoObservable.setTransactionStatement(transactionStatement);
+        transactionStatementHolder.set(transactionStatement);
         statementsToExecute.add(transactionStatement);
         statementsToSubscribe.add(transactionStatement);
     }

@@ -1,6 +1,6 @@
 package se.fortnox.reactivewizard.db.transactions;
 
-import rx.Observable;
+import reactor.core.publisher.Flux;
 import se.fortnox.reactivewizard.util.ReactiveDecorator;
 
 import javax.inject.Inject;
@@ -8,35 +8,23 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static java.util.Arrays.asList;
-import static rx.Observable.empty;
-import static rx.Observable.merge;
 
-public class DaoTransactionsImpl implements DaoTransactions {
+public class DaoTransactionsFluxImpl implements DaoTransactionsFlux {
     @Inject
-    public DaoTransactionsImpl() {
+    public DaoTransactionsFluxImpl() {
     }
 
-    @Override
-    public <T> void createTransaction(Observable<T>... daoCalls) {
-        if (daoCalls == null || daoCalls.length == 0) {
-            return;
-        }
-
-        createTransaction(asList(daoCalls));
-    }
-
-    @Override
-    public <T> void createTransaction(Iterable<Observable<T>> daoCalls) {
+    <T> void createTransaction(Iterable<Flux<T>> daoCalls) {
         if (daoCalls == null || !daoCalls.iterator().hasNext()) {
             return;
         }
 
         Transaction transaction = new Transaction(daoCalls);
-        for (Observable daoCall : daoCalls) {
+        for (Flux daoCall : daoCalls) {
             Optional<AtomicReference<TransactionStatement>> statement = ReactiveDecorator.getDecoration(daoCall);
             if (!statement.isPresent()) {
                 String statementString  = daoCall == null ? "null" : daoCall.getClass().toString();
-                String exceptionMessage = "All parameters to createTransaction needs to be observables coming from a Dao-class. Statement was %s.";
+                String exceptionMessage = "All parameters to createTransaction needs to be Fluxs coming from a Dao-class. Statement was %s.";
                 throw new RuntimeException(String.format(exceptionMessage, statementString));
             }
             transaction.add(statement.get());
@@ -44,16 +32,16 @@ public class DaoTransactionsImpl implements DaoTransactions {
     }
 
     @Override
-    public <T> Observable<Void> executeTransaction(Iterable<Observable<T>> daoCalls) {
+    public <T> Flux<Void> executeTransaction(Iterable<Flux<T>> daoCalls) {
         if (!daoCalls.iterator().hasNext()) {
-            return empty();
+            return Flux.empty();
         }
         createTransaction(daoCalls);
-        return merge(daoCalls).ignoreElements().cast(Void.class);
+        return Flux.merge(daoCalls).ignoreElements().cast(Void.class).flux();
     }
 
     @Override
-    public <T> Observable<Void> executeTransaction(Observable<T>... daoCalls) {
+    public <T> Flux<Void> executeTransaction(Flux<T>... daoCalls) {
         return executeTransaction(asList(daoCalls));
     }
 }

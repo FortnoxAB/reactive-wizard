@@ -6,14 +6,11 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.netty.http.server.HttpServerRequest;
 import reactor.netty.http.server.HttpServerResponse;
-import rx.Observable;
-import rx.Single;
 import se.fortnox.reactivewizard.jaxrs.params.ParamResolver;
 import se.fortnox.reactivewizard.jaxrs.params.ParamResolverFactories;
 import se.fortnox.reactivewizard.jaxrs.response.JaxRsResult;
 import se.fortnox.reactivewizard.jaxrs.response.JaxRsResultFactory;
 import se.fortnox.reactivewizard.jaxrs.response.JaxRsResultFactoryFactory;
-import se.fortnox.reactivewizard.jaxrs.response.ResponseDecorator;
 import se.fortnox.reactivewizard.util.FluxRxConverter;
 import se.fortnox.reactivewizard.util.ReflectionUtil;
 
@@ -97,44 +94,24 @@ public class JaxRsResource<T> implements Comparable<JaxRsResource> {
 
     @SuppressWarnings("unchecked")
     private Function<Object[], Flux<T>> createMethodCaller(Method method, Object resourceInstance) {
-        if (!Observable.class.isAssignableFrom(method.getReturnType()) && !Single.class.isAssignableFrom(method.getReturnType())) {
+        Function<Object, Flux<T>> fluxConverter = FluxRxConverter.converterToFlux(method.getReturnType());
+
+        if (fluxConverter == null) {
             throw new IllegalArgumentException(format(
-                "Can only serve methods that are reactive. %s had unsupported return type %s",
-                method, method.getReturnType()));
-        } else {
-            return args -> {
-                try {
-                    Object result = method.invoke(resourceInstance, args);
-
-                    if (result == null) {
-                        return Flux.empty();
-                    }
-
-                    if (result instanceof Single) {
-                        return observableToFlux(((Single<T>)result).toObservable());
-                    }
-
-                    return observableToFlux((Observable<T>)result);
-                } catch (InvocationTargetException e) {
-                    return Flux.error(e.getTargetException());
-                } catch (Throwable e) {
-                    return Flux.error(e);
-                }
-            };
-        }
-    }
-
-    private Flux<T> observableToFlux(Observable<T> result) {
-        Flux<T> fluxResult = FluxRxConverter.observableToFlux(result);
-
-        // This part should be refactored so that this class does not know about decorator, but right now the meta data
-        // is lost if not handled here.
-        if (result instanceof ResponseDecorator.ObservableWithHeaders) {
-            ResponseDecorator.ResponseDecorations decorations = ((ResponseDecorator.ObservableWithHeaders<T>) result).getDecorations();
-            return new ResponseDecorator.FluxWithHeaders<>(fluxResult, decorations);
+                    "Can only serve methods that are reactive. %s had unsupported return type %s",
+                    method, method.getReturnType()));
         }
 
-        return fluxResult;
+        return args -> {
+            try {
+                Object result = method.invoke(resourceInstance, args);
+                return fluxConverter.apply(result);
+            } catch (InvocationTargetException e) {
+                return Flux.error(e.getTargetException());
+            } catch (Throwable e) {
+                return Flux.error(e);
+            }
+        };
     }
 
     @SuppressWarnings("unchecked")
