@@ -1,6 +1,5 @@
 package se.fortnox.reactivewizard.jaxrs;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.util.StdDateFormat;
@@ -9,13 +8,11 @@ import com.google.inject.*;
 import com.google.inject.multibindings.Multibinder;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.cookie.DefaultCookie;
-import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import rx.Observable;
 import rx.Single;
-import se.fortnox.reactivewizard.jaxrs.CollidingTestInterfaces.*;
 import se.fortnox.reactivewizard.jaxrs.params.*;
 import se.fortnox.reactivewizard.jaxrs.params.annotated.AnnotatedParamResolverFactories;
 import se.fortnox.reactivewizard.jaxrs.params.deserializing.DeserializerFactory;
@@ -28,7 +25,6 @@ import se.fortnox.reactivewizard.utils.JaxRsTestUtil;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Proxy;
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -47,21 +43,21 @@ import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.*;
 
 public class JaxRsResourceTest {
 
-	public enum TestEnum {
-		ONE, TWO, THREE
-	}
+    public enum TestEnum {
+        ONE, TWO, THREE
+    }
 
-	private final TestresourceInterface service = new TestresourceImpl();
+    private final TestresourceInterface service = new TestresourceImpl();
 
     @Test
-    public void shouldConcatPaths() throws InvocationTargetException, IllegalAccessException {
-        JaxRsResources resources    = new JaxRsResources(new Object[]{new Testresource()}, new JaxRsResourceFactory(), false);
-        JaxRsRequest   jaxRsRequest = new JaxRsRequest(new MockHttpServerRequest("/test/acceptsString"), new ByteBufCollector());
+    public void shouldConcatPaths() {
+        JaxRsResources resources = new JaxRsResources(new Object[]{new Testresource()}, new JaxRsResourceFactory(), false);
+        JaxRsRequest jaxRsRequest = new JaxRsRequest(new MockHttpServerRequest("/test/acceptsString"), new ByteBufCollector());
         assertThat(resources.findResource(jaxRsRequest).call(jaxRsRequest)).isNotNull();
     }
 
     @Test
-    public void shouldResolveArgs() throws Exception {
+    public void shouldResolveArgs() {
         assertThat(body(get(new Testresource(), "/test/acceptsString?myarg=hepp")))
             .isEqualTo("\"inp: hepp\"");
     }
@@ -88,11 +84,10 @@ public class JaxRsResourceTest {
     }
 
     @Test
-    public void shouldResolveCustomType() throws IllegalAccessException,
-        IllegalArgumentException, InvocationTargetException, JsonProcessingException {
+    public void shouldResolveCustomType() throws IllegalArgumentException {
 
         MockHttpServerRequest req = new MockHttpServerRequest("/test/accepts/res?fid=5678");
-        req.cookies().put("fnox_5678", new HashSet<>(asList(new DefaultCookie("fnox_5678","888"))));
+        req.cookies().put("fnox_5678", new HashSet<>(asList(new DefaultCookie("fnox_5678", "888"))));
 
         Foo foo = mock(Foo.class);
         when(foo.getStr()).thenReturn("5678");
@@ -115,8 +110,8 @@ public class JaxRsResourceTest {
                     new WrapSupportingParamTypeResolver()),
                 new JaxRsResultFactoryFactory()),
             false);
-        JaxRsRequest                         jaxRsRequest = new JaxRsRequest(req, new ByteBufCollector());
-        Mono<? extends JaxRsResult<?>> result       = jaxRsResources.findResource(jaxRsRequest).call(jaxRsRequest);
+        JaxRsRequest jaxRsRequest = new JaxRsRequest(req, new ByteBufCollector());
+        Mono<? extends JaxRsResult<?>> result = jaxRsResources.findResource(jaxRsRequest).call(jaxRsRequest);
 
         MockHttpServerResponse response = new MockHttpServerResponse();
 
@@ -312,7 +307,7 @@ public class JaxRsResourceTest {
     }
 
     private void assertBadRequest(MockHttpServerResponse response,
-        String expectedBodyRegex
+                                  String expectedBodyRegex
     ) {
         if (!expectedBodyRegex.contains("\"")) {
             expectedBodyRegex = expectedBodyRegex.replaceAll("'", "\\\"");
@@ -413,8 +408,8 @@ public class JaxRsResourceTest {
                 Multibinder.newSetBinder(binder(), JaxRsResourceInterceptor.class);
             }
         };
-        Injector            injector = Guice.createInjector(customDateModule);
-        JaxRsRequestHandler handler  = injector.getInstance(JaxRsRequestHandler.class);
+        Injector injector = Guice.createInjector(customDateModule);
+        JaxRsRequestHandler handler = injector.getInstance(JaxRsRequestHandler.class);
 
         assertThat(
             body(
@@ -466,12 +461,12 @@ public class JaxRsResourceTest {
 
         String expectedBodyRegex3 = "{\"id\":\".*\",\"error\":\"invalidjson\"," +
             "\"message\":\"No content to map due to end-of-input\"}";
-        assertBadRequest(post(service, "/test/jsonParam", (String)null), expectedBodyRegex3);
+        assertBadRequest(post(service, "/test/jsonParam", (String) null), expectedBodyRegex3);
     }
 
     @Test
     public void shouldAcceptTextPlainInput() {
-        String                 text = "my plain text";
+        String text = "my plain text";
         MockHttpServerResponse resp = post(service, "/test/textPlain", text);
         assertThat(resp.status()).isEqualTo(HttpResponseStatus.CREATED);
         assertThat(resp.getOutp()).isEqualTo("\"" + text + "\"");
@@ -479,7 +474,7 @@ public class JaxRsResourceTest {
 
     @Test
     public void shouldAcceptByteArrayInput() {
-        String                 text = "my bytes";
+        String text = "my bytes";
         MockHttpServerResponse resp = post(service, "/test/byteArray", text);
         assertThat(resp.status()).isEqualTo(HttpResponseStatus.CREATED);
         assertThat(resp.getOutp()).isEqualTo("\"" + text + "\"");
@@ -487,7 +482,7 @@ public class JaxRsResourceTest {
 
     @Test
     public void shouldAcceptByteArrayInputAnyMimeType() {
-        String                 text = "my bytes";
+        String text = "my bytes";
         MockHttpServerResponse resp = post(service, "/test/byteArrayAnyType", text);
         assertThat(resp.status()).isEqualTo(HttpResponseStatus.CREATED);
         assertThat(resp.getOutp()).isEqualTo("\"" + text + "\"");
@@ -634,7 +629,7 @@ public class JaxRsResourceTest {
 
     @Test
     public void shouldSupportGenericParamsWhenProxied() {
-        TestresourceInterface proxy = (TestresourceInterface)Proxy.newProxyInstance(
+        TestresourceInterface proxy = (TestresourceInterface) Proxy.newProxyInstance(
             TestresourceInterface.class.getClassLoader(),
             new Class[]{TestresourceInterface.class},
             (instance, method, args) -> method.invoke(service, args)
@@ -709,81 +704,6 @@ public class JaxRsResourceTest {
     @Test
     public void shouldAcceptBeanParamInherited() {
         assertThat(get(service, "/test/acceptsBeanParamInherited?name=foo&age=3&items=1,2&inherited=YES").getOutp()).isEqualTo("\"foo - 3 2 - YES\"");
-    }
-
-    @Test
-    public void shouldHandleCustomRegexPathParam() {
-        assertStartupChecksPassed(new CustomRegexPathParam() {}, new One() {});
-    }
-
-    @Test
-    public void testCollidingLogic() {
-        assertCollision(new SamePathAndVerbDifferentType() {});
-
-        assertStartupChecksPassed(new VerbDiffers() {});
-
-        assertStartupChecksPassed(new One() {}, new Two() {});
-    }
-
-    @Test
-    public void shouldNotCollideOnSamePathButDifferentVerb() {
-        assertStartupChecksPassed(new SamePathDifferentVerb(){});
-    }
-
-    @Test
-    public void shouldNotCollideOnSamePathButDifferingCookieParam() {
-        assertStartupChecksPassed(new OtherParametersDiffer() {}, new One() {});
-    }
-
-    @Test
-    public void shouldNotCollideOnDuplicateResource() {
-        assertStartupChecksPassed(new One() {}, new Two() {}, new One() {});
-    }
-
-    @Test
-    public void shouldCollideWhenCookieParamValueIsTheSame() {
-        assertCollision(new OtherParametersAreTheSame() {});
-    }
-
-    @Test
-    public void shouldCollideWhenCookieParamsAreTheSameButInDifferentOrder() {
-        assertCollision(new OtherParametersAreTheSameInDifferentOrder() {}, new One() {});
-    }
-
-    @Test
-    public void shouldNotCollideWhenResourceMethodIsSuppressAnnotated() {
-        assertStartupChecksPassed(new IgnoreErrorsWhenSuppressAnnotated() {});
-    }
-
-    private JaxRsResources newJaxRsResources(Object[] services) {
-        return new JaxRsResources(
-            services,
-            new JaxRsResourceFactory(
-                new ParamResolverFactories(
-                    new DeserializerFactory(),
-                    new ParamResolvers(Collections.EMPTY_SET, Collections.EMPTY_SET),
-                    new AnnotatedParamResolverFactories(),
-                    new WrapSupportingParamTypeResolver()),
-                new JaxRsResultFactoryFactory()),
-            false
-        );
-    }
-
-    private void assertCollision(Object... services) {
-        try {
-            newJaxRsResources(services);
-            Assert.fail();
-        } catch (IllegalStateException illegalStateException) {
-            assertThat(illegalStateException).hasMessageContaining("collides");
-        }
-    }
-
-    private void assertStartupChecksPassed(Object... services) {
-        try {
-            newJaxRsResources(services);
-        } catch (IllegalStateException illegalStateException) {
-            Assert.fail("Didnt expect exception: " + illegalStateException.getMessage());
-        }
     }
 
     @Path("test")
@@ -1076,13 +996,13 @@ public class JaxRsResourceTest {
         @Path("acceptsQueryList")
         @GET
         Observable<Integer> acceptsQueryList(@QueryParam("Stringlist") List<String> strings,
-            @QueryParam("Integerlist") List<Integer> integers
+                                             @QueryParam("Integerlist") List<Integer> integers
         );
 
         @Path("acceptsQueryArray")
         @GET
         Observable<Integer> acceptsQueryArray(@QueryParam("Stringarray") String[] strings,
-            @QueryParam("Integerarray") Integer[] integers
+                                              @QueryParam("Integerarray") Integer[] integers
         );
 
         @Path("acceptsQueryListWithEnum")
@@ -1156,7 +1076,7 @@ public class JaxRsResourceTest {
 
         @Override
         public Observable<String> acceptsStringPath(String myarg) {
-            return just("String: "+myarg);
+            return just("String: " + myarg);
         }
 
         @Override
@@ -1491,6 +1411,6 @@ public class JaxRsResourceTest {
 
 interface Foo {
 
-	String getStr();
+    String getStr();
 
 }

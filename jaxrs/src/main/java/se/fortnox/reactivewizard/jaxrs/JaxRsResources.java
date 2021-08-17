@@ -7,10 +7,10 @@ import java.util.List;
 
 public class JaxRsResources {
     private static final Logger log = LoggerFactory.getLogger(JaxRsResources.class);
-    private final Object[]             services;
-    private       List<JaxRsResource>  resources;
-    private       boolean              reloadClasses;
-    private       JaxRsResourceFactory jaxRsResourceFactory;
+    private final Object[] services;
+    private List<JaxRsResource> resources;
+    private boolean reloadClasses;
+    private JaxRsResourceFactory jaxRsResourceFactory;
 
     public JaxRsResources(Object[] services, JaxRsResourceFactory jaxRsResourceFactory, Boolean classReloading) {
         this.services = services;
@@ -26,8 +26,6 @@ public class JaxRsResources {
             sb.append(r.toString());
         }
         log.info(sb.toString());
-
-        CheckForCollidingPaths.check(this.resources);
     }
 
     public JaxRsResource<?> findResource(JaxRsRequest request) {
