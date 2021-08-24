@@ -1,9 +1,12 @@
 package se.fortnox.reactivewizard.util;
 
+import org.junit.Assert;
 import org.junit.Test;
+import reactor.core.publisher.Flux;
 import rx.Observable;
 import rx.Subscriber;
 import se.fortnox.reactivewizard.util.rx.RetryWithDelay;
+import se.fortnox.reactivewizard.util.rx.RetryWithDelayFlux;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -15,15 +18,12 @@ public class RetryWithDelayTest {
         RetryInterface retryInterface = mock(RetryInterface.class);
         when(retryInterface.retry()).thenThrow(new RuntimeException()).thenReturn(1);
 
-        Observable<Integer> integerObservable = Observable.create(new Observable.OnSubscribe<Integer>() {
-            @Override
-            public void call(Subscriber<? super Integer> subscriber) {
-                try {
-                    subscriber.onNext(retryInterface.retry());
-                    subscriber.onCompleted();
-                } catch (Exception e) {
-                    subscriber.onError(e);
-                }
+        Observable<Integer> integerObservable = Observable.create(subscriber -> {
+            try {
+                subscriber.onNext(retryInterface.retry());
+                subscriber.onCompleted();
+            } catch (Exception e) {
+                subscriber.onError(e);
             }
         });
 
@@ -64,6 +64,43 @@ public class RetryWithDelayTest {
         Observable<Integer> retryObservable = getRetryObservable();
 
         Integer returnValue = retryObservable.retryWhen(new RetryWithDelay(1, 1, RuntimeException.class)).toBlocking().first();
+        assertThat(returnValue).isEqualTo(1);
+    }
+
+    @Test
+    public void shouldRetryForCertainErrorFlux() {
+        Flux<Integer> retryFlux = FluxRxConverter.observableToFlux(getRetryObservable());
+
+        Integer returnValue = retryFlux.retryWhen(RetryWithDelayFlux.retryWithExceptionFilter(1,1, throwable -> {
+            return throwable instanceof RuntimeException;
+        })).blockFirst();
+
+        assertThat(returnValue).isEqualTo(1);
+    }
+
+    @Test
+    public void shouldNotRetryForCertainErrorFlux() {
+        Flux<Integer> retryFlux = FluxRxConverter.observableToFlux(getRetryObservable());
+
+        Exception exception = null;
+        try {
+            retryFlux.retryWhen(RetryWithDelayFlux.retryWithExceptionFilter(1,1, throwable -> false)).blockFirst();
+            Assert.fail();
+        } catch (Exception e) {
+            exception = e;
+        }
+
+        assertThat(exception).isNotNull();
+    }
+
+    @Test
+    public void shouldRetryWithoutPredicateFlux() {
+        Flux<Integer> retryObservable = FluxRxConverter.observableToFlux(getRetryObservable());
+
+        Integer returnValue = retryObservable.retryWhen(
+            RetryWithDelayFlux.retry(1, 1)
+        ).blockFirst();
+
         assertThat(returnValue).isEqualTo(1);
     }
 
