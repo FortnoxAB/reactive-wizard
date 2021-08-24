@@ -78,6 +78,27 @@ public class DaoTransactionsTest {
     }
 
     @Test
+    public void shouldSupportMoreThan256Flux() throws SQLException {
+
+        List<Flux<String>> finds = new ArrayList<>();
+
+        for (int i = 0; i < 500; i++) {
+            finds.add(dao.fluxFind());
+        }
+
+        daoTransactionsFlux.executeTransaction(finds).count().block();
+
+        db.verifyConnectionsUsed(1);
+        verify(db.getConnection(), times(1)).setAutoCommit(false);
+        verify(db.getConnection(), times(1)).commit();
+        verify(db.getConnection(), times(finds.size())).prepareStatement("select * from test");
+        verify(db.getConnection(), timeout(500)).setAutoCommit(true);
+        verify(db.getConnection(), times(1)).close();
+        verify(db.getPreparedStatement(), times(finds.size())).close();
+        verify(db.getResultSet(), times(finds.size())).close();
+    }
+
+    @Test
     public void shouldRunOnTransactionCompletedCallback() throws SQLException {
         when(db.getPreparedStatement().executeBatch())
             .thenReturn(new int[]{1, 1});
