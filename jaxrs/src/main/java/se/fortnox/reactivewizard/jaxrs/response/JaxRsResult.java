@@ -1,6 +1,7 @@
 package se.fortnox.reactivewizard.jaxrs.response;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.codec.http.HttpStatusClass;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -23,7 +24,7 @@ public class JaxRsResult<T> {
 
     protected final Func1<T, byte[]>    serializer;
     protected final Map<String, String> headers = new HashMap<>();
-    protected       Flux<T>       output;
+    protected       Flux<T>             output;
     protected       HttpResponseStatus  responseStatus;
 
     public JaxRsResult(Flux<T> output, HttpResponseStatus responseStatus, Func1<T, byte[]> serializer, Map<String, String> headers) {
@@ -70,7 +71,11 @@ public class JaxRsResult<T> {
                     return response.sendByteArray(Mono.just(bytes));
                 }
 
-                return Flux.empty();
+                if (response.status().codeClass() == HttpStatusClass.SUCCESS) {
+                    response.status(HttpResponseStatus.NO_CONTENT);
+                }
+
+                return response.sendByteArray(Mono.just(EMPTY_RESPONSE));
             });
     }
 
