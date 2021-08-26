@@ -37,7 +37,17 @@ public class DaoTransactionsFluxImpl implements DaoTransactionsFlux {
             return Flux.empty();
         }
         createTransaction(daoCalls);
-        return Flux.merge(daoCalls).ignoreElements().cast(Void.class).flux();
+
+        Flux<T> fluxes = null;
+        for (Flux<T> daoCall : daoCalls) {
+            if (fluxes == null) {
+                fluxes = daoCall;
+                continue;
+            }
+            fluxes = fluxes.mergeWith(daoCall);
+        }
+
+        return fluxes.ignoreElements().cast(Void.class).flux();
     }
 
     @Override

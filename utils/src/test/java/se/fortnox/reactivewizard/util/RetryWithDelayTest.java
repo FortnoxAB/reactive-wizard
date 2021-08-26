@@ -2,7 +2,6 @@ package se.fortnox.reactivewizard.util;
 
 import org.junit.Test;
 import rx.Observable;
-import rx.Subscriber;
 import se.fortnox.reactivewizard.util.rx.RetryWithDelay;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -15,15 +14,12 @@ public class RetryWithDelayTest {
         RetryInterface retryInterface = mock(RetryInterface.class);
         when(retryInterface.retry()).thenThrow(new RuntimeException()).thenReturn(1);
 
-        Observable<Integer> integerObservable = Observable.create(new Observable.OnSubscribe<Integer>() {
-            @Override
-            public void call(Subscriber<? super Integer> subscriber) {
-                try {
-                    subscriber.onNext(retryInterface.retry());
-                    subscriber.onCompleted();
-                } catch (Exception e) {
-                    subscriber.onError(e);
-                }
+        Observable<Integer> integerObservable = Observable.create(subscriber -> {
+            try {
+                subscriber.onNext(retryInterface.retry());
+                subscriber.onCompleted();
+            } catch (Exception e) {
+                subscriber.onError(e);
             }
         });
 
