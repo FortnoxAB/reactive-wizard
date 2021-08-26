@@ -1,6 +1,7 @@
 package se.fortnox.reactivewizard.jaxrs.response;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.codec.http.HttpStatusClass;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -19,17 +20,18 @@ import static javax.ws.rs.core.HttpHeaders.CONTENT_LENGTH;
  * This class is passed to the output processors.
  */
 public class JaxRsResult<T> {
-    protected static final byte[] EMPTY_RESPONSE = new byte[0];
+    protected static final byte[]       EMPTY_RESPONSE      = new byte[0];
+    protected static final Mono<byte[]> EMPTY_RESPONSE_MONO = Mono.just(EMPTY_RESPONSE);
 
     protected final Func1<T, byte[]>    serializer;
     protected final Map<String, String> headers = new HashMap<>();
-    protected       Flux<T>       output;
+    protected       Flux<T>             output;
     protected       HttpResponseStatus  responseStatus;
 
     public JaxRsResult(Flux<T> output, HttpResponseStatus responseStatus, Func1<T, byte[]> serializer, Map<String, String> headers) {
-        this.output = output;
+        this.output         = output;
         this.responseStatus = responseStatus;
-        this.serializer = serializer;
+        this.serializer     = serializer;
         this.headers.putAll(headers);
     }
 
@@ -70,7 +72,11 @@ public class JaxRsResult<T> {
                     return response.sendByteArray(Mono.just(bytes));
                 }
 
-                return Flux.empty();
+                if (response.status().codeClass() == HttpStatusClass.SUCCESS) {
+                    response.status(HttpResponseStatus.NO_CONTENT);
+                }
+
+                return response.sendByteArray(EMPTY_RESPONSE_MONO);
             });
     }
 

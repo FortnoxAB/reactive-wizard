@@ -10,12 +10,7 @@ import se.fortnox.reactivewizard.jaxrs.response.ResponseDecorator;
 import se.fortnox.reactivewizard.mocks.MockHttpServerRequest;
 import se.fortnox.reactivewizard.mocks.MockHttpServerResponse;
 
-import javax.ws.rs.DELETE;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.QueryParam;
+import javax.ws.rs.*;
 
 import static java.util.Collections.emptySet;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -25,7 +20,7 @@ public class StatusTest {
 
     ExceptionHandler    exceptionHandler = new ExceptionHandler();
     JaxRsRequestHandler handler          = new JaxRsRequestHandler(
-            new Object[]{new TestresourceImpl()},
+            new Object[]{new TestResourceImpl()},
             new JaxRsResourceFactory(),
             exceptionHandler,
             new ByteBufCollector(),
@@ -57,6 +52,36 @@ public class StatusTest {
     @Test
     public void shouldReturnEmptyResponseWith204Status() {
         MockHttpServerRequest      request  = new MockHttpServerRequest("/test/delete", HttpMethod.DELETE);
+        MockHttpServerResponse     response = new MockHttpServerResponse();
+        Flux<Void>                 result   = Flux.from(handler.apply(request, response));
+        result.onErrorResume(e -> {
+            exceptionHandler.handleException(request, response, e);
+            return Flux.empty();
+        }).count().block();
+        assertThat(response.status()).isEqualTo(HttpResponseStatus.NO_CONTENT);
+        assertThat(response.responseHeaders().get("Content-Length")).isEqualTo("0"); // Will be removed in pipeline filter
+        assertThat(response.responseHeaders().get("Transfer-Encoding")).isNull();
+        assertThat(response.getOutp()).isEmpty();
+    }
+
+    @Test
+    public void shouldReturnEmptyByteBodyWith204Status() {
+        MockHttpServerRequest      request  = new MockHttpServerRequest("/test/empty-byte-array-body", HttpMethod.GET);
+        MockHttpServerResponse     response = new MockHttpServerResponse();
+        Flux<Void>                 result   = Flux.from(handler.apply(request, response));
+        result.onErrorResume(e -> {
+            exceptionHandler.handleException(request, response, e);
+            return Flux.empty();
+        }).count().block();
+        assertThat(response.status()).isEqualTo(HttpResponseStatus.NO_CONTENT);
+        assertThat(response.responseHeaders().get("Content-Length")).isEqualTo("0"); // Will be removed in pipeline filter
+        assertThat(response.responseHeaders().get("Transfer-Encoding")).isNull();
+        assertThat(response.getOutp()).isEmpty();
+    }
+
+    @Test
+    public void shouldReturnEmptyStringBodyWith204Status() {
+        MockHttpServerRequest      request  = new MockHttpServerRequest("/test/empty-string-body", HttpMethod.GET);
         MockHttpServerResponse     response = new MockHttpServerResponse();
         Flux<Void>                 result   = Flux.from(handler.apply(request, response));
         result.onErrorResume(e -> {
@@ -177,9 +202,19 @@ public class StatusTest {
         @Path("empty-server-error")
         @POST
         Observable<Void> emptyServerError();
+
+        @Path("empty-byte-array-body")
+        @Produces("application/octet-stream")
+        @GET
+        Observable<byte[]> emptyByteArrayBody();
+
+        @Path("empty-string-body")
+        @Produces("text/plain")
+        @GET
+        Observable<String> emptyStringBody();
     }
 
-    class TestresourceImpl implements TestresourceInterface {
+    static class TestResourceImpl implements TestresourceInterface {
 
         @Override
         public Observable<String> get() {
@@ -229,7 +264,7 @@ public class StatusTest {
                 .withHeader("Location", "/somewhere-else")
                 .build();
         }
-        
+
         @Override
         public Observable<Void> emptyClientError() {
             return ResponseDecorator.of(Observable.<Void>empty())
@@ -242,6 +277,16 @@ public class StatusTest {
             return ResponseDecorator.of(Observable.<Void>empty())
                 .withStatus(HttpResponseStatus.SERVICE_UNAVAILABLE)
                 .build();
+        }
+
+        @Override
+        public Observable<byte[]> emptyByteArrayBody() {
+            return just(new byte[0]);
+        }
+
+        @Override
+        public Observable<String> emptyStringBody() {
+            return just("");
         }
     }
 }
