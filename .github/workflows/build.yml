@@ -15,12 +15,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Set up JDK 17
+    - name: 'Download latest JDK 17'
+      run: |
+          wget \
+            --no-verbose \
+            --directory-prefix $RUNNER_TEMP \
+            https://download.oracle.com/java/17/latest/jdk-17_linux-x64_bin.tar.gz
+    - name: 'Set up JDK'
       uses: actions/setup-java@v2
       with:
-        java-version: '17'
-        distribution: 'adopt'
+          java-version: 17
+          distribution: jdkfile
+          jdkFile: ${{ runner.temp }}/jdk-17_linux-x64_bin.tar.gz
     - name: Build with Maven
       run: mvn install sonar:sonar -Dsonar.organization=fortnoxab -Dsonar.login=$SONAR_TOKEN
       env:
