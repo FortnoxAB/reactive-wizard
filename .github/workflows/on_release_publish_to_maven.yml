@@ -1,29 +1,42 @@
 name: CI
 
-on: 
-  release:
-    types: [created]
+on:
+    release:
+        types: [ created ]
 
 jobs:
-  publish:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: Set up Java for publishing to Maven Central Repository
-        uses: actions/setup-java@v1
-        with:
-          java-version: 1.8
-          server-id: ossrh
-          server-username: USER_NAME
-          server-password: PASSWORD
-          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
-          gpg-passphrase: GPG_PASS
-      - name: set version
-        run: mvn versions:set -DnewVersion=${GITHUB_REF##*/}
-      - name: Publish to the Maven Central Repository
-        run: mvn clean deploy -Prelease
-        env: 
-          USER_NAME: ${{ secrets.OSSRH_USERNAME }}
-          PASSWORD: ${{ secrets.OSSRH_TOKEN }}
-          GPG_PASS:  ${{ secrets.PASSPHRASE }}
+    publish:
+        runs-on: ubuntu-latest
+        steps:
+            -   name: Checkout
+                uses: actions/checkout@v2
+            -   name: 'Download latest JDK 17'
+                run: |
+                    wget \
+                     --no-verbose \
+                     --directory-prefix $RUNNER_TEMP \
+                     https://download.oracle.com/java/17/latest/jdk-17_linux-x64_bin.tar.gz
+            -   name: 'Set up JDK'
+                uses: actions/setup-java@v2
+                with:
+                    java-version: 17
+                    distribution: jdkfile
+                    jdkFile: ${{ runner.temp }}/jdk-17_linux-x64_bin.tar.gz
+            -   name: Set up Java for publishing to Maven Central Repository
+                uses: actions/setup-java@v2
+                with:
+                    java-version: 17
+                    distribution: jdkfile
+                    server-id: ossrh
+                    server-username: USER_NAME
+                    server-password: PASSWORD
+                    gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
+                    gpg-passphrase: GPG_PASS
+            -   name: set version
+                run: mvn versions:set -DnewVersion=${GITHUB_REF##*/}
+            -   name: Publish to the Maven Central Repository
+                run: mvn clean deploy -Prelease
+                env:
+                    USER_NAME: ${{ secrets.OSSRH_USERNAME }}
+                    PASSWORD: ${{ secrets.OSSRH_TOKEN }}
+                    GPG_PASS: ${{ secrets.PASSPHRASE }}
