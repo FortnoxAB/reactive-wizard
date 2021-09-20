@@ -1,12 +1,9 @@
 package se.fortnox.reactivewizard.jaxrs;
 
-import io.netty.buffer.ByteBuf;
 import org.reactivestreams.Publisher;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.netty.http.server.HttpServerRequest;
 import reactor.netty.http.server.HttpServerResponse;
-import rx.Observable;
 import se.fortnox.reactivewizard.ExceptionHandler;
 import se.fortnox.reactivewizard.RequestHandler;
 import se.fortnox.reactivewizard.jaxrs.response.JaxRsResult;
