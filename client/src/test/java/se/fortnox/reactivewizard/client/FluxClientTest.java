@@ -10,12 +10,12 @@ import rx.Observable;
 import se.fortnox.reactivewizard.ExceptionHandler;
 import se.fortnox.reactivewizard.jaxrs.JaxRsRequestHandler;
 import se.fortnox.reactivewizard.jaxrs.JaxRsResourceFactory;
+import se.fortnox.reactivewizard.jaxrs.WebException;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
-
 import java.net.URISyntaxException;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -25,6 +25,7 @@ import static java.util.Arrays.asList;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.Mockito.*;
 
 public class FluxClientTest {
@@ -267,6 +268,23 @@ public class FluxClientTest {
             assertThat(byteArrays).hasSize(2);
             assertThat(new String(byteArrays.get(0))).isEqualTo("abc");
             assertThat(new String(byteArrays.get(1))).isEqualTo("def");
+        } finally {
+            server.disposeNow();
+        }
+    }
+
+
+    @Test
+    public void shouldFailForNonJsonButJsonHeader() throws URISyntaxException {
+        DisposableServer server = HttpServer.create().handle((req, resp) -> {
+            resp.header(CONTENT_TYPE, APPLICATION_JSON);
+            return resp.sendString(Flux.just("abc"));
+        }).bindNow();
+
+        try {
+            FluxResource fluxClientResource = client(server);
+            Flux<byte[]> result = fluxClientResource.fluxByteArrayAsJson();
+            assertThatExceptionOfType(WebException.class).isThrownBy(()->result.collectList().block());
         } finally {
             server.disposeNow();
         }

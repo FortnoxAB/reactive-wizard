@@ -57,26 +57,21 @@ public class JsonArrayDeserializer {
                     items = new ArrayList<>();
                     items.add(item);
                 }
-                try {
-                    tokenBuffer.copyCurrentEvent(parser);
-                    if (token == JsonToken.START_ARRAY || token == JsonToken.START_OBJECT) {
-                        depth++;
-                    } else if (token == JsonToken.END_ARRAY || token == JsonToken.END_OBJECT ) {
-                        depth--;
+                tokenBuffer.copyCurrentEvent(parser);
+                if (token == JsonToken.START_ARRAY || token == JsonToken.START_OBJECT) {
+                    depth++;
+                } else if (token == JsonToken.END_ARRAY || token == JsonToken.END_OBJECT ) {
+                    depth--;
+                }
+                if (depth == 0) {
+                    item = reader.readValue(tokenBuffer.asParser());
+                    if (item == null) {
+                        continue;
                     }
-                    if (depth == 0) {
-                        item = reader.readValue(tokenBuffer.asParser());
-                        if (item == null) {
-                            continue;
-                        }
-                        tokenBuffer = null;
-                        if (items != null) {
-                            items.add(item);
-                        }
+                    tokenBuffer = null;
+                    if (items != null) {
+                        items.add(item);
                     }
-                } catch (Exception e) {
-                    // Expected when reading fragments
-                    continue;
                 }
             }
             if (items != null) {
