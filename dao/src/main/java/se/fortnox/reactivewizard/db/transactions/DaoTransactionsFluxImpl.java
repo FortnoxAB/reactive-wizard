@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static java.util.Arrays.asList;
+import static reactor.core.publisher.Flux.empty;
 
 public class DaoTransactionsFluxImpl implements DaoTransactionsFlux {
     @Inject
@@ -34,16 +35,12 @@ public class DaoTransactionsFluxImpl implements DaoTransactionsFlux {
     @Override
     public <T> Flux<Void> executeTransaction(Iterable<Flux<T>> daoCalls) {
         if (!daoCalls.iterator().hasNext()) {
-            return Flux.empty();
+            return empty();
         }
         createTransaction(daoCalls);
 
-        Flux<T> fluxes = null;
+        Flux<T> fluxes = empty();
         for (Flux<T> daoCall : daoCalls) {
-            if (fluxes == null) {
-                fluxes = daoCall;
-                continue;
-            }
             fluxes = fluxes.mergeWith(daoCall);
         }
 
