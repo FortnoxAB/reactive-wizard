@@ -61,15 +61,22 @@ public class ResponseDecorator {
     }
 
     protected static <T> Flux<T> apply(@Nonnull Flux<T> output, @Nonnull JaxRsResult<T> result) {
-        Optional<ResponseDecorations> decorations = ReactiveDecorator.getDecoration(output);
+        Optional<Object> decorations = ReactiveDecorator.getDecoration(output);
+
         if (decorations.isPresent()) {
-            decorations.get().applyOn(result);
+            Object object = decorations.get();
 
-            ApplyDecorationsOnEmit<T> applyDecorations = new ApplyDecorationsOnEmit<>(decorations.get(), result);
+            if (object instanceof ResponseDecorations) {
+                ResponseDecorations responseDecorations = (ResponseDecorations)object;
 
-            return output
-                .doOnNext(applyDecorations::onNext)
-                .doOnComplete(applyDecorations::onCompleted);
+                responseDecorations.applyOn(result);
+
+                ApplyDecorationsOnEmit<T> applyDecorations = new ApplyDecorationsOnEmit<>(responseDecorations, result);
+
+                return output
+                    .doOnNext(applyDecorations::onNext)
+                    .doOnComplete(applyDecorations::onCompleted);
+            }
         }
         return output;
     }

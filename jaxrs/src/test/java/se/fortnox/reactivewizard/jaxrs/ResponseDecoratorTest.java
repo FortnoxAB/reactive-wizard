@@ -1,10 +1,12 @@
 package se.fortnox.reactivewizard.jaxrs;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
+import org.junit.Assert;
 import org.junit.Test;
 import rx.Observable;
 import se.fortnox.reactivewizard.jaxrs.response.ResponseDecorator;
 import se.fortnox.reactivewizard.mocks.MockHttpServerResponse;
+import se.fortnox.reactivewizard.util.ReactiveDecorator;
 import se.fortnox.reactivewizard.utils.JaxRsTestUtil;
 
 import javax.ws.rs.GET;
@@ -63,6 +65,17 @@ public class ResponseDecoratorTest {
         assertThat(response.getOutp()).isEqualTo("\"body\"");
     }
 
+    @Test
+    public void shouldNotFailIfDecorationIsAtomicReference() {
+        try {
+            MockHttpServerResponse response = JaxRsTestUtil.get(new ResourceWithHeaders(), "/atomicreference");
+            assertThat(response.status()).isEqualTo(HttpResponseStatus.OK);
+
+        } catch (Exception e) {
+            Assert.fail();
+        }
+    }
+
     @Path("/")
     public class ResourceWithHeaders {
         @GET
@@ -71,6 +84,12 @@ public class ResponseDecoratorTest {
             Map<String, String> headers = new HashMap<>();
             headers.put("custom_header", "value");
             return ResponseDecorator.withHeaders(just("body"), headers);
+        }
+
+        @GET
+        @Path("atomicreference")
+        public Observable<String> methodReturningDecoratedWithAtomicReference() {
+            return ReactiveDecorator.decorated(just(""), new AtomicReference<>());
         }
 
         @GET
