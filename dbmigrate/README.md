@@ -13,3 +13,15 @@ See Liquibase documentation for full reference.
 `TimoutLockService` - autoreleases liquibaselocks when unclean shutdowns otherwise could cause migrates to be locked waiting for a lock to be released.
 
 
+# Extra info
+If multiple modules have migrations.xml they will overwrite each other when put into a fatjar like the one suggested in the main README.
+To have them merged you need to add a transformer to your maven-shade plugin like this
+
+```
+<transformer
+implementation="org.apache.maven.plugins.shade.resource.XmlAppendingTransformer">
+<resource>migrations.xml</resource>
+</transformer>
+```
+
+

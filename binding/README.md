@@ -17,5 +17,5 @@ scanners to be implemented by extending AbstractClassScanner to find classes mat
 ## BindInjectAnnotatedImplementations
 
 An example of a module implementing the AutoBindModule interface and making use of the scanner functionality by
-searching for 
+searching for classes having an @Inject annotated constructor.
 
