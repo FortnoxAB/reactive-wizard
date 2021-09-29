@@ -1696,7 +1696,7 @@ public class HttpClientTest {
         Observable<Void> sendXml(Pojo pojo);
     }
 
-    class Wrapper {
+    static class Wrapper {
         private Pojo result;
 
         public Pojo getResult() {
@@ -1708,7 +1708,7 @@ public class HttpClientTest {
         }
     }
 
-    class Pojo {
+    static class Pojo {
         private String name;
 
         public String getName() {

@@ -5,8 +5,8 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.ser.BeanSerializerFactory;
-import com.fasterxml.jackson.databind.ser.SerializerFactory;
+import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.databind.util.StdDateFormat;
 
 import javax.inject.Inject;
 import java.lang.reflect.Type;
@@ -21,14 +21,16 @@ public class JsonSerializerFactory {
     @Inject
     public JsonSerializerFactory(ObjectMapper mapper) {
         this.mapper = mapper.setSerializerFactory(mapper.getSerializerFactory()
-                .withSerializerModifier(new LambdaSerializerModifier()));
+            .withSerializerModifier(new LambdaSerializerModifier()));
     }
 
     public JsonSerializerFactory() {
-        this(new ObjectMapper()
-            .findAndRegisterModules()
+        this(JsonMapper.builder()
+            .findAndAddModules()
             .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false));
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+            .defaultDateFormat(new StdDateFormat().withColonInTimeZone(false)) // Preserve behavior prior to Jackson 2.11
+            .build());
     }
 
     public <T> Function<T, String> createStringSerializer(TypeReference<T> paramType) {

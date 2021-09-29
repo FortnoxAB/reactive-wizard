@@ -58,7 +58,9 @@ public class RestClientFactory implements AutoBindModule {
                 if (configClass.isAnnotationPresent(UseInResource.class)) {
                     for (Class resource : configClass.getAnnotation(UseInResource.class).value()) {
                         if (!resource.isInterface()) {
-                            throw new IllegalArgumentException(format("%s pointed out in UseInResource annotation must be an interface", resource));
+                            throw new IllegalArgumentException(format(
+                                "class %s pointed out in UseInResource annotation must be an interface",
+                                resource.getCanonicalName()));
                         }
                         httpClientConfigByResource.put(resource, configClass);
                     }

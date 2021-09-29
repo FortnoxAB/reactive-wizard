@@ -456,7 +456,7 @@ public class JaxRsResourceTest {
         assertBadRequest(post(service, "/test/jsonParam", "{hej}"), expectedBodyRegex1);
 
         String expectedBodyRegex2 = "{\"id\":\".*\",\"error\":\"invalidjson\"," +
-            "\"message\":\"Cannot deserialize value of type `int` from String \\\\\"nan\\\\\": not a valid Integer value\"}";
+            "\"message\":\"Cannot deserialize value of type `int` from String \\\\\"nan\\\\\": not a valid `int` value\"}";
         assertBadRequest(post(service, "/test/jsonParam", "{\"age\": \"nan\"}"), expectedBodyRegex2);
 
         String expectedBodyRegex3 = "{\"id\":\".*\",\"error\":\"invalidjson\"," +

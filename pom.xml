@@ -76,9 +76,8 @@
 
         <netty.version>4.1.65.Final</netty.version>
         <rxjava.version>1.3.8</rxjava.version>
-        <jackson.version>2.10.2</jackson.version>
-        <jackson-databind.version>2.10.2</jackson-databind.version>
-        <snakeyaml.version>1.24</snakeyaml.version>
+        <jackson.version>2.12.5</jackson.version>
+        <snakeyaml.version>1.27</snakeyaml.version> <!-- Matches version in jackson-dataformat-yaml:2.12.5 -->
         <slf4j.version>1.7.28</slf4j.version>
         <guice.version>5.0.1</guice.version>
         <guava.version>30.1.1-jre</guava.version>
