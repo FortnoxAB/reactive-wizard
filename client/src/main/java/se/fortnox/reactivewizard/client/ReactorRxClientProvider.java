@@ -16,6 +16,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ *
+ * Due to the fact that reactors HttpClient is reusable for multiple connections in parallel
+ * this class is responsible for delivering singleton HttpClients connected to different servers (InetSocketAddresses)
+ *
+ */
 public class ReactorRxClientProvider {
     private final ConcurrentHashMap<InetSocketAddress, HttpClient> clients = new ConcurrentHashMap<>();
     private final HttpClientConfig                                 config;
