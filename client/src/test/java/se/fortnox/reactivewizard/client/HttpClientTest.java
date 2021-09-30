@@ -539,6 +539,15 @@ public class HttpClientTest {
     }
 
     @Test
+    public void shouldSupportBeanParamRecord() throws Exception {
+        HttpClient client = new HttpClient(new HttpClientConfig("localhost"));
+        Method     method = TestResource.class.getMethod("withBeanParamRecord", TestResource.SomeRecord.class);
+        TestResource.SomeRecord record = new TestResource.SomeRecord("value1", "value2");
+        String     path   = client.getPath(method, new Object[]{record}, new JaxRsMeta(method, null));
+        assertThat(path).isEqualTo("/hello/beanParamRecord?param2=value2&param1=value1");
+    }
+
+    @Test
     public void shouldSupportSingleSource() {
         DisposableServer server = startServer(HttpResponseStatus.OK, "\"OK\"");
 
@@ -1612,6 +1621,12 @@ public class HttpClientTest {
             }
         }
 
+        record SomeRecord(
+            @QueryParam("param1") String param1,
+            @QueryParam("param2") String param2
+        ) {
+        }
+
         @GET
         Single<String> getSingle();
 
@@ -1632,6 +1647,9 @@ public class HttpClientTest {
 
         @Path("beanParam")
         Observable<String> withBeanParam(@BeanParam Filters filters);
+
+        @Path("beanParamRecord")
+        Observable<String> withBeanParamRecord(@BeanParam SomeRecord record);
 
         @GET
         @Path("/multicookie")
