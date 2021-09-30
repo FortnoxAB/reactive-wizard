@@ -96,6 +96,7 @@ public class ConfigReader {
                 .map(Defaults::defaultValue)
                 .toArray();
 
+            //noinspection unchecked
             return (T)ctor.newInstance(args);
         }
     }
