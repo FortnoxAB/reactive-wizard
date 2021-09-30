@@ -647,23 +647,42 @@ public class JaxRsResourceTest {
     }
 
     @Test
-    public void shouldAcceptBodyForPut() throws Exception {
+    public void shouldAcceptBodyForPut() {
         assertThat(body(put(service, "/test/acceptBodyPut", "{\"name\":\"test\"}"))).isEqualTo("{\"name\":\"test\",\"age\":0,\"items\":null}");
+    }
+    @Test
+    public void shouldAcceptBodyForPutRecord() {
+        assertThat(body(put(service, "/test/acceptBodyPutRecord", "{\"name\":\"test\"}"))).isEqualTo("{\"name\":\"test\",\"age\":0,\"items\":null}");
     }
 
     @Test
-    public void shouldAcceptBodyForPost() throws Exception {
+    public void shouldAcceptBodyForPost() {
         assertThat(body(post(service, "/test/acceptBodyPost", "{\"name\":\"test\"}"))).isEqualTo("{\"name\":\"test\",\"age\":0,\"items\":null}");
     }
 
     @Test
-    public void shouldAcceptBodyForPatch() throws Exception {
+    public void shouldAcceptBodyForPostRecord() {
+        assertThat(body(post(service, "/test/acceptBodyPostRecord", "{\"name\":\"test\"}"))).isEqualTo("{\"name\":\"test\",\"age\":0,\"items\":null}");
+    }
+
+    @Test
+    public void shouldAcceptBodyForPatch() {
         assertThat(body(patch(service, "/test/acceptBodyPatch", "{\"name\":\"test\"}"))).isEqualTo("{\"name\":\"test\",\"age\":0,\"items\":null}");
     }
 
     @Test
-    public void shouldAcceptBodyForDelete() throws Exception {
+    public void shouldAcceptBodyForPatchRecord() {
+        assertThat(body(patch(service, "/test/acceptBodyPatchRecord", "{\"name\":\"test\"}"))).isEqualTo("{\"name\":\"test\",\"age\":0,\"items\":null}");
+    }
+
+    @Test
+    public void shouldAcceptBodyForDelete() {
         assertThat(body(delete(service, "/test/acceptBodyDelete", "{\"name\":\"test\"}"))).isEqualTo("{\"name\":\"test\",\"age\":0,\"items\":null}");
+    }
+
+    @Test
+    public void shouldAcceptBodyForDeleteRecord() {
+        assertThat(body(delete(service, "/test/acceptBodyDeleteRecord", "{\"name\":\"test\"}"))).isEqualTo("{\"name\":\"test\",\"age\":0,\"items\":null}");
     }
 
     @Test
@@ -981,17 +1000,33 @@ public class JaxRsResourceTest {
         @PUT
         Observable<ParamEntity> acceptBodyPut(ParamEntity paramEntity);
 
+        @Path("acceptBodyPutRecord")
+        @PUT
+        Observable<ParamEntityRecord> acceptBodyPutRecord(ParamEntityRecord paramEntity);
+
         @Path("acceptBodyPost")
         @POST
         Observable<ParamEntity> acceptBodyPost(ParamEntity paramEntity);
+
+        @Path("acceptBodyPostRecord")
+        @POST
+        Observable<ParamEntityRecord> acceptBodyPostRecord(ParamEntityRecord paramEntity);
 
         @Path("acceptBodyPatch")
         @PATCH
         Observable<ParamEntity> acceptBodyPatch(ParamEntity paramEntity);
 
+        @Path("acceptBodyPatchRecord")
+        @PATCH
+        Observable<ParamEntityRecord> acceptBodyPatchRecord(ParamEntityRecord paramEntity);
+
         @Path("acceptBodyDelete")
         @DELETE
         Observable<ParamEntity> acceptBodyDelete(ParamEntity paramEntity);
+
+        @Path("acceptBodyDeleteRecord")
+        @DELETE
+        Observable<ParamEntityRecord> acceptBodyDeleteRecord(ParamEntityRecord paramEntity);
 
         @Path("acceptsQueryList")
         @GET
@@ -1260,7 +1295,17 @@ public class JaxRsResourceTest {
         }
 
         @Override
+        public Observable<ParamEntityRecord> acceptBodyPutRecord(ParamEntityRecord paramEntity) {
+            return just(paramEntity);
+        }
+
+        @Override
         public Observable<ParamEntity> acceptBodyPost(ParamEntity paramEntity) {
+            return just(paramEntity);
+        }
+
+        @Override
+        public Observable<ParamEntityRecord> acceptBodyPostRecord(ParamEntityRecord paramEntity) {
             return just(paramEntity);
         }
 
@@ -1270,7 +1315,17 @@ public class JaxRsResourceTest {
         }
 
         @Override
+        public Observable<ParamEntityRecord> acceptBodyPatchRecord(ParamEntityRecord paramEntity) {
+            return just(paramEntity);
+        }
+
+        @Override
         public Observable<ParamEntity> acceptBodyDelete(ParamEntity paramEntity) {
+            return just(paramEntity);
+        }
+
+        @Override
+        public Observable<ParamEntityRecord> acceptBodyDeleteRecord(ParamEntityRecord paramEntity) {
             return just(paramEntity);
         }
 
