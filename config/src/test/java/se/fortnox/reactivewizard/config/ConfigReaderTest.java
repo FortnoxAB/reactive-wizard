@@ -80,6 +80,15 @@ public class ConfigReaderTest {
     }
 
     @Test
+    public void shouldReadConfigRecordFromFile() {
+        TestConfigRecord testConfig = ConfigReader.fromFile("src/test/resources/testconfig.yml", TestConfigRecord.class);
+        assertThat(testConfig.myKey()).isEqualTo("myValue");
+
+        testConfig = ConfigReader.fromTree(ConfigReader.readTree("src/test/resources/testconfig.yml"), TestConfigRecord.class);
+        assertThat(testConfig.myKey()).isEqualTo("myValue");
+    }
+
+    @Test
     public void shouldReplaceEnvPlaceholderWithValue() {
         Map<String, String> env = new HashMap<>(System.getenv());
         env.put("CUSTOM_ENV_VAR", "hello");
@@ -149,6 +158,11 @@ public class ConfigReaderTest {
         assertThat(testConfig).isNotNull();
     }
 
+    @Test
+    public void shouldSupportEmptyConfigRecord() {
+        EmptyConfigRecord testConfig = ConfigReader.fromFile("src/test/resources/testconfig.yml", EmptyConfigRecord.class);
+        assertThat(testConfig).isNotNull();
+    }
 
     @Test
     public void shouldThrowExceptionForInvalidYaml() {

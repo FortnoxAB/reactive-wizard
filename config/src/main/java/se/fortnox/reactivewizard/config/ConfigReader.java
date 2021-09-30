@@ -6,11 +6,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.google.common.base.Defaults;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -73,7 +75,7 @@ public class ConfigReader {
         T cfg;
         try {
             if (obj == null || obj == NullNode.getInstance()) {
-                cfg = cls.newInstance();
+                cfg = newInstance(cls);
             } else {
                 ObjectReader reader = mapper.readerFor(cls);
                 cfg = reader.readValue(obj);
@@ -83,6 +85,19 @@ public class ConfigReader {
         }
 
         return cfg;
+    }
+
+    private static <T> T newInstance(Class<T> cls) throws Exception {
+        if (!cls.isRecord()) {
+            return cls.newInstance();
+        } else {
+            var ctor = cls.getConstructors()[0];
+            var args = Arrays.stream(ctor.getParameterTypes())
+                .map(Defaults::defaultValue)
+                .toArray();
+
+            return (T)ctor.newInstance(args);
+        }
     }
 
     public static JsonNode readTree(String fileName) {
