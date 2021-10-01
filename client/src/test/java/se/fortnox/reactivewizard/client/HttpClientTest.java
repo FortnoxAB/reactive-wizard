@@ -53,6 +53,7 @@ import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.security.cert.CertificateException;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
@@ -1298,6 +1299,25 @@ public class HttpClientTest {
     }
 
     @Test
+    public void shouldBeAbleToSendAndReceiveRecordBody() {
+        DisposableServer server = HttpServer.create().port(0).handle((request, response) ->
+            request.receive().aggregate().flatMap(buf ->
+                response.status(HttpResponseStatus.OK).send(Mono.just(buf)).then()
+        )).bindNow();
+
+        var resource = getHttpProxy(server.port());
+
+        var requestRecord = new TestResource.SomeRecord("value1", "value2");
+
+        var responseRecord = resource.postRecord(requestRecord).toBlocking().singleOrDefault(null);
+
+        assertThat(responseRecord).isNotNull();
+        assertThat(responseRecord).isEqualTo(requestRecord);
+
+        server.disposeNow();
+    }
+
+    @Test
     public void shouldSetTimeoutOnResource() throws URISyntaxException {
         HttpClientConfig httpClientConfig = new HttpClientConfig();
         httpClientConfig.setUrl("http://localhost");
@@ -1700,6 +1720,10 @@ public class HttpClientTest {
 
         @GET
         Observable<Wrapper> getWrappedPojo();
+
+        @POST
+        @Path("postRecord")
+        Observable<SomeRecord> postRecord(SomeRecord record);
 
         @POST
         @Consumes("application/xml")
