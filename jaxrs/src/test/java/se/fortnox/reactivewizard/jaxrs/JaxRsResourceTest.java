@@ -650,6 +650,7 @@ public class JaxRsResourceTest {
     public void shouldAcceptBodyForPut() {
         assertThat(body(put(service, "/test/acceptBodyPut", "{\"name\":\"test\"}"))).isEqualTo("{\"name\":\"test\",\"age\":0,\"items\":null}");
     }
+
     @Test
     public void shouldAcceptBodyForPutRecord() {
         assertThat(body(put(service, "/test/acceptBodyPutRecord", "{\"name\":\"test\"}"))).isEqualTo("{\"name\":\"test\",\"age\":0,\"items\":null}");
@@ -721,8 +722,18 @@ public class JaxRsResourceTest {
     }
 
     @Test
+    public void shouldAcceptBeanParamWithDefaults() {
+        assertThat(get(service, "/test/acceptsBeanParam?name=foo&items=1,2").getOutp()).isEqualTo("\"foo - 123 2\"");
+    }
+
+    @Test
     public void shouldAcceptBeanParamRecord() {
         assertThat(get(service, "/test/acceptsBeanParamRecord?name=foo&age=3&items=1,2").getOutp()).isEqualTo("\"foo - 3 2\"");
+    }
+
+    @Test
+    public void shouldAcceptBeanParamRecordWithDefaults() {
+        assertThat(get(service, "/test/acceptsBeanParamRecord?name=foo&items=1,2").getOutp()).isEqualTo("\"foo - 123 2\"");
     }
 
     @Test

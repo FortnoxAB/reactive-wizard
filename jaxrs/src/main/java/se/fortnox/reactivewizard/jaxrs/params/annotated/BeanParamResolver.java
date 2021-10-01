@@ -103,16 +103,23 @@ public class BeanParamResolver<T> extends AnnotatedParamResolver<T> {
         }
 
         private <T> BeanParamResolver<T> createForRecord(Class<T> beanParamCls) {
-            var constructor = beanParamCls.getDeclaredConstructors()[0];
+            var constructors = beanParamCls.getDeclaredConstructors();
+            if (constructors.length != 1) {
+                throw new IllegalArgumentException("A @BeanParam record may only have a single constructor");
+            }
+
+            var constructor = constructors[0];
 
             var constructorParams = constructor.getParameters();
             var constructorArgumentResolvers = new ArrayList<ParamResolver<?>>(constructorParams.length);
 
-            for (Parameter constructorParam : constructorParams) {
+            for (var constructorParam : constructorParams) {
                 Annotation annotation = null;
                 AnnotatedParamResolverFactory paramResolverFactory = null;
 
-                for (var ann : constructorParam.getAnnotations()) {
+                var parameterAnnotations = asList(constructorParam.getAnnotations());
+
+                for (var ann : parameterAnnotations) {
                     paramResolverFactory = annotatedParamResolverFactories.get(ann.annotationType());
                     if (paramResolverFactory != null) {
                         annotation = ann;
@@ -125,19 +132,20 @@ public class BeanParamResolver<T> extends AnnotatedParamResolver<T> {
                 }
 
                 var paramType = Types.toReference(constructorParam.getParameterizedType());
-                var defaultValue = ParamResolverFactories.findDefaultValue(List.of(annotation));
+                var defaultValue = ParamResolverFactories.findDefaultValue(parameterAnnotations);
                 var paramResolver = paramResolverFactory.create(paramType, annotation, defaultValue);
 
                 constructorArgumentResolvers.add(paramResolver);
             }
 
             Function<JaxRsRequest, Mono<T>> resolver = (JaxRsRequest request) -> {
-                var argMonos = constructorArgumentResolvers.stream()
-                    .map(it -> it.resolve(request))
-                    .toArray(Mono<?>[]::new);
+                var argsFlux = Flux.fromIterable(constructorArgumentResolvers)
+                    .map(it -> it.resolve(request));
 
-                return Flux.concat(argMonos)
-                    .reduce(new ArrayList<>(), (acc, next) -> { acc.add(next); return acc; })
+                return Flux.concat(argsFlux)
+                    .reduce(new ArrayList<>(), (acc, next) -> {
+                        acc.add(next); return acc;
+                    })
                     .map(args -> {
                         try {
                             //noinspection unchecked
