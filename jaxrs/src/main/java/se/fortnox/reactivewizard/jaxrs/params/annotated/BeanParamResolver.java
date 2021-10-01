@@ -23,6 +23,8 @@ import static java.util.Arrays.asList;
 
 public class BeanParamResolver<T> extends AnnotatedParamResolver<T> {
 
+    private static final Object NULL_VALUE = new Object();
+
     private final Function<JaxRsRequest, Mono<T>> resolver;
 
     public BeanParamResolver(Function<JaxRsRequest, Mono<T>> resolver) {
@@ -111,7 +113,7 @@ public class BeanParamResolver<T> extends AnnotatedParamResolver<T> {
             var constructor = constructors[0];
 
             var constructorParams = constructor.getParameters();
-            var constructorArgumentResolvers = new ArrayList<ParamResolver<?>>(constructorParams.length);
+            var constructorArgumentResolvers = new ArrayList<ParamResolver<Object>>(constructorParams.length);
 
             for (var constructorParam : constructorParams) {
                 Annotation annotation = null;
@@ -140,11 +142,15 @@ public class BeanParamResolver<T> extends AnnotatedParamResolver<T> {
 
             Function<JaxRsRequest, Mono<T>> resolver = (JaxRsRequest request) -> {
                 var argsFlux = Flux.fromIterable(constructorArgumentResolvers)
-                    .map(it -> it.resolve(request));
+                    .map(it -> it.resolve(request).defaultIfEmpty(NULL_VALUE));
 
                 return Flux.concat(argsFlux)
                     .reduce(new ArrayList<>(), (acc, next) -> {
-                        acc.add(next);
+                        if (next == NULL_VALUE) {
+                            acc.add(null);
+                        } else {
+                            acc.add(next);
+                        }
                         return acc;
                     })
                     .map(args -> {

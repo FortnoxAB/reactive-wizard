@@ -728,12 +728,17 @@ public class JaxRsResourceTest {
 
     @Test
     public void shouldAcceptBeanParamRecord() {
-        assertThat(get(service, "/test/acceptsBeanParamRecord?name=foo&age=3&items=1,2").getOutp()).isEqualTo("\"foo - 3 2\"");
+        assertThat(get(service, "/test/acceptsBeanParamRecord?name=foo&age=3&items=1,2").getOutp()).isEqualTo("\"ParamEntityRecord[name=foo, age=3, items=[1, 2]]\"");
     }
 
     @Test
     public void shouldAcceptBeanParamRecordWithDefaults() {
-        assertThat(get(service, "/test/acceptsBeanParamRecord?name=foo&items=1,2").getOutp()).isEqualTo("\"foo - 123 2\"");
+        assertThat(get(service, "/test/acceptsBeanParamRecord?name=foo&items=1,2").getOutp()).isEqualTo("\"ParamEntityRecord[name=foo, age=123, items=[1, 2]]\"");
+    }
+
+    @Test
+    public void shouldAcceptBeanParamRecordWithDefaultsAndMissingFields() {
+        assertThat(get(service, "/test/acceptsBeanParamRecord").getOutp()).isEqualTo("\"ParamEntityRecord[name=null, age=123, items=null]\"");
     }
 
     @Test
@@ -1394,7 +1399,7 @@ public class JaxRsResourceTest {
 
         @Override
         public Observable<String> acceptsBeanParamRecord(ParamEntityRecord beanParam) {
-            return just(String.format("%s - %d %d", beanParam.name(), beanParam.age(), beanParam.items().size()));
+            return just(beanParam.toString());
         }
 
         @Override
