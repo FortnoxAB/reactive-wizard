@@ -10,10 +10,10 @@ import se.fortnox.reactivewizard.json.Types;
 import se.fortnox.reactivewizard.util.ReflectionUtil;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
-import java.lang.reflect.Parameter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -144,7 +144,8 @@ public class BeanParamResolver<T> extends AnnotatedParamResolver<T> {
 
                 return Flux.concat(argsFlux)
                     .reduce(new ArrayList<>(), (acc, next) -> {
-                        acc.add(next); return acc;
+                        acc.add(next);
+                        return acc;
                     })
                     .map(args -> {
                         try {
