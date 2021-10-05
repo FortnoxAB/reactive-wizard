@@ -456,7 +456,7 @@ public class JaxRsResourceTest {
         assertBadRequest(post(service, "/test/jsonParam", "{hej}"), expectedBodyRegex1);
 
         String expectedBodyRegex2 = "{\"id\":\".*\",\"error\":\"invalidjson\"," +
-            "\"message\":\"Cannot deserialize value of type `int` from String \\\\\"nan\\\\\": not a valid Integer value\"}";
+            "\"message\":\"Cannot deserialize value of type `int` from String \\\\\"nan\\\\\": not a valid `int` value\"}";
         assertBadRequest(post(service, "/test/jsonParam", "{\"age\": \"nan\"}"), expectedBodyRegex2);
 
         String expectedBodyRegex3 = "{\"id\":\".*\",\"error\":\"invalidjson\"," +
@@ -647,23 +647,43 @@ public class JaxRsResourceTest {
     }
 
     @Test
-    public void shouldAcceptBodyForPut() throws Exception {
+    public void shouldAcceptBodyForPut() {
         assertThat(body(put(service, "/test/acceptBodyPut", "{\"name\":\"test\"}"))).isEqualTo("{\"name\":\"test\",\"age\":0,\"items\":null}");
     }
 
     @Test
-    public void shouldAcceptBodyForPost() throws Exception {
+    public void shouldAcceptBodyForPutRecord() {
+        assertThat(body(put(service, "/test/acceptBodyPutRecord", "{\"name\":\"test\"}"))).isEqualTo("{\"name\":\"test\",\"age\":0,\"items\":null}");
+    }
+
+    @Test
+    public void shouldAcceptBodyForPost() {
         assertThat(body(post(service, "/test/acceptBodyPost", "{\"name\":\"test\"}"))).isEqualTo("{\"name\":\"test\",\"age\":0,\"items\":null}");
     }
 
     @Test
-    public void shouldAcceptBodyForPatch() throws Exception {
+    public void shouldAcceptBodyForPostRecord() {
+        assertThat(body(post(service, "/test/acceptBodyPostRecord", "{\"name\":\"test\"}"))).isEqualTo("{\"name\":\"test\",\"age\":0,\"items\":null}");
+    }
+
+    @Test
+    public void shouldAcceptBodyForPatch() {
         assertThat(body(patch(service, "/test/acceptBodyPatch", "{\"name\":\"test\"}"))).isEqualTo("{\"name\":\"test\",\"age\":0,\"items\":null}");
     }
 
     @Test
-    public void shouldAcceptBodyForDelete() throws Exception {
+    public void shouldAcceptBodyForPatchRecord() {
+        assertThat(body(patch(service, "/test/acceptBodyPatchRecord", "{\"name\":\"test\"}"))).isEqualTo("{\"name\":\"test\",\"age\":0,\"items\":null}");
+    }
+
+    @Test
+    public void shouldAcceptBodyForDelete() {
         assertThat(body(delete(service, "/test/acceptBodyDelete", "{\"name\":\"test\"}"))).isEqualTo("{\"name\":\"test\",\"age\":0,\"items\":null}");
+    }
+
+    @Test
+    public void shouldAcceptBodyForDeleteRecord() {
+        assertThat(body(delete(service, "/test/acceptBodyDeleteRecord", "{\"name\":\"test\"}"))).isEqualTo("{\"name\":\"test\",\"age\":0,\"items\":null}");
     }
 
     @Test
@@ -699,6 +719,26 @@ public class JaxRsResourceTest {
     @Test
     public void shouldAcceptBeanParam() {
         assertThat(get(service, "/test/acceptsBeanParam?name=foo&age=3&items=1,2").getOutp()).isEqualTo("\"foo - 3 2\"");
+    }
+
+    @Test
+    public void shouldAcceptBeanParamWithDefaults() {
+        assertThat(get(service, "/test/acceptsBeanParam?name=foo&items=1,2").getOutp()).isEqualTo("\"foo - 123 2\"");
+    }
+
+    @Test
+    public void shouldAcceptBeanParamRecord() {
+        assertThat(get(service, "/test/acceptsBeanParamRecord?name=foo&age=3&items=1,2").getOutp()).isEqualTo("\"ParamEntityRecord[name=foo, age=3, items=[1, 2]]\"");
+    }
+
+    @Test
+    public void shouldAcceptBeanParamRecordWithDefaults() {
+        assertThat(get(service, "/test/acceptsBeanParamRecord?name=foo&items=1,2").getOutp()).isEqualTo("\"ParamEntityRecord[name=foo, age=123, items=[1, 2]]\"");
+    }
+
+    @Test
+    public void shouldAcceptBeanParamRecordWithDefaultsAndMissingFields() {
+        assertThat(get(service, "/test/acceptsBeanParamRecord").getOutp()).isEqualTo("\"ParamEntityRecord[name=null, age=123, items=null]\"");
     }
 
     @Test
@@ -981,17 +1021,33 @@ public class JaxRsResourceTest {
         @PUT
         Observable<ParamEntity> acceptBodyPut(ParamEntity paramEntity);
 
+        @Path("acceptBodyPutRecord")
+        @PUT
+        Observable<ParamEntityRecord> acceptBodyPutRecord(ParamEntityRecord paramEntity);
+
         @Path("acceptBodyPost")
         @POST
         Observable<ParamEntity> acceptBodyPost(ParamEntity paramEntity);
+
+        @Path("acceptBodyPostRecord")
+        @POST
+        Observable<ParamEntityRecord> acceptBodyPostRecord(ParamEntityRecord paramEntity);
 
         @Path("acceptBodyPatch")
         @PATCH
         Observable<ParamEntity> acceptBodyPatch(ParamEntity paramEntity);
 
+        @Path("acceptBodyPatchRecord")
+        @PATCH
+        Observable<ParamEntityRecord> acceptBodyPatchRecord(ParamEntityRecord paramEntity);
+
         @Path("acceptBodyDelete")
         @DELETE
         Observable<ParamEntity> acceptBodyDelete(ParamEntity paramEntity);
+
+        @Path("acceptBodyDeleteRecord")
+        @DELETE
+        Observable<ParamEntityRecord> acceptBodyDeleteRecord(ParamEntityRecord paramEntity);
 
         @Path("acceptsQueryList")
         @GET
@@ -1021,6 +1077,10 @@ public class JaxRsResourceTest {
         @Path("acceptsBeanParam")
         @GET
         Observable<String> acceptsBeanParam(@BeanParam ParamEntity beanParam);
+
+        @Path("acceptsBeanParamRecord")
+        @GET
+        Observable<String> acceptsBeanParamRecord(@BeanParam ParamEntityRecord beanParam);
 
         @Path("acceptsBeanParamInherited")
         @GET
@@ -1260,7 +1320,17 @@ public class JaxRsResourceTest {
         }
 
         @Override
+        public Observable<ParamEntityRecord> acceptBodyPutRecord(ParamEntityRecord paramEntity) {
+            return just(paramEntity);
+        }
+
+        @Override
         public Observable<ParamEntity> acceptBodyPost(ParamEntity paramEntity) {
+            return just(paramEntity);
+        }
+
+        @Override
+        public Observable<ParamEntityRecord> acceptBodyPostRecord(ParamEntityRecord paramEntity) {
             return just(paramEntity);
         }
 
@@ -1270,7 +1340,17 @@ public class JaxRsResourceTest {
         }
 
         @Override
+        public Observable<ParamEntityRecord> acceptBodyPatchRecord(ParamEntityRecord paramEntity) {
+            return just(paramEntity);
+        }
+
+        @Override
         public Observable<ParamEntity> acceptBodyDelete(ParamEntity paramEntity) {
+            return just(paramEntity);
+        }
+
+        @Override
+        public Observable<ParamEntityRecord> acceptBodyDeleteRecord(ParamEntityRecord paramEntity) {
             return just(paramEntity);
         }
 
@@ -1315,6 +1395,11 @@ public class JaxRsResourceTest {
         @Override
         public Observable<String> acceptsBeanParam(ParamEntity beanParam) {
             return just(String.format("%s - %d %d", beanParam.getName(), beanParam.getAge(), beanParam.getItems().size()));
+        }
+
+        @Override
+        public Observable<String> acceptsBeanParamRecord(ParamEntityRecord beanParam) {
+            return just(beanParam.toString());
         }
 
         @Override

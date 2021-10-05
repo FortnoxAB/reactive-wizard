@@ -1,27 +1,11 @@
 package se.fortnox.reactivewizard.config;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonPointer;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.core.ObjectCodec;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
-import com.fasterxml.jackson.databind.node.JsonNodeCreator;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.JsonNodeType;
-import com.fasterxml.jackson.databind.node.MissingNode;
-import com.fasterxml.jackson.databind.node.NullNode;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.name.Names;
 import org.junit.Test;
 import org.yaml.snakeyaml.error.MarkedYAMLException;
 import se.fortnox.reactivewizard.binding.AutoBindModules;
-import se.fortnox.reactivewizard.test.TestUtil;
-
-import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.HashMap;
@@ -80,6 +64,15 @@ public class ConfigReaderTest {
     }
 
     @Test
+    public void shouldReadConfigRecordFromFile() {
+        TestConfigRecord testConfig = ConfigReader.fromFile("src/test/resources/testconfig.yml", TestConfigRecord.class);
+        assertThat(testConfig.myKey()).isEqualTo("myValue");
+
+        testConfig = ConfigReader.fromTree(ConfigReader.readTree("src/test/resources/testconfig.yml"), TestConfigRecord.class);
+        assertThat(testConfig.myKey()).isEqualTo("myValue");
+    }
+
+    @Test
     public void shouldReplaceEnvPlaceholderWithValue() {
         Map<String, String> env = new HashMap<>(System.getenv());
         env.put("CUSTOM_ENV_VAR", "hello");
@@ -120,6 +113,17 @@ public class ConfigReaderTest {
     }
 
     @Test
+    public void shouldReplaceEnvPlaceholderWithEmptyStringIfEnvNotSetForRecord() {
+        TestConfigRecord testConfig = ConfigReader.fromFile("src/test/resources/testconfig-missing-value.yml", TestConfigRecord.class);
+        assertThat(testConfig.configWithEnvPlaceholder()).isNull();
+        assertThat(testConfig.configWithEnvPlaceholderInMiddle()).isEqualTo("beforeafter");
+
+        testConfig = ConfigReader.fromTree(ConfigReader.readTree("src/test/resources/testconfig-missing-value.yml"), TestConfigRecord.class);
+        assertThat(testConfig.configWithEnvPlaceholder()).isNull();
+        assertThat(testConfig.configWithEnvPlaceholderInMiddle()).isEqualTo("beforeafter");
+    }
+
+    @Test
     public void shouldReplaceMultipleEnvPlaceholders() {
         Map<String, String> env = new HashMap<>(System.getenv());
         env.put("HOST", "localhost");
@@ -149,6 +153,31 @@ public class ConfigReaderTest {
         assertThat(testConfig).isNotNull();
     }
 
+    @Test
+    public void shouldSupportEmptyConfigRecord() {
+        EmptyConfigRecord testConfig = ConfigReader.fromFile("src/test/resources/testconfig.yml", EmptyConfigRecord.class);
+        assertThat(testConfig).isNotNull();
+    }
+
+    @Test
+    public void shouldSupportConfigWithAllMissingValues() {
+        TestConfig testConfig = ConfigReader.fromFile("src/test/resources/testconfig-empty.yml", TestConfig.class);
+        assertThat(testConfig.getMyKey()).isNull();
+        assertThat(testConfig.getConfigWithEnvPlaceholder()).isNull();
+        assertThat(testConfig.getConfigWithEnvPlaceholderInMiddle()).isNull();
+        assertThat(testConfig.getConfigWithEnvPlaceholder2()).isNull();
+        assertThat(testConfig.getUrl()).isNull();
+    }
+
+    @Test
+    public void shouldSupportConfigRecordWithAllMissingValues() {
+        TestConfigRecord testConfig = ConfigReader.fromFile("src/test/resources/testconfig-empty.yml", TestConfigRecord.class);
+        assertThat(testConfig.myKey()).isNull();
+        assertThat(testConfig.configWithEnvPlaceholder()).isNull();
+        assertThat(testConfig.configWithEnvPlaceholderInMiddle()).isNull();
+        assertThat(testConfig.configWithEnvPlaceholder2()).isNull();
+        assertThat(testConfig.url()).isNull();
+    }
 
     @Test
     public void shouldThrowExceptionForInvalidYaml() {

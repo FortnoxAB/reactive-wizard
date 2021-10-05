@@ -361,6 +361,20 @@ public class ValidationExamples {
         }});
     }
 
+    record PeriodRecord(
+        @NotNull Date startDate,
+        Date endDate) {
+    }
+
+    /**
+     * Records are also validated
+     */
+    @Test
+    public void shouldFailIfStartDateIsNullInRecord() {
+        assertValidationException(callService(new PeriodRecord(null, null)),
+            "{'id':'.*','error':'validation','fields':[{'field':'startDate','error':'validation.notnull'}]}");
+    }
+
     private static <T> Runnable callService(T inputClass) {
         AcceptingService<T> service = mock(AcceptingService.class);
         AcceptingService<T> validatedService = ValidatingProxy.create(AcceptingService.class, service, new ValidatorUtil());

@@ -1,5 +1,6 @@
 package se.fortnox.reactivewizard.jaxrs;
 
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.QueryParam;
 import java.util.List;
 
@@ -9,6 +10,7 @@ public class ParamEntity {
     private String name;
 
     @QueryParam("age")
+    @DefaultValue("123")
     private int age;
 
     @QueryParam("items")
