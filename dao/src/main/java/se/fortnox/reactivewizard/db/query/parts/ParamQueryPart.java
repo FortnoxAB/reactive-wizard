@@ -10,6 +10,7 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.YearMonth;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -85,6 +86,11 @@ public class ParamQueryPart implements DynamicQueryPart {
             return (parameters, value) -> {
                 java.sql.Timestamp sqlTimestamp = java.sql.Timestamp.valueOf((LocalDateTime)value);
                 parameters.addTimestamp(sqlTimestamp);
+            };
+        } else if (YearMonth.class.isAssignableFrom(rawType)) {
+            return (parameters, value) -> {
+                YearMonth yearMonth = (YearMonth) value;
+                parameters.addObject(yearMonth.getYear()*100+yearMonth.getMonthValue());
             };
         } else if (List.class.isAssignableFrom(rawType)) {
             Optional<String> listElementType = getListElementType(type);

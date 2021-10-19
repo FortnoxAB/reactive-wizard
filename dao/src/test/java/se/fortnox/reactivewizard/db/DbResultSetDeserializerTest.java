@@ -12,6 +12,7 @@ import java.sql.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.YearMonth;
 import java.util.TimeZone;
 import java.util.UUID;
 
@@ -145,6 +146,15 @@ public class DbResultSetDeserializerTest {
         thenDeserialized(LocalDateTime.class).isEqualTo(LocalDateTime.parse("2016-09-01T16:16:07"));
         when(rs.getTimestamp(1)).thenReturn(null);
         thenDeserialized(LocalDateTime.class).isNull();
+    }
+
+    @Test
+    public void shouldDeserializeYearMonth() throws SQLException {
+        when(rs.getInt(1)).thenReturn(202110);
+        thenDeserialized(YearMonth.class).isEqualTo(YearMonth.parse("2021-10"));
+        when(rs.getInt(1)).thenReturn(0);
+        when(rs.wasNull()).thenReturn(true);
+        thenDeserialized(YearMonth.class).isNull();
     }
 
     @Test

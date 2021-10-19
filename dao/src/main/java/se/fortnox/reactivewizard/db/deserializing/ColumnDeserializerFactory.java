@@ -8,6 +8,7 @@ import java.sql.Types;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.YearMonth;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -50,6 +51,8 @@ public class ColumnDeserializerFactory {
             return (resultSet) -> Optional.ofNullable(getLocalTime(resultSet, columnIndex));
         } else if (columnClass.equals(LocalDateTime.class)) {
             return (resultSet) -> Optional.ofNullable(getLocalDateTime(resultSet, columnIndex));
+        } else if (columnClass.equals(YearMonth.class)) {
+            return (resultSet) -> mayBeNull(resultSet, resultSet.getInt(columnIndex)).map(ColumnDeserializerFactory::toYearMonth);
         } else if (columnClass.isArray()) {
             if (columnClass.equals(byte[].class)) {
                 return (resultSet) -> Optional.ofNullable(resultSet.getBytes(columnIndex));
@@ -59,6 +62,10 @@ public class ColumnDeserializerFactory {
             return (resultSet) -> Optional.ofNullable(getList(resultSet, columnIndex));
         }
         return null;
+    }
+
+    private static YearMonth toYearMonth(Integer integer) {
+        return YearMonth.of(integer/100, integer%100);
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
