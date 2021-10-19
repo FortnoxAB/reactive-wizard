@@ -83,7 +83,7 @@
         <guice.version>5.0.1</guice.version>
         <guava.version>31.0.1-jre</guava.version>
         <hibernate-validator.version>6.2.0.Final</hibernate-validator.version>
-        <HikariCP.version>5.0.0</HikariCP.version>
+        <hikaricp.version>5.0.0</hikaricp.version>
 
         <junit.version>4.13</junit.version>
         <fest-assert.version>1.4</fest-assert.version>
