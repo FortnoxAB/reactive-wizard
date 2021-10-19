@@ -65,7 +65,7 @@ public class ColumnDeserializerFactory {
     }
 
     private static YearMonth toYearMonth(Integer integer) {
-        return YearMonth.of(integer/100, integer%100);
+        return YearMonth.of(integer / 100, integer % 100);
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})

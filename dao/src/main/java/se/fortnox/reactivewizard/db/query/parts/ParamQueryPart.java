@@ -90,7 +90,7 @@ public class ParamQueryPart implements DynamicQueryPart {
         } else if (YearMonth.class.isAssignableFrom(rawType)) {
             return (parameters, value) -> {
                 YearMonth yearMonth = (YearMonth) value;
-                parameters.addObject(yearMonth.getYear()*100+yearMonth.getMonthValue());
+                parameters.addObject(yearMonth.getYear() * 100 + yearMonth.getMonthValue());
             };
         } else if (List.class.isAssignableFrom(rawType)) {
             Optional<String> listElementType = getListElementType(type);
