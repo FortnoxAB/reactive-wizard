@@ -6,10 +6,9 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import reactor.netty.http.server.HttpServerRequest;
 
-import static java.util.Collections.singleton;
 import static org.fest.assertions.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 

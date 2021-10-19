@@ -3,7 +3,7 @@ package se.fortnox.reactivewizard.server;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import reactor.core.publisher.Mono;
 import reactor.netty.http.client.HttpClient;
 import se.fortnox.reactivewizard.ExceptionHandler;
@@ -30,7 +30,7 @@ public class RwServerGzipTest {
 
     @Test
     public void shouldCompressWhenMultipleDirectivesAreCombined() {
-        Arrays.asList("text/plain; boundary=something", "text/plain; charset=UTF-8","text/plain; charset=UTF-8; boundary=something")
+        Arrays.asList("text/plain; boundary=something", "text/plain; charset=UTF-8", "text/plain; charset=UTF-8; boundary=something")
             .forEach(allowedContentType -> assertCompressionForContentType(true, allowedContentType, true));
     }
 
@@ -64,8 +64,8 @@ public class RwServerGzipTest {
         ServerConfig config = new ServerConfig();
         config.setPort(0);
         config.setEnableGzip(compress);
-        ConnectionCounter       connectionCounter = new ConnectionCounter();
-        CompositeRequestHandler handlers          = new CompositeRequestHandler(Collections.singleton(handler), new ExceptionHandler(new ObjectMapper()), connectionCounter);
+        ConnectionCounter connectionCounter = new ConnectionCounter();
+        CompositeRequestHandler handlers = new CompositeRequestHandler(Collections.singleton(handler), new ExceptionHandler(new ObjectMapper()), connectionCounter);
         return new RwServer(config, handlers, connectionCounter);
     }
 
@@ -78,10 +78,10 @@ public class RwServerGzipTest {
     }
 
     private void assertCompressionForContentType(boolean serverUsesCompression,
-        String contentType,
-        Integer contentLength,
-        boolean chunked,
-        boolean compressionExpected
+                                                 String contentType,
+                                                 Integer contentLength,
+                                                 boolean chunked,
+                                                 boolean compressionExpected
     ) {
         try {
             final String randomContent = randomAlphabetic(contentLength);

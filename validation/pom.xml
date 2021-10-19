@@ -1,20 +1,26 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-	<modelVersion>4.0.0</modelVersion>
-	<artifactId>reactivewizard-validation</artifactId>
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <artifactId>reactivewizard-validation</artifactId>
 
-	<parent>
-		<groupId>se.fortnox.reactivewizard</groupId>
-		<artifactId>reactivewizard-parent</artifactId>
-		<version>999.9.9-SNAPSHOT</version>
-	</parent>
+    <parent>
+        <groupId>se.fortnox.reactivewizard</groupId>
+        <artifactId>reactivewizard-parent</artifactId>
+        <version>999.9.9-SNAPSHOT</version>
+    </parent>
 
-	<dependencies>
-		<dependency>
-			<groupId>org.hibernate.validator</groupId>
-			<artifactId>hibernate-validator</artifactId>
-			<version>6.1.0.Final</version>
-		</dependency>
+    <dependencies>
+        <dependency>
+            <groupId>org.hibernate.validator</groupId>
+            <artifactId>hibernate-validator</artifactId>
+            <version>${hibernate-validator.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>log4j</groupId>
+                    <artifactId>log4j</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
         <dependency>
             <groupId>se.fortnox.reactivewizard</groupId>
             <artifactId>reactivewizard-jaxrs</artifactId>
@@ -25,42 +31,42 @@
             <artifactId>reactivewizard-binding</artifactId>
             <version>999.9.9-SNAPSHOT</version>
         </dependency>
-		<dependency>
-			<groupId>se.fortnox.reactivewizard</groupId>
-			<artifactId>reactivewizard-config</artifactId>
-			<version>999.9.9-SNAPSHOT</version>
-		</dependency>
-		<dependency>
-			<groupId>se.fortnox.reactivewizard</groupId>
-			<artifactId>reactivewizard-utils</artifactId>
-			<version>999.9.9-SNAPSHOT</version>
-		</dependency>
-		<dependency>
-			<groupId>org.glassfish</groupId>
-			<artifactId>javax.el</artifactId>
-			<version>3.0.1-b08</version>
-		</dependency>
-		<dependency>
-			<groupId>se.fortnox.reactivewizard</groupId>
-			<artifactId>reactivewizard-test</artifactId>
-			<scope>test</scope>
-			<version>999.9.9-SNAPSHOT</version>
-		</dependency>
+        <dependency>
+            <groupId>se.fortnox.reactivewizard</groupId>
+            <artifactId>reactivewizard-config</artifactId>
+            <version>999.9.9-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>se.fortnox.reactivewizard</groupId>
+            <artifactId>reactivewizard-utils</artifactId>
+            <version>999.9.9-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>org.glassfish</groupId>
+            <artifactId>javax.el</artifactId>
+            <version>3.0.1-b08</version>
+        </dependency>
+        <dependency>
+            <groupId>se.fortnox.reactivewizard</groupId>
+            <artifactId>reactivewizard-test</artifactId>
+            <scope>test</scope>
+            <version>999.9.9-SNAPSHOT</version>
+        </dependency>
 
-		<dependency>
-			<groupId>se.fortnox.reactivewizard</groupId>
-			<artifactId>reactivewizard-config</artifactId>
-			<version>999.9.9-SNAPSHOT</version>
-			<classifier>tests</classifier>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>se.fortnox.reactivewizard</groupId>
-			<artifactId>reactivewizard-server</artifactId>
-			<version>999.9.9-SNAPSHOT</version>
-			<scope>test</scope>
-		</dependency>
+        <dependency>
+            <groupId>se.fortnox.reactivewizard</groupId>
+            <artifactId>reactivewizard-config</artifactId>
+            <version>999.9.9-SNAPSHOT</version>
+            <classifier>tests</classifier>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>se.fortnox.reactivewizard</groupId>
+            <artifactId>reactivewizard-server</artifactId>
+            <version>999.9.9-SNAPSHOT</version>
+            <scope>test</scope>
+        </dependency>
 
-	</dependencies>
+    </dependencies>
 
 </project>
