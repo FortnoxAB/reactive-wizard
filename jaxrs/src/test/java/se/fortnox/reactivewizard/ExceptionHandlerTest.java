@@ -1,4 +1,4 @@
-package se.fortnox.reactivewizard.jaxrs;
+package se.fortnox.reactivewizard;
 
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
@@ -11,6 +11,7 @@ import reactor.netty.http.server.HttpServerResponse;
 import rx.exceptions.CompositeException;
 import rx.exceptions.OnErrorThrowable;
 import se.fortnox.reactivewizard.ExceptionHandler;
+import se.fortnox.reactivewizard.jaxrs.WebException;
 import se.fortnox.reactivewizard.mocks.MockHttpServerRequest;
 import se.fortnox.reactivewizard.mocks.MockHttpServerResponse;
 
@@ -54,6 +55,25 @@ public class ExceptionHandlerTest {
             new WebException(HttpResponseStatus.BAD_REQUEST),
             Level.WARN,
             "400 Bad Request\n\tCause: -\n\tResponse: {\"id\":\"*\",\"error\":\"badrequest\"}\n\tRequest: GET /path headers: Authorization=REDACTED OtherHeader=notasecret ");
+    }
+
+    @Test
+    public void shouldRedactSensitiveHeadersSpecified(){
+
+        ExceptionHandler.addSensitiveHeader("OtherHeader");
+
+        try {
+            MockHttpServerRequest request = new MockHttpServerRequest("/path");
+            request.requestHeaders()
+                .add("Authorization", "secret")
+                .add("OtherHeader", "notasecret");
+            assertLog(request,
+                new WebException(HttpResponseStatus.BAD_REQUEST),
+                Level.WARN,
+                "400 Bad Request\n\tCause: -\n\tResponse: {\"id\":\"*\",\"error\":\"badrequest\"}\n\tRequest: GET /path headers: Authorization=REDACTED OtherHeader=REDACTED ");
+        } finally {
+            ExceptionHandler.removeSensitiveHeader("OtherHeader");
+        }
     }
 
     @Test

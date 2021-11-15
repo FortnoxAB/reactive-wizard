@@ -21,7 +21,9 @@ import javax.inject.Inject;
 import javax.ws.rs.core.MediaType;
 import java.nio.channels.ClosedChannelException;
 import java.nio.file.FileSystemException;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static se.fortnox.reactivewizard.jaxrs.RequestLogger.getHeaderValueOrRedact;
 
@@ -29,7 +31,8 @@ import static se.fortnox.reactivewizard.jaxrs.RequestLogger.getHeaderValueOrReda
  * Handles exceptions and writes errors to the response and the log.
  */
 public class ExceptionHandler {
-    private static final Logger LOG = LoggerFactory.getLogger(ExceptionHandler.class);
+    private static final Logger      LOG = LoggerFactory.getLogger(ExceptionHandler.class);
+    private static final Set<String> SENSITIVE_HEADERS = new HashSet<>();
 
     private final ObjectMapper mapper;
 
@@ -40,6 +43,24 @@ public class ExceptionHandler {
 
     public ExceptionHandler() {
         this(new ObjectMapper());
+    }
+
+    /**
+     * Use this method on server startup to redact values from error logging in incoming calls
+     *
+     * @param sensitiveHeader - the name of the header to REDACT
+     */
+    public static void addSensitiveHeader(String sensitiveHeader) {
+        SENSITIVE_HEADERS.add(sensitiveHeader);
+    }
+
+    /**
+     * Use this method in tests to remove sensitive headers set under test
+     *
+     * @param sensitiveHeader - the name of the header to unmark as sensitive
+     */
+    static void removeSensitiveHeader(String sensitiveHeader) {
+        SENSITIVE_HEADERS.remove(sensitiveHeader);
     }
 
     /**
@@ -114,7 +135,7 @@ public class ExceptionHandler {
             msg
                 .append(header.getKey())
                 .append('=')
-                .append(getHeaderValueOrRedact(header))
+                .append(getHeaderValueOrRedact(header, SENSITIVE_HEADERS))
                 .append(' ')
         );
         return msg.toString();
