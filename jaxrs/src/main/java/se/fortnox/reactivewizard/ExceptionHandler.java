@@ -21,9 +21,8 @@ import javax.inject.Inject;
 import javax.ws.rs.core.MediaType;
 import java.nio.channels.ClosedChannelException;
 import java.nio.file.FileSystemException;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 
 import static se.fortnox.reactivewizard.jaxrs.RequestLogger.getHeaderValueOrRedact;
 
@@ -32,8 +31,6 @@ import static se.fortnox.reactivewizard.jaxrs.RequestLogger.getHeaderValueOrReda
  */
 public class ExceptionHandler {
     private static final Logger      LOG = LoggerFactory.getLogger(ExceptionHandler.class);
-    private static final Set<String> SENSITIVE_HEADERS = new HashSet<>();
-
     private final ObjectMapper mapper;
 
     @Inject
@@ -43,24 +40,6 @@ public class ExceptionHandler {
 
     public ExceptionHandler() {
         this(new ObjectMapper());
-    }
-
-    /**
-     * Use this method on server startup to redact values from error logging in incoming calls
-     *
-     * @param sensitiveHeader - the name of the header to REDACT
-     */
-    public static void addSensitiveHeader(String sensitiveHeader) {
-        SENSITIVE_HEADERS.add(sensitiveHeader);
-    }
-
-    /**
-     * Use this method in tests to remove sensitive headers set under test
-     *
-     * @param sensitiveHeader - the name of the header to unmark as sensitive
-     */
-    static void removeSensitiveHeader(String sensitiveHeader) {
-        SENSITIVE_HEADERS.remove(sensitiveHeader);
     }
 
     /**
@@ -135,10 +114,23 @@ public class ExceptionHandler {
             msg
                 .append(header.getKey())
                 .append('=')
-                .append(getHeaderValueOrRedact(header, SENSITIVE_HEADERS))
+                .append(localGetHeaderValueOrRedact(header))
                 .append(' ')
         );
         return msg.toString();
+    }
+
+    /**
+     * Override this to specify own logic to handle certain headers.
+     *
+     * Typically redact sensitive stuff.
+     *
+     * @param header the header entry where the Map.Entry key is the header name and the Map.Entry value is the header value
+     * @return the string that should be logged for this particular header in case of an Exception.
+     *
+     */
+    protected String localGetHeaderValueOrRedact(Map.Entry<String, String> header) {
+        return getHeaderValueOrRedact(header);
     }
 
     private void logException(HttpServerRequest request, WebException webException) {
