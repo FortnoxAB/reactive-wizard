@@ -1,5 +1,6 @@
 package se.fortnox.reactivewizard.server;
 
+import org.springframework.context.annotation.Bean;
 import se.fortnox.reactivewizard.config.Config;
 
 /**
@@ -15,6 +16,10 @@ public class ServerConfig {
     private int shutdownTimeoutSeconds = 20;
     private boolean enableGzip = true;
     private long shutdownDelaySeconds = 5;
+
+    public ServerConfig() {
+        this.port = 808;
+    }
 
     public int getPort() {
         return port;

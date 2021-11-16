@@ -73,7 +73,7 @@ public class RwServer extends Thread {
         if (!config.isEnabled()) {
             return null;
         }
-
+/*
         return HttpServer
             .create()
             .compress(COMPRESSION_THRESHOLD_BYTES)
@@ -90,7 +90,8 @@ public class RwServer extends Thread {
             })
             .httpRequestDecoder(requestDecoderSpec -> requestDecoderSpec
                 .maxInitialLineLength(config.getMaxInitialLineLengthDefault())
-                .maxHeaderSize(config.getMaxHeaderSize()));
+                .maxHeaderSize(config.getMaxHeaderSize()));*/
+        return null;
     }
 
     private static BiPredicate<HttpServerRequest, HttpServerResponse> isCompressibleResponse() {

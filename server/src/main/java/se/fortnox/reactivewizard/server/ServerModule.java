@@ -41,7 +41,7 @@ public class ServerModule implements AutoBindModule {
     @Override
     public void configure(Binder binder) {
         Multibinder<RequestHandler> requestHandlers = Multibinder.newSetBinder(binder,
-                new TypeLiteral<RequestHandler>() { });
+                new TypeLiteral<>() { });
         requestHandlers.addBinding().to(JaxRsRequestHandler.class);
 
         Multibinder.newSetBinder(binder, TypeLiteral.get(ParamResolverFactory.class));
@@ -59,7 +59,7 @@ public class ServerModule implements AutoBindModule {
         binder.bind(JaxRsResourceRegistry.class).toInstance(jaxRsResourceRegistry);
         binder.bind(JaxRsResourcesProvider.class).toInstance(jaxRsResourceRegistry);
 
-
+        // find all resources
         for (Class<?> cls : injectAnnotatedScanner.getClasses()) {
             Optional<Class<?>> jaxRsClass = JaxRsMeta.getJaxRsClass(cls);
             if (jaxRsClass.isPresent()) {
@@ -67,6 +67,6 @@ public class ServerModule implements AutoBindModule {
             }
         }
 
-        binder.bind(RwServer.class).asEagerSingleton();
+
     }
 }
