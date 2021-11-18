@@ -24,7 +24,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BiPredicate;
 
 import static java.util.Arrays.asList;
-import static reactor.netty.channel.BootstrapHandlers.updateConfiguration;
 
 /**
  * Runs an Reactor @{@link HttpServer} with all registered @{@link RequestHandler}s.
@@ -73,7 +72,7 @@ public class RwServer extends Thread {
         if (!config.isEnabled()) {
             return null;
         }
-/*
+
         return HttpServer
             .create()
             .compress(COMPRESSION_THRESHOLD_BYTES)
@@ -81,17 +80,9 @@ public class RwServer extends Thread {
             .port(config.getPort())
             // Register a channel group, when invoking disposeNow() the implementation will wait for the active requests to finish
             .channelGroup(new DefaultChannelGroup(new DefaultEventExecutor()))
-            .tcpConfiguration(tcpServer -> {
-                NoContentFixConfigurator noContentFixConfigurator = new NoContentFixConfigurator();
-                return tcpServer.doOnBind(serverBootstrap -> updateConfiguration(serverBootstrap, "rw-server-configuration",
-                    (connectionObserver, channel) -> {
-                        noContentFixConfigurator.call(channel.pipeline());
-                    }));
-            })
             .httpRequestDecoder(requestDecoderSpec -> requestDecoderSpec
                 .maxInitialLineLength(config.getMaxInitialLineLengthDefault())
-                .maxHeaderSize(config.getMaxHeaderSize()));*/
-        return null;
+                .maxHeaderSize(config.getMaxHeaderSize()));
     }
 
     private static BiPredicate<HttpServerRequest, HttpServerResponse> isCompressibleResponse() {

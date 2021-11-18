@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.util.StdDateFormat;
 import com.google.inject.Binder;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
+import org.springframework.http.server.reactive.ReactorHttpHandlerAdapter;
 import se.fortnox.reactivewizard.RequestHandler;
 import se.fortnox.reactivewizard.binding.AutoBindModule;
 import se.fortnox.reactivewizard.binding.scanners.InjectAnnotatedScanner;
@@ -67,6 +68,6 @@ public class ServerModule implements AutoBindModule {
             }
         }
 
-
+        //binder.bind(RwServer.class).asEagerSingleton();
     }
 }

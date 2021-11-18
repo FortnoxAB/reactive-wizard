@@ -6,17 +6,21 @@ import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.cookie.Cookie;
 import io.netty.handler.codec.http.cookie.ServerCookieDecoder;
+import io.netty.handler.codec.http.multipart.HttpData;
 import reactor.core.publisher.Flux;
 import reactor.netty.ByteBufFlux;
 import reactor.netty.Connection;
 import reactor.netty.http.Cookies;
 import reactor.netty.http.HttpOperations;
+import reactor.netty.http.server.HttpServerFormDecoderProvider;
 import reactor.netty.http.server.HttpServerRequest;
 
 import javax.annotation.Nullable;
 import java.net.InetSocketAddress;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -96,6 +100,26 @@ public class MockHttpServerRequest implements HttpServerRequest {
     }
 
     @Override
+    public boolean isFormUrlencoded() {
+        return false;
+    }
+
+    @Override
+    public boolean isMultipart() {
+        return false;
+    }
+
+    @Override
+    public Flux<HttpData> receiveForm() {
+        return Flux.empty();
+    }
+
+    @Override
+    public Flux<HttpData> receiveForm(Consumer<HttpServerFormDecoderProvider.Builder> consumer) {
+        return Flux.empty();
+    }
+
+    @Override
     public InetSocketAddress hostAddress() {
         return null;
     }
@@ -144,12 +168,22 @@ public class MockHttpServerRequest implements HttpServerRequest {
     }
 
     @Override
+    public String requestId() {
+        return "";
+    }
+
+    @Override
     public String uri() {
         return uri;
     }
 
     @Override
     public HttpVersion version() {
+        return null;
+    }
+
+    @Override
+    public Map<CharSequence, List<Cookie>> allCookies() {
         return null;
     }
 }

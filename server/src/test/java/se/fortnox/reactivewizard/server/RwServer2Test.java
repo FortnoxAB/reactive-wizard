@@ -44,10 +44,6 @@ public class RwServer2Test {
         serverConfig.setPort(1337);
 
        var rwServer = new RwServer3();
-
-
-
-
     }
 
 
