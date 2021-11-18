@@ -1,0 +1,11 @@
+GET http://localhost:8080/spring/dummy
+###
+
+#Path param
+GET http://localhost:8080/dummy/test
+
+###
+GET http://localhost:8080/dummy/withqueryparam?name=test
+
+
+
