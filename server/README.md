@@ -16,3 +16,6 @@ requestHandlerMultibinder.addBinding().to(TracingJaxRsRequestHandler.class);
 ```
 
 inside the `configure` method
+
+Quirks about RW
+1. Strings returned from endpoints must be automatically enclosed in double quotes
