@@ -51,7 +51,9 @@ public class RwServer3 {
             for (Object resource : jaxRsResourceRegistry.getResources()) {
                 for (Method declaredMethod : resource.getClass().getDeclaredMethods()) {
                     JaxRsMeta jaxRsMeta = new JaxRsMeta(declaredMethod);
-
+                    if (jaxRsMeta.getHttpMethod() == null) {
+                        continue;
+                    }
                     final RequestMappingInfo.BuilderConfiguration builderConfiguration = new RequestMappingInfo.BuilderConfiguration();
 
                     builderConfiguration.setContentTypeResolver(new FixedContentTypeResolver(org.springframework.http.MediaType.APPLICATION_JSON));

@@ -3,25 +3,20 @@ package se.fortnox.reactivewizard.server;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.MethodParameter;
-import org.springframework.core.ReactiveAdapterRegistry;
 import org.springframework.http.codec.HttpMessageWriter;
 import org.springframework.http.codec.ServerCodecConfigurer;
 import org.springframework.lang.NonNull;
 import org.springframework.web.reactive.BindingContext;
 import org.springframework.web.reactive.HandlerMapping;
 import org.springframework.web.reactive.HandlerResult;
-import org.springframework.web.reactive.HandlerResultHandler;
 import org.springframework.web.reactive.accept.RequestedContentTypeResolver;
-import org.springframework.web.reactive.config.ResourceHandlerRegistry;
 import org.springframework.web.reactive.config.WebFluxConfigurer;
 import org.springframework.web.reactive.result.method.HandlerMethodArgumentResolver;
 import org.springframework.web.reactive.result.method.InvocableHandlerMethod;
-import org.springframework.web.reactive.result.method.annotation.ArgumentResolverConfigurer;
 import org.springframework.web.reactive.result.method.annotation.ResponseBodyResultHandler;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import se.fortnox.reactivewizard.jaxrs.params.annotated.AnnotatedParamResolverFactories;
 import se.fortnox.reactivewizard.util.ReflectionUtil;
 
 import javax.ws.rs.PathParam;
@@ -39,9 +34,9 @@ public class MvcConfigurer implements WebFluxConfigurer {
         return new TestResultHandler(serverCodecConfigurer.getWriters(), resolver);
     }
 
-    @Override
-    public void configureArgumentResolvers(ArgumentResolverConfigurer configurer) {
-        configurer.addCustomResolver(new HandlerMethodArgumentResolver() {
+    @Bean
+    public HandlerMethodArgumentResolver configureArgumentResolver() {
+        return new HandlerMethodArgumentResolver() {
             @Override
             public boolean supportsParameter(MethodParameter parameter) {
                 return parameter.hasParameterAnnotation(PathParam.class);
@@ -53,9 +48,10 @@ public class MvcConfigurer implements WebFluxConfigurer {
                 @NonNull ServerWebExchange exchange
             ) {
                 String attributeName = HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE;
-                return just(exchange.getAttributeOrDefault(attributeName, Collections.emptyMap()).get(parameter.getParameterAnnotation(PathParam.class).value()));
+                return just(
+                    exchange.getAttributeOrDefault(attributeName, Collections.emptyMap()).get(parameter.getParameterAnnotation(PathParam.class).value()));
             }
-        });
+        };
     }
 
     private class TestResultHandler extends ResponseBodyResultHandler {
@@ -72,7 +68,7 @@ public class MvcConfigurer implements WebFluxConfigurer {
 
         @Override
         public Mono<Void> handleResult(ServerWebExchange exchange, HandlerResult result) {
-            Object body = result.getReturnValue();
+            Object          body              = result.getReturnValue();
             MethodParameter bodyTypeParameter = result.getReturnTypeSource();
 
             final Type type = ReflectionUtil.getTypeOfObservable(((InvocableHandlerMethod)result.getHandler()).getMethod());
