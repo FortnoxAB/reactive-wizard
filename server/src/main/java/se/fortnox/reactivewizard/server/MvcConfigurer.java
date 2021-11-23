@@ -44,19 +44,19 @@ public class MvcConfigurer implements WebFluxConfigurer {
 
             @Override
             public Mono<Object> resolveArgument(@NonNull MethodParameter parameter,
-                @NonNull BindingContext bindingContext,
-                @NonNull ServerWebExchange exchange
+                                                @NonNull BindingContext bindingContext,
+                                                @NonNull ServerWebExchange exchange
             ) {
                 String attributeName = HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE;
                 return just(
-                    exchange.getAttributeOrDefault(attributeName, Collections.emptyMap()).get(parameter.getParameterAnnotation(PathParam.class).value()));
+                        exchange.getAttributeOrDefault(attributeName, Collections.emptyMap()).get(parameter.getParameterAnnotation(PathParam.class).value()));
             }
         };
     }
 
     private class TestResultHandler extends ResponseBodyResultHandler {
         public TestResultHandler(List<HttpMessageWriter<?>> writers,
-            RequestedContentTypeResolver resolver
+                                 RequestedContentTypeResolver resolver
         ) {
             super(writers, resolver);
         }
@@ -68,13 +68,13 @@ public class MvcConfigurer implements WebFluxConfigurer {
 
         @Override
         public Mono<Void> handleResult(ServerWebExchange exchange, HandlerResult result) {
-            Object          body              = result.getReturnValue();
+            Object body = result.getReturnValue();
             MethodParameter bodyTypeParameter = result.getReturnTypeSource();
 
-            final Type type = ReflectionUtil.getTypeOfObservable(((InvocableHandlerMethod)result.getHandler()).getMethod());
+            final Type type = ReflectionUtil.getTypeOfObservable(((InvocableHandlerMethod) result.getHandler()).getMethod());
 
             if (type.getTypeName().equals("java.lang.String")) {
-                body = Flux.from((Mono)body).map(t -> {
+                body = Flux.from((Mono) body).map(t -> {
                     return "\"" + t + "\"";
                 });
             }

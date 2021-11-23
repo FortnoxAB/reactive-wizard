@@ -68,6 +68,6 @@ public class ServerModule implements AutoBindModule {
             }
         }
 
-        //binder.bind(RwServer.class).asEagerSingleton();
+        binder.bind(RwServer.class).asEagerSingleton();
     }
 }
