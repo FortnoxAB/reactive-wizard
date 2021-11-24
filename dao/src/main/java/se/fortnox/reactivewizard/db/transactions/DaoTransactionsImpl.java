@@ -53,14 +53,8 @@ public class DaoTransactionsImpl implements DaoTransactions {
             }
         }
 
-        Transaction<T> transaction = new Transaction<T>(connectionProvider, daoCalls);
+        Transaction<T> transaction = new Transaction<>(connectionProvider, daoCalls);
         for (Observable<T> statement : daoCalls) {
-            if (!(statement instanceof DaoObservable)) {
-                String statementString  = statement == null ? "null" : statement.getClass().toString();
-                String exceptionMessage = "All parameters to createTransaction needs to be observables coming from a Dao-class. Statement was %s.";
-                throw new RuntimeException(String.format(exceptionMessage, statementString));
-            }
-
             transaction.add((DaoObservable<T>) statement);
         }
 

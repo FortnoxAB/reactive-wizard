@@ -54,10 +54,6 @@ public class Transaction<T> {
             return;
         }
 
-        if (connectionProvider == null) {
-            throw new RuntimeException("No Connection Provider found!");
-        }
-
         Connection connection = connectionProvider.get();
         try {
             executeTransaction(connection);
@@ -157,10 +153,6 @@ public class Transaction<T> {
 
     public void markSubscribed(TransactionStatement transactionStatement) {
         statementsToSubscribe.remove(transactionStatement);
-    }
-
-    public void markAllSubscribed() {
-        statementsToSubscribe.clear();
     }
 
     public void onTransactionFailed(Consumer<Throwable> transactionFailed) {

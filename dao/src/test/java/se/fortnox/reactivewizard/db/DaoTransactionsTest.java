@@ -64,8 +64,11 @@ public class DaoTransactionsTest {
         when(db.getPreparedStatement().executeBatch())
             .thenReturn(new int[]{1, 1});
 
-        final boolean[] cbExecuted   = {false};
-        DaoObservable   daoObsWithCb = ((DaoObservable)dao.updateSuccess()).doOnTransactionCompleted(() -> cbExecuted[0] = true);
+        final boolean[] cbExecuted   = {false, false, false};
+        DaoObservable   daoObsWithCb = ((DaoObservable)dao.updateSuccess())
+            .doOnTransactionCompleted(() -> cbExecuted[0] = true)
+            .onSubscribe(() -> cbExecuted[1] = true)
+            .onTerminate(() -> cbExecuted[2] = true);
         // doOnTransactionCompleted will only be called when using createTransaction
 
         Observable<Integer> updateSuccess = dao.updateSuccess();
@@ -74,6 +77,8 @@ public class DaoTransactionsTest {
         daoObsWithCb.toBlocking().single();
 
         assertThat(cbExecuted[0]).isTrue();
+        assertThat(cbExecuted[1]).isTrue();
+        assertThat(cbExecuted[2]).isTrue();
     }
 
     @Test
@@ -245,6 +250,17 @@ public class DaoTransactionsTest {
     @Test(expected = RuntimeException.class)
     public void shouldThrowExceptionIfObservableIsNotFromDao() {
         daoTransactions.createTransaction(Observable.empty());
+    }
+
+    @Test
+    public void shouldAllowEmptyAndNull() {
+        try {
+            daoTransactions.createTransaction(Collections.emptyList());
+            daoTransactions.createTransaction((Iterable<Observable<Object>>) null);
+            daoTransactions.createTransaction();
+        } catch (Exception e) {
+            Fail.fail("Unexpected exception when testing transactions with empty and nulls");
+        }
     }
 
     @Test
