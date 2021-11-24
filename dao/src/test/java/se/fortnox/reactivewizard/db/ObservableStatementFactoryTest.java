@@ -51,20 +51,22 @@ public class ObservableStatementFactoryTest {
             invocationOnMock.getArgument(0, Action0.class).call();
             return Subscriptions.unsubscribed();
         });
-        when(dbStatementFactory.create(any(), any())).then(invocationOnMock -> new Statement() {
+        when(dbStatementFactory.create(any())).then(invocationOnMock -> new Statement() {
+            private Subscriber subscriber;
+
             @Override
             public void execute(Connection connection) {
-                invocationOnMock.getArgument(1, Subscriber.class).onNext("result");
+                subscriber.onNext("result");
             }
 
             @Override
             public void onCompleted() {
-                invocationOnMock.getArgument(1, Subscriber.class).onCompleted();
+                subscriber.onCompleted();
             }
 
             @Override
             public void onError(Throwable throwable) {
-                invocationOnMock.getArgument(1, Subscriber.class).onError(throwable);
+                subscriber.onError(throwable);
             }
 
             @Override
@@ -80,6 +82,11 @@ public class ObservableStatementFactoryTest {
             @Override
             public boolean sameBatch(Statement statement) {
                 return false;
+            }
+
+            @Override
+            public void setSubscriber(Subscriber<?> subscriber) {
+                this.subscriber = subscriber;
             }
         });
         Function<Object[], String> paramSerializer = objects -> "";

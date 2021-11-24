@@ -9,8 +9,9 @@ public interface DaoTransactions {
      * this method, when all of the Observables has been subscribed.
      *
      * @param daoCalls dao calls to run as on single transaction
-     *
+     * @deprecated Use executeTransaction instead.
      */
+    @Deprecated
     <T> void createTransaction(Observable<T>... daoCalls);
 
     /**
@@ -19,7 +20,9 @@ public interface DaoTransactions {
      * this method, when all of the Observables has been subscribed.
      *
      * @param daoCalls dao calls to run as on single transaction
+     * @deprecated Use executeTransaction instead.
      */
+    @Deprecated
     <T> void createTransaction(Iterable<Observable<T>> daoCalls);
 
     /**

@@ -59,15 +59,15 @@ public class ObservableStatementFactory {
 
     public Observable<Object> create(Object[] args, ConnectionProvider connectionProvider) {
         AtomicReference<TransactionStatement> transactionHolder = new AtomicReference<>();
+        Statement dbStatement = statementFactory.create(args);
 
         Observable<Object> result = Observable.unsafeCreate(subscription -> {
             try {
-                Statement dbStatement = statementFactory.create(args, subscription);
+                dbStatement.setSubscriber(subscription);
 
                 TransactionStatement transactionStatement = transactionHolder.get();
                 if (transactionStatement != null) {
                     Transaction transaction = transactionStatement.getTransaction();
-                    transaction.setConnectionProvider(connectionProvider);
                     transactionStatement.markStatementSubscribed(dbStatement);
                     if (transaction.isAllSubscribed()) {
                         scheduleWorker(subscription, transaction::execute);
@@ -94,7 +94,7 @@ public class ObservableStatementFactory {
         result = metrics.measure(result, time -> logSlowQuery(transactionHolder.get(), time, args));
         result = result.onBackpressureBuffer(RECORD_BUFFER_SIZE);
 
-        return new DaoObservable<>(result, transactionHolder);
+        return new DaoObservable<>(result, transactionHolder, dbStatement);
     }
 
     private void scheduleWorker(Subscriber<?> subscription, Action0 action) {

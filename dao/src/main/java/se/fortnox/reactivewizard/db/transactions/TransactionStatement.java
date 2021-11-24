@@ -1,6 +1,5 @@
 package se.fortnox.reactivewizard.db.transactions;
 
-import se.fortnox.reactivewizard.db.ConnectionProvider;
 import se.fortnox.reactivewizard.db.statement.Statement;
 
 import java.sql.Connection;
@@ -14,6 +13,11 @@ public class TransactionStatement implements Batchable {
     public TransactionStatement(Transaction transaction) {
         this.transaction = transaction;
         this.statement = new AtomicReference<>();
+    }
+
+    public TransactionStatement(Transaction transaction, Statement statement) {
+        this.transaction = transaction;
+        this.statement = new AtomicReference<>(statement);
     }
 
     public void markStatementSubscribed(Statement statement) {

@@ -14,26 +14,29 @@ import java.util.LinkedList;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 public class Transaction<T> {
 
     private static final Logger                                      log                 = LoggerFactory.getLogger(Transaction.class);
-    private final        AtomicReference<ConnectionProvider>         connectionProvider  = new AtomicReference<>();
+    private final        ConnectionProvider                          connectionProvider;
     private final        Iterable<Observable<T>>                     daoCalls;
     private final        ConcurrentLinkedQueue<TransactionStatement> statementsToExecute = new ConcurrentLinkedQueue<>();
     private final        Set<TransactionStatement>                   statementsToSubscribe = new HashSet<>();
     private final        AtomicBoolean                               waitingForExecution = new AtomicBoolean(true);
+    private              Consumer<Throwable>                         transactionFailed;
 
-    Transaction(Iterable<Observable<T>> daoCalls) {
+    Transaction(ConnectionProvider connectionProvider, Iterable<Observable<T>> daoCalls) {
         this.daoCalls = daoCalls;
+        this.connectionProvider = connectionProvider;
     }
 
-    void add(DaoObservable daoObservable) {
+    TransactionStatement add(DaoObservable daoObservable) {
         TransactionStatement transactionStatement = new TransactionStatement(this);
         daoObservable.setTransactionStatement(transactionStatement);
         statementsToExecute.add(transactionStatement);
         statementsToSubscribe.add(transactionStatement);
+        return transactionStatement;
     }
 
 
@@ -51,11 +54,11 @@ public class Transaction<T> {
             return;
         }
 
-        if (connectionProvider.get() == null) {
+        if (connectionProvider == null) {
             throw new RuntimeException("No Connection Provider found!");
         }
 
-        Connection connection = connectionProvider.get().get();
+        Connection connection = connectionProvider.get();
         try {
             executeTransaction(connection);
             closeConnection(connection);
@@ -111,6 +114,10 @@ public class Transaction<T> {
                 log.error("onError threw exception", onErrorException);
             }
         }
+
+        if (transactionFailed != null) {
+            transactionFailed.accept(throwable);
+        }
     }
 
     private void rollback(Connection connection) {
@@ -148,11 +155,15 @@ public class Transaction<T> {
         return statementsToSubscribe.isEmpty();
     }
 
-    public void setConnectionProvider(ConnectionProvider connectionProvider) {
-        this.connectionProvider.compareAndSet(null, connectionProvider);
-    }
-
     public void markSubscribed(TransactionStatement transactionStatement) {
         statementsToSubscribe.remove(transactionStatement);
+    }
+
+    public void markAllSubscribed() {
+        statementsToSubscribe.clear();
+    }
+
+    public void onTransactionFailed(Consumer<Throwable> transactionFailed) {
+        this.transactionFailed = transactionFailed;
     }
 }

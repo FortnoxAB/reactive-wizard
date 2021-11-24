@@ -33,7 +33,7 @@ public class DaoTransactionsTest {
     private ConnectionProvider connectionProvider = db.getConnectionProvider();
     private DbProxy            dbProxy            = new DbProxy(new DatabaseConfig(), connectionProvider);
     private TestDao            dao                = dbProxy.create(TestDao.class);
-    private DaoTransactions    daoTransactions    = new DaoTransactionsImpl();
+    private DaoTransactions    daoTransactions    = new DaoTransactionsImpl(connectionProvider, dbProxy);
 
     @Test
     public void shouldRunTwoQueriesInOneTransaction() throws SQLException {
@@ -66,8 +66,12 @@ public class DaoTransactionsTest {
 
         final boolean[] cbExecuted   = {false};
         DaoObservable   daoObsWithCb = ((DaoObservable)dao.updateSuccess()).doOnTransactionCompleted(() -> cbExecuted[0] = true);
+        // doOnTransactionCompleted will only be called when using createTransaction
 
-        daoTransactions.executeTransaction(dao.updateSuccess(), daoObsWithCb).toBlocking().singleOrDefault(null);
+        Observable<Integer> updateSuccess = dao.updateSuccess();
+        daoTransactions.createTransaction(updateSuccess, daoObsWithCb);
+        updateSuccess.subscribe();
+        daoObsWithCb.toBlocking().single();
 
         assertThat(cbExecuted[0]).isTrue();
     }
