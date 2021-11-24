@@ -1,4 +1,4 @@
-package se.fortnox.reactivewizard.server;
+package se.fortnox.reactivewizard.springserver;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;

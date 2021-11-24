@@ -12,18 +12,6 @@
 
 	<dependencies>
 
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-webflux</artifactId>
-            <version>2.5.6</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>io.projectreactor.netty</groupId>
-                    <artifactId>reactor-netty-http</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
 		<dependency>
 			<groupId>se.fortnox.reactivewizard</groupId>
 			<artifactId>reactivewizard-binding</artifactId>
@@ -42,16 +30,19 @@
 			<version>999.9.9-SNAPSHOT</version>
 			<scope>test</scope>
 		</dependency>
+
 		<dependency>
 			<groupId>se.fortnox.reactivewizard</groupId>
 			<artifactId>reactivewizard-jaxrs</artifactId>
 			<version>999.9.9-SNAPSHOT</version>
 		</dependency>
+
 		<dependency>
 			<groupId>se.fortnox.reactivewizard</groupId>
 			<artifactId>reactivewizard-config</artifactId>
 			<version>999.9.9-SNAPSHOT</version>
 		</dependency>
+
 		<dependency>
 			<groupId>se.fortnox.reactivewizard</groupId>
 			<artifactId>reactivewizard-logging</artifactId>
@@ -68,22 +59,6 @@
             <artifactId>awaitility</artifactId>
             <version>4.0.3</version>
             <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-rsocket</artifactId>
-            <version>2.5.6</version>
-        </dependency>
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>1.18.22</version>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-expression</artifactId>
-            <version>5.3.12</version>
         </dependency>
 	</dependencies>
 

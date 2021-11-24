@@ -1,4 +1,4 @@
-package se.fortnox.reactivewizard.server;
+package se.fortnox.reactivewizard.springserver;
 
 import io.netty.handler.codec.http.HttpMethod;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -6,6 +6,7 @@ import org.springframework.web.reactive.accept.FixedContentTypeResolver;
 import org.springframework.web.reactive.result.method.RequestMappingInfo;
 import org.springframework.web.reactive.result.method.annotation.RequestMappingHandlerMapping;
 import se.fortnox.reactivewizard.jaxrs.JaxRsMeta;
+import se.fortnox.reactivewizard.server.JaxRsResourceRegistry;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -18,7 +19,7 @@ import static com.google.common.base.MoreObjects.firstNonNull;
 public class MappingSetup {
 
     private RequestMappingHandlerMapping requestMappingHandlerMapping;
-    private JaxRsResourceRegistry jaxRsResourceRegistry;
+    private JaxRsResourceRegistry        jaxRsResourceRegistry;
 
     @Inject
     public MappingSetup(RequestMappingHandlerMapping requestMappingHandlerMapping, JaxRsResourceRegistry jaxRsResourceRegistry) {
@@ -61,5 +62,4 @@ public class MappingSetup {
             default -> RequestMethod.GET;
         };
     }
-
 }

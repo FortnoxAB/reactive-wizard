@@ -1,10 +1,11 @@
-package se.fortnox.reactivewizard.server;
+package se.fortnox.reactivewizard.springserver;
 
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import org.springframework.boot.SpringApplication;
 import org.springframework.guice.module.SpringModule;
 import se.fortnox.reactivewizard.binding.AutoBindModule;
+import se.fortnox.reactivewizard.server.ServerConfig;
 
 public class RwSpringModule extends SpringModule implements AutoBindModule {
 
