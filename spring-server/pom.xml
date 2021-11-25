@@ -30,9 +30,15 @@
         </dependency>
 
         <dependency>
+            <groupId>se.fortnox.reactivewizard</groupId>
+            <artifactId>reactivewizard-bootstrap</artifactId>
+            <version>999.9.9-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.springframework.guice</groupId>
             <artifactId>spring-guice</artifactId>
-            <version>SPRING_GUICE_1</version>
+            <version>SPRING_GUICE_2</version>
         </dependency>
 
         <dependency>

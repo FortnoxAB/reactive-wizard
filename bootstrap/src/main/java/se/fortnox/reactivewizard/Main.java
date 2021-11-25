@@ -35,6 +35,7 @@ public class Main {
                     bind(ConfigFactory.class).toInstance(configFactory);
                 }
             };
+
             Guice.createInjector(new AutoBindModules(bootstrap));
         } catch (Exception e) {
             // Since logging is configured at runtime we cant have a static logger.
