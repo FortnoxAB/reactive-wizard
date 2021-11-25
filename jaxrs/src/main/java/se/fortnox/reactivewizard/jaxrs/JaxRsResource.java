@@ -97,7 +97,7 @@ public class JaxRsResource<T> implements Comparable<JaxRsResource> {
 
     @SuppressWarnings("unchecked")
     private Function<Object[], Flux<T>> createMethodCaller(Method method, Object resourceInstance) {
-        if (!Observable.class.isAssignableFrom(method.getReturnType()) && !Single.class.isAssignableFrom(method.getReturnType())) {
+        if (!Mono.class.isAssignableFrom(method.getReturnType()) && !Observable.class.isAssignableFrom(method.getReturnType()) && !Single.class.isAssignableFrom(method.getReturnType())) {
             throw new IllegalArgumentException(format(
                 "Can only serve methods that are reactive. %s had unsupported return type %s",
                 method, method.getReturnType()));

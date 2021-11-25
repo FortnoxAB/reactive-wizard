@@ -1,6 +1,6 @@
 package se.fortnox.reactivewizard.springserver;
 
-import rx.Single;
+import reactor.core.publisher.Mono;
 
 import javax.inject.Inject;
 import javax.ws.rs.GET;
@@ -18,13 +18,13 @@ public class DummyResourceImpl {
 
     @GET
     @Path("{name:\\d*}")
-    public Single<String> test(@PathParam("name") String name) {
-        return Single.just("hello " + name);
+    public Mono<String> test(@PathParam("name") String name) {
+        return Mono.just("hello " + name);
     }
 
     @GET
     @Path("withqueryparam")
-    public Single<Map<String, Object>> testById(@QueryParam("name") String name) {
-        return Single.just(Map.of("Hello", "queryparam world " + name));
+    public Mono<Map<String, Object>> testById(@QueryParam("name") String name) {
+        return Mono.just(Map.of("Hello", "queryparam world " + name));
     }
 }
