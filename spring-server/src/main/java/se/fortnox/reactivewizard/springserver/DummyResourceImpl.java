@@ -12,8 +12,11 @@ import java.util.Map;
 @Path("/dummy")
 public class DummyResourceImpl {
 
+    private final TestCache testCache;
+
     @Inject
-    public DummyResourceImpl() {
+    public DummyResourceImpl(TestCache testCache) {
+        this.testCache = testCache;
     }
 
     @GET
