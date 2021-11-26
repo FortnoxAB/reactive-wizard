@@ -4,27 +4,28 @@ import org.fest.assertions.Fail;
 import org.junit.Test;
 import org.mockito.InOrder;
 import rx.Observable;
-import rx.Observer;
 import se.fortnox.reactivewizard.db.config.DatabaseConfig;
 import se.fortnox.reactivewizard.db.statement.MinimumAffectedRowsException;
-import se.fortnox.reactivewizard.db.transactions.DaoObservable;
 import se.fortnox.reactivewizard.db.transactions.DaoTransactions;
 import se.fortnox.reactivewizard.db.transactions.DaoTransactionsImpl;
-import se.fortnox.reactivewizard.db.transactions.TransactionAlreadyExecutedException;
-import se.fortnox.reactivewizard.test.TestUtil;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
-import static se.fortnox.reactivewizard.test.TestUtil.assertNestedException;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  */
@@ -40,14 +41,7 @@ public class DaoTransactionsTest {
         Observable<String> find1 = dao.find();
         Observable<String> find2 = dao.find();
 
-        daoTransactions.createTransaction(find1, find2);
-
-        find1.subscribe();
-
-        db.verifyConnectionsUsed(0);
-        verify(db.getConnection(), times(0)).prepareStatement(any());
-
-        find2.toBlocking().singleOrDefault(null);
+        daoTransactions.executeTransaction(find1, find2).toBlocking().subscribe();
 
         db.verifyConnectionsUsed(1);
         verify(db.getConnection(), times(1)).setAutoCommit(false);
@@ -60,87 +54,84 @@ public class DaoTransactionsTest {
     }
 
     @Test
-    public void shouldRunOnTransactionCompletedCallback() throws SQLException {
-        when(db.getPreparedStatement().executeBatch())
-            .thenReturn(new int[]{1, 1});
+    public void subscribingToDaoObservableWillResultInTwoCallsToQuery() throws SQLException {
+        Observable<String> find1 = dao.find();
+        Observable<String> find2 = dao.find();
 
-        final boolean[] cbExecuted   = {false, false, false};
-        DaoObservable   daoObsWithCb = ((DaoObservable)dao.updateSuccess())
-            .doOnTransactionCompleted(() -> cbExecuted[0] = true)
-            .onSubscribe(() -> cbExecuted[1] = true)
-            .onTerminate(() -> cbExecuted[2] = true);
-        // doOnTransactionCompleted will only be called when using createTransaction
+        daoTransactions.executeTransaction(find1, find2).toBlocking().subscribe();
 
-        Observable<Integer> updateSuccess = dao.updateSuccess();
-        daoTransactions.createTransaction(updateSuccess, daoObsWithCb);
-        updateSuccess.subscribe();
-        daoObsWithCb.toBlocking().single();
+        db.verifyConnectionsUsed(1);
+        verify(db.getConnection(), times(2)).prepareStatement(any());
 
-        assertThat(cbExecuted[0]).isTrue();
-        assertThat(cbExecuted[1]).isTrue();
-        assertThat(cbExecuted[2]).isTrue();
+        // TODO: Is this expected? Or do we want this to be handled in some other way?
+        find2.toBlocking().singleOrDefault(null);
+
+        db.verifyConnectionsUsed(2);
+        verify(db.getConnection(), times(1)).setAutoCommit(false);
+        verify(db.getConnection(), times(1)).commit();
+        verify(db.getConnection(), times(3)).prepareStatement("select * from test");
+        verify(db.getConnection(), timeout(500).times(2)).setAutoCommit(true);
+        verify(db.getConnection(), times(2)).close();
+        verify(db.getPreparedStatement(), times(3)).close();
+
+        // TODO: Is this expected in a transaction?
+        verify(db.getResultSet(), times(3)).close();
     }
 
     @Test
-    public void shouldRunTwoQueriesInTransactionOrderAndNotInSubscribeOrder() throws SQLException {
+    public void shouldRunOnCompletedOnceWhenTransactionFinished() throws SQLException {
+        AtomicInteger completed = new AtomicInteger();
+        daoTransactions.executeTransaction(dao.updateSuccess(), dao.updateOtherSuccess(), dao.updateSuccess(), dao.updateOtherSuccess())
+            .doOnCompleted(completed::incrementAndGet)
+            .toBlocking().subscribe();
+
+        assertThat(completed.get()).isEqualTo(1);
+
+        db.verifyConnectionsUsed(1);
+        verify(db.getConnection(), times(2)).prepareStatement("update foo set key=val");
+        verify(db.getConnection(), times(2)).prepareStatement("update foo set key=val2");
+    }
+
+    @Test
+    public void shouldNotRunOnCompletedWhenTransactionFailed() throws SQLException {
+        Observable<Integer> find1 = dao.updateSuccess();
+        Observable<Integer> find2 = dao.updateFail();
+
+        AtomicInteger completed = new AtomicInteger();
+        AtomicInteger failed = new AtomicInteger();
+        try {
+            daoTransactions.executeTransaction(find1, find2)
+                .doOnCompleted(() -> completed.incrementAndGet())
+                .doOnError(throwable -> failed.incrementAndGet())
+                .toBlocking().subscribe();
+            fail("exception expected");
+        } catch (Exception e) {}
+
+        assertThat(completed.get()).isEqualTo(0);
+        assertThat(failed.get()).isEqualTo(1);
+
+        db.verifyConnectionsUsed(1);
+        verify(db.getConnection(), times(1)).setAutoCommit(false);
+        verify(db.getConnection(), times(1)).rollback();
+        verify(db.getConnection()).prepareStatement("update foo set key=val");
+        verify(db.getConnection()).prepareStatement("update foo set other_key=val");
+        verify(db.getConnection(), timeout(500)).setAutoCommit(true);
+        verify(db.getConnection(), times(1)).close();
+        verify(db.getPreparedStatement(), times(2)).close();
+    }
+
+    @Test
+    public void shouldRunTwoQueriesInTransactionOrder() throws SQLException {
         Observable<String> find1 = dao.find();
         Observable<String> find2 = dao.find2();
 
-        daoTransactions.createTransaction(find1, find2);
-
-        find2.subscribe();
-        find1.toBlocking().singleOrDefault(null);
+        daoTransactions.executeTransaction(find1, find2).toBlocking().subscribe();
 
         Connection connection = db.getConnection();
         InOrder    inOrder    = inOrder(connection);
 
         inOrder.verify(connection).prepareStatement("select * from test");
         inOrder.verify(connection).prepareStatement("select * from test2");
-    }
-
-    @Test
-    public void shouldFailAllQueriesIfOneFails() throws SQLException {
-        db.addRows(1);
-        Observable<String> find1 = dao.find();
-        Observable<String> find2 = dao.find();
-
-        when(db.getPreparedStatement().executeQuery())
-            .thenReturn(db.getResultSet())
-            .thenThrow(new SQLException("error"));
-
-        daoTransactions.createTransaction(find1, find2);
-
-        Observer<String> find1Observer = mock(Observer.class);
-
-        find1.subscribe(find1Observer);
-
-        db.verifyConnectionsUsed(0);
-        verify(db.getConnection(), times(0)).prepareStatement(any());
-
-        try {
-            find2.toBlocking().singleOrDefault(null);
-            fail("expected exception");
-        } catch (Exception e) {
-            assertThat(e.getCause().getMessage()).isEqualTo("error");
-        }
-
-        verify(find1Observer).onError(TestUtil.matches(e -> {
-            System.out.println(e.getMessage());
-            assertNestedException(e, SQLException.class)
-                .hasMessage("error");
-        }));
-        verify(find1Observer, times(0)).onCompleted();
-        verify(find1Observer, times(1)).onNext(any());
-
-        db.verifyConnectionsUsed(1);
-        verify(db.getConnection(), times(1)).setAutoCommit(false);
-        verify(db.getConnection(), times(1)).rollback();
-        verify(db.getConnection(), times(2)).prepareStatement("select * from test");
-        verify(db.getConnection(), timeout(500)).setAutoCommit(true);
-        verify(db.getConnection(), times(1)).close();
-        verify(db.getPreparedStatement(), times(2)).close();
-        verify(db.getResultSet(), times(1)).close();
-
     }
 
     @Test
@@ -211,28 +202,6 @@ public class DaoTransactionsTest {
     }
 
     @Test
-    public void shouldFailIfQueryIsSubscribedTwice() throws SQLException {
-        db.setUpdatedRows(1);
-
-        final Observable<Integer> update = dao.updateSuccess();
-        daoTransactions.createTransaction(update);
-
-        update.toBlocking().single();
-        try {
-            update.toBlocking().single();
-            fail("expected exception");
-        } catch (Exception e) {
-            assertNestedException(e, TransactionAlreadyExecutedException.class)
-                .hasMessage("Transaction already executed. You cannot subscribe multiple times to an Observable that is part of a transaction.");
-        }
-
-        Connection conn = db.getConnection();
-        verify(conn, never()).rollback();
-        verify(conn, times(1)).commit();
-        verify(conn).close();
-    }
-
-    @Test
     public void shouldBeAbleToUseRetryOnTransaction() throws SQLException {
 
         when(db.getPreparedStatement().getUpdateCount())
@@ -240,7 +209,6 @@ public class DaoTransactionsTest {
 
         final Observable<Integer> update = dao.updateFail();
 
-        daoTransactions.createTransaction(update);
         daoTransactions.executeTransaction(update).retry(3).test().awaitTerminalEvent();
 
         Connection conn = db.getConnection();
@@ -249,15 +217,15 @@ public class DaoTransactionsTest {
 
     @Test(expected = RuntimeException.class)
     public void shouldThrowExceptionIfObservableIsNotFromDao() {
-        daoTransactions.createTransaction(Observable.empty());
+        daoTransactions.executeTransaction(Observable.empty());
     }
 
     @Test
     public void shouldAllowEmptyAndNull() {
         try {
-            daoTransactions.createTransaction(Collections.emptyList());
-            daoTransactions.createTransaction((Iterable<Observable<Object>>) null);
-            daoTransactions.createTransaction();
+            daoTransactions.executeTransaction(Collections.emptyList());
+            daoTransactions.executeTransaction((Iterable<Observable<Object>>) null);
+            daoTransactions.executeTransaction();
         } catch (Exception e) {
             Fail.fail("Unexpected exception when testing transactions with empty and nulls");
         }
@@ -284,34 +252,24 @@ public class DaoTransactionsTest {
     }
 
     @Test
-    public void shouldFailIfTransactionIsModifiedAfterCreation() throws Exception {
+    public void shouldIgnoreModificationToTransactionList() throws Exception {
         db.addRows(1);
         Observable<String> find1 = dao.find();
 
         List<Observable<String>> transaction = new ArrayList<>();
         transaction.add(find1);
-
-        daoTransactions.createTransaction(transaction);
+        Observable<Void> transactionObservable = daoTransactions.executeTransaction(transaction);
 
         transaction.add(dao.find2());
+        transactionObservable.toBlocking().subscribe();
 
-        try {
-            find1.toBlocking().single();
-            fail("expected exception");
-        } catch (Exception e) {
-            if (e.getCause() != null) {
-                e = (Exception)e.getCause();
-            }
-            assertThat(e)
-                .isInstanceOf(RuntimeException.class)
-                .hasMessage("Transaction cannot be modified after creation.");
-        }
-
-        Connection conn = db.getConnection();
-        verify(conn, never()).setAutoCommit(false);
-        verify(conn, never()).commit();
-        verify(conn, never()).rollback();
-        verify(conn, never()).close();
+        db.verifyConnectionsUsed(1);
+        verify(db.getConnection(), times(1)).setAutoCommit(false);
+        verify(db.getConnection(), times(1)).commit();
+        verify(db.getConnection(), times(1)).prepareStatement("select * from test");
+        verify(db.getConnection(), timeout(500)).setAutoCommit(true);
+        verify(db.getConnection(), times(1)).close();
+        verify(db.getPreparedStatement(), times(1)).close();
     }
 
     interface TestDao {

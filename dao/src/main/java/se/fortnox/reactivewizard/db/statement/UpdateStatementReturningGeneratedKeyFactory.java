@@ -28,9 +28,9 @@ public class UpdateStatementReturningGeneratedKeyFactory extends AbstractUpdateS
         try (PreparedStatement statement = parameterizedQuery.createStatement(connection, args, Statement.RETURN_GENERATED_KEYS)) {
             parameterizedQuery.addParameters(args, statement);
             ensureMinimumReached(statement.executeUpdate());
-            if (subscriber != null) {
-                try (ResultSet resultSet = statement.getGeneratedKeys()) {
-                    while (resultSet.next()) {
+            try (ResultSet resultSet = statement.getGeneratedKeys()) {
+                while (resultSet.next()) {
+                    if (subscriber != null) {
                         subscriber.onNext((GeneratedKey)() -> deserializer.deserialize(resultSet));
                     }
                 }
