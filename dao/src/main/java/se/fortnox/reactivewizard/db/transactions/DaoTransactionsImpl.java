@@ -60,6 +60,11 @@ public class DaoTransactionsImpl implements DaoTransactions {
         });
     }
 
+    @Override
+    public <T> Observable<Void> executeTransaction(Observable<T>... daoCalls) {
+        return executeTransaction(asList(daoCalls));
+    }
+
     private <T> Collection<Observable<T>> copyAndVerifyDaoObservables(Iterable<Observable<T>> daoCalls) {
         List<Observable<T>> daoCallsCopy = new ArrayList<>();
         for (Observable<T> statement : daoCalls) {
@@ -73,10 +78,5 @@ public class DaoTransactionsImpl implements DaoTransactions {
         }
 
         return daoCallsCopy;
-    }
-
-    @Override
-    public <T> Observable<Void> executeTransaction(Observable<T>... daoCalls) {
-        return executeTransaction(asList(daoCalls));
     }
 }
