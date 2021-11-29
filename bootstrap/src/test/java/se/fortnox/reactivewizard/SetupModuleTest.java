@@ -19,4 +19,13 @@ public class SetupModuleTest {
             "This could happen when you merge two (or more) observables and one reports an error while the other a moment later tries to " +
             "call onError on the subscriber but the subscriber already left at the first error.", error);
     }
+
+
+    /**
+     *  Testing main to increase coverage
+     */
+    @Test
+    public void testMain() {
+        Main.main(new String[]{});
+    }
 }
