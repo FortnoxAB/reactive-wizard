@@ -27,7 +27,7 @@ public class SetupModule implements AutoBindModule {
      */
     static void logError(Logger logger, Throwable throwable) {
         logger.warn("Tried to send item or error to subscriber but the subscriber had already left. " +
-            "This could happen when you merge two (or more) observables and one reports an error while the other a moment later tris to " +
-            "call onNext or onError on the subscriber but the subscriber already left at the first error.", throwable);
+            "This could happen when you merge two (or more) observables and one reports an error while the other a moment later tries to " +
+            "call onError on the subscriber but the subscriber already left at the first error.", throwable);
     }
 }

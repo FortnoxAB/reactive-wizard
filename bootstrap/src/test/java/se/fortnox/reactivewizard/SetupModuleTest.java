@@ -17,6 +17,6 @@ public class SetupModuleTest {
 
         verify(mock).warn("Tried to send item or error to subscriber but the subscriber had already left. " +
             "This could happen when you merge two (or more) observables and one reports an error while the other a moment later tries to " +
-            "call the subscriber with another error but the subscriber already left at the first error.", error);
+            "call onError on the subscriber but the subscriber already left at the first error.", error);
     }
 }
