@@ -13,7 +13,9 @@ public class SetupModuleTest {
         final Logger mock = Mockito.mock(Logger.class);
         final RuntimeException error = new RuntimeException("");
 
-        SetupModule.logError(mock, error);
+        final SetupModule setupModule = new SetupModule();
+        setupModule.configure(null);
+        setupModule.logError(mock, error);
 
         verify(mock).warn("Tried to send item or error to subscriber but the subscriber had already left. " +
             "This could happen when you merge two (or more) observables and one reports an error while the other a moment later tries to " +
@@ -26,6 +28,7 @@ public class SetupModuleTest {
      */
     @Test
     public void testMain() {
+        Main.main(new String[]{"dev.example.yml"});
         Main.main(new String[]{});
     }
 }
