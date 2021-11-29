@@ -27,7 +27,7 @@ public class Transaction<T> {
         try {
             executeTransaction(connection);
             closeConnection(connection);
-        } catch (Exception e) {
+        } catch (Throwable e) {
             rollback(connection);
             closeConnection(connection);
             throw e;
