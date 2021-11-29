@@ -264,13 +264,20 @@ public class DaoTransactionsTest {
     }
 
     @Test
-    public void shouldAllowEmptyAndNull() {
+    public void shouldAllowEmptyAndNullButNotNullInIterable() {
         try {
             daoTransactions.executeTransaction(Collections.emptyList());
             daoTransactions.executeTransaction((Iterable<Observable<Object>>) null);
             daoTransactions.executeTransaction();
         } catch (Exception e) {
             Fail.fail("Unexpected exception when testing transactions with empty and nulls");
+        }
+
+        try {
+            daoTransactions.executeTransaction((DaoObservable<Object>) null);
+            fail("Expected exception");
+        } catch (RuntimeException e) {
+            assertThat(e.getMessage()).startsWith("All parameters to createTransaction needs to be observables coming from a Dao-class");
         }
     }
 
