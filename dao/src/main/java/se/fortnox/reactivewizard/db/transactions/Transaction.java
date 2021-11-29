@@ -9,14 +9,13 @@ import java.sql.SQLException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Transaction<T> {
 
-    private static final Logger                                      log                 = LoggerFactory.getLogger(Transaction.class);
-    private final        ConnectionProvider                          connectionProvider;
-    private final        ConcurrentLinkedQueue<TransactionStatement> statementsToExecute;
-    private final        AtomicBoolean                               waitingForExecution = new AtomicBoolean(true);
+    private static final Logger LOG = LoggerFactory.getLogger(Transaction.class);
+
+    private final ConnectionProvider                          connectionProvider;
+    private final ConcurrentLinkedQueue<TransactionStatement> statementsToExecute;
 
     Transaction(ConnectionProvider connectionProvider, List<TransactionStatement> statements) {
         this.connectionProvider = connectionProvider;
@@ -24,10 +23,6 @@ public class Transaction<T> {
     }
 
     public void execute() throws Exception {
-        if (!waitingForExecution.compareAndSet(true, false)) {
-            return;
-        }
-
         Connection connection = connectionProvider.get();
         try {
             executeTransaction(connection);
@@ -35,7 +30,6 @@ public class Transaction<T> {
         } catch (Exception e) {
             rollback(connection);
             closeConnection(connection);
-            waitingForExecution.compareAndSet(false, true);
             throw e;
         }
     }
@@ -69,7 +63,7 @@ public class Transaction<T> {
             connection.setAutoCommit(true);
             connection.close();
         } catch (Exception e) {
-            log.error("Error closing connection", e);
+            LOG.error("Error closing connection", e);
         }
     }
 
@@ -77,7 +71,7 @@ public class Transaction<T> {
         try {
             connection.rollback();
         } catch (Exception rollbackException) {
-            log.error("Rollback failed", rollbackException);
+            LOG.error("Rollback failed", rollbackException);
         }
     }
 }
