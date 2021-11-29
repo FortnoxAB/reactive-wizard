@@ -21,6 +21,7 @@ import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
@@ -81,26 +82,25 @@ public class DaoTransactionsTest {
 
     @Test
     public void subscribingToDaoObservableWillResultInTwoCallsToQuery() throws SQLException {
-        Observable<String> find1 = dao.find();
-        Observable<String> find2 = dao.find();
+        Observable<GeneratedKey<Long>> update1 = dao.updateSuccessResultSet();
+        Observable<GeneratedKey<Long>> update2 = dao.updateSuccessResultSet();
 
-        daoTransactions.executeTransaction(find1, find2).toBlocking().subscribe();
+        daoTransactions.executeTransaction(update1, update2).toBlocking().subscribe();
 
         db.verifyConnectionsUsed(1);
-        verify(db.getConnection(), times(2)).prepareStatement(any());
+        verify(db.getConnection(), times(2)).prepareStatement(any(), anyInt());
 
         // TODO: Is this expected? Or do we want this to be handled in some other way?
-        find2.toBlocking().singleOrDefault(null);
+        update2.toBlocking().singleOrDefault(null);
 
         db.verifyConnectionsUsed(2);
         verify(db.getConnection(), times(1)).setAutoCommit(false);
         verify(db.getConnection(), times(1)).commit();
-        verify(db.getConnection(), times(3)).prepareStatement("select * from test");
+        verify(db.getConnection(), times(3)).prepareStatement("update foo set key=val", 1);
         verify(db.getConnection(), timeout(500).times(2)).setAutoCommit(true);
         verify(db.getConnection(), times(2)).close();
         verify(db.getPreparedStatement(), times(3)).close();
 
-        // TODO: Is this expected in a transaction?
         verify(db.getResultSet(), times(3)).close();
     }
 
