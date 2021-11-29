@@ -228,6 +228,23 @@ public class DaoTransactionsTest {
     }
 
     @Test
+    public void shouldNotFailIfQueryIsSubscribedTwice() throws SQLException {
+        db.setUpdatedRows(1);
+
+        final Observable<Integer> update = dao.updateSuccess();
+        daoTransactions.executeTransaction(update).toBlocking().subscribe();
+        update.toBlocking().single();
+        update.toBlocking().single();
+
+        Connection conn = db.getConnection();
+        verify(conn, never()).rollback();
+        verify(conn, times(1)).commit();
+        verify(conn, times(1)).setAutoCommit(false);
+        verify(conn, times(3)).setAutoCommit(true);
+        verify(conn, times(3)).close();
+    }
+
+    @Test
     public void shouldBeAbleToUseRetryOnTransaction() throws SQLException {
 
         when(db.getPreparedStatement().getUpdateCount())
