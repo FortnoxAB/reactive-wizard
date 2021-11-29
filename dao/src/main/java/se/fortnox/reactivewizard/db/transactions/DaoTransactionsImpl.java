@@ -48,6 +48,7 @@ public class DaoTransactionsImpl implements DaoTransactions {
                 try {
                     Transaction<T> transaction = createTransactionWithStatements(daoCallsCopy);
                     transaction.execute();
+                    daoCalls.forEach(daoCall -> ((DaoObservable<T>) daoCall).onTransactionCompleted());
                     subscription.onCompleted();
                 } catch (Exception e) {
                     if (!subscription.isUnsubscribed()) {

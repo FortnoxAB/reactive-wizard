@@ -6,6 +6,7 @@ import org.mockito.InOrder;
 import rx.Observable;
 import se.fortnox.reactivewizard.db.config.DatabaseConfig;
 import se.fortnox.reactivewizard.db.statement.MinimumAffectedRowsException;
+import se.fortnox.reactivewizard.db.transactions.DaoObservable;
 import se.fortnox.reactivewizard.db.transactions.DaoTransactions;
 import se.fortnox.reactivewizard.db.transactions.DaoTransactionsImpl;
 
@@ -51,6 +52,27 @@ public class DaoTransactionsTest {
         verify(db.getConnection(), times(1)).close();
         verify(db.getPreparedStatement(), times(2)).close();
         verify(db.getResultSet(), times(2)).close();
+    }
+
+    @Test
+    public void shouldRunOnTransactionCompletedCallback() throws SQLException {
+        when(db.getPreparedStatement().executeBatch())
+            .thenReturn(new int[]{1, 1});
+
+        final boolean[] cbExecuted   = {false, false, false};
+        DaoObservable   daoObsWithCb = ((DaoObservable)dao.updateSuccess())
+            .doOnTransactionCompleted(() -> cbExecuted[0] = true)
+            .onSubscribe(() -> cbExecuted[1] = true)
+            .onTerminate(() -> cbExecuted[2] = true);
+
+        Observable<Integer> updateSuccess = dao.updateSuccess();
+        daoTransactions.executeTransaction(updateSuccess, daoObsWithCb).toBlocking().subscribe();
+
+        assertThat(cbExecuted[0]).isTrue();
+
+        // The DaoObservable is actually never subscribed on in a transaction, so those will remain false
+        assertThat(cbExecuted[1]).isFalse();
+        assertThat(cbExecuted[2]).isFalse();
     }
 
     @Test

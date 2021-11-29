@@ -25,15 +25,18 @@ public class DaoObservableTest {
         AtomicInteger terminated = new AtomicInteger();
         AtomicInteger subscribed = new AtomicInteger();
         AtomicInteger error = new AtomicInteger();
+        AtomicInteger completed = new AtomicInteger();
 
         Observable<String> find1 = ((DaoObservable<String>) dao.find())
             .onTerminate(terminated::incrementAndGet)
             .onSubscribe(subscribed::incrementAndGet)
+            .doOnTransactionCompleted(completed::incrementAndGet)
             .onError(throwable -> error.incrementAndGet());
 
         Observable<Integer> updateFail = ((DaoObservable<Integer>) dao.updateFail())
             .onTerminate(terminated::incrementAndGet)
             .onSubscribe(subscribed::incrementAndGet)
+            .doOnTransactionCompleted(completed::incrementAndGet)
             .onError(throwable -> error.incrementAndGet());
 
         find1.toBlocking().singleOrDefault(null);
@@ -56,5 +59,6 @@ public class DaoObservableTest {
         assertThat(subscribed.get()).isEqualTo(2);
         assertThat(terminated.get()).isEqualTo(2);
         assertThat(error.get()).isEqualTo(1);
+        assertThat(completed.get()).isEqualTo(1);
     }
 }
