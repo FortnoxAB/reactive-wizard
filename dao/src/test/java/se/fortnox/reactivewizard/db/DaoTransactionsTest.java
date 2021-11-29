@@ -42,7 +42,11 @@ public class DaoTransactionsTest {
         Observable<String> find1 = dao.find();
         Observable<String> find2 = dao.find();
 
-        daoTransactions.executeTransaction(find1, find2).toBlocking().subscribe();
+        Observable<Void> executeTransactionObs = daoTransactions.executeTransaction(find1, find2);
+        db.verifyConnectionsUsed(0);
+        verify(db.getConnection(), times(0)).prepareStatement(any());
+
+        executeTransactionObs.toBlocking().subscribe();
 
         db.verifyConnectionsUsed(1);
         verify(db.getConnection(), times(1)).setAutoCommit(false);
