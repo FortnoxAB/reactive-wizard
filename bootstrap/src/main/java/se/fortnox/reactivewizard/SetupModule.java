@@ -15,7 +15,7 @@ public class SetupModule implements AutoBindModule {
     @Override
     public void configure(Binder binder) {
         Hooks.onErrorDropped(throwable -> {
-            logError(LOG, throwable);
+            warnLogException(LOG, throwable);
         });
     }
 
@@ -25,7 +25,7 @@ public class SetupModule implements AutoBindModule {
      * @param logger the logger to be used
      * @param throwable the exception
      */
-    void logError(Logger logger, Throwable throwable) {
+    void warnLogException(Logger logger, Throwable throwable) {
         logger.warn("Tried to send item or error to subscriber but the subscriber had already left. " +
             "This could happen when you merge two (or more) observables and one reports an error while the other a moment later tries to " +
             "call onError on the subscriber but the subscriber already left at the first error.", throwable);
