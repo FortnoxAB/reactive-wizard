@@ -15,9 +15,7 @@ public class SetupModule implements AutoBindModule {
 
     @Override
     public void configure(Binder binder) {
-        Hooks.onErrorDropped(throwable -> {
-            warnLogException(LOG, throwable);
-        });
+        Hooks.onErrorDropped(throwable -> warnLogException(LOG, throwable));
     }
 
     /**
