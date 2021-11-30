@@ -19,10 +19,7 @@ public class RwSpringModule extends SpringModule implements AutoBindModule {
     public RwSpringModule(@Named("args") String[] args) {
         super(() -> {
             final MySpringApplication instance = MySpringApplication.getInstance(RwServerConfig.class);
-            final ConfigurableApplicationContext applicationContext = instance.createApplicationContext();
-            instance.load(applicationContext, new Object[]{});
-
-            return applicationContext.getBeanFactory();
+            return instance.createApplicationContext().getBeanFactory();
         });
 
         this.args = args;

@@ -17,8 +17,10 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
+import static java.util.Arrays.asList;
 
 /**
  * Creates param resolvers which can resolve method parameters from an incoming request.
@@ -62,6 +64,17 @@ public class ParamResolverFactories {
             paramResolvers.add(createParamResolver(instanceParameters[i], paramType, parameterAnnotations, consumesAnnotation));
         }
         return paramResolvers;
+    }
+
+    public ParamResolver createParamResolver(Method method, String[] consumesAnnotation, Parameter parameter) {
+        Method      interfaceMethod     = ReflectionUtil.getOverriddenMethod(method);
+        Parameter   interfaceParameter = interfaceMethod == null ? parameter :
+            asList(interfaceMethod.getParameters()).get(asList(method.getParameters()).indexOf(parameter));
+
+        TypeReference<?> paramType            = paramTypeResolver.resolveParamType(parameter, interfaceParameter);
+        List<Annotation> parameterAnnotations = ReflectionUtil.getParameterAnnotations(interfaceParameter);
+
+        return createParamResolver(parameter, paramType, parameterAnnotations, consumesAnnotation);
     }
 
     protected <T> ParamResolver<T> createParamResolver(Parameter parameter,

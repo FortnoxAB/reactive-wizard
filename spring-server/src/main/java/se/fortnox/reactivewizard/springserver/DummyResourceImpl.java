@@ -20,7 +20,7 @@ public class DummyResourceImpl {
     }
 
     @GET
-    @Path("{name:\\d*}")
+    @Path("{name}")
     public Mono<String> test(@PathParam("name") String name) {
         return Mono.just("hello " + name);
     }

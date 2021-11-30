@@ -27,31 +27,11 @@ import java.util.List;
 import static reactor.core.publisher.Mono.just;
 
 @Configuration
-public class MvcConfigurer implements WebFluxConfigurer {
+public class JsonResponseSetup implements WebFluxConfigurer {
 
     @Bean
     public TestResultHandler tstResultHAndler(ServerCodecConfigurer serverCodecConfigurer, RequestedContentTypeResolver resolver) {
         return new TestResultHandler(serverCodecConfigurer.getWriters(), resolver);
-    }
-
-    @Bean
-    public HandlerMethodArgumentResolver configureArgumentResolver() {
-        return new HandlerMethodArgumentResolver() {
-            @Override
-            public boolean supportsParameter(MethodParameter parameter) {
-                return parameter.hasParameterAnnotation(PathParam.class);
-            }
-
-            @Override
-            public Mono<Object> resolveArgument(@NonNull MethodParameter parameter,
-                                                @NonNull BindingContext bindingContext,
-                                                @NonNull ServerWebExchange exchange
-            ) {
-                String attributeName = HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE;
-                return just(
-                        exchange.getAttributeOrDefault(attributeName, Collections.emptyMap()).get(parameter.getParameterAnnotation(PathParam.class).value()));
-            }
-        };
     }
 
     private class TestResultHandler extends ResponseBodyResultHandler {
