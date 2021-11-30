@@ -1,10 +1,5 @@
 package se.fortnox.reactivewizard.springserver;
 
-import io.netty.handler.codec.http.HttpHeaders;
-import io.netty.handler.codec.http.HttpMethod;
-import io.netty.handler.codec.http.HttpVersion;
-import io.netty.handler.codec.http.cookie.Cookie;
-import io.netty.handler.codec.http.multipart.HttpData;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -14,24 +9,16 @@ import org.springframework.lang.NonNull;
 import org.springframework.web.reactive.BindingContext;
 import org.springframework.web.reactive.result.method.HandlerMethodArgumentResolver;
 import org.springframework.web.server.ServerWebExchange;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.netty.ByteBufFlux;
-import reactor.netty.Connection;
-import reactor.netty.http.server.HttpServerFormDecoderProvider;
-import reactor.netty.http.server.HttpServerRequest;
+import se.fortnox.reactivewizard.jaxrs.JaxRsMeta;
 import se.fortnox.reactivewizard.jaxrs.JaxRsRequest;
 import se.fortnox.reactivewizard.jaxrs.params.ParamResolver;
 import se.fortnox.reactivewizard.jaxrs.params.ParamResolverFactories;
 
 import javax.ws.rs.Consumes;
-import java.net.InetSocketAddress;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Consumer;
-import java.util.function.Function;
+import java.util.regex.Pattern;
 
 @Configuration
 public class SpringArgumentResolver {
@@ -66,12 +53,27 @@ public class SpringArgumentResolver {
                         parameter.getMethod().getAnnotation(Consumes.class).value() : new String[]{}, parameter.getParameter());
                 });
 
-                return resolver.resolve(new JaxRsRequest(((AbstractServerHttpRequest)exchange.getRequest()).getNativeRequest()));
+                var meta = new JaxRsMeta(parameter.getMethod());
+                var jaxRsRequest = new JaxRsRequest(((AbstractServerHttpRequest)exchange.getRequest()).getNativeRequest());
+                var pathPattern = createPathPattern(meta.getFullPath());
 
-                //String attributeName = HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE;
-                //return just(
-                //    exchange.getAttributeOrDefault(attributeName, Collections.emptyMap()).get(parameter.getParameterAnnotation(PathParam.class).value()));
+                jaxRsRequest.matchesPath(pathPattern);
+
+                return resolver.resolve(jaxRsRequest);
             }
+
+
         };
+    }
+
+    private static Pattern createPathPattern(String path) {
+        // Vars with custom regex, like this: {myvar:myregex}
+        path = path.replaceAll("\\{([^}]+):([^}]+)\\}", "(?<$1>$2)");
+        // Vars without custom regex, like this: {myvar}
+        path = path.replaceAll("\\{([^}]+)\\}", "(?<$1>[^/]+)");
+        // Allow trailing slash
+        path = "^" + path + "[/\\s]*$";
+
+        return Pattern.compile(path);
     }
 }
