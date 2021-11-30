@@ -10,12 +10,10 @@ import java.util.function.Supplier;
 public class DaoObservable<T> extends Observable<T> {
     private final Observable<T> result;
     private final Supplier<Statement> statementSupplier;
-    private Action0 onTransactionCompleted;
+    private final Action0 onTransactionCompleted;
 
     public DaoObservable(Observable<T> result, Supplier<Statement> statementSupplier) {
-        super(result::unsafeSubscribe);
-        this.result = result;
-        this.statementSupplier = statementSupplier;
+        this(result, statementSupplier, null);
     }
 
     private DaoObservable(Observable<T> result, Supplier<Statement> statementSupplier, Action0 onTransactionCompleted) {
