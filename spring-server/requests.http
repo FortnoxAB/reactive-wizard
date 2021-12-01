@@ -2,7 +2,20 @@ GET http://localhost:8080/spring/dummy/test
 ###
 
 #Path param
-GET http://localhost:8080/dummy/1234
+POST http://localhost:8080/dummy/1234?beanName=böna&beanAge=17
+Content-Type: application/x-www-form-urlencoded
+someHeader: headervalue
+Cookie: cookieParam=chocolate
+
+formparam=formparamvalue
+
+
+###
+POST http://localhost:8080/dummy/formparam
+Content-Type: application/x-www-form-urlencoded
+
+formparam=formparamvalue
 
 ###
 GET http://localhost:8080/dummy/withqueryparam?name=test
+

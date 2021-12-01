@@ -1,14 +1,16 @@
 package se.fortnox.reactivewizard.springserver;
 
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
 @Singleton
-public class MappingSetup {
+public class SpringStart {
 
     @Inject
-    public MappingSetup(@Named("args") String[] args) {
+    public SpringStart(@Named("args") String[] args) {
         MySpringApplication.getInstance(RwServerConfig.class).run(args);
     }
 }

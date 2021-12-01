@@ -1,7 +1,6 @@
 package se.fortnox.reactivewizard.springserver;
 
 import com.google.inject.Binder;
-import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.guice.module.SpringModule;
 import se.fortnox.reactivewizard.binding.AutoBindModule;
 import se.fortnox.reactivewizard.server.ServerConfig;
@@ -30,7 +29,7 @@ public class RwSpringModule extends SpringModule implements AutoBindModule {
         RwSpringModule.binder = binder;
         super.configure(binder);
 
-        binder.bind(MappingSetup.class).asEagerSingleton();
+        binder.bind(SpringStart.class).asEagerSingleton();
 
         ServerConfig serverConfig = new ServerConfig();
         serverConfig.setEnabled(false);

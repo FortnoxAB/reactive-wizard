@@ -68,6 +68,10 @@ public class JaxRsRequest {
     }
 
     public Mono<JaxRsRequest> loadBody() {
+        if(body != null) {
+            return Mono.just(this);
+        }
+
         HttpMethod httpMethod = req.method();
         if (POST.equals(httpMethod) || PUT.equals(httpMethod) || PATCH.equals(httpMethod) || DELETE.equals(httpMethod)) {
             return collector.collectBytes(req.receive()
