@@ -16,6 +16,7 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @Path("/dummy")
 public class DummyResourceImpl {
@@ -36,7 +37,8 @@ public class DummyResourceImpl {
             name,
             formValue
         );
-        return Observable.just(message);
+        return Observable.just(message)
+            .delay(10, TimeUnit.SECONDS);
     }
 
     @POST
