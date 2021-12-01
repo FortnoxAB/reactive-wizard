@@ -36,20 +36,20 @@ public class JaxRsResource<T> implements Comparable<JaxRsResource> {
 
     private static final RequestLogger REQUEST_LOGGER = new RequestLogger(LoggerFactory.getLogger(JaxRsResource.class));
     private static final Object EMPTY_ARG = new Object();
-    private final Pattern                           pathPattern;
-    private final Method                            method;
-    private final Method                            instanceMethod;
-    private final Integer                           paramCount;
-    private final List<ParamResolver>               argumentExtractors;
-    private final JaxRsResultFactory<T>             resultFactory;
-    private final JaxRsMeta                         meta;
+    private final Pattern pathPattern;
+    private final Method method;
+    private final Method instanceMethod;
+    private final Integer paramCount;
+    private final List<ParamResolver> argumentExtractors;
+    private final JaxRsResultFactory<T> resultFactory;
+    private final JaxRsMeta meta;
     private final Function<Object[], Flux<T>> methodCaller;
 
     public JaxRsResource(Method method,
-        Object resourceInstance,
-        ParamResolverFactories paramResolverFactories,
-        JaxRsResultFactoryFactory jaxRsResultFactoryFactory,
-        JaxRsMeta meta
+                         Object resourceInstance,
+                         ParamResolverFactories paramResolverFactories,
+                         JaxRsResultFactoryFactory jaxRsResultFactoryFactory,
+                         JaxRsMeta meta
     ) {
         this.method = method;
         this.meta = meta;
@@ -111,10 +111,10 @@ public class JaxRsResource<T> implements Comparable<JaxRsResource> {
                     }
 
                     if (result instanceof Single) {
-                        return observableToFlux(((Single<T>)result).toObservable());
+                        return observableToFlux(((Single<T>) result).toObservable());
                     }
 
-                    return observableToFlux((Observable<T>)result);
+                    return observableToFlux((Observable<T>) result);
                 } catch (InvocationTargetException e) {
                     return Flux.error(e.getTargetException());
                 } catch (Throwable e) {

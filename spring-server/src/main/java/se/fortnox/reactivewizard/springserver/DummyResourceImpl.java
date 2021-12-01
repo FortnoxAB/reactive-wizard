@@ -37,8 +37,7 @@ public class DummyResourceImpl {
             name,
             formValue
         );
-        return Observable.just(message)
-            .delay(10, TimeUnit.SECONDS);
+        return Observable.just(message);
     }
 
     @POST
