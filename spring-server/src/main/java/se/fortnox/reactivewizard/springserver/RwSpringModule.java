@@ -8,6 +8,8 @@ import se.fortnox.reactivewizard.server.ServerConfig;
 import javax.inject.Inject;
 import javax.inject.Named;
 
+import static se.fortnox.reactivewizard.springserver.RWSpringApplication.getInstance;
+
 public class RwSpringModule extends SpringModule implements AutoBindModule {
 
     public static Binder binder;
@@ -17,8 +19,10 @@ public class RwSpringModule extends SpringModule implements AutoBindModule {
     @Inject
     public RwSpringModule(@Named("args") String[] args) {
         super(() -> {
-            final MySpringApplication instance = MySpringApplication.getInstance(RwServerConfig.class);
-            return instance.createApplicationContext().getBeanFactory();
+
+            //Provide the spring module with a context
+            return getInstance(RwServerConfig.class).createApplicationContext().getBeanFactory();
+
         });
 
         this.args = args;
@@ -26,11 +30,23 @@ public class RwSpringModule extends SpringModule implements AutoBindModule {
 
     @Override
     public void configure(Binder binder) {
-        RwSpringModule.binder = binder;
         super.configure(binder);
 
-        binder.bind(SpringStart.class).asEagerSingleton();
+        startupSpringServer(binder);
 
+        disableRwServer(binder);
+    }
+
+
+    private void startupSpringServer(Binder binder) {
+        binder.bind(SpringStart.class).asEagerSingleton();
+    }
+
+    /**
+     * Causes the rw server not to start
+     * @param binder
+     */
+    private void disableRwServer(Binder binder) {
         ServerConfig serverConfig = new ServerConfig();
         serverConfig.setEnabled(false);
         binder.bind(ServerConfig.class).toProvider(() -> serverConfig);

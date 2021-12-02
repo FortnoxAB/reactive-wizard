@@ -1,4 +1,4 @@
-package se.fortnox.reactivewizard.springserver;
+package se.fortnox.reactivewizard.springserver.poc;
 
 import javax.ws.rs.FormParam;
 import javax.ws.rs.QueryParam;

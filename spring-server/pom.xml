@@ -58,12 +58,6 @@
             <artifactId>lombok</artifactId>
             <version>1.18.22</version>
         </dependency>
-
-        <dependency>
-            <groupId>io.opentracing.contrib</groupId>
-            <artifactId>opentracing-spring-jaeger-cloud-starter</artifactId>
-            <version>3.3.1</version>
-        </dependency>
     </dependencies>
 
 </project>

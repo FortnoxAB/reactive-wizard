@@ -22,15 +22,16 @@ import static com.google.common.base.MoreObjects.firstNonNull;
 public class PathMappings {
 
     private final RequestMappingHandlerMapping requestMappingHandlerMapping;
-    private final JaxRsResourceRegistry jaxRsResourceRegistry;
 
     @Autowired
-    public PathMappings(RequestMappingHandlerMapping requestMappingHandlerMapping, JaxRsResourceRegistry jaxRsResourceRegistry) {
+    public PathMappings(RequestMappingHandlerMapping requestMappingHandlerMapping) {
         this.requestMappingHandlerMapping = requestMappingHandlerMapping;
-        this.jaxRsResourceRegistry = jaxRsResourceRegistry;
         handleMappings();
     }
 
+    /**
+     * Accept all incoming requests
+     */
     public void handleMappings() {
         final RequestMappingInfo.BuilderConfiguration builderConfiguration = new RequestMappingInfo.BuilderConfiguration();
 
@@ -47,18 +48,6 @@ public class PathMappings {
         } catch (NoSuchMethodException e) {
             e.printStackTrace();
         }
-    }
-
-    private static RequestMethod toRequestMethod(HttpMethod httpMethod) {
-        return switch (httpMethod.toString()) {
-            case "GET" -> RequestMethod.GET;
-            case "POST" -> RequestMethod.POST;
-            case "PUT" -> RequestMethod.PUT;
-            case "PATCH" -> RequestMethod.PATCH;
-            case "DELETE" -> RequestMethod.DELETE;
-
-            default -> RequestMethod.GET;
-        };
     }
 
     private class DummyHandler {

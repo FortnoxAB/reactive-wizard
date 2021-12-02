@@ -1,32 +1,26 @@
-package se.fortnox.reactivewizard.springserver;
+package se.fortnox.reactivewizard.springserver.poc;
 
 import reactor.core.publisher.Mono;
 import rx.Observable;
 
 import javax.inject.Inject;
-import javax.ws.rs.BeanParam;
 import javax.ws.rs.Consumes;
-import javax.ws.rs.CookieParam;
 import javax.ws.rs.FormParam;
 import javax.ws.rs.GET;
-import javax.ws.rs.HeaderParam;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 @Path("/dummy")
 public class DummyResourceImpl {
 
-    private final TestCache testCache;
-
     @Inject
-    public DummyResourceImpl(TestCache testCache) {
-        this.testCache = testCache;
+    public DummyResourceImpl() {
     }
+
 
     @POST
     @Path("{name}")

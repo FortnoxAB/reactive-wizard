@@ -16,11 +16,16 @@ import se.fortnox.reactivewizard.server.CompositeRequestHandler;
 
 import java.util.List;
 
+
+/**
+ * All incoming requests are handled by our CompositeRequestHandler
+ */
 @Configuration
 public class SpringRequestHandler implements WebFluxConfigurer {
 
     @Bean
-    public RwResultHandler rwResultHandler(ServerCodecConfigurer serverCodecConfigurer, RequestedContentTypeResolver resolver, CompositeRequestHandler compositeRequestHandler) {
+    public RwResultHandler rwResultHandler(ServerCodecConfigurer serverCodecConfigurer,
+        RequestedContentTypeResolver resolver, CompositeRequestHandler compositeRequestHandler) {
         return new RwResultHandler(serverCodecConfigurer.getWriters(), resolver, compositeRequestHandler);
     }
 

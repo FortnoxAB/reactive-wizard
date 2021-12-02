@@ -1,20 +1,22 @@
 package se.fortnox.reactivewizard.springserver;
 
 import org.springframework.boot.SpringApplication;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.ConfigurableApplicationContext;
 
-public class MySpringApplication extends SpringApplication {
+/**
+ * Needed to create the application context at startup of the injector and run it at a later time when the spring configuration classes can depend on rw classes
+ */
+public class RWSpringApplication extends SpringApplication {
     private static ConfigurableApplicationContext applicationContext;
-    private static MySpringApplication            instance;
+    private static RWSpringApplication            instance;
 
-    private MySpringApplication(Class<?> configClass) {
+    private RWSpringApplication(Class<?> configClass) {
         super(configClass);
     }
 
-    public static MySpringApplication getInstance(Class<?> configClass) {
+    public static RWSpringApplication getInstance(Class<?> configClass) {
         if (instance == null) {
-            instance = new MySpringApplication(configClass);
+            instance = new RWSpringApplication(configClass);
         }
         return instance;
     }
@@ -25,10 +27,5 @@ public class MySpringApplication extends SpringApplication {
             applicationContext = super.createApplicationContext();
         }
         return applicationContext;
-    }
-
-    @Override
-    public void load(ApplicationContext context, Object[] sources) {
-        super.load(context, sources);
     }
 }
