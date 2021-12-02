@@ -6,17 +6,17 @@ import org.springframework.context.ConfigurableApplicationContext;
 /**
  * Needed to create the application context at startup of the injector and run it at a later time when the spring configuration classes can depend on rw classes
  */
-public class RWSpringApplication extends SpringApplication {
+public class RwSpringApplication extends SpringApplication {
     private static ConfigurableApplicationContext applicationContext;
-    private static RWSpringApplication            instance;
+    private static RwSpringApplication            instance;
 
-    private RWSpringApplication(Class<?> configClass) {
+    private RwSpringApplication(Class<?> configClass) {
         super(configClass);
     }
 
-    public static RWSpringApplication getInstance(Class<?> configClass) {
+    public static RwSpringApplication getInstance(Class<?> configClass) {
         if (instance == null) {
-            instance = new RWSpringApplication(configClass);
+            instance = new RwSpringApplication(configClass);
         }
         return instance;
     }

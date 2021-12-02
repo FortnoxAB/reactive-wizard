@@ -68,7 +68,7 @@ public class JaxRsRequest {
     }
 
     public Mono<JaxRsRequest> loadBody() {
-        if(body != null) {
+        if (body != null) {
             return Mono.just(this);
         }
 

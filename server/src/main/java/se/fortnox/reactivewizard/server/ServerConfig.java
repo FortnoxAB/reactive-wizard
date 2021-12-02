@@ -18,7 +18,7 @@ public class ServerConfig {
     private long shutdownDelaySeconds = 5;
 
     public ServerConfig() {
-        this.port = 808;
+        this.port = 8080;
     }
 
     public int getPort() {

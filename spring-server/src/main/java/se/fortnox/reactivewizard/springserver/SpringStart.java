@@ -13,6 +13,6 @@ public class SpringStart {
 
     @Inject
     public SpringStart(@Named("args") String[] args) {
-        RWSpringApplication.getInstance(RwServerConfig.class).run(args);
+        RwSpringApplication.getInstance(RwServerConfig.class).run(args);
     }
 }

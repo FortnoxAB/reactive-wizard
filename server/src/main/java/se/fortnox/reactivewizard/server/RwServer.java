@@ -80,6 +80,10 @@ public class RwServer extends Thread {
             .port(config.getPort())
             // Register a channel group, when invoking disposeNow() the implementation will wait for the active requests to finish
             .channelGroup(new DefaultChannelGroup(new DefaultEventExecutor()))
+            .doOnChannelInit((connectionObserver, channel, socketAddress) -> {
+                NoContentFixConfigurator noContentFixConfigurator = new NoContentFixConfigurator();
+                noContentFixConfigurator.call(channel.pipeline());
+            })
             .httpRequestDecoder(requestDecoderSpec -> requestDecoderSpec
                 .maxInitialLineLength(config.getMaxInitialLineLengthDefault())
                 .maxHeaderSize(config.getMaxHeaderSize()));

@@ -61,7 +61,7 @@ public class RwServerGracefulShutdownTest {
         Thread shutdown = new Thread(() -> RwServer.shutdownHook(serverConfig, rwServer.getServer(), new ConnectionCounter()));
         shutdown.start();
         await("Server should not be disposed until after five seconds")
-            .atLeast(5, SECONDS)
+            .atLeast(Duration.ofMillis(4500))
             .until(() -> rwServer.getServer().isDisposed());
     }
 

@@ -8,7 +8,7 @@ import se.fortnox.reactivewizard.server.ServerConfig;
 import javax.inject.Inject;
 import javax.inject.Named;
 
-import static se.fortnox.reactivewizard.springserver.RWSpringApplication.getInstance;
+import static se.fortnox.reactivewizard.springserver.RwSpringApplication.getInstance;
 
 public class RwSpringModule extends SpringModule implements AutoBindModule {
 
@@ -44,7 +44,7 @@ public class RwSpringModule extends SpringModule implements AutoBindModule {
 
     /**
      * Causes the rw server not to start
-     * @param binder
+     * @param binder the binder to use
      */
     private void disableRwServer(Binder binder) {
         ServerConfig serverConfig = new ServerConfig();
