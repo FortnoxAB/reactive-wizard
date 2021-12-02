@@ -19,7 +19,7 @@ public class DaoTransactionsImpl implements DaoTransactions {
         ConnectionProvider connectionProvider = null;
         Scheduler scheduler = null;
         for (Observable<T> daoCall : daoCalls) {
-            StatementConnectionScheduler transactionHolder = ((DaoObservable<T>) daoCall).getStatementConnectionSchedulerSupplier().get();
+            StatementContext transactionHolder = ((DaoObservable<T>) daoCall).getStatementConnectionSchedulerSupplier().get();
             Statement statement = transactionHolder.statement();
             TransactionStatement transactionStatement = new TransactionStatement(statement);
             transactionStatements.add(transactionStatement);

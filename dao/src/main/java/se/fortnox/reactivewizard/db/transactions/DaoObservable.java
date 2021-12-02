@@ -7,15 +7,15 @@ import rx.functions.Action1;
 import java.util.function.Supplier;
 
 public class DaoObservable<T> extends Observable<T> {
-    private final Observable<T>                          result;
-    private final Supplier<StatementConnectionScheduler> statementConnectionSchedulerSupplier;
-    private final Action0                                onTransactionCompleted;
+    private final Observable<T>              result;
+    private final Supplier<StatementContext> statementConnectionSchedulerSupplier;
+    private final Action0                    onTransactionCompleted;
 
-    public DaoObservable(Observable<T> result, Supplier<StatementConnectionScheduler> statementConnectionSchedulerSupplier) {
+    public DaoObservable(Observable<T> result, Supplier<StatementContext> statementConnectionSchedulerSupplier) {
         this(result, statementConnectionSchedulerSupplier, null);
     }
 
-    private DaoObservable(Observable<T> result, Supplier<StatementConnectionScheduler> statementConnectionSchedulerSupplier,
+    private DaoObservable(Observable<T> result, Supplier<StatementContext> statementConnectionSchedulerSupplier,
         Action0 onTransactionCompleted) {
         super(result::unsafeSubscribe);
         this.result = result;
@@ -48,7 +48,7 @@ public class DaoObservable<T> extends Observable<T> {
         }
     }
 
-    public Supplier<StatementConnectionScheduler> getStatementConnectionSchedulerSupplier() {
+    public Supplier<StatementContext> getStatementConnectionSchedulerSupplier() {
         return statementConnectionSchedulerSupplier;
     }
 }

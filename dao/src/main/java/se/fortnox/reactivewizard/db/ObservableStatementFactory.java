@@ -11,7 +11,7 @@ import se.fortnox.reactivewizard.db.paging.PagingOutput;
 import se.fortnox.reactivewizard.db.statement.DbStatementFactory;
 import se.fortnox.reactivewizard.db.statement.Statement;
 import se.fortnox.reactivewizard.db.transactions.DaoObservable;
-import se.fortnox.reactivewizard.db.transactions.StatementConnectionScheduler;
+import se.fortnox.reactivewizard.db.transactions.StatementContext;
 import se.fortnox.reactivewizard.metrics.Metrics;
 import se.fortnox.reactivewizard.util.DebugUtil;
 
@@ -57,8 +57,8 @@ public class ObservableStatementFactory {
     }
 
     public Observable<Object> create(Object[] args, ConnectionProvider connectionProvider) {
-        Supplier<StatementConnectionScheduler> transactionHolderSupplier =
-            () -> new StatementConnectionScheduler(statementFactory.create(args), connectionProvider, scheduler);
+        Supplier<StatementContext> transactionHolderSupplier =
+            () -> new StatementContext(statementFactory.create(args), connectionProvider, scheduler);
         Observable<Object> result = Observable.unsafeCreate(subscription -> {
             try {
                 Statement dbStatement = transactionHolderSupplier.get().statement();
