@@ -3,10 +3,8 @@ package se.fortnox.reactivewizard.db.transactions;
 import rx.Observable;
 import rx.Scheduler;
 import se.fortnox.reactivewizard.db.ConnectionProvider;
-import se.fortnox.reactivewizard.db.DbProxy;
 import se.fortnox.reactivewizard.db.statement.Statement;
 
-import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -15,24 +13,27 @@ import static java.util.Arrays.asList;
 import static rx.Observable.empty;
 
 public class DaoTransactionsImpl implements DaoTransactions {
-    private final ConnectionProvider connectionProvider;
-    private final DbProxy            dbProxy;
-
-    @Inject
-    public DaoTransactionsImpl(ConnectionProvider connectionProvider, DbProxy dbProxy) {
-        this.connectionProvider = connectionProvider;
-        this.dbProxy = dbProxy;
-    }
 
     private  <T> Transaction<T> createTransactionWithStatements(Collection<Observable<T>> daoCalls) {
         List<TransactionStatement> transactionStatements = new ArrayList<>();
+        ConnectionProvider connectionProvider = null;
+        Scheduler scheduler = null;
         for (Observable<T> daoCall : daoCalls) {
-            Statement statement = ((DaoObservable<T>) daoCall).getStatementSupplier().get();
+            StatementConnectionScheduler transactionHolder = ((DaoObservable<T>) daoCall).getStatementConnectionSchedulerSupplier().get();
+            Statement statement = transactionHolder.statement();
             TransactionStatement transactionStatement = new TransactionStatement(statement);
             transactionStatements.add(transactionStatement);
+
+            if (connectionProvider == null) {
+                connectionProvider = transactionHolder.connectionProvider();
+            }
+
+            if (scheduler == null) {
+                scheduler = transactionHolder.scheduler();
+            }
         }
 
-        return new Transaction<>(connectionProvider, transactionStatements);
+        return new Transaction<>(connectionProvider, scheduler, transactionStatements);
     }
 
     @Override
@@ -43,10 +44,10 @@ public class DaoTransactionsImpl implements DaoTransactions {
 
         Collection<Observable<T>> daoCallsCopy = copyAndVerifyDaoObservables(daoCalls);
         return Observable.unsafeCreate(subscription -> {
-            Scheduler.Worker worker = dbProxy.getScheduler().createWorker();
+            Transaction<T> transaction = createTransactionWithStatements(daoCallsCopy);
+            Scheduler.Worker worker = transaction.getScheduler().createWorker();
             worker.schedule(() -> {
                 try {
-                    Transaction<T> transaction = createTransactionWithStatements(daoCallsCopy);
                     transaction.execute();
                     daoCalls.forEach(daoCall -> ((DaoObservable<T>) daoCall).onTransactionCompleted());
                     subscription.onCompleted();

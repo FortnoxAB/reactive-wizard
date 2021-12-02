@@ -2,6 +2,7 @@ package se.fortnox.reactivewizard.db.transactions;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import rx.Scheduler;
 import se.fortnox.reactivewizard.db.ConnectionProvider;
 
 import java.sql.Connection;
@@ -15,10 +16,12 @@ public class Transaction<T> {
     private static final Logger LOG = LoggerFactory.getLogger(Transaction.class);
 
     private final ConnectionProvider                          connectionProvider;
+    private final Scheduler                                   scheduler;
     private final ConcurrentLinkedQueue<TransactionStatement> statementsToExecute;
 
-    Transaction(ConnectionProvider connectionProvider, List<TransactionStatement> statements) {
+    Transaction(ConnectionProvider connectionProvider, Scheduler scheduler, List<TransactionStatement> statements) {
         this.connectionProvider = connectionProvider;
+        this.scheduler = scheduler;
         this.statementsToExecute = new ConcurrentLinkedQueue<>(statements);
     }
 
@@ -73,5 +76,9 @@ public class Transaction<T> {
         } catch (Exception rollbackException) {
             LOG.error("Rollback failed", rollbackException);
         }
+    }
+
+    public Scheduler getScheduler() {
+        return scheduler;
     }
 }
