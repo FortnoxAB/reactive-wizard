@@ -1,7 +1,21 @@
 package se.fortnox.reactivewizard.db.transactions;
 
-import rx.Scheduler;
-import se.fortnox.reactivewizard.db.ConnectionProvider;
 import se.fortnox.reactivewizard.db.statement.Statement;
 
-public record StatementContext(Statement statement, ConnectionProvider connectionProvider, Scheduler scheduler) { }
+public final class StatementContext {
+    private final Statement statement;
+    private final ConnectionScheduler connectionScheduler;
+
+    public StatementContext(Statement statement, ConnectionScheduler connectionScheduler) {
+        this.statement = statement;
+        this.connectionScheduler = connectionScheduler;
+    }
+
+    public Statement getStatement() {
+        return statement;
+    }
+
+    public ConnectionScheduler getConnectionScheduler() {
+        return connectionScheduler;
+    }
+}
