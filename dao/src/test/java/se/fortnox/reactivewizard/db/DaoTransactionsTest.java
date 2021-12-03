@@ -4,11 +4,14 @@ import org.fest.assertions.Fail;
 import org.junit.Test;
 import org.mockito.InOrder;
 import rx.Observable;
+import rx.schedulers.TestScheduler;
 import se.fortnox.reactivewizard.db.config.DatabaseConfig;
+import se.fortnox.reactivewizard.db.statement.DbStatementFactoryFactory;
 import se.fortnox.reactivewizard.db.statement.MinimumAffectedRowsException;
 import se.fortnox.reactivewizard.db.transactions.DaoObservable;
 import se.fortnox.reactivewizard.db.transactions.DaoTransactions;
 import se.fortnox.reactivewizard.db.transactions.DaoTransactionsImpl;
+import se.fortnox.reactivewizard.json.JsonSerializerFactory;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -36,7 +39,7 @@ public class DaoTransactionsTest {
     private ConnectionProvider connectionProvider = db.getConnectionProvider();
     private DbProxy            dbProxy            = new DbProxy(new DatabaseConfig(), connectionProvider);
     private TestDao            dao                = dbProxy.create(TestDao.class);
-    private DaoTransactions    daoTransactions    = new DaoTransactionsImpl(connectionProvider, dbProxy);
+    private DaoTransactions    daoTransactions    = new DaoTransactionsImpl();
 
     @Test
     public void shouldRunTwoQueriesInOneTransaction() throws SQLException {
@@ -320,6 +323,38 @@ public class DaoTransactionsTest {
         verify(db.getConnection(), timeout(500)).setAutoCommit(true);
         verify(db.getConnection(), times(1)).close();
         verify(db.getPreparedStatement(), times(1)).close();
+    }
+
+    @Test
+    public void shoulUseSpecifiedConnectionAndScheduler() throws SQLException {
+        MockDb otherDb = new MockDb();
+        ConnectionProvider otherConnectionProvider = otherDb.getConnectionProvider();
+
+        TestScheduler otherScheduler = new TestScheduler();
+        DbProxy otherDbProxy = new DbProxy(
+            new DatabaseConfig(), otherScheduler,
+            null, new DbStatementFactoryFactory(), new JsonSerializerFactory());
+        otherDbProxy = otherDbProxy.usingConnectionProvider(otherConnectionProvider);
+
+        when(otherDb.getPreparedStatement().executeBatch())
+            .thenReturn(new int[]{1, 1});
+
+        TestDao otherTestDao = otherDbProxy.create(TestDao.class);
+        daoTransactions.executeTransaction(otherTestDao.updateSuccess(), otherTestDao.updateSuccess())
+            .subscribeOn(otherScheduler).subscribe();
+        otherScheduler.triggerActions();
+
+        otherDb.verifyConnectionsUsed(1);
+        db.verifyConnectionsUsed(0);
+
+        // Execute transaction without custom db proxy
+        when(db.getPreparedStatement().executeBatch())
+            .thenReturn(new int[]{1, 1});
+
+        daoTransactions.executeTransaction(dao.updateSuccess(), dao.updateSuccess())
+            .toBlocking().subscribe();
+        otherDb.verifyConnectionsUsed(1);
+        db.verifyConnectionsUsed(1);
     }
 
     interface TestDao {

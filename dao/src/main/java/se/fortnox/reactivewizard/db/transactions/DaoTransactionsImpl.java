@@ -1,12 +1,8 @@
 package se.fortnox.reactivewizard.db.transactions;
 
 import rx.Observable;
-import rx.Scheduler;
-import se.fortnox.reactivewizard.db.ConnectionProvider;
-import se.fortnox.reactivewizard.db.DbProxy;
 import se.fortnox.reactivewizard.db.statement.Statement;
 
-import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -15,24 +11,17 @@ import static java.util.Arrays.asList;
 import static rx.Observable.empty;
 
 public class DaoTransactionsImpl implements DaoTransactions {
-    private final ConnectionProvider connectionProvider;
-    private final DbProxy            dbProxy;
-
-    @Inject
-    public DaoTransactionsImpl(ConnectionProvider connectionProvider, DbProxy dbProxy) {
-        this.connectionProvider = connectionProvider;
-        this.dbProxy = dbProxy;
-    }
 
     private  <T> Transaction<T> createTransactionWithStatements(Collection<Observable<T>> daoCalls) {
         List<TransactionStatement> transactionStatements = new ArrayList<>();
         for (Observable<T> daoCall : daoCalls) {
-            Statement statement = ((DaoObservable<T>) daoCall).getStatementSupplier().get();
+            StatementContext transactionHolder = ((DaoObservable<T>) daoCall).getStatementContextSupplier().get();
+            Statement statement = transactionHolder.getStatement();
             TransactionStatement transactionStatement = new TransactionStatement(statement);
             transactionStatements.add(transactionStatement);
         }
 
-        return new Transaction<>(connectionProvider, transactionStatements);
+        return new Transaction<>(transactionStatements);
     }
 
     @Override
@@ -43,20 +32,12 @@ public class DaoTransactionsImpl implements DaoTransactions {
 
         Collection<Observable<T>> daoCallsCopy = copyAndVerifyDaoObservables(daoCalls);
         return Observable.unsafeCreate(subscription -> {
-            Scheduler.Worker worker = dbProxy.getScheduler().createWorker();
-            worker.schedule(() -> {
-                try {
-                    Transaction<T> transaction = createTransactionWithStatements(daoCallsCopy);
-                    transaction.execute();
-                    daoCalls.forEach(daoCall -> ((DaoObservable<T>) daoCall).onTransactionCompleted());
-                    subscription.onCompleted();
-                } catch (Exception e) {
-                    if (!subscription.isUnsubscribed()) {
-                        subscription.onError(e);
-                    }
-                } finally {
-                    worker.unsubscribe();
-                }
+            ConnectionScheduler connectionScheduler = getConnectionScheduler(daoCallsCopy);
+            connectionScheduler.schedule(subscription, connection -> {
+                Transaction<T> transaction = createTransactionWithStatements(daoCallsCopy);
+                transaction.execute(connection);
+                daoCalls.forEach(daoCall -> ((DaoObservable<T>) daoCall).onTransactionCompleted());
+                subscription.onCompleted();
             });
         });
     }
@@ -79,5 +60,13 @@ public class DaoTransactionsImpl implements DaoTransactions {
         }
 
         return daoCallsCopy;
+    }
+
+    private <T> ConnectionScheduler getConnectionScheduler(Collection<Observable<T>> daoCallsCopy) {
+        Observable<T> daoObservable = daoCallsCopy.stream()
+            .findFirst()
+            .orElseThrow(() -> new RuntimeException("No DaoObservable found"));
+
+        return ((DaoObservable<T>) daoObservable).getStatementContextSupplier().get().getConnectionScheduler();
     }
 }

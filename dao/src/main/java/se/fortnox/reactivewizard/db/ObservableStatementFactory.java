@@ -4,13 +4,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Scheduler;
-import rx.Subscriber;
-import rx.functions.Action0;
 import se.fortnox.reactivewizard.db.config.DatabaseConfig;
 import se.fortnox.reactivewizard.db.paging.PagingOutput;
 import se.fortnox.reactivewizard.db.statement.DbStatementFactory;
 import se.fortnox.reactivewizard.db.statement.Statement;
+import se.fortnox.reactivewizard.db.transactions.ConnectionScheduler;
 import se.fortnox.reactivewizard.db.transactions.DaoObservable;
+import se.fortnox.reactivewizard.db.transactions.StatementContext;
 import se.fortnox.reactivewizard.metrics.Metrics;
 import se.fortnox.reactivewizard.util.DebugUtil;
 
@@ -56,13 +56,16 @@ public class ObservableStatementFactory {
     }
 
     public Observable<Object> create(Object[] args, ConnectionProvider connectionProvider) {
-        Supplier<Statement> statementSupplier = () -> statementFactory.create(args);
+        Supplier<StatementContext> transactionHolderSupplier =
+            () -> new StatementContext(statementFactory.create(args), new ConnectionScheduler(connectionProvider, scheduler));
         Observable<Object> result = Observable.unsafeCreate(subscription -> {
             try {
-                Statement dbStatement = statementSupplier.get();
-                dbStatement.setSubscriber(subscription);
-
-                scheduleWorker(subscription, () -> executeStatement(dbStatement, connectionProvider));
+                transactionHolderSupplier.get().getConnectionScheduler()
+                    .schedule(subscription, (connection) -> {
+                        Statement dbStatement = transactionHolderSupplier.get().getStatement();
+                        dbStatement.setSubscriber(subscription);
+                        executeStatement(dbStatement, connection);
+                    });
             } catch (Exception e) {
                 if (!subscription.isUnsubscribed()) {
                     subscription.onError(e);
@@ -82,22 +85,7 @@ public class ObservableStatementFactory {
         result = metrics.measure(result, this::logSlowQuery);
         result = result.onBackpressureBuffer(RECORD_BUFFER_SIZE);
 
-        return new DaoObservable<>(result, statementSupplier);
-    }
-
-    private void scheduleWorker(Subscriber<?> subscription, Action0 action) {
-        Scheduler.Worker worker = scheduler.createWorker();
-        worker.schedule(() -> {
-            try {
-                action.call();
-            } catch (Exception e) {
-                if (!subscription.isUnsubscribed()) {
-                    subscription.onError(e);
-                }
-            } finally {
-                worker.unsubscribe();
-            }
-        });
+        return new DaoObservable<>(result, transactionHolderSupplier);
     }
 
     private void logSlowQuery(long time) {
@@ -106,11 +94,7 @@ public class ObservableStatementFactory {
         }
     }
 
-    private void executeStatement(Statement dbStatement, ConnectionProvider connectionProvider) {
-        if (connectionProvider == null) {
-            throw new RuntimeException("No connection provider configured!");
-        }
-        Connection connection = connectionProvider.get();
+    private void executeStatement(Statement dbStatement, Connection connection) {
         try {
             connection.setAutoCommit(true);
             dbStatement.execute(connection);
