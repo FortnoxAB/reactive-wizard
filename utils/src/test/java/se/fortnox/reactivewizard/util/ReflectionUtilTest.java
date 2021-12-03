@@ -299,6 +299,12 @@ public class ReflectionUtilTest {
         assertThat(method).isEqualTo(TestResource.class.getMethod("resourceGet", String.class, String.class));
     }
 
+    @Test
+    public void shouldGetRedefinedVersionOfMethod() throws NoSuchMethodException {
+        Method method = TestResource.class.getMethod("resourceGet", String.class, String.class);
+        assertThat(ReflectionUtil.getRedefinedMethod(method)).isEqualTo(method);
+    }
+
     private static class InstanceExposingInvocationHandler implements InvocationHandler, Provider {
 
         private final Object instance;
