@@ -114,7 +114,7 @@ public class ExceptionHandler {
             msg
                 .append(header.getKey())
                 .append('=')
-                .append(localGetHeaderValueOrRedact(header))
+                .append(getHeaderValue(header))
                 .append(' ')
         );
         return msg.toString();
@@ -129,7 +129,7 @@ public class ExceptionHandler {
      * @return the string that should be logged for this particular header in case of an Exception.
      *
      */
-    protected String localGetHeaderValueOrRedact(Map.Entry<String, String> header) {
+    protected String getHeaderValue(Map.Entry<String, String> header) {
         return getHeaderValueOrRedact(header);
     }
 
