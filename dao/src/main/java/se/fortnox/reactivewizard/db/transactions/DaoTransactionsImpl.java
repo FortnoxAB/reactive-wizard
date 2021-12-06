@@ -3,6 +3,7 @@ package se.fortnox.reactivewizard.db.transactions;
 import rx.Observable;
 import se.fortnox.reactivewizard.db.statement.Statement;
 
+import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -11,6 +12,9 @@ import static java.util.Arrays.asList;
 import static rx.Observable.empty;
 
 public class DaoTransactionsImpl implements DaoTransactions {
+
+    @Inject
+    public DaoTransactionsImpl() {}
 
     private  <T> Transaction<T> createTransactionWithStatements(Collection<Observable<T>> daoCalls) {
         List<TransactionStatement> transactionStatements = new ArrayList<>();
