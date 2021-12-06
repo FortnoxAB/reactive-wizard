@@ -12,10 +12,6 @@ import static se.fortnox.reactivewizard.springserver.RwSpringApplication.getInst
 
 public class RwSpringModule extends SpringModule implements AutoBindModule {
 
-    public static Binder binder;
-
-    private final String[] args;
-
     @Inject
     public RwSpringModule(@Named("args") String[] args) {
         super(() -> {
@@ -24,17 +20,14 @@ public class RwSpringModule extends SpringModule implements AutoBindModule {
             return getInstance(RwServerConfig.class).createApplicationContext().getBeanFactory();
 
         });
-
-        this.args = args;
     }
 
     @Override
     public void configure(Binder binder) {
         super.configure(binder);
 
-        startupSpringServer(binder);
-
         disableRwServer(binder);
+        startupSpringServer(binder);
     }
 
 
