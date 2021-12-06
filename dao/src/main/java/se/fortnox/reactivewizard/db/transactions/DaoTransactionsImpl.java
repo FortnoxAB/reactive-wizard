@@ -1,58 +1,76 @@
 package se.fortnox.reactivewizard.db.transactions;
 
 import rx.Observable;
+import se.fortnox.reactivewizard.db.statement.Statement;
 
 import javax.inject.Inject;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 import static java.util.Arrays.asList;
 import static rx.Observable.empty;
-import static rx.Observable.merge;
 
 public class DaoTransactionsImpl implements DaoTransactions {
+
     @Inject
-    public DaoTransactionsImpl() {
-    }
+    public DaoTransactionsImpl() {}
 
-    @Override
-    public <T> void createTransaction(Observable<T>... daoCalls) {
-        if (daoCalls == null || daoCalls.length == 0) {
-            return;
+    private  <T> Transaction<T> createTransactionWithStatements(Collection<Observable<T>> daoCalls) {
+        List<TransactionStatement> transactionStatements = new ArrayList<>();
+        for (Observable<T> daoCall : daoCalls) {
+            StatementContext transactionHolder = ((DaoObservable<T>) daoCall).getStatementContextSupplier().get();
+            Statement statement = transactionHolder.getStatement();
+            TransactionStatement transactionStatement = new TransactionStatement(statement);
+            transactionStatements.add(transactionStatement);
         }
 
-        createTransaction(asList(daoCalls));
-    }
-
-    @Override
-    public <T> void createTransaction(Iterable<Observable<T>> daoCalls) {
-        if (daoCalls == null || !daoCalls.iterator().hasNext()) {
-            return;
-        }
-
-        for (Observable statement : daoCalls) {
-            if (!(statement instanceof DaoObservable)) {
-                String statementString  = statement == null ? "null" : statement.getClass().toString();
-                String exceptionMessage = "All parameters to createTransaction needs to be observables coming from a Dao-class. Statement was %s.";
-                throw new RuntimeException(String.format(exceptionMessage, statementString));
-            }
-        }
-
-        Transaction transaction = new Transaction(daoCalls);
-        for (Observable statement : daoCalls) {
-            transaction.add((DaoObservable)statement);
-        }
+        return new Transaction<>(transactionStatements);
     }
 
     @Override
     public <T> Observable<Void> executeTransaction(Iterable<Observable<T>> daoCalls) {
-        if (!daoCalls.iterator().hasNext()) {
+        if (daoCalls == null || !daoCalls.iterator().hasNext()) {
             return empty();
         }
-        createTransaction(daoCalls);
-        return merge(daoCalls).ignoreElements().cast(Void.class);
+
+        Collection<Observable<T>> daoCallsCopy = copyAndVerifyDaoObservables(daoCalls);
+        return Observable.unsafeCreate(subscription -> {
+            ConnectionScheduler connectionScheduler = getConnectionScheduler(daoCallsCopy);
+            connectionScheduler.schedule(subscription, connection -> {
+                Transaction<T> transaction = createTransactionWithStatements(daoCallsCopy);
+                transaction.execute(connection);
+                daoCalls.forEach(daoCall -> ((DaoObservable<T>) daoCall).onTransactionCompleted());
+                subscription.onCompleted();
+            });
+        });
     }
 
     @Override
     public <T> Observable<Void> executeTransaction(Observable<T>... daoCalls) {
         return executeTransaction(asList(daoCalls));
+    }
+
+    private <T> Collection<Observable<T>> copyAndVerifyDaoObservables(Iterable<Observable<T>> daoCalls) {
+        List<Observable<T>> daoCallsCopy = new ArrayList<>();
+        for (Observable<T> statement : daoCalls) {
+            if (!(statement instanceof DaoObservable)) {
+                String statementString  = statement == null ? "null" : statement.getClass().toString();
+                String exceptionMessage = "All parameters to createTransaction needs to be observables coming from a Dao-class. Statement was %s.";
+                throw new RuntimeException(String.format(exceptionMessage, statementString));
+            }
+
+            daoCallsCopy.add(statement);
+        }
+
+        return daoCallsCopy;
+    }
+
+    private <T> ConnectionScheduler getConnectionScheduler(Collection<Observable<T>> daoCallsCopy) {
+        Observable<T> daoObservable = daoCallsCopy.stream()
+            .findFirst()
+            .orElseThrow(() -> new RuntimeException("No DaoObservable found"));
+
+        return ((DaoObservable<T>) daoObservable).getStatementContextSupplier().get().getConnectionScheduler();
     }
 }

@@ -30,19 +30,18 @@ public abstract class AbstractDbStatementFactory implements DbStatementFactory {
     }
 
     @Override
-    public Statement create(Object[] args, Subscriber subscriber) {
-        return new StatementImpl(args, subscriber, parameterizedQuery);
+    public Statement create(Object[] args) {
+        return new StatementImpl(args, parameterizedQuery);
     }
 
     private class StatementImpl implements Statement {
 
         private final Object[]           args;
-        private final Subscriber         subscriber;
         private final ParameterizedQuery parameterizedQuery;
+        private       Subscriber         subscriber;
 
-        private StatementImpl(Object[] args, Subscriber subscriber, ParameterizedQuery parameterizedQuery) {
+        private StatementImpl(Object[] args, ParameterizedQuery parameterizedQuery) {
             this.args = args;
-            this.subscriber = subscriber;
             this.parameterizedQuery = parameterizedQuery;
         }
 
@@ -71,12 +70,21 @@ public abstract class AbstractDbStatementFactory implements DbStatementFactory {
 
         @Override
         public void onCompleted() {
-            subscriber.onCompleted();
+            if (subscriber != null) {
+                subscriber.onCompleted();
+            }
         }
 
         @Override
         public void onError(Throwable throwable) {
-            subscriber.onError(throwable);
+            if (subscriber != null) {
+                subscriber.onError(throwable);
+            }
+        }
+
+        @Override
+        public void setSubscriber(Subscriber<?> subscriber) {
+            this.subscriber = subscriber;
         }
     }
 

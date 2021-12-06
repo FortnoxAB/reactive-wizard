@@ -30,7 +30,9 @@ public class UpdateStatementReturningGeneratedKeyFactory extends AbstractUpdateS
             ensureMinimumReached(statement.executeUpdate());
             try (ResultSet resultSet = statement.getGeneratedKeys()) {
                 while (resultSet.next()) {
-                    subscriber.onNext((GeneratedKey)() -> deserializer.deserialize(resultSet));
+                    if (subscriber != null) {
+                        subscriber.onNext((GeneratedKey)() -> deserializer.deserialize(resultSet));
+                    }
                 }
             }
         }

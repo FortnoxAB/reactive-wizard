@@ -138,4 +138,8 @@ public class DbProxy implements InvocationHandler {
     public DatabaseConfig getDatabaseConfig() {
         return databaseConfig;
     }
+
+    public Scheduler getScheduler() {
+        return scheduler;
+    }
 }
