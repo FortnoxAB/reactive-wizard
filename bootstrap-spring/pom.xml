@@ -1,7 +1,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<artifactId>reactivewizard-binding</artifactId>
+	<artifactId>reactivewizard-bootstrap-spring</artifactId>
 
 	<parent>
 		<groupId>se.fortnox.reactivewizard</groupId>
@@ -18,14 +18,20 @@
 		</dependency>
 
 		<dependency>
-			<groupId>io.github.classgraph</groupId>
-			<artifactId>classgraph</artifactId>
-			<version>${classgraph.version}</version>
+			<groupId>se.fortnox.reactivewizard</groupId>
+			<artifactId>reactivewizard-binding</artifactId>
+			<version>999.9.9-SNAPSHOT</version>
 		</dependency>
 
 		<dependency>
 			<groupId>se.fortnox.reactivewizard</groupId>
-			<artifactId>reactivewizard-utils</artifactId>
+			<artifactId>reactivewizard-config</artifactId>
+			<version>999.9.9-SNAPSHOT</version>
+		</dependency>
+
+		<dependency>
+			<groupId>se.fortnox.reactivewizard</groupId>
+			<artifactId>reactivewizard-logging</artifactId>
 			<version>999.9.9-SNAPSHOT</version>
 		</dependency>
 
@@ -35,12 +41,25 @@
 			<version>999.9.9-SNAPSHOT</version>
 			<scope>test</scope>
 		</dependency>
+
         <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-context</artifactId>
-            <version>5.3.13</version>
+            <groupId>org.springframework.guice</groupId>
+            <artifactId>spring-guice</artifactId>
+            <version>SPRING_GUICE_2</version>
         </dependency>
-    </dependencies>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webflux</artifactId>
+            <version>2.5.6</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.projectreactor.netty</groupId>
+                    <artifactId>reactor-netty-http</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+	</dependencies>
 
 	<build>
 		<plugins>

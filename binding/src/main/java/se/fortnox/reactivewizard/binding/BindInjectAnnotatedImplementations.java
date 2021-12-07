@@ -4,6 +4,8 @@ import com.google.inject.Binder;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.TypeLiteral;
+import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import se.fortnox.reactivewizard.binding.scanners.InjectAnnotatedScanner;
 
 import javax.inject.Singleton;
@@ -36,6 +38,10 @@ public class BindInjectAnnotatedImplementations implements AutoBindModule {
     @SuppressWarnings({ "rawtypes", "unchecked" })
     private void bindClassToInterface(Binder binder, Class<?> cls, Type iface, Map<Type, Class<?>> configuredInterfaces) {
         if (Provider.class.isAssignableFrom(cls) || javax.inject.Provider.class.isAssignableFrom(cls)) {
+            return;
+        }
+
+        if (cls.isAnnotationPresent(Service.class) || cls.isAnnotationPresent(Component.class)) {
             return;
         }
 

@@ -24,7 +24,7 @@
             </dependency>
             <dependency>
                 <groupId>se.fortnox.reactivewizard</groupId>
-                <artifactId>reactivewizard-bootstrap</artifactId>
+                <artifactId>reactivewizard-bootstrap-spring</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -34,7 +34,7 @@
             </dependency>
             <dependency>
                 <groupId>se.fortnox.reactivewizard</groupId>
-                <artifactId>reactivewizard-server</artifactId>
+                <artifactId>reactivewizard-spring-server</artifactId>
                 <version>${project.version}</version>
             </dependency>
         </dependencies>

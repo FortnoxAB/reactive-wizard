@@ -25,7 +25,7 @@
                     </descriptorRefs>
                     <archive>
                         <manifest>
-                            <mainClass>se.fortnox.reactivewizard.Main</mainClass>
+                            <mainClass>se.fortnox.reactivewizard.SpringMain</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
@@ -66,11 +66,11 @@
         </dependency>
         <dependency>
             <groupId>se.fortnox.reactivewizard</groupId>
-            <artifactId>reactivewizard-bootstrap</artifactId>
+            <artifactId>reactivewizard-bootstrap-spring</artifactId>
         </dependency>
         <dependency>
             <groupId>se.fortnox.reactivewizard</groupId>
-            <artifactId>reactivewizard-server</artifactId>
+            <artifactId>reactivewizard-spring-server</artifactId>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>

@@ -1,2 +1,5 @@
-server.shutdown:
-    graceful
+server.shutdown: graceful
+
+spring:
+    main:
+        allow-bean-definition-overriding: true

@@ -62,6 +62,7 @@
         <module>logging</module>
         <module>binding</module>
         <module>bootstrap</module>
+        <module>bootstrap-spring</module>
         <module>server</module>
         <module>dao</module>
         <module>examples</module>
