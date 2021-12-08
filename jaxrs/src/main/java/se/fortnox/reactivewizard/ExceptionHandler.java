@@ -22,6 +22,7 @@ import javax.ws.rs.core.MediaType;
 import java.nio.channels.ClosedChannelException;
 import java.nio.file.FileSystemException;
 import java.util.List;
+import java.util.Map;
 
 import static se.fortnox.reactivewizard.jaxrs.RequestLogger.getHeaderValueOrRedact;
 
@@ -29,8 +30,7 @@ import static se.fortnox.reactivewizard.jaxrs.RequestLogger.getHeaderValueOrReda
  * Handles exceptions and writes errors to the response and the log.
  */
 public class ExceptionHandler {
-    private static final Logger LOG = LoggerFactory.getLogger(ExceptionHandler.class);
-
+    private static final Logger      LOG = LoggerFactory.getLogger(ExceptionHandler.class);
     private final ObjectMapper mapper;
 
     @Inject
@@ -114,10 +114,23 @@ public class ExceptionHandler {
             msg
                 .append(header.getKey())
                 .append('=')
-                .append(getHeaderValueOrRedact(header))
+                .append(getHeaderValue(header))
                 .append(' ')
         );
         return msg.toString();
+    }
+
+    /**
+     * Override this to specify own logic to handle certain headers.
+     *
+     * Typically redact sensitive stuff.
+     *
+     * @param header the header entry where the Map.Entry key is the header name and the Map.Entry value is the header value
+     * @return the string that should be logged for this particular header in case of an Exception.
+     *
+     */
+    protected String getHeaderValue(Map.Entry<String, String> header) {
+        return getHeaderValueOrRedact(header);
     }
 
     private void logException(HttpServerRequest request, WebException webException) {
