@@ -19,7 +19,7 @@ public class RwStart {
 
     @Bean
     public AutoBindModules autoBindModules(ApplicationArguments applicationArguments) throws NoSuchFileException {
-        ConfigFactory  configFactory  = createConfigFactory(applicationArguments.getSourceArgs());
+        ConfigFactory configFactory = createConfigFactory(applicationArguments.getSourceArgs());
         LoggingFactory loggingFactory = configFactory.get(LoggingFactory.class);
         loggingFactory.init();
         Module bootstrap = new AbstractModule() {
@@ -52,7 +52,7 @@ public class RwStart {
             if (cause != null && cause.getClass().isAssignableFrom(NoSuchFileException.class)) {
                 LoggingFactory loggingFactory = new LoggingFactory();
                 loggingFactory.init();
-                throw (NoSuchFileException)cause;
+                throw (NoSuchFileException) cause;
             }
             throw runtimeException;
         }

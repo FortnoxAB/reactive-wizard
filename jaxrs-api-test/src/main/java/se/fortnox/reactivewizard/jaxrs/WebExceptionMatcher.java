@@ -1,9 +1,8 @@
-package se.fortnox.reactivewixard.jaxrs;
+package se.fortnox.reactivewizard.jaxrs;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
 import org.hamcrest.Description;
 import org.hamcrest.TypeSafeMatcher;
-import se.fortnox.reactivewizard.jaxrs.WebException;
 
 import static java.util.Optional.ofNullable;
 

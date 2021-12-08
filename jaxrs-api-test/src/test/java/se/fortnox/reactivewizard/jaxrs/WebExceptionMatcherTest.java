@@ -4,7 +4,6 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import se.fortnox.reactivewixard.jaxrs.WebExceptionMatcher;
 
 import static java.util.Optional.ofNullable;
 import static org.fest.assertions.Assertions.assertThat;
@@ -35,8 +34,8 @@ public class WebExceptionMatcherTest {
 
     @Test
     public void shouldExpectCorrectStatusAndErrorCode() {
-        HttpResponseStatus expectedStatus    = HttpResponseStatus.INTERNAL_SERVER_ERROR;
-        String             expectedErrorCode = "error.code";
+        HttpResponseStatus expectedStatus = HttpResponseStatus.INTERNAL_SERVER_ERROR;
+        String expectedErrorCode = "error.code";
 
         expectedException.expect(WebException.class);
         expectedException.expect(WebExceptionMatcher.has(expectedStatus, expectedErrorCode));
