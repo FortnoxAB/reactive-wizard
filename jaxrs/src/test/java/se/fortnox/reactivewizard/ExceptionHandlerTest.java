@@ -1,4 +1,4 @@
-package se.fortnox.reactivewizard.jaxrs;
+package se.fortnox.reactivewizard;
 
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
@@ -10,13 +10,14 @@ import reactor.netty.http.server.HttpServerRequest;
 import reactor.netty.http.server.HttpServerResponse;
 import rx.exceptions.CompositeException;
 import rx.exceptions.OnErrorThrowable;
-import se.fortnox.reactivewizard.ExceptionHandler;
+import se.fortnox.reactivewizard.jaxrs.WebException;
 import se.fortnox.reactivewizard.mocks.MockHttpServerRequest;
 import se.fortnox.reactivewizard.mocks.MockHttpServerResponse;
 
 import java.nio.channels.ClosedChannelException;
 import java.nio.file.FileSystemException;
 import java.nio.file.NoSuchFileException;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -54,6 +55,27 @@ public class ExceptionHandlerTest {
             new WebException(HttpResponseStatus.BAD_REQUEST),
             Level.WARN,
             "400 Bad Request\n\tCause: -\n\tResponse: {\"id\":\"*\",\"error\":\"badrequest\"}\n\tRequest: GET /path headers: Authorization=REDACTED OtherHeader=notasecret ");
+    }
+
+    @Test
+    public void shouldRedactSensitiveHeadersSpecified(){
+
+        MockHttpServerRequest request = new MockHttpServerRequest("/path");
+        request.requestHeaders()
+            .add("Authorization", "secret")
+            .add("OtherHeader", "notasecret");
+        assertLog(request,
+            new WebException(HttpResponseStatus.BAD_REQUEST),
+            Level.WARN,
+            "400 Bad Request\n\tCause: -\n\tResponse: {\"id\":\"*\",\"error\":\"badrequest\"}\n\tRequest: GET /path headers: Authorization=REDACTED OtherHeader=REDACTED ", new ExceptionHandler() {
+                @Override
+                protected String getHeaderValue(Map.Entry<String, String> header) {
+                    if (header != null && header.getKey().equalsIgnoreCase("OtherHeader")) {
+                        return "REDACTED";
+                    }
+                    return super.getHeaderValue(header);
+                }
+            });
     }
 
     @Test
@@ -136,12 +158,16 @@ public class ExceptionHandlerTest {
     }
 
     private void assertLog(HttpServerRequest request, Exception exception, Level expectedLevel, String expectedLog) {
+        this.assertLog(request, exception, expectedLevel, expectedLog, new ExceptionHandler());
+    }
+
+    private void assertLog(HttpServerRequest request, Exception exception, Level expectedLevel, String expectedLog, ExceptionHandler exceptionHandler) {
         Appender mockAppender = mock(Appender.class);
         LogManager.getLogger(ExceptionHandler.class).addAppender(mockAppender);
         LogManager.getLogger(ExceptionHandler.class).setLevel(Level.DEBUG);
 
         HttpServerResponse response = new MockHttpServerResponse();
-        new ExceptionHandler().handleException(request, response, exception);
+        exceptionHandler.handleException(request, response, exception);
 
         String regex = expectedLog.replaceAll("\\*", ".*")
             .replaceAll("\\[", "\\\\[")

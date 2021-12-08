@@ -107,7 +107,7 @@ public class DbProxy implements InvocationHandler {
         if (observableStatementFactory == null || DebugUtil.IS_DEBUG) {
             if (DebugUtil.IS_DEBUG) {
                 // Need to get the actual interface method in order to get updated annotations
-                method = Optional.ofNullable(ReflectionUtil.getOverriddenMethod(method)).orElse(method);
+                method = ReflectionUtil.getRedefinedMethod(method);
             }
             DbStatementFactory statementFactory = dbStatementFactoryFactory.createStatementFactory(method);
             PagingOutput       pagingOutput     = new PagingOutput(method);

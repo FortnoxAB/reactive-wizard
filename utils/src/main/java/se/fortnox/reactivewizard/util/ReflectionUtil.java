@@ -90,6 +90,18 @@ public class ReflectionUtil {
         return found.orElse(null);
     }
 
+    /**
+     * Fetches the (possibly) redefined version of a method for a class that has been hot-reloaded.
+     *
+     * Intended to be used while debugging stuff and using the hot reload feature in the IDE.
+     * @param method the method that may have been redefined
+     * @return a redefined version of that method, or the passed in method if no new version is found
+     */
+    public static Method getRedefinedMethod(Method method) {
+        Class<?> declaringClass = getUserDefinedClass(method.getDeclaringClass());
+        return findMethodInClass(method, declaringClass).orElse(method);
+    }
+
     private static Class<?> getUserDefinedClass(Class<?> clazz) {
         if (clazz.getName().contains(CGLIB_CLASS_SEPARATOR)) {
             Class<?> superclass = clazz.getSuperclass();

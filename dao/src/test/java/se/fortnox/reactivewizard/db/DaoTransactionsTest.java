@@ -18,6 +18,7 @@ import se.fortnox.reactivewizard.db.transactions.StatementContext;
 import se.fortnox.reactivewizard.json.JsonSerializerFactory;
 import se.fortnox.reactivewizard.util.ReactiveDecorator;
 
+import javax.inject.Inject;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -42,6 +43,15 @@ public class DaoTransactionsTest {
     private TestDao            dao                = dbProxy.create(TestDao.class);
     private DaoTransactions    daoTransactions    = new DaoTransactionsImpl();
     private DaoTransactionsFlux daoTransactionsFlux    = new DaoTransactionsFluxImpl((DaoTransactionsImpl) daoTransactions);
+
+    @Test
+    public void shouldHaveEmptyInjectAnnotatedConstructor() {
+        try {
+            assertThat(DaoTransactionsImpl.class.getConstructor().getAnnotation(Inject.class)).isNotNull();
+        } catch (NoSuchMethodException e) {
+            e.printStackTrace();
+        }
+    }
 
     @Test
     public void shouldRunTwoQueriesInOneTransaction() throws SQLException {
