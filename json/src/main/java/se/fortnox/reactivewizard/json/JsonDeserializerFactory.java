@@ -4,6 +4,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.databind.util.StdDateFormat;
 
 import javax.inject.Inject;
 import java.lang.reflect.Type;
@@ -22,9 +24,11 @@ public class JsonDeserializerFactory {
     }
 
     public JsonDeserializerFactory() {
-        this(new ObjectMapper()
-            .findAndRegisterModules()
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false));
+        this(JsonMapper.builder()
+            .findAndAddModules()
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+            .defaultDateFormat(new StdDateFormat().withColonInTimeZone(false)) // Preserve behavior prior to Jackson 2.11
+            .build());
     }
 
     public <T> Function<String, T> createDeserializer(TypeReference<T> typeReference) {

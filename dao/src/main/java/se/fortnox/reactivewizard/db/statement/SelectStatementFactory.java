@@ -24,7 +24,9 @@ public class SelectStatementFactory extends AbstractDbStatementFactory {
             parameterizedQuery.addParameters(args, statement);
             try (ResultSet resultSet = statement.executeQuery()) {
                 while (resultSet.next()) {
-                    subscriber.onNext(deserializer.deserialize(resultSet));
+                    if (subscriber != null) {
+                        subscriber.onNext(deserializer.deserialize(resultSet));
+                    }
                 }
             }
         }

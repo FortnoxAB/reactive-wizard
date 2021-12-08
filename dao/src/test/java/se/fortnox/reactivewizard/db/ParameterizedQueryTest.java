@@ -40,6 +40,15 @@ public class ParameterizedQueryTest {
     }
 
     @Test
+    public void shouldResolveNestedRecordParametersFromQuery() throws SQLException {
+        dao.nestedRecordParameters("myid", new MyTestParamRecord("testName")).toBlocking().singleOrDefault(null);
+
+        verify(db.getConnection()).prepareStatement("SELECT * FROM foo WHERE id=? AND name=?");
+        verify(db.getPreparedStatement()).setObject(1, "myid");
+        verify(db.getPreparedStatement()).setObject(2, "testName");
+    }
+
+    @Test
     public void shouldResolveParametersWithoutAnnotationFromQuery() throws SQLException {
         dao.missingParamNames("myid", "myname").toBlocking().singleOrDefault(null);
 
@@ -256,6 +265,9 @@ public class ParameterizedQueryTest {
         @Query("SELECT * FROM foo WHERE id=:id AND name=:test.name")
         Observable<String> nestedParameters(String id, MyTestParam test);
 
+        @Query("SELECT * FROM foo WHERE id=:id AND name=:test.name")
+        Observable<String> nestedRecordParameters(String id, MyTestParamRecord test);
+
         @Query("SELECT * FROM foo WHERE id=? AND name=?")
         Observable<String> unnamedParameters(String id, String name);
 
@@ -365,9 +377,12 @@ public class ParameterizedQueryTest {
         }
     }
 
-    public class MyTestParam {
+    public static class MyTestParam {
         public String getName() {
             return "testName";
         }
+    }
+
+    public record MyTestParamRecord(String name) {
     }
 }

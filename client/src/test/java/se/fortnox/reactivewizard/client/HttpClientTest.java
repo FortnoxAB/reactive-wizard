@@ -53,6 +53,7 @@ import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.security.cert.CertificateException;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
@@ -536,6 +537,15 @@ public class HttpClientTest {
         filters.setOffset(15);
         String     path   = client.getPath(method, new Object[]{filters}, new JaxRsMeta(method, null));
         assertThat(path).isEqualTo("/hello/beanParam?limit=10&offset=15&filter2=b&filter1=a");
+    }
+
+    @Test
+    public void shouldSupportBeanParamRecord() throws Exception {
+        HttpClient client = new HttpClient(new HttpClientConfig("localhost"));
+        Method     method = TestResource.class.getMethod("withBeanParamRecord", TestResource.SomeRecord.class);
+        TestResource.SomeRecord record = new TestResource.SomeRecord("value1", "value2");
+        String     path   = client.getPath(method, new Object[]{record}, new JaxRsMeta(method, null));
+        assertThat(path).isEqualTo("/hello/beanParamRecord?param2=value2&param1=value1");
     }
 
     @Test
@@ -1283,6 +1293,25 @@ public class HttpClientTest {
     }
 
     @Test
+    public void shouldBeAbleToSendAndReceiveRecordBody() {
+        DisposableServer server = HttpServer.create().port(0).handle((request, response) ->
+            request.receive().aggregate().flatMap(buf ->
+                response.status(HttpResponseStatus.OK).send(Mono.just(buf)).then()
+        )).bindNow();
+
+        var resource = getHttpProxy(server.port());
+
+        var requestRecord = new TestResource.SomeRecord("value1", "value2");
+
+        var responseRecord = resource.postRecord(requestRecord).toBlocking().singleOrDefault(null);
+
+        assertThat(responseRecord).isNotNull();
+        assertThat(responseRecord).isEqualTo(requestRecord);
+
+        server.disposeNow();
+    }
+
+    @Test
     public void shouldSetTimeoutOnResource() throws URISyntaxException {
         HttpClientConfig httpClientConfig = new HttpClientConfig();
         httpClientConfig.setUrl("http://localhost");
@@ -1606,6 +1635,12 @@ public class HttpClientTest {
             }
         }
 
+        record SomeRecord(
+            @QueryParam("param1") String param1,
+            @QueryParam("param2") String param2
+        ) {
+        }
+
         @GET
         Single<String> getSingle();
 
@@ -1626,6 +1661,9 @@ public class HttpClientTest {
 
         @Path("beanParam")
         Observable<String> withBeanParam(@BeanParam Filters filters);
+
+        @Path("beanParamRecord")
+        Observable<String> withBeanParamRecord(@BeanParam SomeRecord record);
 
         @GET
         @Path("/multicookie")
@@ -1678,6 +1716,10 @@ public class HttpClientTest {
         Observable<Wrapper> getWrappedPojo();
 
         @POST
+        @Path("postRecord")
+        Observable<SomeRecord> postRecord(SomeRecord record);
+
+        @POST
         @Consumes("application/xml")
         Observable<Void> sendXml(String xml);
 
@@ -1690,7 +1732,7 @@ public class HttpClientTest {
         Observable<Void> sendXml(Pojo pojo);
     }
 
-    class Wrapper {
+    static class Wrapper {
         private Pojo result;
 
         public Pojo getResult() {
@@ -1702,7 +1744,7 @@ public class HttpClientTest {
         }
     }
 
-    class Pojo {
+    static class Pojo {
         private String name;
 
         public String getName() {

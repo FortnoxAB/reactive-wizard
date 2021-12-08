@@ -3,7 +3,6 @@ package se.fortnox.reactivewizard.jaxrs.params.annotated;
 import com.fasterxml.jackson.core.type.TypeReference;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import rx.Observable;
 import se.fortnox.reactivewizard.jaxrs.JaxRsRequest;
 import se.fortnox.reactivewizard.jaxrs.params.ParamResolver;
 import se.fortnox.reactivewizard.jaxrs.params.ParamResolverFactories;
@@ -17,21 +16,20 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static java.util.Arrays.asList;
-import static rx.Observable.merge;
-import static se.fortnox.reactivewizard.util.rx.FirstThen.first;
 
 public class BeanParamResolver<T> extends AnnotatedParamResolver<T> {
 
-    private final Supplier<T> instantiator;
-    private final List<BiFunction<T, JaxRsRequest, Mono<T>>> fieldSetter;
+    private static final Object NULL_VALUE = new Object();
 
-    public BeanParamResolver(Supplier<T> instantiator, List<BiFunction<T, JaxRsRequest, Mono<T>>> setters) {
+    private final Function<JaxRsRequest, Mono<T>> resolver;
+
+    public BeanParamResolver(Function<JaxRsRequest, Mono<T>> resolver) {
         super(null, null, null);
-        this.instantiator = instantiator;
-        this.fieldSetter = setters;
+        this.resolver = resolver;
     }
 
     @Override
@@ -41,12 +39,7 @@ public class BeanParamResolver<T> extends AnnotatedParamResolver<T> {
 
     @Override
     public Mono<T> resolve(JaxRsRequest request) {
-        T instance = instantiator.get();
-        List<Mono<T>> runSetters = new ArrayList<>(fieldSetter.size());
-        for (int i = 0; i < fieldSetter.size(); i++) {
-            runSetters.add(fieldSetter.get(i).apply(instance, request));
-        }
-        return Flux.merge(runSetters).count().map(count -> instance);
+        return resolver.apply(request);
     }
 
     public static class Factory implements AnnotatedParamResolverFactory {
@@ -59,7 +52,17 @@ public class BeanParamResolver<T> extends AnnotatedParamResolver<T> {
 
         @Override
         public <T> ParamResolver<T> create(TypeReference<T> paramType, Annotation annotation, String defaultValue) {
-            Class<T> beanParamCls = (Class<T>) paramType.getType();
+            //noinspection unchecked
+            Class<T> beanParamCls = (Class<T>)paramType.getType();
+
+            if (beanParamCls.isRecord()) {
+                return createForRecord(beanParamCls);
+            } else {
+                return createForClass(beanParamCls);
+            }
+        }
+
+        private <T> BeanParamResolver<T> createForClass(Class<T> beanParamCls) {
             Supplier<T> instantiator = ReflectionUtil.instantiator(beanParamCls);
 
             List<BiFunction<T, JaxRsRequest, Mono<T>>> fieldSetters = new ArrayList<>();
@@ -74,10 +77,10 @@ public class BeanParamResolver<T> extends AnnotatedParamResolver<T> {
                         ParamResolver<?> fieldResolver = paramResolverFactory.create(fieldType, fieldAnnotation, defaultFieldValue);
 
                         Optional<BiConsumer<T, Object>> setterOptional = ReflectionUtil.setter(beanParamCls, field.getName());
-                        if (!setterOptional.isPresent()) {
+                        if (setterOptional.isEmpty()) {
                             continue;
                         }
-                        BiConsumer setter = setterOptional.get();
+                        BiConsumer<T, Object> setter = setterOptional.get();
                         fieldSetters.add((instance, request) -> {
                             Mono<?> fieldValue = fieldResolver.resolve(request);
                             return fieldValue.map(value -> {
@@ -88,7 +91,79 @@ public class BeanParamResolver<T> extends AnnotatedParamResolver<T> {
                     }
                 }
             }
-            return new BeanParamResolver<T>(instantiator, fieldSetters);
+
+            Function<JaxRsRequest, Mono<T>> resolver = (JaxRsRequest request) -> {
+                T instance = instantiator.get();
+                List<Mono<T>> runSetters = new ArrayList<>(fieldSetters.size());
+                for (var setter : fieldSetters) {
+                    runSetters.add(setter.apply(instance, request));
+                }
+                return Flux.merge(runSetters).count().map(count -> instance);
+            };
+
+            return new BeanParamResolver<>(resolver);
+        }
+
+        private <T> BeanParamResolver<T> createForRecord(Class<T> beanParamCls) {
+            var constructors = beanParamCls.getDeclaredConstructors();
+            if (constructors.length != 1) {
+                throw new IllegalArgumentException("A @BeanParam record may only have a single constructor");
+            }
+
+            var constructor = constructors[0];
+
+            var constructorParams = constructor.getParameters();
+            var constructorArgumentResolvers = new ArrayList<ParamResolver<Object>>(constructorParams.length);
+
+            for (var constructorParam : constructorParams) {
+                Annotation annotation = null;
+                AnnotatedParamResolverFactory paramResolverFactory = null;
+
+                var parameterAnnotations = asList(constructorParam.getAnnotations());
+
+                for (var ann : parameterAnnotations) {
+                    paramResolverFactory = annotatedParamResolverFactories.get(ann.annotationType());
+                    if (paramResolverFactory != null) {
+                        annotation = ann;
+                        break;
+                    }
+                }
+
+                if (paramResolverFactory == null) {
+                    throw new IllegalArgumentException("Missing Param annotation for @BeanParam record parameter");
+                }
+
+                var paramType = Types.toReference(constructorParam.getParameterizedType());
+                var defaultValue = ParamResolverFactories.findDefaultValue(parameterAnnotations);
+                var paramResolver = paramResolverFactory.create(paramType, annotation, defaultValue);
+
+                constructorArgumentResolvers.add(paramResolver);
+            }
+
+            Function<JaxRsRequest, Mono<T>> resolver = (JaxRsRequest request) -> {
+                var argsFlux = Flux.fromIterable(constructorArgumentResolvers)
+                    .map(it -> it.resolve(request).defaultIfEmpty(NULL_VALUE));
+
+                return Flux.concat(argsFlux)
+                    .reduce(new ArrayList<>(), (acc, next) -> {
+                        if (next == NULL_VALUE) {
+                            acc.add(null);
+                        } else {
+                            acc.add(next);
+                        }
+                        return acc;
+                    })
+                    .map(args -> {
+                        try {
+                            //noinspection unchecked
+                            return (T)(constructor.newInstance(args.toArray()));
+                        } catch (Throwable e) {
+                            throw new RuntimeException(e);
+                        }
+                    });
+            };
+
+            return new BeanParamResolver<>(resolver);
         }
 
         private static List<Field> getAllDeclaredFields(Class<?> type) {

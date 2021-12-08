@@ -16,6 +16,7 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.YearMonth;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -101,6 +102,14 @@ public class DbProxyTest {
         LocalDateTime now = LocalDateTime.now();
         assertThat(dbProxyTestDao.insertLocalDateTime(now).toBlocking().single()).isEqualTo(1);
         verify(mockDb.getPreparedStatement()).setTimestamp(1, java.sql.Timestamp.valueOf(now));
+    }
+
+    @Test
+    public void shouldSetYearMonthAsInteger() throws SQLException {
+        mockDb.setUpdatedRows(1);
+        YearMonth yearMonth = YearMonth.parse("2021-10");
+        assertThat(dbProxyTestDao.insertYearMonth(yearMonth).toBlocking().single()).isEqualTo(1);
+        verify(mockDb.getPreparedStatement()).setObject(1, 202110);
     }
 
     @Test

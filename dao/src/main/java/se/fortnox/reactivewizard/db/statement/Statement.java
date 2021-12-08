@@ -1,5 +1,7 @@
 package se.fortnox.reactivewizard.db.statement;
 
+import rx.Subscriber;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -35,4 +37,10 @@ public interface Statement {
      * @return <code>true</code> if the specified statement might be added to the batch.
      */
     boolean sameBatch(Statement statement);
+
+    /**
+     * Set the subscriber
+     * @param subscriber the subscriber
+     */
+    void setSubscriber(Subscriber<?> subscriber);
 }

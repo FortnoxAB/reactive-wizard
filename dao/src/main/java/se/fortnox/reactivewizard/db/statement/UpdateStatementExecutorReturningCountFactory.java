@@ -35,7 +35,9 @@ public class UpdateStatementExecutorReturningCountFactory extends AbstractUpdate
 
     protected void executed(int count, Subscriber subscriber) throws SQLException {
         ensureMinimumReached(count);
-        subscriber.onNext(count);
+        if (subscriber != null) {
+            subscriber.onNext(count);
+        }
     }
 
     @Override

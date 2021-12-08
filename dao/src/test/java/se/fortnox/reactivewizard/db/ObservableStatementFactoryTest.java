@@ -18,7 +18,6 @@ import se.fortnox.reactivewizard.metrics.Metrics;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -52,20 +51,22 @@ public class ObservableStatementFactoryTest {
             invocationOnMock.getArgument(0, Action0.class).call();
             return Subscriptions.unsubscribed();
         });
-        when(dbStatementFactory.create(any(), any())).then(invocationOnMock -> new Statement() {
+        when(dbStatementFactory.create(any())).then(invocationOnMock -> new Statement() {
+            private Subscriber subscriber;
+
             @Override
             public void execute(Connection connection) {
-                invocationOnMock.getArgument(1, Subscriber.class).onNext("result");
+                subscriber.onNext("result");
             }
 
             @Override
             public void onCompleted() {
-                invocationOnMock.getArgument(1, Subscriber.class).onCompleted();
+                subscriber.onCompleted();
             }
 
             @Override
             public void onError(Throwable throwable) {
-                invocationOnMock.getArgument(1, Subscriber.class).onError(throwable);
+                subscriber.onError(throwable);
             }
 
             @Override
@@ -82,15 +83,20 @@ public class ObservableStatementFactoryTest {
             public boolean sameBatch(Statement statement) {
                 return false;
             }
+
+            @Override
+            public void setSubscriber(Subscriber<?> subscriber) {
+                this.subscriber = subscriber;
+            }
         });
         Function<Object[], String> paramSerializer = objects -> "";
         statementFactory = new ObservableStatementFactory(dbStatementFactory, pagingOutput, scheduler, paramSerializer,
-            Metrics.get("test"), databaseConfig);
+            Metrics.get("test"), databaseConfig, o->o);
     }
 
     @Test
     public void shouldReleaseSchedulerWorkers() {
-        Observable<Object> stmt = statementFactory.create(new Object[0], () -> mock(Connection.class), new AtomicReference<>());
+        Observable<Object> stmt = (Observable<Object>) statementFactory.create(new Object[0], () -> mock(Connection.class));
         stmt.toBlocking().single();
         verify(scheduler, times(1)).createWorker();
         verify(worker).unsubscribe();

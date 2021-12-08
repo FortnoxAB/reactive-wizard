@@ -8,6 +8,7 @@ import rx.Single;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.YearMonth;
 
 public interface DbProxyTestDao {
     @Update("update table set val=:val where key=:key")
@@ -42,6 +43,9 @@ public interface DbProxyTestDao {
 
     @Update("insert into table (datetime) values (:datetime)")
     Observable<Integer> insertLocalDateTime(LocalDateTime datetime);
+
+    @Update("insert into table (yearMonth) values (:yearMonth)")
+    Observable<Integer> insertYearMonth(YearMonth yearMonth);
 
     @Update("insert into table")
     Observable<String> insertBadreturnType();

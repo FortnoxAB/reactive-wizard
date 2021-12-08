@@ -1,7 +1,6 @@
 package se.fortnox.reactivewizard.db;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import rx.Observable;
 import rx.Scheduler;
 import rx.internal.util.RxThreadFactory;
 import rx.schedulers.Schedulers;
@@ -9,12 +8,10 @@ import se.fortnox.reactivewizard.db.config.DatabaseConfig;
 import se.fortnox.reactivewizard.db.paging.PagingOutput;
 import se.fortnox.reactivewizard.db.statement.DbStatementFactory;
 import se.fortnox.reactivewizard.db.statement.DbStatementFactoryFactory;
-import se.fortnox.reactivewizard.db.transactions.TransactionStatement;
 import se.fortnox.reactivewizard.json.JsonSerializerFactory;
 import se.fortnox.reactivewizard.metrics.Metrics;
 import se.fortnox.reactivewizard.util.DebugUtil;
 import se.fortnox.reactivewizard.util.FluxRxConverter;
-import se.fortnox.reactivewizard.util.ReactiveDecorator;
 import se.fortnox.reactivewizard.util.ReflectionUtil;
 
 import javax.annotation.Nullable;
@@ -28,7 +25,6 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 @Singleton
@@ -121,14 +117,11 @@ public class DbProxy implements InvocationHandler {
                 scheduler,
                 paramSerializer,
                 createMetrics(method),
-                databaseConfig);
+                databaseConfig,
+                FluxRxConverter.converterFromObservable(method.getReturnType()));
             statementFactories.put(method, observableStatementFactory);
         }
-        AtomicReference<TransactionStatement> transactionHolder = new AtomicReference<>();
-        Observable<Object> resultObservable = observableStatementFactory.create(args, connectionProvider, transactionHolder);
-        Class<?> returnType = method.getReturnType();
-        Function<Observable<Object>,Object> converter = FluxRxConverter.converterFromObservable(returnType);
-        return ReactiveDecorator.decorated(converter.apply(resultObservable), transactionHolder);
+        return observableStatementFactory.create(args, connectionProvider);
     }
 
     private Metrics createMetrics(Method method) {
@@ -147,4 +140,5 @@ public class DbProxy implements InvocationHandler {
     public DatabaseConfig getDatabaseConfig() {
         return databaseConfig;
     }
+
 }

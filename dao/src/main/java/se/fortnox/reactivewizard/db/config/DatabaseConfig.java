@@ -12,9 +12,28 @@ public class DatabaseConfig {
     private String password;
     private String schema;
     private int    maximumPoolSize       = 10;
-    private long   connectionTimeout     = 30000;
-    private long   idleTimeout           = 600000;
-    private long   maxLifetime           = 1800000;
+    
+    /* Set connectionTimeout to 10s, which is a reasonable time before we 
+       give up and attempt a new one. Useful for recovering more quickly 
+       from network problems.
+    */
+    private long   connectionTimeout     = 10000;
+    
+    /* Set idleTimeout to 2m, to close idle connections more quickly than
+       default. This avoids hogging connections that might be used for
+       clients other than us.
+    */
+    private long   idleTimeout           = 120000;
+    
+    /* Set maxLifetime to 5m, to recycle connections older than that. This 
+       helps when running db-proxy pods in kubernetes, since such pods will 
+       be able to be more quickly rescheduled to other nodes (within 5 
+       minutes rather than default 30). maxLifetime will however never 
+       terminate an active connection, just recycle connections when they 
+       become idle and have existed for longer than 5m.
+    */
+    private long   maxLifetime           = 300000;
+    
     private int    minimumIdle           = 1;
     private long   slowQueryLogThreshold = 5000;
     private long   socketTimeout         = 300;
