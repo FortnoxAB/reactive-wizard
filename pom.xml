@@ -62,15 +62,16 @@
         <module>logging</module>
         <module>binding</module>
         <module>bootstrap</module>
-        <module>bootstrap-spring</module>
+        <module>bootstrap-rw</module>
         <module>server</module>
+        <module>server-rw</module>
+        <module>server-api</module>
         <module>dao</module>
         <module>examples</module>
         <module>metrics</module>
         <module>client</module>
         <module>validation</module>
         <module>dbmigrate</module>
-        <module>spring-server</module>
     </modules>
 
     <properties>

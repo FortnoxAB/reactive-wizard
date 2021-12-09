@@ -1,9 +1,5 @@
-server:
-    shutdown: graceful
+server.shutdown: graceful
 
-#spring:
-#    rsocket:
-#        server:
-#            port: 7000
-#    main:
-#        lazy-initialization: true
+spring:
+    main:
+        allow-bean-definition-overriding: true

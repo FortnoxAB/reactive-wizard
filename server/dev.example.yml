@@ -1,2 +1,44 @@
-server:
-    port: 8080
+httpClient: route-utv.fnox.se
+
+loginHost: apps-develop.alfa.fnox.se
+
+admin:
+    port: 8081
+
+eventPublisher:
+    enabled: false
+    kafkaBrokerList: 192.168.3.159:9092, 192.168.3.160:9092, 192.168.3.161:9092
+
+kafkaClient:
+    enabled: false
+    bootstrapServers: 192.168.3.159:9092
+    groupId: users-persson-ar-bast
+
+proxy-pass:
+    /fs->https://apps-develop.alfa.fnox.se/fs
+    /webapp->https://apps-develop.alfa.fnox.se/webapp
+    /f2->https://apps-develop.alfa.fnox.se/f2
+    /sie->https://apps-develop.alfa.fnox.se/sie
+    /javascript->https://apps-develop.alfa.fnox.se/javascript
+    /api->https://apps-develop.alfa.fnox.se/api
+
+deleteTenant:
+    algorithm: "HS256"
+    key: 1337
+
+transactionEventPublisher:
+    enabled: false
+    f3Db: true
+
+f3dao:
+    applicationName: users-dev
+
+database:
+    user: userservice
+    password: fortnox1
+    url: jdbc:postgresql://dev-pg-app001-proxy.fnox.se:6432/services_alfa?prepareThreshold=0&ApplicationName=users
+
+liquidbase-database:
+    user: userservice
+    password: fortnox1
+    url: jdbc:postgresql://dev-pg-app001-proxy.fnox.se:6432/services_alfa?prepareThreshold=0&ApplicationName=users-liquibase

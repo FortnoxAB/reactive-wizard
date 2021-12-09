@@ -1,7 +1,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<artifactId>reactivewizard-bootstrap</artifactId>
+	<artifactId>reactivewizard-bootstrap-rw</artifactId>
 
 	<parent>
 		<groupId>se.fortnox.reactivewizard</groupId>
@@ -41,24 +41,6 @@
 			<version>999.9.9-SNAPSHOT</version>
 			<scope>test</scope>
 		</dependency>
-
-        <dependency>
-            <groupId>org.springframework.guice</groupId>
-            <artifactId>spring-guice</artifactId>
-            <version>SPRING_GUICE_2</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-webflux</artifactId>
-            <version>2.5.6</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>io.projectreactor.netty</groupId>
-                    <artifactId>reactor-netty-http</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
 	</dependencies>
 
 	<build>

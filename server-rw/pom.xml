@@ -1,7 +1,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<artifactId>reactivewizard-bootstrap</artifactId>
+	<artifactId>reactivewizard-server-rw</artifactId>
 
 	<parent>
 		<groupId>se.fortnox.reactivewizard</groupId>
@@ -11,55 +11,32 @@
 
 
 	<dependencies>
-		<dependency>
-			<groupId>com.google.inject</groupId>
-			<artifactId>guice</artifactId>
-			<version>${guice.version}</version>
-		</dependency>
-
-		<dependency>
-			<groupId>se.fortnox.reactivewizard</groupId>
-			<artifactId>reactivewizard-binding</artifactId>
-			<version>999.9.9-SNAPSHOT</version>
-		</dependency>
-
-		<dependency>
-			<groupId>se.fortnox.reactivewizard</groupId>
-			<artifactId>reactivewizard-config</artifactId>
-			<version>999.9.9-SNAPSHOT</version>
-		</dependency>
-
-		<dependency>
-			<groupId>se.fortnox.reactivewizard</groupId>
-			<artifactId>reactivewizard-logging</artifactId>
-			<version>999.9.9-SNAPSHOT</version>
-		</dependency>
-
-		<dependency>
-			<groupId>se.fortnox.reactivewizard</groupId>
-			<artifactId>reactivewizard-test</artifactId>
-			<version>999.9.9-SNAPSHOT</version>
-			<scope>test</scope>
-		</dependency>
-
         <dependency>
-            <groupId>org.springframework.guice</groupId>
-            <artifactId>spring-guice</artifactId>
-            <version>SPRING_GUICE_2</version>
+            <groupId>se.fortnox.reactivewizard</groupId>
+            <artifactId>reactivewizard-server-api</artifactId>
+            <version>999.9.9-SNAPSHOT</version>
         </dependency>
 
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-webflux</artifactId>
-            <version>2.5.6</version>
+            <groupId>org.awaitility</groupId>
+            <artifactId>awaitility</artifactId>
+            <version>4.0.3</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>se.fortnox.reactivewizard</groupId>
+            <artifactId>reactivewizard-test</artifactId>
+            <scope>test</scope>
+            <version>999.9.9-SNAPSHOT</version>
             <exclusions>
                 <exclusion>
-                    <groupId>io.projectreactor.netty</groupId>
-                    <artifactId>reactor-netty-http</artifactId>
+                    <groupId>com.google.guava</groupId>
+                    <artifactId>guava</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
-	</dependencies>
+    </dependencies>
 
 	<build>
 		<plugins>
@@ -87,7 +64,11 @@
 							<goal>check</goal>
 						</goals>
 						<configuration>
-							<rules>
+                            <excludes>
+                                <exclude>**/*se/fortnox/reactivewizard/server/JaxRsResourceRegistry.class</exclude>
+                                <exclude>**/*se/fortnox/reactivewizard/server/ServerModule.class</exclude>
+                            </excludes>
+                            <rules>
 								<!-- implmentation is needed only for Maven 2 -->
 								<rule implementation="org.jacoco.maven.RuleConfiguration">
 									<element>BUNDLE</element>
@@ -96,7 +77,7 @@
 										<limit implementation="org.jacoco.report.check.Limit">
 											<counter>COMPLEXITY</counter>
 											<value>COVEREDRATIO</value>
-											<minimum>0.90</minimum>
+											<minimum>0.75</minimum>
 										</limit>
 									</limits>
 								</rule>

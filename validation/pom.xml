@@ -60,9 +60,10 @@
             <classifier>tests</classifier>
             <scope>test</scope>
         </dependency>
+
         <dependency>
             <groupId>se.fortnox.reactivewizard</groupId>
-            <artifactId>reactivewizard-server</artifactId>
+            <artifactId>reactivewizard-server-api</artifactId>
             <version>999.9.9-SNAPSHOT</version>
             <scope>test</scope>
         </dependency>
