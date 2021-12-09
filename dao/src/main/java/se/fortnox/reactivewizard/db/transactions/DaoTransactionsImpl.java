@@ -22,7 +22,7 @@ public class DaoTransactionsImpl implements DaoTransactions {
     public DaoTransactionsImpl() {
     }
 
-    private  <T> Transaction<T> createTransactionWithStatements(Collection<Observable<T>> daoCalls) {
+    private Transaction createTransactionWithStatements(Collection<StatementContext> statementContexts) {
         List<TransactionStatement> transactionStatements = new ArrayList<>();
         for (StatementContext statementContext : statementContexts) {
             Statement statement = statementContext.getStatement();
