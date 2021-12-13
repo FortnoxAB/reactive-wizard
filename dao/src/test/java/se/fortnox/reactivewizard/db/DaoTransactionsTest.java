@@ -124,7 +124,7 @@ public class DaoTransactionsTest {
 
         decoration.get().onTransactionCompleted(() -> cbExecuted[0] = true);
 
-        ReactiveDecorator.keepDecoration(daoObsWithCb, obs->{
+        daoObsWithCb = ReactiveDecorator.keepDecoration(daoObsWithCb, obs->{
             return obs.doOnCompleted(() -> cbExecuted[1] = true)
                 .doOnSubscribe(() -> cbExecuted[2] = true)
                 .doOnTerminate(() -> cbExecuted[3] = true);
