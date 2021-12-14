@@ -1,18 +1,21 @@
 package se.fortnox.reactivewizard.logging;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.netflix.blitz4j.LoggingConfiguration;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.Filter;
+import org.apache.logging.log4j.core.config.Configurator;
+import org.apache.logging.log4j.core.config.builder.api.AppenderComponentBuilder;
+import org.apache.logging.log4j.core.config.builder.api.ConfigurationBuilder;
+import org.apache.logging.log4j.core.config.builder.api.ConfigurationBuilderFactory;
+import org.apache.logging.log4j.core.config.builder.api.FilterComponentBuilder;
+import org.apache.logging.log4j.core.config.builder.api.LoggerComponentBuilder;
+import org.apache.logging.log4j.core.config.builder.api.RootLoggerComponentBuilder;
+import org.apache.logging.log4j.core.config.builder.impl.BuiltConfiguration;
 import se.fortnox.reactivewizard.config.Config;
 
 import javax.validation.Valid;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Properties;
 
 /**
  * Factory for initializing logging configuration and also container of logging configuration from YAML.
@@ -36,64 +39,78 @@ public class LoggingFactory {
     @JsonProperty("levels")
     Map<String, String> levels = new HashMap<>();
 
+    private static final Map<String, String> typeFromName = Map.of(
+        "stdout", "Console",
+        "file", "RollingFile");
+
     public void init() {
+        setDefaults();
+        ConfigurationBuilder<BuiltConfiguration> builder = ConfigurationBuilderFactory.newConfigurationBuilder();
+        createAppenders(builder);
+        createRootLogger(builder);
+        createLoggers(builder);
+        Configurator.initialize(builder.build());
+    }
+
+    private void createLoggers(ConfigurationBuilder<BuiltConfiguration> builder) {
+        levels.forEach((loggerName, levelAndAppenderString) -> {
+            String[] parts = levelAndAppenderString.split(",");
+            String levelPart = parts[0].trim();
+
+            LoggerComponentBuilder logger = builder.newAsyncLogger(loggerName, Level.toLevel(levelPart));
+            logger.addAttribute("additivity", additivity.getOrDefault(loggerName, false));
+
+            if (parts.length > 1) {
+                String appender = parts[1].trim();
+                logger.add(builder.newAppenderRef(appender));
+            }
+
+            builder.add(logger);
+        });
+    }
+
+    private void createRootLogger(ConfigurationBuilder<BuiltConfiguration> builder) {
+        RootLoggerComponentBuilder rootLogger = builder.newAsyncRootLogger(Level.toLevel(level));
+        appenders.keySet().forEach(appenderName -> rootLogger.add(builder.newAppenderRef(appenderName)));
+        builder.add(rootLogger);
+    }
+
+    private void createAppenders(ConfigurationBuilder<BuiltConfiguration> builder) {
+        appenders.forEach((name, appenderProps) -> {
+            AppenderComponentBuilder appender = builder.newAppender(name, typeFromName.get(name));
+            setAppenderAttributes(builder, appenderProps, appender);
+            builder.add(appender);
+        });
+    }
+
+    private void setAppenderAttributes(ConfigurationBuilder<BuiltConfiguration> builder, Map<String, String> appenderProps, AppenderComponentBuilder appender) {
+        appenderProps.forEach((key,value) -> {
+            if (key.equals("threshold")) {
+                FilterComponentBuilder thresholdFilter = builder.newFilter("ThresholdFilter", Filter.Result.ACCEPT, Filter.Result.DENY);
+                thresholdFilter.addAttribute("level", value);
+                appender.add(thresholdFilter);
+            } else if (key.equals("layout")) {
+                appender.add(builder.newLayout(value));
+            } else if (key.equals("pattern")) {
+                appender.add(builder.newLayout("PatternLayout")
+                        .addAttribute("pattern", value)
+                );
+            } else {
+                appender.addAttribute(key, value);
+            }
+        });
+    }
+
+    private void setDefaults() {
+        if (additivity == null) {
+            additivity = new HashMap<>();
+        }
         if (appenders == null) {
             appenders = new HashMap<>();
-            appenders.put("stdout", new HashMap<>());
+            Map<String, String> stdoutAttributes = new HashMap<>();
+            appenders.put("stdout", stdoutAttributes);
+            stdoutAttributes.put("pattern","%-5p [%d{yyyy-MM-dd HH:mm:ss.SSS}] %c: %m%n");
         }
-
-        Properties props = new Properties();
-        loadConfigurationsFromFiles(props);
-        props.setProperty("log4j.rootLogger", level + "," + getAppenderNames());
-
-        addAppenderSettings(props);
-
-        addAdditivity(props);
-
-        for (Entry<String, String> e : levels.entrySet()) {
-            props.setProperty("log4j.logger." + e.getKey(), e.getValue());
-        }
-        LoggingConfiguration.getInstance().configure(props);
-    }
-
-    private void loadConfigurationsFromFiles(Properties props) {
-        try {
-            Enumeration<URL> resources = LoggingFactory.class.getClassLoader().getResources("log4j.properties");
-            while (resources.hasMoreElements()) {
-                URL log4jFile = resources.nextElement();
-                System.setProperty("log4j.configuration", log4jFile.toString());
-                try (InputStream stream = log4jFile.openStream()) {
-                    props.load(stream);
-                }
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private void addAdditivity(Properties props) {
-        if (additivity == null) {
-            return;
-        }
-        additivity.forEach((key, value) -> props.put("log4j.additivity." + key, String.valueOf(value)));
-    }
-
-    private void addAppenderSettings(Properties props) {
-        for (Entry<String, Map<String, String>> appenderConfig : appenders.entrySet()) {
-            for (Entry<String, String> setting : appenderConfig.getValue().entrySet()) {
-                StringBuilder key = new StringBuilder();
-                key.append("log4j.appender.").append(appenderConfig.getKey());
-                if (!"class".equals(setting.getKey())) {
-                    key.append(".").append(setting.getKey());
-                }
-
-                props.put(key.toString(), setting.getValue());
-            }
-        }
-    }
-
-    private String getAppenderNames() {
-        return String.join(",", appenders.keySet());
     }
 
     public String getLevel() {
