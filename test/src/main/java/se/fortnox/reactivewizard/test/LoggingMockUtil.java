@@ -1,28 +1,47 @@
 package se.fortnox.reactivewizard.test;
 
-import org.apache.log4j.Appender;
-import org.apache.log4j.Logger;
-import org.slf4j.impl.Log4jLoggerAdapter;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.Appender;
+import org.apache.logging.log4j.core.ErrorHandler;
+import org.apache.logging.log4j.core.Layout;
+import org.apache.logging.log4j.core.LogEvent;
+import org.apache.logging.log4j.core.Logger;
+import org.apache.logging.log4j.core.config.Configurator;
+import org.apache.logging.slf4j.Log4jLogger;
 
+import java.io.Serializable;
 import java.lang.reflect.Field;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class LoggingMockUtil {
+
+    public static final String MOCK_APPENDER = "mockAppender";
+
     private LoggingMockUtil() {
 
     }
 
-    public static Appender createMockedLogAppender(Class cls) {
-        Logger   logger       = LoggingMockUtil.getLogger(cls);
-        Appender mockAppender = mock(Appender.class);
-        logger.addAppender(mockAppender);
+    public static org.apache.logging.log4j.core.Appender createMockedLogAppender(Class cls) {
+        setLevel(Level.INFO);
+        Logger logger       = LoggingMockUtil.getLogger(cls);
+
+        Appender mockAppender = logger.getAppenders().get(MOCK_APPENDER);
+        if (mockAppender != null) {
+            return ((AppenderPreservingEvents)mockAppender).getInner();
+        }
+
+        mockAppender = mock(Appender.class);
+        when(mockAppender.getName()).thenReturn(MOCK_APPENDER);
+        logger.addAppender(new AppenderPreservingEvents(mockAppender));
         return mockAppender;
     }
 
-    public static void destroyMockedAppender(Appender appender, Class cls) {
+    public static void destroyMockedAppender(Class cls) {
         Logger logger = LoggingMockUtil.getLogger(cls);
-        appender.close();
+        Appender appender = logger.getAppenders().get(MOCK_APPENDER);
         logger.removeAppender(appender);
     }
 
@@ -36,13 +55,100 @@ public class LoggingMockUtil {
         try {
             Field logField = cls.getDeclaredField("LOG");
             logField.setAccessible(true);
-            Log4jLoggerAdapter loggerAdapter = (Log4jLoggerAdapter)logField.get(null);
+            Log4jLogger loggerAdapter = (Log4jLogger)logField.get(null);
             Field innerLogField = loggerAdapter.getClass()
                 .getDeclaredField("logger");
             innerLogField.setAccessible(true);
             return (Logger)innerLogField.get(loggerAdapter);
         } catch (NoSuchFieldException | IllegalAccessException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    public static void setLevel(Level level) {
+        Configurator.setRootLevel(level);
+    }
+
+    public static Level setLevel(Class<?> cls, Level level) {
+        org.apache.logging.log4j.Logger logger = LogManager.getLogger(cls);
+        Level oldLevel = logger.getLevel();
+        Configurator.setLevel(logger.getName(), level);
+        return oldLevel;
+    }
+
+    /**
+     * Needed in order to propagate immutable LogEvent to mock. Otherwise mockito will see a LogEvent that has been
+     * mutated.
+     */
+    private static class AppenderPreservingEvents implements Appender {
+        private final Appender inner;
+
+        public AppenderPreservingEvents(Appender inner) {
+            this.inner = inner;
+        }
+
+        @Override
+        public void append(LogEvent event) {
+            inner.append(event.toImmutable());
+        }
+
+        @Override
+        public String getName() {
+            return inner.getName();
+        }
+
+        @Override
+        public Layout<? extends Serializable> getLayout() {
+            return null;
+        }
+
+        @Override
+        public boolean ignoreExceptions() {
+            return false;
+        }
+
+        @Override
+        public ErrorHandler getHandler() {
+            return null;
+        }
+
+        @Override
+        public void setHandler(ErrorHandler handler) {
+
+        }
+
+        @Override
+        public State getState() {
+            return null;
+        }
+
+        @Override
+        public void initialize() {
+
+        }
+
+        @Override
+        public void start() {
+
+        }
+
+        @Override
+        public void stop() {
+
+        }
+
+        @Override
+        public boolean isStarted() {
+            return true;
+        }
+
+        @Override
+        public boolean isStopped() {
+            return false;
+        }
+
+        public Appender getInner() {
+            return inner;
         }
     }
 }

@@ -11,12 +11,9 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.cookie.DefaultCookie;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
-import org.apache.log4j.Appender;
-import org.apache.log4j.Level;
-import org.apache.log4j.LogManager;
-import org.junit.After;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.Appender;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.reactivestreams.Publisher;
@@ -43,7 +40,18 @@ import se.fortnox.reactivewizard.test.observable.ObservableAssertions;
 import se.fortnox.reactivewizard.util.rx.RetryWithDelay;
 
 import javax.net.ssl.SSLHandshakeException;
-import javax.ws.rs.*;
+import javax.ws.rs.BeanParam;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.CookieParam;
+import javax.ws.rs.DELETE;
+import javax.ws.rs.FormParam;
+import javax.ws.rs.GET;
+import javax.ws.rs.HeaderParam;
+import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
@@ -53,11 +61,18 @@ import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.security.cert.CertificateException;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -75,23 +90,11 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static reactor.core.publisher.Flux.*;
-import static se.fortnox.reactivewizard.test.LoggingMockUtil.destroyMockedAppender;
 import static se.fortnox.reactivewizard.test.TestUtil.matches;
 
 public class HttpClientTest {
 
     private HealthRecorder healthRecorder = new HealthRecorder();
-    private Appender       mockAppender;
-
-    @Before
-    public void before() {
-        mockAppender = LoggingMockUtil.createMockedLogAppender(HttpClient.class);
-    }
-
-    @After
-    public void after() {
-        destroyMockedAppender(mockAppender, HttpClient.class);
-    }
 
     @Test
     public void shouldNotRetryFailedPostCalls() {
@@ -181,7 +184,7 @@ public class HttpClientTest {
     protected void withServer(Consumer<DisposableServer> serverConsumer) {
         final DisposableServer server = startServer(HttpResponseStatus.OK, "\"OK\"");
 
-        LogManager.getLogger(RetryWithDelay.class).setLevel(Level.toLevel(Level.OFF_INT));
+        LoggingMockUtil.setLevel(RetryWithDelay.class, Level.OFF);
 
         try {
             serverConsumer.accept(server);
@@ -675,6 +678,7 @@ public class HttpClientTest {
 
     @Test
     public void shouldLogErrorOnTooLargeResponse() {
+        Appender                           mockAppender = LoggingMockUtil.createMockedLogAppender(HttpClient.class);
         DisposableServer                   server       = startServer(HttpResponseStatus.OK, generateLargeString(11));
         TestResource                       resource     = getHttpProxy(server.port());
         WebException                       e            = null;
@@ -688,8 +692,8 @@ public class HttpClientTest {
         assertThat(e.getStatus()).isEqualTo(BAD_REQUEST);
         assertThat(e.getError()).isEqualTo("too.large.input");
 
-        verify(mockAppender).doAppend(matches(log -> {
-            assertThat(log.getMessage()).isEqualTo("Failed request. Url: localhost:" + server.port() + "/hello, headers: [Host=localhost]");
+        verify(mockAppender).append(matches(log -> {
+            assertThat(log.getMessage().getFormattedMessage()).isEqualTo("Failed request. Url: localhost:" + server.port() + "/hello, headers: [Host=localhost]");
         }));
 
         server.disposeNow();
@@ -697,6 +701,7 @@ public class HttpClientTest {
 
     @Test
     public void shouldRedactAuthorizationHeaderInLogsAndExceptionMessage() throws Exception {
+        Appender                           mockAppender = LoggingMockUtil.createMockedLogAppender(HttpClient.class);
         DisposableServer                   server       = startServer(BAD_REQUEST, "someError");
         HttpClientConfig                   config       = new HttpClientConfig("localhost:" + server.port());
         Map<String, String>                headers      = new HashMap<>();
@@ -709,12 +714,8 @@ public class HttpClientTest {
                 .toBlocking()
                 .single());
 
-        verify(mockAppender).doAppend(matches(log -> {
-            assertThat(log.getThrowableInformation().getThrowableStrRep())
-                .allSatisfy(throwableInfo -> {
-                    assertThat(throwableInfo)
-                        .doesNotContain("secretvalue");
-                });
+        verify(mockAppender).append(matches(log -> {
+            assertThat(log.getThrown().getMessage()).doesNotContain("secretvalue");
             assertThat(log.getMessage())
                 .isEqualTo("Failed request. Url: localhost:" + server.port() + "/hello, headers: [Authorization=REDACTED, Host=localhost]");
         }));
@@ -724,6 +725,7 @@ public class HttpClientTest {
 
     @Test
     public void shouldRedactSensitiveHeaderInLogsAndExceptionMessage() throws Exception {
+        Appender                           mockAppender = LoggingMockUtil.createMockedLogAppender(HttpClient.class);
         DisposableServer                   server       = startServer(BAD_REQUEST, "someError");
         HttpClientConfig                   config       = new HttpClientConfig("localhost:" + server.port());
         Map<String, String>                headers      = new HashMap<>();
@@ -737,13 +739,9 @@ public class HttpClientTest {
         ObservableAssertions.assertThatExceptionOfType(WebException.class)
             .isEmittedBy(resource.getHello().single());
 
-        verify(mockAppender).doAppend(matches(log -> {
-            assertThat(log.getThrowableInformation().getThrowableStrRep())
-                .allSatisfy(throwableInfo -> {
-                    assertThat(throwableInfo)
-                        .doesNotContain("secretvalue");
-                });
-            assertThat(log.getMessage())
+        verify(mockAppender).append(matches(log -> {
+            assertThat(log.getThrown().getMessage()).doesNotContain("secretvalue");
+            assertThat(log.getMessage().getFormattedMessage())
                 .isEqualTo("Failed request. Url: localhost:" + server.port() + "/hello, headers: [Cookie=REDACTED, Host=localhost]");
         }));
 
@@ -1058,9 +1056,7 @@ public class HttpClientTest {
     @Test
     public void shouldShouldNotGivePoolExhaustedIfServerDoesNotCloseConnection() throws URISyntaxException {
 
-        Level originalLogLevel = LogManager.getLogger(HttpClient.class)
-            .getLevel();
-        LogManager.getLogger(HttpClient.class).setLevel(Level.toLevel(Level.OFF_INT));
+        Level originalLogLevel = LoggingMockUtil.setLevel(HttpClient.class, Level.OFF);
 
         DisposableServer server = HttpServer.create().port(0)
             .handle((request, response) -> {
@@ -1091,8 +1087,7 @@ public class HttpClientTest {
         }
 
         server.disposeNow();
-        LogManager.getLogger(HttpClient.class)
-            .setLevel(originalLogLevel);
+        LoggingMockUtil.setLevel(HttpClient.class, originalLogLevel);
     }
 
     @Test

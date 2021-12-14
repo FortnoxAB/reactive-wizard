@@ -2,9 +2,8 @@ package se.fortnox.reactivewizard;
 
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
-import org.apache.log4j.Appender;
-import org.apache.log4j.Level;
-import org.apache.log4j.LogManager;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.Appender;
 import org.junit.Test;
 import reactor.netty.http.server.HttpServerRequest;
 import reactor.netty.http.server.HttpServerResponse;
@@ -13,6 +12,7 @@ import rx.exceptions.OnErrorThrowable;
 import se.fortnox.reactivewizard.jaxrs.WebException;
 import se.fortnox.reactivewizard.mocks.MockHttpServerRequest;
 import se.fortnox.reactivewizard.mocks.MockHttpServerResponse;
+import se.fortnox.reactivewizard.test.LoggingMockUtil;
 
 import java.nio.channels.ClosedChannelException;
 import java.nio.file.FileSystemException;
@@ -20,12 +20,10 @@ import java.nio.file.NoSuchFileException;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static se.fortnox.reactivewizard.test.TestUtil.matches;
 
 public class ExceptionHandlerTest {
-
     @Test
     public void shouldLogHeadersForErrors() {
         MockHttpServerRequest request = new MockHttpServerRequest("/path");
@@ -80,6 +78,7 @@ public class ExceptionHandlerTest {
 
     @Test
     public void shouldLog404AsDebug() {
+        LoggingMockUtil.setLevel(ExceptionHandler.class, Level.DEBUG);
         MockHttpServerRequest request = new MockHttpServerRequest("/path");
         String expectedLog = "404 Not Found\n" +
             "\tCause: -\n" +
@@ -92,6 +91,7 @@ public class ExceptionHandlerTest {
 
     @Test
     public void shouldLogClosedChannelExceptionAtDebugLevel() {
+        LoggingMockUtil.setLevel(ExceptionHandler.class, Level.DEBUG);
         assertLog(new MockHttpServerRequest("/path"),
             new ClosedChannelException(),
             Level.DEBUG,
@@ -129,6 +129,7 @@ public class ExceptionHandlerTest {
 
     @Test
     public void shouldSetLogLevelFromWebException() {
+        LoggingMockUtil.setLevel(ExceptionHandler.class, Level.DEBUG);
         WebException cause = new WebException(HttpResponseStatus.BAD_GATEWAY);
 
         cause.setLogLevel(org.slf4j.event.Level.WARN);
@@ -162,9 +163,7 @@ public class ExceptionHandlerTest {
     }
 
     private void assertLog(HttpServerRequest request, Exception exception, Level expectedLevel, String expectedLog, ExceptionHandler exceptionHandler) {
-        Appender mockAppender = mock(Appender.class);
-        LogManager.getLogger(ExceptionHandler.class).addAppender(mockAppender);
-        LogManager.getLogger(ExceptionHandler.class).setLevel(Level.DEBUG);
+        Appender mockAppender = LoggingMockUtil.createMockedLogAppender(ExceptionHandler.class);
 
         HttpServerResponse response = new MockHttpServerResponse();
         exceptionHandler.handleException(request, response, exception);
@@ -175,11 +174,12 @@ public class ExceptionHandlerTest {
             .replaceAll("\\{", "\\\\{")
             .replaceAll("\\}", "\\\\}");
 
-        verify(mockAppender).doAppend(matches(event -> {
+        verify(mockAppender).append(matches(event -> {
             assertThat(event.getLevel()).isEqualTo(expectedLevel);
             if (!expectedLog.equals("*")) {
-                assertThat(event.getMessage().toString()).matches(regex);
+                assertThat(event.getMessage().getFormattedMessage()).matches(regex);
             }
         }));
+        LoggingMockUtil.destroyMockedAppender(ExceptionHandler.class);
     }
 }
