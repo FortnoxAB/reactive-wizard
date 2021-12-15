@@ -78,24 +78,32 @@ public class ExceptionHandlerTest {
 
     @Test
     public void shouldLog404AsDebug() {
-        LoggingMockUtil.setLevel(ExceptionHandler.class, Level.DEBUG);
-        MockHttpServerRequest request = new MockHttpServerRequest("/path");
-        String expectedLog = "404 Not Found\n" +
-            "\tCause: -\n" +
-            "\tResponse: {\"id\":\"*\",\"error\":\"notfound\"}\n" +
-            "\tRequest: GET /path headers: ";
+        Level originalLevel = LoggingMockUtil.setLevel(ExceptionHandler.class, Level.DEBUG);
+        try {
+            MockHttpServerRequest request = new MockHttpServerRequest("/path");
+            String expectedLog = "404 Not Found\n" +
+                "\tCause: -\n" +
+                "\tResponse: {\"id\":\"*\",\"error\":\"notfound\"}\n" +
+                "\tRequest: GET /path headers: ";
 
-        assertLog(request, new NoSuchFileException(""), Level.DEBUG, expectedLog);
-        assertLog(request, new FileSystemException(""), Level.DEBUG, expectedLog);
+            assertLog(request, new NoSuchFileException(""), Level.DEBUG, expectedLog);
+            assertLog(request, new FileSystemException(""), Level.DEBUG, expectedLog);
+        } finally {
+            LoggingMockUtil.setLevel(ExceptionHandler.class, originalLevel);
+        }
     }
 
     @Test
     public void shouldLogClosedChannelExceptionAtDebugLevel() {
-        LoggingMockUtil.setLevel(ExceptionHandler.class, Level.DEBUG);
-        assertLog(new MockHttpServerRequest("/path"),
-            new ClosedChannelException(),
-            Level.DEBUG,
-            "Inbound connection has been closed: GET /path");
+        Level originalLevel = LoggingMockUtil.setLevel(ExceptionHandler.class, Level.DEBUG);
+        try {
+            assertLog(new MockHttpServerRequest("/path"),
+                new ClosedChannelException(),
+                Level.DEBUG,
+                "Inbound connection has been closed: GET /path");
+        } finally {
+            LoggingMockUtil.setLevel(ExceptionHandler.class, originalLevel);
+        }
     }
 
     @Test
@@ -129,23 +137,27 @@ public class ExceptionHandlerTest {
 
     @Test
     public void shouldSetLogLevelFromWebException() {
-        LoggingMockUtil.setLevel(ExceptionHandler.class, Level.DEBUG);
-        WebException cause = new WebException(HttpResponseStatus.BAD_GATEWAY);
+        Level originalLevel = LoggingMockUtil.setLevel(ExceptionHandler.class, Level.DEBUG);
+        try {
+            WebException cause = new WebException(HttpResponseStatus.BAD_GATEWAY);
 
-        cause.setLogLevel(org.slf4j.event.Level.WARN);
-        assertLog(new MockHttpServerRequest("/path"), cause, Level.WARN, "*");
+            cause.setLogLevel(org.slf4j.event.Level.WARN);
+            assertLog(new MockHttpServerRequest("/path"), cause, Level.WARN, "*");
 
-        cause.setLogLevel(org.slf4j.event.Level.DEBUG);
-        assertLog(new MockHttpServerRequest("/path"), cause, Level.DEBUG, "*");
+            cause.setLogLevel(org.slf4j.event.Level.DEBUG);
+            assertLog(new MockHttpServerRequest("/path"), cause, Level.DEBUG, "*");
 
-        cause.setLogLevel(org.slf4j.event.Level.ERROR);
-        assertLog(new MockHttpServerRequest("/path"), cause, Level.ERROR, "*");
+            cause.setLogLevel(org.slf4j.event.Level.ERROR);
+            assertLog(new MockHttpServerRequest("/path"), cause, Level.ERROR, "*");
 
-        cause.setLogLevel(org.slf4j.event.Level.TRACE);
-        assertLog(new MockHttpServerRequest("/path"), cause, Level.DEBUG, "*");
+            cause.setLogLevel(org.slf4j.event.Level.TRACE);
+            assertLog(new MockHttpServerRequest("/path"), cause, Level.DEBUG, "*");
 
-        cause.setLogLevel(org.slf4j.event.Level.INFO);
-        assertLog(new MockHttpServerRequest("/path"), cause, Level.INFO, "*");
+            cause.setLogLevel(org.slf4j.event.Level.INFO);
+            assertLog(new MockHttpServerRequest("/path"), cause, Level.INFO, "*");
+        } finally {
+            LoggingMockUtil.setLevel(ExceptionHandler.class, originalLevel);
+        }
     }
 
     @Test

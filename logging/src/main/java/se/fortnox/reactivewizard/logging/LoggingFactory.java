@@ -3,7 +3,6 @@ package se.fortnox.reactivewizard.logging;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.Filter;
-import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.apache.logging.log4j.core.config.builder.api.AppenderComponentBuilder;
 import org.apache.logging.log4j.core.config.builder.api.ConfigurationBuilder;
@@ -46,6 +45,9 @@ public class LoggingFactory {
         "stdout", "Console",
         "file", "RollingFile");
 
+    /**
+     * Configures logging.
+     */
     public void init() {
         setDefaults();
         ConfigurationBuilder<BuiltConfiguration> builder = ConfigurationBuilderFactory.newConfigurationBuilder();
@@ -81,7 +83,11 @@ public class LoggingFactory {
 
     private void createAppendersAndConnectToRootLogger(ConfigurationBuilder<BuiltConfiguration> builder, RootLoggerComponentBuilder rootLoggerBuilder) {
         appenders.forEach((name, appenderProps) -> {
-            AppenderComponentBuilder appender = builder.newAppender(name, requireNonNull(TYPE_FROM_NAME.get(name), "appender names must be either stdout or file, was: " + name));
+            AppenderComponentBuilder appender = builder.newAppender(
+                name,
+                requireNonNull(TYPE_FROM_NAME.get(name),
+                    "appender names must be either stdout or file, was: " + name)
+            );
             setAppenderAttributes(builder, appenderProps, appender);
             builder.add(appender);
             rootLoggerBuilder.add(builder.newAppenderRef(name));
@@ -89,16 +95,17 @@ public class LoggingFactory {
     }
 
     private void setAppenderAttributes(ConfigurationBuilder<BuiltConfiguration> builder, Map<String, String> appenderProps, AppenderComponentBuilder appender) {
-        appenderProps.forEach((key,value) -> {
-            switch (key) {
-                case "threshold" -> {
-                    FilterComponentBuilder thresholdFilter = builder.newFilter("ThresholdFilter", Filter.Result.ACCEPT, Filter.Result.DENY);
-                    thresholdFilter.addAttribute("level", value);
-                    appender.add(thresholdFilter);
-                }
-                case "layout" -> appender.add(builder.newLayout(value));
-                case "pattern" -> appender.add(builder.newLayout("PatternLayout").addAttribute("pattern", value));
-                default -> appender.addAttribute(key, value);
+        appenderProps.forEach((key, value) -> {
+            if ("threshold".equals(key)) {
+                FilterComponentBuilder thresholdFilter = builder.newFilter("ThresholdFilter", Filter.Result.ACCEPT, Filter.Result.DENY);
+                thresholdFilter.addAttribute("level", value);
+                appender.add(thresholdFilter);
+            } else if ("layout".equals(key)) {
+                appender.add(builder.newLayout(value));
+            } else if ("pattern".equals(key)) {
+                appender.add(builder.newLayout("PatternLayout").addAttribute("pattern", value));
+            } else {
+                appender.addAttribute(key, value);
             }
         });
     }
@@ -111,14 +118,20 @@ public class LoggingFactory {
             appenders = new HashMap<>();
             Map<String, String> stdoutAttributes = new HashMap<>();
             appenders.put("stdout", stdoutAttributes);
-            stdoutAttributes.put("pattern","%-5p [%d{yyyy-MM-dd HH:mm:ss.SSS}] %c: %m%n");
+            stdoutAttributes.put("pattern", "%-5p [%d{yyyy-MM-dd HH:mm:ss.SSS}] %c: %m%n");
         }
     }
 
+    /**
+     * @return log level of the root logger.
+     */
     public String getLevel() {
         return level;
     }
 
+    /**
+     * @param level to set on the root logger.
+     */
     public void setLevel(String level) {
         this.level = level;
     }
