@@ -18,7 +18,7 @@ import static org.mockito.Mockito.when;
 
 public class LoggingMockUtil {
 
-    public static final String MOCK_APPENDER = "mockAppender";
+    private static final String MOCK_APPENDER = "mockAppender";
 
     private LoggingMockUtil() {
 

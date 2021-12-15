@@ -1,6 +1,5 @@
 package se.fortnox.reactivewizard.server;
 
-import io.netty.handler.codec.http.DefaultHttpHeaders;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import org.junit.Before;
 import org.junit.Test;
@@ -42,8 +41,6 @@ public class CompositeRequestHandlerTest {
     @Before
     public void beforeEach() {
         when(exceptionHandler.handleException(any(), any(), any())).thenReturn(Flux.empty());
-        lenient().when(request.requestHeaders()).thenReturn(new DefaultHttpHeaders());
-        lenient().when(response.responseHeaders()).thenReturn(new DefaultHttpHeaders());
         connectionCounter = new ConnectionCounter();
         compositeRequestHandler = new CompositeRequestHandler(requestHandlers, exceptionHandler, connectionCounter);
     }

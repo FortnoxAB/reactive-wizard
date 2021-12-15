@@ -1,10 +1,8 @@
 package se.fortnox.reactivewizard.db.deserializing;
 
-import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.Appender;
 import org.h2.tools.SimpleResultSet;
 import org.junit.Test;
-import se.fortnox.reactivewizard.test.LoggingMockUtil;
 
 import java.sql.SQLException;
 import java.sql.Types;

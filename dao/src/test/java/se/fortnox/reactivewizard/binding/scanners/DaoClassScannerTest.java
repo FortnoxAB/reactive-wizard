@@ -2,12 +2,10 @@ package se.fortnox.reactivewizard.binding.scanners;
 
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ScanResult;
-import org.apache.logging.log4j.Level;
 import org.junit.Test;
 import se.fortnox.reactivewizard.binding.ClassScannerImpl;
 import se.fortnox.reactivewizard.db.Query;
 import se.fortnox.reactivewizard.db.Update;
-import se.fortnox.reactivewizard.test.LoggingMockUtil;
 
 import java.util.Set;
 import java.util.stream.Collectors;
