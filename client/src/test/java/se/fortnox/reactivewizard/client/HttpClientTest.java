@@ -3,7 +3,6 @@ package se.fortnox.reactivewizard.client;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import com.google.inject.Injector;
@@ -73,6 +72,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -733,7 +733,8 @@ public class HttpClientTest {
                     .single());
 
             verify(mockAppender).append(matches(log -> {
-                String message = MoreObjects.firstNonNull(log.getThrown().getMessage(), "");
+                String message = Optional.ofNullable(log.getThrown().getMessage())
+                    .orElse("");
                 assertThat(message)
                     .doesNotContain("secretvalue");
                 assertThat(log.getMessage().getFormattedMessage())
@@ -764,7 +765,8 @@ public class HttpClientTest {
                 .isEmittedBy(resource.getHello().single());
 
             verify(mockAppender).append(matches(log -> {
-                String message = MoreObjects.firstNonNull(log.getThrown().getMessage(), "");
+                String message = Optional.ofNullable(log.getThrown().getMessage())
+                    .orElse("");
                 assertThat(message)
                     .doesNotContain("secretvalue");
                 assertThat(log.getMessage().getFormattedMessage())
