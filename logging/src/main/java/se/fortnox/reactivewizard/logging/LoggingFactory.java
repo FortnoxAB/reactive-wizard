@@ -3,6 +3,7 @@ package se.fortnox.reactivewizard.logging;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.Filter;
+import org.apache.logging.log4j.core.appender.ConsoleAppender;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.apache.logging.log4j.core.config.builder.api.AppenderComponentBuilder;
 import org.apache.logging.log4j.core.config.builder.api.ConfigurationBuilder;
@@ -51,9 +52,8 @@ public class LoggingFactory {
     public void init() {
         setDefaults();
         ConfigurationBuilder<BuiltConfiguration> builder = ConfigurationBuilderFactory.newConfigurationBuilder();
-
-        RootLoggerComponentBuilder rootLoggerBuilder = createRootLogger(builder);
-        createAppendersAndConnectToRootLogger(builder, rootLoggerBuilder);
+        createAppenders(builder);
+        createRootLogger(builder);
         createLoggers(builder);
         Configurator.initialize(builder.build());
     }
@@ -75,22 +75,17 @@ public class LoggingFactory {
         });
     }
 
-    private RootLoggerComponentBuilder createRootLogger(ConfigurationBuilder<BuiltConfiguration> builder) {
+    private void createRootLogger(ConfigurationBuilder<BuiltConfiguration> builder) {
         RootLoggerComponentBuilder rootLogger = builder.newAsyncRootLogger(Level.toLevel(level));
+        appenders.keySet().forEach(appenderName -> rootLogger.add(builder.newAppenderRef(appenderName)));
         builder.add(rootLogger);
-        return rootLogger;
     }
 
-    private void createAppendersAndConnectToRootLogger(ConfigurationBuilder<BuiltConfiguration> builder, RootLoggerComponentBuilder rootLoggerBuilder) {
+    private void createAppenders(ConfigurationBuilder<BuiltConfiguration> builder) {
         appenders.forEach((name, appenderProps) -> {
-            AppenderComponentBuilder appender = builder.newAppender(
-                name,
-                requireNonNull(TYPE_FROM_NAME.get(name),
-                    "appender names must be either stdout or file, was: " + name)
-            );
+            AppenderComponentBuilder appender = builder.newAppender(name, TYPE_FROM_NAME.get(name));
             setAppenderAttributes(builder, appenderProps, appender);
             builder.add(appender);
-            rootLoggerBuilder.add(builder.newAppenderRef(name));
         });
     }
 
