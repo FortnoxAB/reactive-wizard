@@ -1,14 +1,16 @@
 package se.fortnox.reactivewizard.logging;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Splitter;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.Filter;
-import org.apache.logging.log4j.core.appender.ConsoleAppender;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.apache.logging.log4j.core.config.builder.api.AppenderComponentBuilder;
 import org.apache.logging.log4j.core.config.builder.api.ConfigurationBuilder;
 import org.apache.logging.log4j.core.config.builder.api.ConfigurationBuilderFactory;
 import org.apache.logging.log4j.core.config.builder.api.FilterComponentBuilder;
+import org.apache.logging.log4j.core.config.builder.api.LayoutComponentBuilder;
 import org.apache.logging.log4j.core.config.builder.api.LoggerComponentBuilder;
 import org.apache.logging.log4j.core.config.builder.api.RootLoggerComponentBuilder;
 import org.apache.logging.log4j.core.config.builder.impl.BuiltConfiguration;
@@ -16,9 +18,9 @@ import se.fortnox.reactivewizard.config.Config;
 
 import javax.validation.Valid;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
-import static java.util.Objects.requireNonNull;
 
 /**
  * Factory for initializing logging configuration and also container of logging configuration from YAML.
@@ -50,12 +52,18 @@ public class LoggingFactory {
      * Configures logging.
      */
     public void init() {
+        initLogging();
+    }
+
+    @VisibleForTesting
+    ConfigurationBuilder<BuiltConfiguration> initLogging() {
         setDefaults();
         ConfigurationBuilder<BuiltConfiguration> builder = ConfigurationBuilderFactory.newConfigurationBuilder();
         createAppenders(builder);
         createRootLogger(builder);
         createLoggers(builder);
         Configurator.initialize(builder.build());
+        return builder;
     }
 
     private void createLoggers(ConfigurationBuilder<BuiltConfiguration> builder) {
@@ -96,10 +104,12 @@ public class LoggingFactory {
                 thresholdFilter.addAttribute("level", value);
                 appender.add(thresholdFilter);
             } else if ("layout".equals(key)) {
-                appender.add(builder.newLayout(value));
+                LayoutComponentBuilder layoutBuilder = builder.newLayout(value);
+                addLayoutProperties(appenderProps, layoutBuilder);
+                appender.add(layoutBuilder);
             } else if ("pattern".equals(key)) {
                 appender.add(builder.newLayout("PatternLayout").addAttribute("pattern", value));
-            } else {
+            }  else if(!"layoutProperties".equals(key)){
                 appender.addAttribute(key, value);
             }
         });
@@ -115,6 +125,19 @@ public class LoggingFactory {
             appenders.put("stdout", stdoutAttributes);
             stdoutAttributes.put("pattern", "%-5p [%d{yyyy-MM-dd HH:mm:ss.SSS}] %c: %m%n");
         }
+    }
+
+    void addLayoutProperties(Map<String, String> appenderProps, LayoutComponentBuilder layoutBuilder) {
+        Splitter.on(" ")
+            .omitEmptyStrings()
+            .splitToList(appenderProps.getOrDefault("layoutProperties", ""))
+            .forEach((layoutProperty) -> {
+                List<String> propertyKeyValue = Splitter.on("=").splitToList(layoutProperty);
+                if(propertyKeyValue.size()!=2) {
+                    throw new IllegalArgumentException("Bad formatted layout properties " + layoutProperty);
+                }
+                layoutBuilder.addAttribute(propertyKeyValue.get(0), propertyKeyValue.get(1));
+            });
     }
 
     /**
