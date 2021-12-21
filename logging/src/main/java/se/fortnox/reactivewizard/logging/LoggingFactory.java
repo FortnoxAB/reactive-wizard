@@ -109,7 +109,7 @@ public class LoggingFactory {
                 appender.add(layoutBuilder);
             } else if ("pattern".equals(key)) {
                 appender.add(builder.newLayout("PatternLayout").addAttribute("pattern", value));
-            }  else if(!"layoutProperties".equals(key)){
+            }  else if (!"layoutProperties".equals(key)) {
                 appender.addAttribute(key, value);
             }
         });
@@ -133,7 +133,7 @@ public class LoggingFactory {
             .splitToList(appenderProps.getOrDefault("layoutProperties", ""))
             .forEach((layoutProperty) -> {
                 List<String> propertyKeyValue = Splitter.on("=").splitToList(layoutProperty);
-                if(propertyKeyValue.size()!=2) {
+                if (propertyKeyValue.size() != 2) {
                     throw new IllegalArgumentException("Bad formatted layout properties " + layoutProperty);
                 }
                 layoutBuilder.addAttribute(propertyKeyValue.get(0), propertyKeyValue.get(1));
