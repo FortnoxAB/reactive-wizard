@@ -81,11 +81,11 @@
         <snakeyaml.version>1.29</snakeyaml.version>
         <slf4j.version>1.7.32</slf4j.version>
         <log4j.version>2.17.0</log4j.version>
-        <lmaxdisruptor.version>3.4.4</lmaxdisruptor.version>
         <guice.version>5.0.1</guice.version>
         <guava.version>31.0.1-jre</guava.version>
         <hibernate-validator.version>6.2.0.Final</hibernate-validator.version>
         <hikaricp.version>5.0.0</hikaricp.version>
+        <validation.version>2.0.1.Final</validation.version>
 
         <junit.version>4.13</junit.version>
         <fest-assert.version>1.4</fest-assert.version>

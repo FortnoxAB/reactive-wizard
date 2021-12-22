@@ -26,8 +26,6 @@ public class Main {
     public static void main(String[] args) {
         try {
             ConfigFactory  configFactory  = createConfigFactory(args);
-            LoggingFactory loggingFactory = configFactory.get(LoggingFactory.class);
-            loggingFactory.init();
             Module bootstrap = new AbstractModule() {
                 @Override
                 protected void configure() {
