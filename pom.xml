@@ -59,7 +59,6 @@
         <module>jaxrs</module>
         <module>jaxrs-context</module>
         <module>config</module>
-        <module>logging</module>
         <module>binding</module>
         <module>bootstrap</module>
         <module>server</module>
