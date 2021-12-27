@@ -70,12 +70,6 @@
 
 		<dependency>
 			<groupId>se.fortnox.reactivewizard</groupId>
-			<artifactId>reactivewizard-logging</artifactId>
-			<version>${project.version}</version>
-		</dependency>
-
-		<dependency>
-			<groupId>se.fortnox.reactivewizard</groupId>
 			<artifactId>reactivewizard-validation</artifactId>
 			<version>${project.version}</version>
 		</dependency>

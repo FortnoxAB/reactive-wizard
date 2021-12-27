@@ -98,13 +98,6 @@
 		</dependency>
 
         <dependency>
-            <groupId>se.fortnox.reactivewizard</groupId>
-            <artifactId>reactivewizard-logging</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
             <groupId>io.projectreactor.netty</groupId>
             <artifactId>reactor-netty</artifactId>
         </dependency>
