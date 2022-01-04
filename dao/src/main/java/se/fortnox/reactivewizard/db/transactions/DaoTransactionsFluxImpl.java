@@ -11,11 +11,12 @@ import static java.util.Arrays.asList;
 
 @Singleton
 public class DaoTransactionsFluxImpl implements DaoTransactionsFlux {
-    private final DaoTransactionsImpl daoTransactions;
+
+    private final TransactionExecutor transactionExecutor;
 
     @Inject
-    public DaoTransactionsFluxImpl(DaoTransactionsImpl daoTransactions) {
-        this.daoTransactions = daoTransactions;
+    public DaoTransactionsFluxImpl() {
+        transactionExecutor = new TransactionExecutor();
     }
 
     @Override
@@ -23,14 +24,14 @@ public class DaoTransactionsFluxImpl implements DaoTransactionsFlux {
         if (daoCalls == null) {
             return Flux.empty();
         }
-        List<StatementContext> statementContexts = daoTransactions.getStatementContexts(daoCalls, ReactiveDecorator::getDecoration);
+        List<StatementContext> statementContexts = transactionExecutor.getStatementContexts(daoCalls, ReactiveDecorator::getDecoration);
         if (statementContexts.isEmpty()) {
             return Flux.empty();
         }
         return Flux.create(subscription -> {
-            ConnectionScheduler connectionScheduler = daoTransactions.getConnectionScheduler(statementContexts);
+            ConnectionScheduler connectionScheduler = transactionExecutor.getConnectionScheduler(statementContexts);
             connectionScheduler.schedule(subscription::error, connection -> {
-                daoTransactions.executeTransaction(statementContexts, connection);
+                transactionExecutor.executeTransaction(statementContexts, connection);
                 subscription.complete();
             });
         });

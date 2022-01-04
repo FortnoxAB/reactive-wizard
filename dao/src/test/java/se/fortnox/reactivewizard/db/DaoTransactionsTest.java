@@ -42,7 +42,7 @@ public class DaoTransactionsTest {
     private DbProxy            dbProxy            = new DbProxy(new DatabaseConfig(), connectionProvider);
     private TestDao            dao                = dbProxy.create(TestDao.class);
     private DaoTransactions    daoTransactions    = new DaoTransactionsImpl();
-    private DaoTransactionsFlux daoTransactionsFlux    = new DaoTransactionsFluxImpl((DaoTransactionsImpl) daoTransactions);
+    private DaoTransactionsFlux daoTransactionsFlux    = new DaoTransactionsFluxImpl();
 
     @Test
     public void shouldHaveEmptyInjectAnnotatedConstructor() {
