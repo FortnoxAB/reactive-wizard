@@ -1089,36 +1089,39 @@ public class HttpClientTest {
 
         Level originalLogLevel = LoggingMockUtil.setLevel(HttpClient.class, Level.OFF);
 
-        DisposableServer server = HttpServer.create().port(0)
-            .handle((request, response) -> {
-                return Flux.defer(() -> {
-                    response.status(HttpResponseStatus.OK);
-                    return response.sendString(Mono.just("\"hello\""));
-                })
-                    .delaySubscription(Duration.ofMillis(50000))
-                    .doOnError(e -> {
-                        e.printStackTrace();
-                    });
-            }).bindNow();
+        try {
+            DisposableServer server = HttpServer.create().port(0)
+                .handle((request, response) -> {
+                    return Flux.defer(() -> {
+                        response.status(HttpResponseStatus.OK);
+                        return response.sendString(Mono.just("\"hello\""));
+                    })
+                        .delaySubscription(Duration.ofMillis(50000))
+                        .doOnError(e -> {
+                            e.printStackTrace();
+                        });
+                }).bindNow();
 
-        // this config ensures that the autocleanup will run before the hystrix timeout
-        HttpClientConfig config = new HttpClientConfig("localhost:" + server.port());
-        config.setMaxConnections(2);
-        HttpClient   client   = new HttpClient(config);
-        TestResource resource = client.create(TestResource.class);
-        HttpClient.setTimeout(resource, 100, ChronoUnit.MILLIS);
+            // this config ensures that the autocleanup will run before the hystrix timeout
+            HttpClientConfig config = new HttpClientConfig("localhost:" + server.port());
+            config.setMaxConnections(2);
+            HttpClient   client   = new HttpClient(config);
+            TestResource resource = client.create(TestResource.class);
+            HttpClient.setTimeout(resource, 100, ChronoUnit.MILLIS);
 
-        for (int i = 0; i < 5; i++) {
-            try {
-                resource.getHello().toBlocking().singleOrDefault(null);
-                fail("expected exception");
-            } catch (WebException e) {
-                assertThat(e.getStatus()).isEqualTo(GATEWAY_TIMEOUT);
+            for (int i = 0; i < 5; i++) {
+                try {
+                    resource.getHello().toBlocking().singleOrDefault(null);
+                    fail("expected exception");
+                } catch (WebException e) {
+                    assertThat(e.getStatus()).isEqualTo(GATEWAY_TIMEOUT);
+                }
             }
-        }
 
-        server.disposeNow();
-        LoggingMockUtil.setLevel(HttpClient.class, originalLogLevel);
+            server.disposeNow();
+        } finally {
+            LoggingMockUtil.setLevel(HttpClient.class, originalLogLevel);
+        }
     }
 
     @Test
