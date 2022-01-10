@@ -1,7 +1,9 @@
 package se.fortnox.reactivewizard.db.deserializing;
 
-import org.apache.log4j.Appender;
+import org.apache.logging.log4j.core.Appender;
 import org.h2.tools.SimpleResultSet;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.sql.SQLException;
@@ -16,20 +18,31 @@ import static se.fortnox.reactivewizard.test.LoggingMockUtil.destroyMockedAppend
 import static se.fortnox.reactivewizard.test.TestUtil.matches;
 
 public class DeserializerUtilTest {
+
+    Appender mockAppender;
+
+    @Before
+    public void setup() {
+        mockAppender = createMockedLogAppender(DeserializerUtil.class);
+    }
+
+    @After
+    public void destroy() {
+        destroyMockedAppender(DeserializerUtil.class);
+    }
+
     @Test
     public void shouldLogWarnIfNoPropertyDeserializerWasFound() throws SQLException {
         SimpleResultSet resultSet = new SimpleResultSet();
         resultSet.addColumn("test_a", Types.VARCHAR, 255, 0);
 
-        Appender mockAppender = createMockedLogAppender(DeserializerUtil.class);
         DeserializerUtil.createPropertyDeserializers(ClassWithoutPropertyA.class, resultSet, (propertyResolver, deserializer) -> deserializer);
 
-        verify(mockAppender).doAppend(matches(log -> {
+        verify(mockAppender).append(matches(log -> {
             assertThat(log.getLevel().toString()).isEqualTo("WARN");
-            assertThat(log.getMessage().toString())
+            assertThat(log.getMessage().getFormattedMessage())
                 .matches("Tried to deserialize column test_a, but found no matching property named testA in ClassWithoutPropertyA");
         }));
-        destroyMockedAppender(mockAppender, DeserializerUtil.class);
     }
 
     @Test
@@ -37,12 +50,9 @@ public class DeserializerUtilTest {
         SimpleResultSet resultSet = new SimpleResultSet();
         resultSet.addColumn("test_b", Types.VARCHAR, 255, 0);
 
-        Appender mockAppender = createMockedLogAppender(DeserializerUtil.class);
-
         DeserializerUtil.createPropertyDeserializers(ClassWithoutPropertyA.class, resultSet, (propertyResolver, deserializer) -> deserializer);
 
-        verify(mockAppender, never()).doAppend(any());
-        destroyMockedAppender(mockAppender, DeserializerUtil.class);
+        verify(mockAppender, never()).append(any());
     }
 }
 

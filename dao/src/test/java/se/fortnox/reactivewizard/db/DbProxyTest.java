@@ -1,8 +1,6 @@
 package se.fortnox.reactivewizard.db;
 
 import com.google.inject.Injector;
-import org.apache.log4j.Level;
-import org.apache.log4j.LogManager;
 import org.junit.Before;
 import org.junit.Test;
 import rx.Observable;
@@ -399,7 +397,6 @@ public class DbProxyTest {
 
     @Before
     public void setup() {
-        LogManager.getLogger(DbProxy.class.getName()).setLevel(Level.toLevel("DEBUG"));
         mockDb = new MockDb();
         ConnectionProvider connectionProvider = mockDb.getConnectionProvider();
         Injector injector = TestInjector.create(binder -> {

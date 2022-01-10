@@ -7,7 +7,6 @@ import com.google.inject.name.Names;
 import org.slf4j.LoggerFactory;
 import se.fortnox.reactivewizard.binding.AutoBindModules;
 import se.fortnox.reactivewizard.config.ConfigFactory;
-import se.fortnox.reactivewizard.logging.LoggingFactory;
 
 import java.nio.file.NoSuchFileException;
 
@@ -26,8 +25,6 @@ public class Main {
     public static void main(String[] args) {
         try {
             ConfigFactory  configFactory  = createConfigFactory(args);
-            LoggingFactory loggingFactory = configFactory.get(LoggingFactory.class);
-            loggingFactory.init();
             Module bootstrap = new AbstractModule() {
                 @Override
                 protected void configure() {
@@ -62,8 +59,6 @@ public class Main {
         } catch (RuntimeException runtimeException) {
             Throwable cause = runtimeException.getCause();
             if (cause != null && cause.getClass().isAssignableFrom(NoSuchFileException.class)) {
-                LoggingFactory loggingFactory = new LoggingFactory();
-                loggingFactory.init();
                 throw (NoSuchFileException)cause;
             }
             throw runtimeException;
