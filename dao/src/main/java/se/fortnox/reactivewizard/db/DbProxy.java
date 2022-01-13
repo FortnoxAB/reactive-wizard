@@ -8,6 +8,7 @@ import se.fortnox.reactivewizard.db.config.DatabaseConfig;
 import se.fortnox.reactivewizard.db.paging.PagingOutput;
 import se.fortnox.reactivewizard.db.statement.DbStatementFactory;
 import se.fortnox.reactivewizard.db.statement.DbStatementFactoryFactory;
+import se.fortnox.reactivewizard.db.transactions.ConnectionScheduler;
 import se.fortnox.reactivewizard.json.JsonSerializerFactory;
 import se.fortnox.reactivewizard.metrics.Metrics;
 import se.fortnox.reactivewizard.util.DebugUtil;
@@ -32,7 +33,7 @@ public class DbProxy implements InvocationHandler {
     private final DbStatementFactoryFactory               dbStatementFactoryFactory;
     private final Scheduler                               scheduler;
     private final Map<Method, ObservableStatementFactory> statementFactories;
-    private final ConnectionProvider                      connectionProvider;
+    private final ConnectionScheduler                     connectionScheduler;
     private final Function<Object[], String>              paramSerializer;
     private final DatabaseConfig                          databaseConfig;
 
@@ -77,11 +78,11 @@ public class DbProxy implements InvocationHandler {
         Map<Method, ObservableStatementFactory> statementFactories
     ) {
         this.scheduler = scheduler;
-        this.connectionProvider = connectionProvider;
         this.dbStatementFactoryFactory = dbStatementFactoryFactory;
         this.paramSerializer = paramSerializer;
         this.databaseConfig = databaseConfig;
         this.statementFactories = statementFactories;
+        this.connectionScheduler = new ConnectionScheduler(connectionProvider, scheduler);
     }
 
 
@@ -113,13 +114,12 @@ public class DbProxy implements InvocationHandler {
             observableStatementFactory = new ObservableStatementFactory(
                 statementFactory,
                 pagingOutput,
-                scheduler,
                 paramSerializer,
                 createMetrics(method),
                 databaseConfig);
             statementFactories.put(method, observableStatementFactory);
         }
-        return observableStatementFactory.create(args, connectionProvider);
+        return observableStatementFactory.create(args, connectionScheduler);
     }
 
     private Metrics createMetrics(Method method) {
@@ -135,11 +135,11 @@ public class DbProxy implements InvocationHandler {
         return new DbProxy(databaseConfig, scheduler, connectionProvider, dbStatementFactoryFactory, paramSerializer, statementFactories);
     }
 
-    public DatabaseConfig getDatabaseConfig() {
-        return databaseConfig;
+    public DbProxy usingConnectionProvider(ConnectionProvider newConnectionProvider, Scheduler newScheduler) {
+        return new DbProxy(databaseConfig, newScheduler, newConnectionProvider, dbStatementFactoryFactory, paramSerializer, statementFactories);
     }
 
-    public Scheduler getScheduler() {
-        return scheduler;
+    public DatabaseConfig getDatabaseConfig() {
+        return databaseConfig;
     }
 }
