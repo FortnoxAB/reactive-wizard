@@ -231,7 +231,7 @@ public class DbProxyTest {
         DbProxy oldDbProxy = new DbProxy(config,mock(ConnectionProvider.class));
 
         DbProxy newDbProxy = oldDbProxy.usingConnectionProvider(newConnectionProvider, newScheduler);
-        newDbProxy.create(DbProxyTestDao.class).select("").subscribe();
+        newDbProxy.create(DbProxyTestDao.class).select("").toBlocking().subscribe();
 
         // then
         assertThat(oldDbProxy).isNotSameAs(newDbProxy);
