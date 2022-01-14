@@ -6,6 +6,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.InOrder;
 import rx.Observable;
+import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 import se.fortnox.reactivewizard.db.config.DatabaseConfig;
 import se.fortnox.reactivewizard.db.statement.DbStatementFactoryFactory;
@@ -21,6 +22,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -377,9 +379,8 @@ public class DaoTransactionsTest {
         MockDb secondDb = new MockDb();
         ConnectionProvider otherConnectionProvider = secondDb.getConnectionProvider();
 
-        TestScheduler secondScheduler = new TestScheduler();
         DbProxy dbProxyWithoutConnectionProvider = new DbProxy(
-            new DatabaseConfig(), secondScheduler,
+            new DatabaseConfig(), Schedulers.io(),
             null, new DbStatementFactoryFactory(), new JsonSerializerFactory());
         DbProxy dbProxyWithConnectionProvider = dbProxyWithoutConnectionProvider.usingConnectionProvider(otherConnectionProvider);
 
@@ -389,15 +390,10 @@ public class DaoTransactionsTest {
         TestDao daoWithConnectionProvider = dbProxyWithConnectionProvider.create(TestDao.class);
         TestDao daoWithoutConnectionProvider = dbProxyWithoutConnectionProvider.create(TestDao.class);
 
-        AtomicReference<Throwable> throwableAtomicReference = new AtomicReference<>();
         daoTransactions.executeTransaction(daoWithoutConnectionProvider.updateSuccess(), daoWithConnectionProvider.updateSuccess())
-            .doOnError(throwableAtomicReference::set)
-            .subscribeOn(secondScheduler)
-            .subscribe();
-
-        secondScheduler.triggerActions();
-
-        assertThat(throwableAtomicReference.get()).isNull();
+            .test()
+            .awaitTerminalEvent()
+            .assertNoErrors();
 
         secondDb.verifyConnectionsUsed(1);
         db.verifyConnectionsUsed(0);
