@@ -22,11 +22,13 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.fail;
+import static org.assertj.core.api.InstanceOfAssertFactories.ATOMIC_REFERENCE;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.inOrder;
@@ -387,15 +389,21 @@ public class DaoTransactionsTest {
         TestDao daoWithConnectionProvider = dbProxyWithConnectionProvider.create(TestDao.class);
         TestDao daoWithoutConnectionProvider = dbProxyWithoutConnectionProvider.create(TestDao.class);
 
+        AtomicReference<Throwable> throwableAtomicReference = new AtomicReference<>();
         daoTransactions.executeTransaction(daoWithoutConnectionProvider.updateSuccess(), daoWithConnectionProvider.updateSuccess())
-            .subscribeOn(secondScheduler).subscribe();
+            .doOnError(throwableAtomicReference::set)
+            .subscribeOn(secondScheduler)
+            .subscribe();
+
         secondScheduler.triggerActions();
+
+        assertThat(throwableAtomicReference.get()).isNull();
 
         secondDb.verifyConnectionsUsed(1);
         db.verifyConnectionsUsed(0);
 
         assertThatExceptionOfType(RuntimeException.class)
-            .isThrownBy(() -> daoTransactions.executeTransaction(daoWithoutConnectionProvider.updateSuccess()).subscribe())
+            .isThrownBy(() -> daoTransactions.executeTransaction(daoWithoutConnectionProvider.updateSuccess()).toBlocking().subscribe())
             .withMessage("No DaoObservable with a valid connection provider was found");
     }
 
