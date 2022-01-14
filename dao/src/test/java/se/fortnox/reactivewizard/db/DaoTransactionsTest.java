@@ -1,6 +1,8 @@
 package se.fortnox.reactivewizard.db;
 
+import org.assertj.core.api.Assertions;
 import org.fest.assertions.Fail;
+import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.InOrder;
 import rx.Observable;
@@ -23,6 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -365,6 +368,35 @@ public class DaoTransactionsTest {
             .toBlocking().subscribe();
         otherDb.verifyConnectionsUsed(1);
         db.verifyConnectionsUsed(1);
+    }
+
+    @Test
+    public void shoulUseSecondConnectionAndSchedulerIfFirstObservableHasNoConnectionProvider() throws SQLException {
+        MockDb secondDb = new MockDb();
+        ConnectionProvider otherConnectionProvider = secondDb.getConnectionProvider();
+
+        TestScheduler secondScheduler = new TestScheduler();
+        DbProxy dbProxyWithoutConnectionProvider = new DbProxy(
+            new DatabaseConfig(), secondScheduler,
+            null, new DbStatementFactoryFactory(), new JsonSerializerFactory());
+        DbProxy dbProxyWithConnectionProvider = dbProxyWithoutConnectionProvider.usingConnectionProvider(otherConnectionProvider);
+
+        when(secondDb.getPreparedStatement().executeBatch())
+            .thenReturn(new int[]{1, 1});
+
+        TestDao daoWithConnectionProvider = dbProxyWithConnectionProvider.create(TestDao.class);
+        TestDao daoWithoutConnectionProvider = dbProxyWithoutConnectionProvider.create(TestDao.class);
+
+        daoTransactions.executeTransaction(daoWithoutConnectionProvider.updateSuccess(), daoWithConnectionProvider.updateSuccess())
+            .subscribeOn(secondScheduler).subscribe();
+        secondScheduler.triggerActions();
+
+        secondDb.verifyConnectionsUsed(1);
+        db.verifyConnectionsUsed(0);
+
+        assertThatExceptionOfType(RuntimeException.class)
+            .isThrownBy(() -> daoTransactions.executeTransaction(daoWithoutConnectionProvider.updateSuccess()).subscribe())
+            .withMessage("No DaoObservable with a valid connection provider was found");
     }
 
     interface TestDao {
