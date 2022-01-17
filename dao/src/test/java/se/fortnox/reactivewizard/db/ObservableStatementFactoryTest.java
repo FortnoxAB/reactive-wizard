@@ -97,7 +97,7 @@ public class ObservableStatementFactoryTest {
 
     @Test
     public void shouldReleaseSchedulerWorkers() {
-        Observable<Object> stmt = statementFactory.create(new Object[0], new ConnectionScheduler(() -> mock(Connection.class), scheduler));
+        Observable<Object> stmt = (Observable<Object>)statementFactory.create(new Object[0], new ConnectionScheduler(() -> mock(Connection.class), scheduler));
         stmt.toBlocking().single();
         verify(scheduler, times(1)).createWorker();
         verify(worker).unsubscribe();

@@ -20,7 +20,7 @@ public class ConnectionScheduler {
         return connectionProvider != null;
     }
 
-    public void schedule(Subscriber<?> subscription, ThrowableAction action) {
+    public void schedule(Consumer<Throwable> onError, ThrowableAction action) {
         Scheduler.Worker worker = scheduler.createWorker();
         worker.schedule(() -> {
             try {

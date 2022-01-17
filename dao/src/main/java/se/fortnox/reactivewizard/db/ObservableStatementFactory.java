@@ -11,9 +11,11 @@ import se.fortnox.reactivewizard.db.transactions.ConnectionScheduler;
 import se.fortnox.reactivewizard.db.transactions.StatementContext;
 import se.fortnox.reactivewizard.metrics.Metrics;
 import se.fortnox.reactivewizard.util.DebugUtil;
+import se.fortnox.reactivewizard.util.ReactiveDecorator;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -52,9 +54,15 @@ public class ObservableStatementFactory {
         }
     }
 
-    public Observable<Object> create(Object[] args, ConnectionScheduler connectionScheduler) {
+    public Object create(Object[] args, ConnectionScheduler connectionScheduler) {
+        AtomicReference<StatementContext> statementContextAtomicReference = new AtomicReference<>();
         Supplier<StatementContext> statementContext =
-            () -> new StatementContext(() -> statementFactory.create(args), connectionScheduler);
+            () -> {
+                if (statementContextAtomicReference.get() == null) {
+                    statementContextAtomicReference.set(new StatementContext(() -> statementFactory.create(args), connectionScheduler));
+                }
+                return statementContextAtomicReference.get();
+            };
         Observable<Object> result = Observable.unsafeCreate(subscription -> {
             try {
                 statementContext.get().getConnectionScheduler()

@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -127,10 +128,10 @@ public class DaoTransactionsTest {
         final boolean[] cbExecuted   = {false, false, false, false};
         Observable<Integer> daoObsWithCb = dao.updateSuccess();
 
-        Optional<StatementContext> decoration = ReactiveDecorator.getDecoration(daoObsWithCb);
+        Optional<Supplier<StatementContext>> decoration = ReactiveDecorator.getDecoration(daoObsWithCb);
         assertThat(decoration).isPresent();
 
-        decoration.get().onTransactionCompleted(() -> cbExecuted[0] = true);
+        decoration.get().get().onTransactionCompleted(() -> cbExecuted[0] = true);
 
         daoObsWithCb = ReactiveDecorator.keepDecoration(daoObsWithCb, obs->{
             return obs.doOnCompleted(() -> cbExecuted[1] = true)
@@ -156,8 +157,8 @@ public class DaoTransactionsTest {
 
         Runnable runnable = mock(Runnable.class);
         Flux<Integer> daoObsWithCb = dao.updateSuccessFlux();
-        Optional<StatementContext> decoration = ReactiveDecorator.getDecoration(daoObsWithCb);
-        decoration.get().onTransactionCompleted(runnable);
+        Optional<Supplier<StatementContext>> decoration = ReactiveDecorator.getDecoration(daoObsWithCb);
+        decoration.get().get().onTransactionCompleted(runnable);
 
         daoTransactionsFlux.executeTransaction(dao.updateSuccessFlux(), daoObsWithCb).count().block();
 
@@ -352,7 +353,9 @@ public class DaoTransactionsTest {
 
         try {
             daoTransactionsFlux.executeTransaction(update).retry(3).count().block();
-        } catch (Exception e) { }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         Connection conn = db.getConnection();
         verify(conn, times(4)).rollback();

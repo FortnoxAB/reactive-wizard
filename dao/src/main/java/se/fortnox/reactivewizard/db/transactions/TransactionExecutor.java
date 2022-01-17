@@ -8,6 +8,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * class with helper methods used when executing stuff inside a database transaction
@@ -49,17 +50,17 @@ class TransactionExecutor {
      *
      * @return a list of statment contexts.
      */
-    <T> List<StatementContext> getStatementContexts(Iterable<T> daoCalls, Function<T, Optional<StatementContext>> getDecoration) {
+    <T> List<StatementContext> getStatementContexts(Iterable<T> daoCalls, Function<T, Optional<Supplier<StatementContext>>> getDecoration) {
         List<StatementContext> daoStatementContexts = new ArrayList<>();
 
         for (T statement : daoCalls) {
-            Optional<StatementContext> statementContext = getDecoration.apply(statement);
+            Optional<Supplier<StatementContext>> statementContext = getDecoration.apply(statement);
             if (statementContext.isEmpty()) {
                 String statementString  = statement == null ? "null" : statement.getClass().toString();
                 String exceptionMessage = "All parameters to createTransaction needs to be observables coming from a Dao-class. Statement was %s.";
                 throw new RuntimeException(String.format(exceptionMessage, statementString));
             }
-            daoStatementContexts.add(statementContext.get());
+            daoStatementContexts.add(statementContext.get().get());
         }
 
         return daoStatementContexts;
@@ -76,9 +77,10 @@ class TransactionExecutor {
      */
     ConnectionScheduler getConnectionScheduler(List<StatementContext> statementContexts) {
         return statementContexts.stream()
-            .findFirst()
             .map(StatementContext::getConnectionScheduler)
-            .orElseThrow(() -> new RuntimeException("No DaoObservable found"));
+            .filter(ConnectionScheduler::hasConnectionProvider)
+            .findFirst()
+            .orElseThrow(() -> new RuntimeException("No DaoObservable with a valid connection provider was found"));
     }
 
 }
