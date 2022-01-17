@@ -4,9 +4,11 @@ import com.google.inject.Injector;
 import org.junit.Before;
 import org.junit.Test;
 import rx.Observable;
+import rx.Scheduler;
 import rx.Subscriber;
 import rx.exceptions.MissingBackpressureException;
 import rx.observers.TestSubscriber;
+import rx.schedulers.Schedulers;
 import se.fortnox.reactivewizard.config.TestInjector;
 import se.fortnox.reactivewizard.db.config.DatabaseConfig;
 
@@ -211,6 +213,30 @@ public class DbProxyTest {
         assertThat(newDbProxy.getDatabaseConfig()).isNotSameAs(oldConfig);
         assertThat(newDbProxy.getDatabaseConfig()).isSameAs(newConfig);
         assertThat(newDbProxy.getDatabaseConfig().getUrl()).isSameAs("bar");
+    }
+
+    @Test
+    public void shouldCreateNewDbProxyInstanceWithNewConnectionProviderAndNewScheduler() {
+        // given
+        DatabaseConfig config = new DatabaseConfig();
+        config.setUrl("fooo");
+
+        ConnectionProvider newConnectionProvider = mock(ConnectionProvider.class);
+        when(newConnectionProvider.get()).thenReturn(mockDb.getConnection());
+
+        Scheduler newScheduler = mock(Scheduler.class);
+        when(newScheduler.createWorker()).thenReturn(Schedulers.io().createWorker());
+
+        // when
+        DbProxy oldDbProxy = new DbProxy(config,mock(ConnectionProvider.class));
+
+        DbProxy newDbProxy = oldDbProxy.usingConnectionProvider(newConnectionProvider, newScheduler);
+        newDbProxy.create(DbProxyTestDao.class).select("").toBlocking().subscribe();
+
+        // then
+        assertThat(oldDbProxy).isNotSameAs(newDbProxy);
+        verify(newScheduler).createWorker();
+        verify(newConnectionProvider).get();
     }
 
     @Test

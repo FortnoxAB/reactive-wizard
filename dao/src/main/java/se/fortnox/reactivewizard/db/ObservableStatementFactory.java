@@ -28,21 +28,18 @@ public class ObservableStatementFactory {
     private static final Logger LOG                    = LoggerFactory.getLogger("Dao");
     private final DbStatementFactory         statementFactory;
     private final PagingOutput               pagingOutput;
-    private final Scheduler                  scheduler;
     private final Metrics                    metrics;
     private final DatabaseConfig             config;
 
     public ObservableStatementFactory(
         DbStatementFactory statementFactory,
         PagingOutput pagingOutput,
-        Scheduler scheduler,
         Function<Object[], String> paramSerializer,
         Metrics metrics,
         DatabaseConfig config
     ) {
         this.statementFactory = statementFactory;
         this.pagingOutput = pagingOutput;
-        this.scheduler = scheduler;
         this.metrics = metrics;
         this.config = config;
     }
@@ -55,9 +52,9 @@ public class ObservableStatementFactory {
         }
     }
 
-    public Observable<Object> create(Object[] args, ConnectionProvider connectionProvider) {
+    public Observable<Object> create(Object[] args, ConnectionScheduler connectionScheduler) {
         Supplier<StatementContext> transactionHolderSupplier =
-            () -> new StatementContext(statementFactory.create(args), new ConnectionScheduler(connectionProvider, scheduler));
+            () -> new StatementContext(statementFactory.create(args), connectionScheduler);
         Observable<Object> result = Observable.unsafeCreate(subscription -> {
             try {
                 transactionHolderSupplier.get().getConnectionScheduler()
