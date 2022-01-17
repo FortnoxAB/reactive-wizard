@@ -13,7 +13,6 @@ import java.util.stream.Collectors;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class DaoClassScannerTest {
-
     @Test
     public void testDaoClassScanner() {
         ClassGraph classGraph = new ClassGraph()

@@ -28,11 +28,6 @@
         </dependency>
         <dependency>
             <groupId>se.fortnox.reactivewizard</groupId>
-            <artifactId>reactivewizard-logging</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>se.fortnox.reactivewizard</groupId>
             <artifactId>reactivewizard-test</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
@@ -60,13 +55,6 @@
         </dependency>
 
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-log4j12</artifactId>
-            <scope>test</scope>
-            <version>${slf4j.version}</version>
-        </dependency>
-
-        <dependency>
             <groupId>com.zaxxer</groupId>
             <artifactId>HikariCP</artifactId>
             <version>${hikaricp.version}</version>
@@ -76,6 +64,11 @@
                     <artifactId>slf4j-api</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
         </dependency>
 
         <dependency>
