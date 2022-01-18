@@ -55,14 +55,13 @@ public class ObservableStatementFactory {
     }
 
     public Object create(Object[] args, ConnectionScheduler connectionScheduler) {
-        Supplier<StatementContext> statementContext =
-            () -> new StatementContext(() -> statementFactory.create(args), connectionScheduler);
+        StatementContext statementContext = new StatementContext(() -> statementFactory.create(args), connectionScheduler);
 
         Observable<Object> result = Observable.unsafeCreate(subscription -> {
             try {
-                statementContext.get().getConnectionScheduler()
+                statementContext.getConnectionScheduler()
                     .schedule(subscription::onError, (connection) -> {
-                        Statement dbStatement = statementContext.get().getStatement();
+                        Statement dbStatement = statementContext.getStatement();
                         dbStatement.setSubscriber(subscription);
                         executeStatement(dbStatement, connection);
                     });
@@ -85,7 +84,7 @@ public class ObservableStatementFactory {
         result = metrics.measure(result, this::logSlowQuery);
         result = result.onBackpressureBuffer(RECORD_BUFFER_SIZE);
 
-        return ReactiveDecorator.decorated(resultConverter.apply(result), statementContext.get());
+        return ReactiveDecorator.decorated(resultConverter.apply(result), statementContext);
     }
 
     private void logSlowQuery(long time) {
