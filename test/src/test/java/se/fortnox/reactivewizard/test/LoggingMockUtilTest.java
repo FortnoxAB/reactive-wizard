@@ -1,7 +1,7 @@
 package se.fortnox.reactivewizard.test;
 
-import org.apache.log4j.Appender;
-import org.apache.log4j.Level;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.Appender;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,19 +15,19 @@ public class LoggingMockUtilTest {
     @Test
     public void shouldLogToMockAppender() {
         ClassWithLogger classWithLogger = new ClassWithLogger();
-        Appender        appender        = LoggingMockUtil.createMockedLogAppender(ClassWithLogger.class);
+        Appender appender        = LoggingMockUtil.createMockedLogAppender(ClassWithLogger.class);
 
         classWithLogger.doSomethingLogged();
 
         verify(appender)
-            .doAppend(matches(log -> {
+            .append(matches(log -> {
                 assertThat(log.getLevel())
                     .isEqualTo(Level.INFO);
                 assertThat(log.getMessage()
                     .toString())
                     .contains("Information was logged");
             }));
-        LoggingMockUtil.destroyMockedAppender(appender, ClassWithLogger.class);
+        LoggingMockUtil.destroyMockedAppender(ClassWithLogger.class);
     }
 
     @Test
@@ -48,10 +48,10 @@ public class LoggingMockUtilTest {
     public void shouldBePossibleToDestroyMockAppender() {
         Appender appender = LoggingMockUtil.createMockedLogAppender(ClassWithLogger.class);
 
-        LoggingMockUtil.destroyMockedAppender(appender, ClassWithLogger.class);
+        LoggingMockUtil.destroyMockedAppender(ClassWithLogger.class);
 
         Appender destroyedAppender = LoggingMockUtil.getLogger(ClassWithLogger.class)
-            .getAppender("mockAppender");
+            .getAppenders().get("mockAppender");
         assertThat(destroyedAppender)
             .isNull();
     }

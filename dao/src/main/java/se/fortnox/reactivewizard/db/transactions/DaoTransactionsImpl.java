@@ -67,10 +67,10 @@ public class DaoTransactionsImpl implements DaoTransactions {
     }
 
     private <T> ConnectionScheduler getConnectionScheduler(Collection<Observable<T>> daoCallsCopy) {
-        Observable<T> daoObservable = daoCallsCopy.stream()
+        return daoCallsCopy.stream()
+            .map(obs -> ((DaoObservable<T>)obs).getStatementContextSupplier().get().getConnectionScheduler())
+            .filter(ConnectionScheduler::hasConnectionProvider)
             .findFirst()
-            .orElseThrow(() -> new RuntimeException("No DaoObservable found"));
-
-        return ((DaoObservable<T>) daoObservable).getStatementContextSupplier().get().getConnectionScheduler();
+            .orElseThrow(() -> new RuntimeException("No DaoObservable with a valid connection provider was found"));
     }
 }

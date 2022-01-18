@@ -6,11 +6,13 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.name.Names;
-import org.apache.commons.lang.ArrayUtils;
 import se.fortnox.reactivewizard.binding.AutoBindModules;
 
 import javax.annotation.Nullable;
 import java.util.function.Consumer;
+
+import static java.util.stream.Stream.concat;
+import static java.util.stream.Stream.of;
 
 public class TestInjector {
 
@@ -39,7 +41,8 @@ public class TestInjector {
                     bind(ConfigFactory.class).toInstance(MockConfigFactory.create());
                     bind(String[].class).annotatedWith(Names.named("args")).toInstance(args);
                 } else {
-                    bind(String[].class).annotatedWith(Names.named("args")).toInstance((String[])ArrayUtils.addAll(args, new String[]{configFile}));
+                    String[] argsWithConfig = concat(of(args), of(configFile)).toArray(String[]::new);
+                    bind(String[].class).annotatedWith(Names.named("args")).toInstance(argsWithConfig);
                 }
 
                 binderConsumer.accept(binder());

@@ -15,6 +15,10 @@ public class ConnectionScheduler {
         this.scheduler = scheduler;
     }
 
+    boolean hasConnectionProvider() {
+        return connectionProvider != null;
+    }
+
     public void schedule(Subscriber<?> subscription, ThrowableAction action) {
         Scheduler.Worker worker = scheduler.createWorker();
         worker.schedule(() -> {
