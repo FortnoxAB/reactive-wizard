@@ -128,10 +128,10 @@ public class DaoTransactionsTest {
         final boolean[] cbExecuted   = {false, false, false, false};
         Observable<Integer> daoObsWithCb = dao.updateSuccess();
 
-        Optional<Supplier<StatementContext>> decoration = ReactiveDecorator.getDecoration(daoObsWithCb);
+        Optional<StatementContext> decoration = ReactiveDecorator.getDecoration(daoObsWithCb);
         assertThat(decoration).isPresent();
 
-        decoration.get().get().onTransactionCompleted(() -> cbExecuted[0] = true);
+        decoration.get().onTransactionCompleted(() -> cbExecuted[0] = true);
 
         daoObsWithCb = ReactiveDecorator.keepDecoration(daoObsWithCb, obs->{
             return obs.doOnCompleted(() -> cbExecuted[1] = true)
@@ -157,8 +157,8 @@ public class DaoTransactionsTest {
 
         Runnable runnable = mock(Runnable.class);
         Flux<Integer> daoObsWithCb = dao.updateSuccessFlux();
-        Optional<Supplier<StatementContext>> decoration = ReactiveDecorator.getDecoration(daoObsWithCb);
-        decoration.get().get().onTransactionCompleted(runnable);
+        Optional<StatementContext> decoration = ReactiveDecorator.getDecoration(daoObsWithCb);
+        decoration.get().onTransactionCompleted(runnable);
 
         daoTransactionsFlux.executeTransaction(dao.updateSuccessFlux(), daoObsWithCb).count().block();
 

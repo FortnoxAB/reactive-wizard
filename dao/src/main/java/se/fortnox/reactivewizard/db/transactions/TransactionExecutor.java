@@ -50,17 +50,17 @@ class TransactionExecutor {
      *
      * @return a list of statment contexts.
      */
-    <T> List<StatementContext> getStatementContexts(Iterable<T> daoCalls, Function<T, Optional<Supplier<StatementContext>>> getDecoration) {
+    <T> List<StatementContext> getStatementContexts(Iterable<T> daoCalls, Function<T, Optional<StatementContext>> getDecoration) {
         List<StatementContext> daoStatementContexts = new ArrayList<>();
 
         for (T statement : daoCalls) {
-            Optional<Supplier<StatementContext>> statementContext = getDecoration.apply(statement);
+            Optional<StatementContext> statementContext = getDecoration.apply(statement);
             if (statementContext.isEmpty()) {
                 String statementString  = statement == null ? "null" : statement.getClass().toString();
                 String exceptionMessage = "All parameters to createTransaction needs to be observables coming from a Dao-class. Statement was %s.";
                 throw new RuntimeException(String.format(exceptionMessage, statementString));
             }
-            daoStatementContexts.add(statementContext.get().get());
+            daoStatementContexts.add(statementContext.get());
         }
 
         return daoStatementContexts;
