@@ -11,8 +11,11 @@
 
     <artifactId>reactivewizard-test</artifactId>
 
-    <dependencies>
+    <properties>
+        <log4j.version>2.17.1</log4j.version>
+    </properties>
 
+    <dependencies>
         <dependency>
             <groupId>io.reactivex</groupId>
             <artifactId>rxjava</artifactId>
@@ -41,47 +44,15 @@
         </dependency>
 
         <dependency>
-            <groupId>com.netflix.blitz4j</groupId>
-            <exclusions>
-                <exclusion>
-                    <artifactId>rxjava-core</artifactId>
-                    <groupId>com.netflix.rxjava</groupId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-api</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.netflix.servo</groupId>
-                    <artifactId>servo-core</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-core</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.google.code.findbugs</groupId>
-                    <artifactId>jsr305</artifactId>
-                </exclusion>
-
-
-            </exclusions>
-            <artifactId>blitz4j</artifactId>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-slf4j-impl</artifactId>
             <version>${log4j.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+            <version>${log4j.version}</version>
         </dependency>
-
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-log4j12</artifactId>
-            <version>${slf4j.version}</version>
-        </dependency>
-
     </dependencies>
 </project>
