@@ -1,7 +1,8 @@
 package se.fortnox.reactivewizard.server;
 
-import org.apache.log4j.Appender;
-import org.apache.log4j.spi.LoggingEvent;
+import org.apache.logging.log4j.core.Appender;
+import org.apache.logging.log4j.core.LogEvent;
+import org.apache.logging.log4j.message.Message;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -35,7 +36,7 @@ public class RwServerTest {
     @Mock
     CompositeRequestHandler compositeRequestHandler;
 
-    ArgumentCaptor<LoggingEvent> logCaptor;
+    ArgumentCaptor<LogEvent> logCaptor;
 
     Appender mockAppender;
 
@@ -43,12 +44,12 @@ public class RwServerTest {
     public void before() {
         RwServer.registerShutdownDependency(null);
         mockAppender = LoggingMockUtil.createMockedLogAppender(RwServer.class);
-        logCaptor = ArgumentCaptor.forClass(LoggingEvent.class);
+        logCaptor = ArgumentCaptor.forClass(LogEvent.class);
     }
 
     @After
     public void after() {
-        LoggingMockUtil.destroyMockedAppender(mockAppender, RwServer.class);
+        LoggingMockUtil.destroyMockedAppender(RwServer.class);
     }
 
     @Test
@@ -108,8 +109,6 @@ public class RwServerTest {
 
     @Test
     public void shouldLogThatShutDownIsRegistered() {
-        Appender mockAppender = LoggingMockUtil.createMockedLogAppender(RwServer.class);
-
         RwServer rwServer = null;
         try {
             final ServerConfig config = new ServerConfig();
@@ -118,10 +117,11 @@ public class RwServerTest {
             rwServer = new RwServer(config, compositeRequestHandler, connectionCounter);
             RwServer.shutdownHook(config, rwServer.getServer(), connectionCounter);
 
-            verify(mockAppender, atLeastOnce()).doAppend(logCaptor.capture());
+            verify(mockAppender, atLeastOnce()).append(logCaptor.capture());
 
             assertThat(logCaptor.getAllValues())
-                .extracting(LoggingEvent::getMessage)
+                .extracting(LogEvent::getMessage)
+                .extracting(Message::getFormattedMessage)
                 .contains("Shutdown requested. Waiting 3 seconds before commencing.")
                 .contains("Shutdown commencing. Will wait up to 20 seconds for ongoing requests to complete.")
                 .contains("Shutdown complete");
@@ -160,10 +160,11 @@ public class RwServerTest {
             rwServer = new RwServer(config, compositeRequestHandler, connectionCounter);
             RwServer.shutdownHook(config, rwServer.getServer(), connectionCounter);
 
-            verify(mockAppender, atLeastOnce()).doAppend(logCaptor.capture());
+            verify(mockAppender, atLeastOnce()).append(logCaptor.capture());
 
             assertThat(logCaptor.getAllValues())
-                .extracting(LoggingEvent::getMessage)
+                .extracting(LogEvent::getMessage)
+                .extracting(Message::getFormattedMessage)
                 .contains("Shutdown requested. Waiting 5 seconds before commencing.")
                 .contains("Shutdown commencing. Will wait up to 20 seconds for ongoing requests to complete.")
                 .contains("Shutdown proceeded while connection count was not zero: 4");
@@ -188,14 +189,12 @@ public class RwServerTest {
 
     @Test
     public void shouldSkipAwaitingShutdownDependencyIfNotSet() {
-        Appender mockAppender = LoggingMockUtil.createMockedLogAppender(RwServer.class);
         RwServer.awaitShutdownDependency(new ServerConfig().getShutdownTimeoutSeconds());
-        verify(mockAppender, never()).doAppend(any());
+        verify(mockAppender, never()).append(any());
     }
 
     @Test
     public void shouldAwaitShutdownDependency() {
-        Appender mockAppender = LoggingMockUtil.createMockedLogAppender(RwServer.class);
         Supplier supplier = mock(Supplier.class);
 
         RwServer.registerShutdownDependency(supplier::get);
@@ -203,12 +202,12 @@ public class RwServerTest {
 
         RwServer.awaitShutdownDependency(new ServerConfig().getShutdownTimeoutSeconds());
 
-        verify(mockAppender).doAppend(matches(log ->
-            assertThat(log.getMessage().toString()).matches("Wait for completion of shutdown dependency")
+        verify(mockAppender).append(matches(log ->
+            assertThat(log.getMessage().getFormattedMessage()).matches("Wait for completion of shutdown dependency")
         ));
         verify(supplier).get();
-        verify(mockAppender).doAppend(matches(log ->
-            assertThat(log.getMessage().toString()).matches("Shutdown dependency completed, continue...")
+        verify(mockAppender).append(matches(log ->
+            assertThat(log.getMessage().getFormattedMessage()).matches("Shutdown dependency completed, continue...")
         ));
     }
 }

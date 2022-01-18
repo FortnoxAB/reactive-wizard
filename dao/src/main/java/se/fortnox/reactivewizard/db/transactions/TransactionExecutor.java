@@ -8,6 +8,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * class with helper methods used when executing stuff inside a database transaction
@@ -76,9 +77,10 @@ class TransactionExecutor {
      */
     ConnectionScheduler getConnectionScheduler(List<StatementContext> statementContexts) {
         return statementContexts.stream()
-            .findFirst()
             .map(StatementContext::getConnectionScheduler)
-            .orElseThrow(() -> new RuntimeException("No DaoObservable found"));
+            .filter(ConnectionScheduler::hasConnectionProvider)
+            .findFirst()
+            .orElseThrow(() -> new RuntimeException("No DaoObservable with a valid connection provider was found"));
     }
 
 }

@@ -58,12 +58,6 @@
 
 		<dependency>
 			<groupId>se.fortnox.reactivewizard</groupId>
-			<artifactId>reactivewizard-logging</artifactId>
-			<version>${project.version}</version>
-		</dependency>
-
-		<dependency>
-			<groupId>se.fortnox.reactivewizard</groupId>
 			<artifactId>reactivewizard-validation</artifactId>
 			<version>${project.version}</version>
 		</dependency>
@@ -77,7 +71,7 @@
 		<dependency>
 			<groupId>javax.validation</groupId>
 			<artifactId>validation-api</artifactId>
-			<version>2.0.1.Final</version>
+			<version>${validation.version}</version>
 		</dependency>
 
 		<dependency>
@@ -101,6 +95,11 @@
 			<scope>test</scope>
 			<classifier>tests</classifier>
 		</dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
 	</dependencies>
 
     <build>

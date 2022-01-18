@@ -3,7 +3,6 @@ package se.fortnox.reactivewizard.db;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
-import rx.Scheduler;
 import se.fortnox.reactivewizard.db.config.DatabaseConfig;
 import se.fortnox.reactivewizard.db.paging.PagingOutput;
 import se.fortnox.reactivewizard.db.statement.DbStatementFactory;
@@ -16,7 +15,9 @@ import se.fortnox.reactivewizard.util.ReactiveDecorator;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static java.lang.String.format;
 import static rx.Observable.error;
@@ -27,7 +28,6 @@ public class ObservableStatementFactory {
     private static final Logger LOG                    = LoggerFactory.getLogger("Dao");
     private final DbStatementFactory         statementFactory;
     private final PagingOutput               pagingOutput;
-    private final Scheduler                  scheduler;
     private final Metrics                    metrics;
     private final DatabaseConfig             config;
     private final Function<Observable<Object>, Object> resultConverter;
@@ -35,14 +35,12 @@ public class ObservableStatementFactory {
     public ObservableStatementFactory(
         DbStatementFactory statementFactory,
         PagingOutput pagingOutput,
-        Scheduler scheduler,
         Function<Object[], String> paramSerializer,
         Metrics metrics,
         DatabaseConfig config,
         Function<Observable<Object>, Object> resultConverter) {
         this.statementFactory = statementFactory;
         this.pagingOutput = pagingOutput;
-        this.scheduler = scheduler;
         this.metrics = metrics;
         this.config = config;
         this.resultConverter = resultConverter;
@@ -56,8 +54,9 @@ public class ObservableStatementFactory {
         }
     }
 
-    public Object create(Object[] args, ConnectionProvider connectionProvider) {
-        StatementContext statementContext = new StatementContext(() -> statementFactory.create(args), new ConnectionScheduler(connectionProvider, scheduler));
+    public Object create(Object[] args, ConnectionScheduler connectionScheduler) {
+        StatementContext statementContext = new StatementContext(() -> statementFactory.create(args), connectionScheduler);
+
         Observable<Object> result = Observable.unsafeCreate(subscription -> {
             try {
                 statementContext.getConnectionScheduler()

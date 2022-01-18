@@ -1,6 +1,7 @@
 package se.fortnox.reactivewizard.db.transactions;
 
 import rx.Scheduler;
+import rx.Subscriber;
 import se.fortnox.reactivewizard.db.ConnectionProvider;
 
 import java.sql.Connection;
@@ -13,6 +14,10 @@ public class ConnectionScheduler {
     public ConnectionScheduler(ConnectionProvider connectionProvider, Scheduler scheduler) {
         this.connectionProvider = connectionProvider;
         this.scheduler = scheduler;
+    }
+
+    boolean hasConnectionProvider() {
+        return connectionProvider != null;
     }
 
     public void schedule(Consumer<Throwable> onError, ThrowableAction action) {

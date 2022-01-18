@@ -6,6 +6,7 @@ import org.mockito.InOrder;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import rx.Observable;
+import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 import se.fortnox.reactivewizard.db.config.DatabaseConfig;
 import se.fortnox.reactivewizard.db.statement.DbStatementFactoryFactory;
@@ -26,13 +27,21 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  */
@@ -344,7 +353,9 @@ public class DaoTransactionsTest {
 
         try {
             daoTransactionsFlux.executeTransaction(update).retry(3).count().block();
-        } catch (Exception e) { }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         Connection conn = db.getConnection();
         verify(conn, times(4)).rollback();
@@ -443,6 +454,35 @@ public class DaoTransactionsTest {
             .toBlocking().subscribe();
         otherDb.verifyConnectionsUsed(1);
         db.verifyConnectionsUsed(1);
+    }
+
+    @Test
+    public void shoulUseSecondConnectionAndSchedulerIfFirstObservableHasNoConnectionProvider() throws SQLException {
+        MockDb secondDb = new MockDb();
+        ConnectionProvider otherConnectionProvider = secondDb.getConnectionProvider();
+
+        DbProxy dbProxyWithoutConnectionProvider = new DbProxy(
+            new DatabaseConfig(), Schedulers.io(),
+            null, new DbStatementFactoryFactory(), new JsonSerializerFactory());
+        DbProxy dbProxyWithConnectionProvider = dbProxyWithoutConnectionProvider.usingConnectionProvider(otherConnectionProvider);
+
+        when(secondDb.getPreparedStatement().executeBatch())
+            .thenReturn(new int[]{1, 1});
+
+        TestDao daoWithConnectionProvider = dbProxyWithConnectionProvider.create(TestDao.class);
+        TestDao daoWithoutConnectionProvider = dbProxyWithoutConnectionProvider.create(TestDao.class);
+
+        daoTransactions.executeTransaction(daoWithoutConnectionProvider.updateSuccess(), daoWithConnectionProvider.updateSuccess())
+            .test()
+            .awaitTerminalEvent()
+            .assertNoErrors();
+
+        secondDb.verifyConnectionsUsed(1);
+        db.verifyConnectionsUsed(0);
+
+        assertThatExceptionOfType(RuntimeException.class)
+            .isThrownBy(() -> daoTransactions.executeTransaction(daoWithoutConnectionProvider.updateSuccess()).toBlocking().subscribe())
+            .withMessage("No DaoObservable with a valid connection provider was found");
     }
 
     interface TestDao {

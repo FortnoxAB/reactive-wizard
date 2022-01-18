@@ -1,14 +1,14 @@
 package se.fortnox.reactivewizard.db;
 
 import com.google.inject.Injector;
-import org.apache.log4j.Level;
-import org.apache.log4j.LogManager;
 import org.junit.Before;
 import org.junit.Test;
 import rx.Observable;
+import rx.Scheduler;
 import rx.Subscriber;
 import rx.exceptions.MissingBackpressureException;
 import rx.observers.TestSubscriber;
+import rx.schedulers.Schedulers;
 import se.fortnox.reactivewizard.config.TestInjector;
 import se.fortnox.reactivewizard.db.config.DatabaseConfig;
 
@@ -227,6 +227,30 @@ public class DbProxyTest {
     }
 
     @Test
+    public void shouldCreateNewDbProxyInstanceWithNewConnectionProviderAndNewScheduler() {
+        // given
+        DatabaseConfig config = new DatabaseConfig();
+        config.setUrl("fooo");
+
+        ConnectionProvider newConnectionProvider = mock(ConnectionProvider.class);
+        when(newConnectionProvider.get()).thenReturn(mockDb.getConnection());
+
+        Scheduler newScheduler = mock(Scheduler.class);
+        when(newScheduler.createWorker()).thenReturn(Schedulers.io().createWorker());
+
+        // when
+        DbProxy oldDbProxy = new DbProxy(config,mock(ConnectionProvider.class));
+
+        DbProxy newDbProxy = oldDbProxy.usingConnectionProvider(newConnectionProvider, newScheduler);
+        newDbProxy.create(DbProxyTestDao.class).select("").toBlocking().subscribe();
+
+        // then
+        assertThat(oldDbProxy).isNotSameAs(newDbProxy);
+        verify(newScheduler).createWorker();
+        verify(newConnectionProvider).get();
+    }
+
+    @Test
     public void testAllPathsOfTryWithResourceUsingGeneratedKey() throws SQLException {
         // null AutoCloseable
         setup();
@@ -410,7 +434,6 @@ public class DbProxyTest {
 
     @Before
     public void setup() {
-        LogManager.getLogger(DbProxy.class.getName()).setLevel(Level.toLevel("DEBUG"));
         mockDb = new MockDb();
         ConnectionProvider connectionProvider = mockDb.getConnectionProvider();
         Injector injector = TestInjector.create(binder -> {

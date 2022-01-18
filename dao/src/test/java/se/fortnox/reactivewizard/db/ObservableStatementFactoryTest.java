@@ -14,6 +14,7 @@ import se.fortnox.reactivewizard.db.config.DatabaseConfig;
 import se.fortnox.reactivewizard.db.paging.PagingOutput;
 import se.fortnox.reactivewizard.db.statement.DbStatementFactory;
 import se.fortnox.reactivewizard.db.statement.Statement;
+import se.fortnox.reactivewizard.db.transactions.ConnectionScheduler;
 import se.fortnox.reactivewizard.metrics.Metrics;
 
 import java.sql.Connection;
@@ -90,13 +91,13 @@ public class ObservableStatementFactoryTest {
             }
         });
         Function<Object[], String> paramSerializer = objects -> "";
-        statementFactory = new ObservableStatementFactory(dbStatementFactory, pagingOutput, scheduler, paramSerializer,
+        statementFactory = new ObservableStatementFactory(dbStatementFactory, pagingOutput, paramSerializer,
             Metrics.get("test"), databaseConfig, o->o);
     }
 
     @Test
     public void shouldReleaseSchedulerWorkers() {
-        Observable<Object> stmt = (Observable<Object>) statementFactory.create(new Object[0], () -> mock(Connection.class));
+        Observable<Object> stmt = (Observable<Object>)statementFactory.create(new Object[0], new ConnectionScheduler(() -> mock(Connection.class), scheduler));
         stmt.toBlocking().single();
         verify(scheduler, times(1)).createWorker();
         verify(worker).unsubscribe();

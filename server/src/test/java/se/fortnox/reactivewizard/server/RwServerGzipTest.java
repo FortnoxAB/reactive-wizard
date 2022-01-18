@@ -11,11 +11,13 @@ import se.fortnox.reactivewizard.RequestHandler;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Random;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_LENGTH;
 import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_TYPE;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.apache.commons.lang.RandomStringUtils.randomAlphabetic;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -128,5 +130,12 @@ public class RwServerGzipTest {
             rwServer.getServer()
                 .disposeNow();
         }
+    }
+
+    private String randomAlphabetic(Integer contentLength) {
+        Random random = new Random(0);
+        return Stream.generate(()->String.valueOf((char)random.nextInt('a','z')))
+            .limit(contentLength)
+            .collect(Collectors.joining());
     }
 }
