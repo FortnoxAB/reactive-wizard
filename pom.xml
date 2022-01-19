@@ -73,8 +73,8 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <reactor-bom.version>Dysprosium-SR25</reactor-bom.version>
-        <netty.version>4.1.70.Final</netty.version>
+        <reactor-bom.version>2020.0.15</reactor-bom.version>
+        <netty.version>4.1.72.Final</netty.version>
         <jackson-bom.version>2.13.1</jackson-bom.version>
         <guava.version>31.0.1-jre</guava.version>
         <rxjava.version>1.3.8</rxjava.version>

@@ -21,6 +21,7 @@ import reactor.netty.http.websocket.WebsocketOutbound;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -182,6 +183,11 @@ public class MockHttpServerResponse implements HttpServerResponse {
     }
 
     @Override
+    public HttpServerResponse trailerHeaders(Consumer<? super HttpHeaders> consumer) {
+        return this;
+    }
+
+    @Override
     public Map<CharSequence, Set<Cookie>> cookies() {
         return null;
     }
@@ -207,12 +213,22 @@ public class MockHttpServerResponse implements HttpServerResponse {
     }
 
     @Override
+    public String requestId() {
+        return null;
+    }
+
+    @Override
     public String uri() {
         return null;
     }
 
     @Override
     public HttpVersion version() {
+        return null;
+    }
+
+    @Override
+    public Map<CharSequence, List<Cookie>> allCookies() {
         return null;
     }
 }

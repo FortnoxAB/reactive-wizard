@@ -24,7 +24,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BiPredicate;
 
 import static java.util.Arrays.asList;
-import static reactor.netty.channel.BootstrapHandlers.updateConfiguration;
 
 /**
  * Runs an Reactor @{@link HttpServer} with all registered @{@link RequestHandler}s.
@@ -53,14 +52,22 @@ public class RwServer extends Thread {
     }
 
     RwServer(ServerConfig config, ConnectionCounter connectionCounter, HttpServer httpServer,
-             CompositeRequestHandler compositeRequestHandler
-    ) {
+             CompositeRequestHandler compositeRequestHandler) {
+        this(config, connectionCounter, httpServer, compositeRequestHandler, null);
+    }
+
+    RwServer(ServerConfig config, ConnectionCounter connectionCounter, HttpServer httpServer, CompositeRequestHandler compositeRequestHandler,
+        DisposableServer disposableServer) {
         super("RwServerMain");
         this.config = config;
         this.connectionCounter = connectionCounter;
 
         if (config.isEnabled()) {
-            server = httpServer.handle(compositeRequestHandler).bindNow();
+            if (disposableServer != null) {
+                server = disposableServer;
+            } else {
+                server = httpServer.handle(compositeRequestHandler).bindNow();
+            }
             LOG.info("Server started on port {}", server.port());
             start();
             registerShutdownHook();
@@ -81,12 +88,9 @@ public class RwServer extends Thread {
             .port(config.getPort())
             // Register a channel group, when invoking disposeNow() the implementation will wait for the active requests to finish
             .channelGroup(new DefaultChannelGroup(new DefaultEventExecutor()))
-            .tcpConfiguration(tcpServer -> {
+            .doOnChannelInit((connectionObserver, channel, socketAddress) -> {
                 NoContentFixConfigurator noContentFixConfigurator = new NoContentFixConfigurator();
-                return tcpServer.doOnBind(serverBootstrap -> updateConfiguration(serverBootstrap, "rw-server-configuration",
-                    (connectionObserver, channel) -> {
-                        noContentFixConfigurator.call(channel.pipeline());
-                    }));
+                noContentFixConfigurator.call(channel.pipeline());
             })
             .httpRequestDecoder(requestDecoderSpec -> requestDecoderSpec
                 .maxInitialLineLength(config.getMaxInitialLineLengthDefault())
