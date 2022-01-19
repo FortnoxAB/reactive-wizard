@@ -12,6 +12,7 @@ import org.mockito.verification.VerificationMode;
 import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.never;
 
 /**
  * Use as a @Rule annotated field in your unit tests to assert logs att various levels.
@@ -80,5 +81,9 @@ public class LoggingVerifier extends ExternalResource {
                 assertThat(logEvent.getLevel()).isEqualTo(level);
                 logEventAsserter.accept(logEvent);
             });
+    }
+
+    public Appender getMockedAppender() {
+        return appender;
     }
 }
