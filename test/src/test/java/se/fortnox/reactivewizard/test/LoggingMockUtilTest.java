@@ -66,7 +66,7 @@ public class LoggingMockUtilTest {
     @Test
     public void shouldNotThrowExceptionWhenDestroyingNonInitializedAppender() {
         LoggingMockUtil.destroyMockedAppender(ClassWithLogger.class);
-        loggingVerifier.verify(Level.WARN, "Tried to destroy mocked appender but none was mocked. Perhaps you set up the mockedLogAppender for a different class?");
+        loggingVerifier.verify(Level.WARN, "Tried to destroy a mocked appender on se.fortnox.reactivewizard.test.ClassWithLogger but none was mocked. Perhaps you set up the mockedLogAppender for a different class?");
     }
 }
 
