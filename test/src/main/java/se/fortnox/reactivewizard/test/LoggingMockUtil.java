@@ -50,7 +50,8 @@ public class LoggingMockUtil {
             logger.removeAppender(appender);
             return;
         }
-        LOG.warn("Tried to destroy a mocked appender on " + cls.getName() + " but none was mocked. Perhaps you set up the mockedLogAppender for a different class?");
+        LOG.warn("Tried to destroy a mocked appender on " + cls.getName() +
+            " but none was mocked. Perhaps you set up the mockedLogAppender for a different class?");
     }
 
     /**
