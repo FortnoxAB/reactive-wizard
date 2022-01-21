@@ -6,6 +6,7 @@ import com.google.inject.name.Names;
 import org.junit.Test;
 import org.yaml.snakeyaml.error.MarkedYAMLException;
 import se.fortnox.reactivewizard.binding.AutoBindModules;
+
 import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.HashMap;

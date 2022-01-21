@@ -1,16 +1,13 @@
 package se.fortnox.reactivewizard.utils;
 
-import io.netty.handler.codec.http.DefaultHttpHeaders;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
-import reactor.netty.ByteBufFlux;
 import reactor.netty.DisposableServer;
 import reactor.netty.http.client.HttpClient;
 import reactor.netty.http.server.HttpServer;
 import reactor.netty.http.server.HttpServerRequest;
-import reactor.netty.http.server.HttpServerResponse;
 import se.fortnox.reactivewizard.ExceptionHandler;
 import se.fortnox.reactivewizard.RequestHandler;
 import se.fortnox.reactivewizard.jaxrs.JaxRsRequestHandler;
@@ -23,10 +20,7 @@ import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 import static reactor.core.publisher.Flux.empty;
-import static reactor.core.publisher.Flux.just;
 
 public class JaxRsTestUtil {
 

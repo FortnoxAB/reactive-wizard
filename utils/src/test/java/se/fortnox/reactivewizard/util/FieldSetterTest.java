@@ -2,13 +2,11 @@ package se.fortnox.reactivewizard.util;
 
 import org.junit.Before;
 import org.junit.Test;
-import rx.Observable;
 
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static rx.Observable.empty;
 
 public class FieldSetterTest extends AccessorTest {
     private Setter value;

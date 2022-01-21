@@ -8,7 +8,6 @@ import reactor.netty.http.client.HttpClient;
 import reactor.netty.http.client.HttpClientResponse;
 import se.fortnox.reactivewizard.ExceptionHandler;
 import se.fortnox.reactivewizard.RequestHandler;
-import se.fortnox.reactivewizard.jaxrs.RequestLogger;
 
 import java.util.Collections;
 
@@ -58,8 +57,7 @@ public class NoContentFixConfiguratorTest {
         ServerConfig config = new ServerConfig();
         config.setPort(0);
         ConnectionCounter connectionCounter = new ConnectionCounter();
-        RequestLogger requestLogger = new RequestLogger();
-        CompositeRequestHandler handlers = new CompositeRequestHandler(Collections.singleton(handler), new ExceptionHandler(new ObjectMapper(), requestLogger), connectionCounter, requestLogger);
+        CompositeRequestHandler handlers = new CompositeRequestHandler(Collections.singleton(handler), new ExceptionHandler(new ObjectMapper()), connectionCounter);
         return new RwServer(config, handlers, connectionCounter);
     }
 

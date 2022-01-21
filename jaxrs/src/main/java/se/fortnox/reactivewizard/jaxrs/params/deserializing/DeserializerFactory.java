@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 /**
  * Creates deserializers from Strings to a given type.
@@ -56,7 +55,7 @@ public class DeserializerFactory {
 
     /**
      * Return Deserializer from param type.
-      * @param paramType the param type
+     * @param paramType the param type
      * @param <T> the type of the deserializer
      * @return the deserializer
      */

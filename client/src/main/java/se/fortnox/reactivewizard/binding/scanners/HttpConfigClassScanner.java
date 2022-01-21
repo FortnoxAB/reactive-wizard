@@ -1,6 +1,5 @@
 package se.fortnox.reactivewizard.binding.scanners;
 
-import io.github.classgraph.ScanResult;
 import se.fortnox.reactivewizard.client.HttpClientConfig;
 import se.fortnox.reactivewizard.config.Config;
 

@@ -1,7 +1,6 @@
 package se.fortnox.reactivewizard.jaxrs.params;
 
 import reactor.core.publisher.Mono;
-import rx.Observable;
 import se.fortnox.reactivewizard.jaxrs.JaxRsRequest;
 
 /**

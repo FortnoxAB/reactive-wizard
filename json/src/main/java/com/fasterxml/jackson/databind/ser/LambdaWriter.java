@@ -2,10 +2,8 @@ package com.fasterxml.jackson.databind.ser;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.impl.PropertySerializerMap;
-import se.fortnox.reactivewizard.json.LambdaSerializerModifier;
 
 import java.lang.invoke.CallSite;
 import java.lang.invoke.LambdaMetafactory;

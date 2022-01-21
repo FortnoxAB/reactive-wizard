@@ -2,7 +2,6 @@ package se.fortnox.reactivewizard.util;
 
 import org.junit.Before;
 import org.junit.Test;
-import rx.Observable;
 
 import java.util.stream.Stream;
 

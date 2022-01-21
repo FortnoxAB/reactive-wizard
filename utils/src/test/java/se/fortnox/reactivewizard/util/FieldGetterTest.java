@@ -2,13 +2,11 @@ package se.fortnox.reactivewizard.util;
 
 import org.junit.Before;
 import org.junit.Test;
-import rx.Observable;
 
 import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static rx.Observable.empty;
 
 public class FieldGetterTest extends AccessorTest {
     private Getter<GenericFieldSubclass, Integer> value;

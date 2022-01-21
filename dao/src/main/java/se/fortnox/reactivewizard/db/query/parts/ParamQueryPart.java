@@ -2,8 +2,8 @@ package se.fortnox.reactivewizard.db.query.parts;
 
 import se.fortnox.reactivewizard.db.query.PreparedStatementParameters;
 import se.fortnox.reactivewizard.json.JsonSerializerFactory;
-import se.fortnox.reactivewizard.util.ReflectionUtil;
 import se.fortnox.reactivewizard.util.PropertyResolver;
+import se.fortnox.reactivewizard.util.ReflectionUtil;
 
 import java.lang.reflect.Type;
 import java.sql.SQLException;

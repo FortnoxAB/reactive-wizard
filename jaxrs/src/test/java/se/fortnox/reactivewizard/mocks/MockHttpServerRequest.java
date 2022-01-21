@@ -18,15 +18,11 @@ import reactor.netty.http.server.HttpServerRequest;
 import javax.annotation.Nullable;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import static org.assertj.core.util.Arrays.asList;
 
 public class MockHttpServerRequest implements HttpServerRequest {
     private final String uri;

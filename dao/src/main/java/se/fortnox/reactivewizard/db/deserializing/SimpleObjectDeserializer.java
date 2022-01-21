@@ -1,7 +1,7 @@
 package se.fortnox.reactivewizard.db.deserializing;
 
-import se.fortnox.reactivewizard.util.ReflectionUtil;
 import se.fortnox.reactivewizard.util.PropertyResolver;
+import se.fortnox.reactivewizard.util.ReflectionUtil;
 
 import java.lang.reflect.InvocationTargetException;
 import java.sql.ResultSet;

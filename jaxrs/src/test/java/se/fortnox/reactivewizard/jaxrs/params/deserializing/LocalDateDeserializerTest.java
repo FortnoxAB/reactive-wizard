@@ -1,9 +1,7 @@
 package se.fortnox.reactivewizard.jaxrs.params.deserializing;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import org.junit.Test;
 
-import java.lang.reflect.Type;
 import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
