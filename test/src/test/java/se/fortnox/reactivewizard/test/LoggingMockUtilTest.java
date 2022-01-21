@@ -2,6 +2,7 @@ package se.fortnox.reactivewizard.test;
 
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.Appender;
+import org.junit.Rule;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,6 +13,9 @@ import static org.mockito.Mockito.verify;
 import static se.fortnox.reactivewizard.test.TestUtil.matches;
 
 public class LoggingMockUtilTest {
+    @Rule
+    public LoggingVerifier loggingVerifier = new LoggingVerifier(LoggingMockUtil.class);
+
     @Test
     public void shouldLogToMockAppender() {
         ClassWithLogger classWithLogger = new ClassWithLogger();
@@ -54,6 +58,15 @@ public class LoggingMockUtilTest {
             .getAppenders().get("mockAppender");
         assertThat(destroyedAppender)
             .isNull();
+    }
+
+    /**
+     * Should be able to close a non initialized appender without exception.
+     */
+    @Test
+    public void shouldNotThrowExceptionWhenDestroyingNonInitializedAppender() {
+        LoggingMockUtil.destroyMockedAppender(ClassWithLogger.class);
+        loggingVerifier.verify(Level.WARN, "Tried to destroy a mocked appender on se.fortnox.reactivewizard.test.ClassWithLogger but none was mocked. Perhaps you set up the mockedLogAppender for a different class?");
     }
 }
 

@@ -9,6 +9,7 @@ import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.Logger;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.apache.logging.slf4j.Log4jLogger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.lang.reflect.Field;
@@ -17,6 +18,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class LoggingMockUtil {
+
+    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(LoggingMockUtil.class);
 
     private static final String MOCK_APPENDER = "mockAppender";
 
@@ -42,7 +45,13 @@ public class LoggingMockUtil {
     public static void destroyMockedAppender(Class cls) {
         Logger logger = LoggingMockUtil.getLogger(cls);
         Appender appender = logger.getAppenders().get(MOCK_APPENDER);
-        logger.removeAppender(appender);
+
+        if (appender != null) {
+            logger.removeAppender(appender);
+            return;
+        }
+        LOG.warn("Tried to destroy a mocked appender on " + cls.getName() +
+            " but none was mocked. Perhaps you set up the mockedLogAppender for a different class?");
     }
 
     /**
