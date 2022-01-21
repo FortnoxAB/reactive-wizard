@@ -140,7 +140,7 @@ public class HttpClientTest {
 
         try {
             HttpClientConfig config = new HttpClientConfig("localhost:" + server.port());
-            config.setReadTimeoutMs(1);
+            config.setReadTimeoutMs(5);
             TestResource resource = getHttpProxy(config);
 
             resource.postHello().toBlocking().singleOrDefault(null);
