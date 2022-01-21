@@ -36,6 +36,7 @@ import se.fortnox.reactivewizard.metrics.HealthRecorder;
 import se.fortnox.reactivewizard.server.ServerConfig;
 import se.fortnox.reactivewizard.test.LoggingMockUtil;
 import se.fortnox.reactivewizard.test.TestUtil;
+import se.fortnox.reactivewizard.test.WaitingTestUtils;
 import se.fortnox.reactivewizard.test.observable.ObservableAssertions;
 import se.fortnox.reactivewizard.util.rx.RetryWithDelay;
 
@@ -96,6 +97,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.refEq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -147,7 +149,7 @@ public class HttpClientTest {
 
             Assert.fail("Expected exception");
         } catch (Exception e) {
-            assertThat(callCount.get()).isEqualTo(1);
+            assertThat(callCount.get()).isLessThanOrEqualTo(1);
             assertThat(e.getClass()).isEqualTo(WebException.class);
         } finally {
             server.disposeNow();
