@@ -84,12 +84,20 @@ public class LiquibaseMigrate {
         }
     }
 
+    /**
+     * Run this migration.
+     * @throws LiquibaseException on error
+     */
     public void run() throws LiquibaseException {
         for (Liquibase liquibase : liquibaseList) {
             liquibase.update((String)null);
         }
     }
 
+    /**
+     * Drop all db objects.
+     * @throws DatabaseException on error
+     */
     public void drop() throws DatabaseException {
         for (Liquibase liquibase : liquibaseList) {
             liquibase.dropAll();
@@ -98,6 +106,10 @@ public class LiquibaseMigrate {
         LockServiceFactory.getInstance().resetAll();
     }
 
+    /**
+     * Force drop all db objects.
+     * @throws DatabaseException on error
+     */
     public void forceDrop() throws DatabaseException {
         for (Liquibase liquibase : liquibaseList) {
             Database         database = liquibase.getDatabase();

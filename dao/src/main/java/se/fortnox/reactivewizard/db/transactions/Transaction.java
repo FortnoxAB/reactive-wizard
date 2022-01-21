@@ -19,6 +19,11 @@ public class Transaction {
         this.statementsToExecute = new ConcurrentLinkedQueue<>(statements);
     }
 
+    /**
+     * Execute the transation.
+     * @param connection the connection
+     * @throws Exception on error
+     */
     public void execute(Connection connection) throws Exception {
         try {
             executeTransaction(connection);

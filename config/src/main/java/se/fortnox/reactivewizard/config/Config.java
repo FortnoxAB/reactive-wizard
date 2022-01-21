@@ -12,5 +12,9 @@ import java.lang.annotation.Target;
 @Target({ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Config {
+    /**
+     * The name if the config.
+     * @return the name
+     */
     String value();
 }

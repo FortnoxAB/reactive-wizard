@@ -38,7 +38,7 @@ public class ValidatingProxy implements InvocationHandler, Provider<Object> {
     }
 
     /**
-     * Wrapped implementation
+     * Wrapped implementation.
      * @return the wrapped instance
      */
     @Override

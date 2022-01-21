@@ -35,6 +35,13 @@ public class Metrics {
         return measure(observable, NOOP);
     }
 
+    /**
+     * Measure execution time of an Observable.
+     * @param observable the Observable
+     * @param callback the callback
+     * @param <T> the type of observable
+     * @return an Observable with measure applied
+     */
     public <T> Observable<T> measure(Observable<T> observable, LongConsumer callback) {
         if (observable == null) {
             return null;

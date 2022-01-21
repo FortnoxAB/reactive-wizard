@@ -67,6 +67,10 @@ public class JaxRsRequest {
         return body;
     }
 
+    /**
+     * Load the body.
+     * @return the body
+     */
     public Mono<JaxRsRequest> loadBody() {
         HttpMethod httpMethod = req.method();
         if (POST.equals(httpMethod) || PUT.equals(httpMethod) || PATCH.equals(httpMethod) || DELETE.equals(httpMethod)) {
@@ -78,10 +82,21 @@ public class JaxRsRequest {
         return Mono.just(this);
     }
 
+    /**
+     * Return the query param.
+     * @param key the param key
+     * @return the param
+     */
     public String getQueryParam(String key) {
         return getQueryParam(key, null);
     }
 
+    /**
+     * Return the query param or default value, if non-existent..
+     * @param key the param key
+     * @param defaultValue default value
+     * @return the param or default value
+     */
     public String getQueryParam(String key, String defaultValue) {
         if (queryParameters == null) {
             QueryStringDecoder queryStringDecoder = new QueryStringDecoder(req.uri());
@@ -94,10 +109,21 @@ public class JaxRsRequest {
         return defaultValue;
     }
 
+    /**
+     * Return the path param.
+     * @param key the param key
+     * @return the path param
+     */
     public String getPathParam(String key) {
         return getPathParam(key, null);
     }
 
+    /**
+     * Get path param or default value, if non-existent.
+     * @param key the param key
+     * @param defaultValue the default value
+     * @return the path param or default value
+     */
     public String getPathParam(String key, String defaultValue) {
         if (matcher == null || !matcher.pattern().pattern().contains(key)) {
             return defaultValue;
@@ -136,6 +162,12 @@ public class JaxRsRequest {
         return getCookieValue(key, null);
     }
 
+    /**
+     * Return the cookie value or default value, if non-existent.
+     * @param key the cookie key
+     * @param defaultValue the default value
+     * @return cookie or default value
+     */
     public String getCookieValue(String key, String defaultValue) {
         Set<Cookie> cookies = req.cookies().get(key);
         if (cookies == null || cookies.isEmpty()) {

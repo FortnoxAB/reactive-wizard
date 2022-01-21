@@ -20,6 +20,12 @@ public class DbStatementFactoryFactory {
 
     }
 
+    /**
+     * Create a statement factory from a method.
+     * @param method the method
+     * @return the statement factory
+     * @throws SQLException if there is an sql error
+     */
     public DbStatementFactory createStatementFactory(Method method) throws SQLException {
         Type     returnType = ReflectionUtil.getTypeOfObservable(method);
         Class<?> cls        = ReflectionUtil.getRawType(returnType);

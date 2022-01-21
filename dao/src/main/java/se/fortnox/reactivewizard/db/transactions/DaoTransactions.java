@@ -9,6 +9,7 @@ public interface DaoTransactions {
      * The calls will be run in the order they are passed to this method.
      *
      * @param daoCalls dao calls to run as on single transaction
+     * @return empty Observable
      */
     <T> Observable<Void> executeTransaction(Iterable<Observable<T>> daoCalls);
 
@@ -17,6 +18,7 @@ public interface DaoTransactions {
      * The calls will be run in the order they are passed to this method.
      *
      * @param daoCalls dao calls to run as on single transaction
+     * @return empty Observable
      */
     <T> Observable<Void> executeTransaction(Observable<T>... daoCalls);
 }

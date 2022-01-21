@@ -5,6 +5,10 @@ public final class DbDriver {
 
     }
 
+    /**
+     * Load driver.
+     * @param url the driver url
+     */
     public static void loadDriver(String url) {
         if (url.startsWith("jdbc:h2:")) {
             try {

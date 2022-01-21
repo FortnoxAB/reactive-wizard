@@ -96,6 +96,12 @@ public class DbProxy implements InvocationHandler {
         return Schedulers.from(executor);
     }
 
+    /**
+     * Create proxy from interface.
+     * @param daoInterface the interface
+     * @param <T> the type of the interface
+     * @return the proxy
+     */
     public <T> T create(Class<T> daoInterface) {
         return (T)Proxy.newProxyInstance(daoInterface.getClassLoader(),
             new Class[]{daoInterface},

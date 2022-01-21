@@ -5,11 +5,11 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import java.lang.reflect.Type;
 
 /**
- * Helper for working with reflection
+ * Helper for working with reflection.
  */
 public class Types {
     /**
-     * Turns an existing type into a jackson TypeReference
+     * Turns an existing type into a jackson TypeReference.
      * @param type is the type from reflection
      * @param <T> is the generic type
      * @return a type reference of the given Type

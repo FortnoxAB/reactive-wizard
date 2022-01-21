@@ -68,6 +68,13 @@ public class ConfigReader {
         return stringBuffer.toString();
     }
 
+    /**
+     * Get configuration from tree.
+     * @param tree the json tree
+     * @param cls the class
+     * @param <T> the type
+     * @return the configuration
+     */
     public static <T> T fromTree(JsonNode tree, Class<T> cls) {
         String   fieldName = cls.getAnnotation(Config.class).value();
         JsonNode obj       = tree.get(fieldName);
@@ -101,6 +108,11 @@ public class ConfigReader {
         }
     }
 
+    /**
+     * Read tree from file.
+     * @param fileName the file name
+     * @return the json tree node
+     */
     public static JsonNode readTree(String fileName) {
         try {
             return mapper.readTree(readFile(fileName));

@@ -94,6 +94,14 @@ public class ParameterizedQuery {
         return createStatement(connection, arguments, null);
     }
 
+    /**
+     * Create prepared statement.
+     * @param connection the connection
+     * @param arguments the arguments
+     * @param options the options
+     * @return the prepared statement
+     * @throws SQLException on error
+     */
     public PreparedStatement createStatement(Connection connection, Object[] arguments, Integer options)
         throws SQLException {
         StringBuilder sql = new StringBuilder();
@@ -104,6 +112,12 @@ public class ParameterizedQuery {
         return createPreparedStatement(connection, options, sql.toString());
     }
 
+    /**
+     * Add parameters from prepared statement.
+     * @param args the arguments
+     * @param preparedStatement the prepared statement
+     * @throws SQLException on error
+     */
     public void addParameters(Object[] args, PreparedStatement preparedStatement) throws SQLException {
         PreparedStatementParameters parameters = new PreparedStatementParameters(preparedStatement);
         for (QueryPart part : queryParts) {

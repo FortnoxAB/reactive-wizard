@@ -11,5 +11,9 @@ import java.lang.annotation.Target;
 @Target({ElementType.TYPE, ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface SuccessStatus {
+    /**
+     * Status code to be used as success.
+     * @return the status code
+     */
     int value();
 }

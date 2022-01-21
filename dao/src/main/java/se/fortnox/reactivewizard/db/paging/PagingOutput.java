@@ -15,6 +15,13 @@ public class PagingOutput {
         index = indexOf(asList(method.getParameterTypes()), CollectionOptions.class::isAssignableFrom);
     }
 
+    /**
+     * Apply paging to result.
+     * @param result the result
+     * @param args the arguments
+     * @param <T> the type of result
+     * @return the paged result
+     */
     public <T> Observable<T> apply(Observable<T> result, Object[] args) {
         if (index == -1) {
             return result;

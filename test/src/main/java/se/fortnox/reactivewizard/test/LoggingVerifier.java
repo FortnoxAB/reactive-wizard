@@ -23,10 +23,19 @@ public class LoggingVerifier extends ExternalResource {
     private Level originalLevel;
     private Appender appender;
 
+    /**
+     * Create instance for class.
+     * @param clazz the class
+     */
     public LoggingVerifier(Class<?> clazz) {
         this(clazz, null);
     }
 
+    /**
+     * Create instance for class and level.
+     * @param clazz the class
+     * @param level the level
+     */
     public LoggingVerifier(Class<?> clazz, Level level) {
         this.clazz = clazz;
         this.level = level;
@@ -48,7 +57,7 @@ public class LoggingVerifier extends ExternalResource {
     }
 
     /**
-     * Verify some error Message
+     * Verify some error Message.
      * @param level the level to assert
      * @param errorMessage the error message to assert
      */
@@ -57,7 +66,7 @@ public class LoggingVerifier extends ExternalResource {
     }
 
     /**
-     * Verify some LogEvent is sent at least once
+     * Verify some LogEvent is sent at least once.
      * @param level the level to assert
      * @param logEventAsserter the consumer of a LogEvent responsible for asserting the values of the LogEvent
      */
@@ -67,7 +76,8 @@ public class LoggingVerifier extends ExternalResource {
 
     /**
      * Verify logging is carried out at a certain level.
-     * The logEventAsserter is responsible for asserting the correctness of the logEvent object
+     * The logEventAsserter is responsible for asserting the correctness of the logEvent object.
+     * @param verificationMode  the verification mode
      * @param level the log level
      * @param logEventAsserter the log event asserter
      */

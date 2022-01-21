@@ -31,6 +31,12 @@ public class ValidatorUtil {
         throwIfError(validator.validate(obj));
     }
 
+    /**
+     * Validate contraints for parameters of the given method.
+     * @param object the object of method
+     * @param method the method to validate
+     * @param parameterValues the provided values
+     */
     public void validateParameters(Object object, Method method, Object[] parameterValues) {
         throwIfError(validator.forExecutables().validateParameters(object, method, parameterValues));
         for (Object obj : parameterValues) {

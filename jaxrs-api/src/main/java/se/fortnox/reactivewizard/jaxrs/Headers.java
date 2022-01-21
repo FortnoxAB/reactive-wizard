@@ -15,5 +15,9 @@ import java.lang.annotation.Target;
 @Target({ElementType.TYPE, ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Headers {
+    /**
+     * The headers to be set.
+     * @return the headers
+     */
     String[] value();
 }

@@ -25,6 +25,11 @@ public class ByteBufCollector {
         this.maxReqSize = maxReqSize;
     }
 
+    /**
+     * Collect string from input.
+     * @param input the input
+     * @return the string
+     */
     public Observable<String> collectString(Observable<ByteBuf> input) {
         return input
             .collect(ByteArrayOutputStream::new, this::collectChunks)
@@ -57,6 +62,11 @@ public class ByteBufCollector {
         }
     }
 
+    /**
+     * Collect bytes from content.
+     * @param content the content
+     * @return the bytes
+     */
     public Mono<byte[]> collectBytes(Flux<ByteBuf> content) {
         return content
             .collect(ByteArrayOutputStream::new, this::collectChunks)

@@ -34,12 +34,13 @@ public interface Statement {
     void batchExecuted(int count) throws SQLException;
 
     /**
+     * Checks compatibility with other batch.
      * @return <code>true</code> if the specified statement might be added to the batch.
      */
     boolean sameBatch(Statement statement);
 
     /**
-     * Set the subscriber
+     * Set the subscriber.
      * @param subscriber the subscriber
      */
     void setSubscriber(Subscriber<?> subscriber);

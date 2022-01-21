@@ -19,18 +19,30 @@ public class ConnectionCounter {
         this.connectionsZero = connectionsZero;
     }
 
+    /**
+     * Increment the number of connections by one.
+     */
     public void increase() {
         if (connections.getAndIncrement() == 0) {
             connectionsZero.tryAcquire();
         }
     }
 
+    /**
+     * Decrement the number of connections by one.
+     */
     public void decrease() {
         if (connections.decrementAndGet() == 0) {
             connectionsZero.release();
         }
     }
 
+    /**
+     * Await zero connections.
+     * @param time time to wait
+     * @param timeUnit unit of time to wait
+     * @return whether zero was reached within the time
+     */
     public boolean awaitZero(int time, TimeUnit timeUnit) {
         try {
             boolean success = connectionsZero.tryAcquire(time, timeUnit);

@@ -31,6 +31,11 @@ import static java.util.Arrays.asList;
 public class ReflectionUtil {
     private static final String CGLIB_CLASS_SEPARATOR = "$$";
 
+    /**
+     * Get the type of Observable from method.
+     * @param method the method
+     * @return the type of Observable
+     */
     public static Type getTypeOfObservable(Method method) {
         Type type = method.getGenericReturnType();
         if (!(type instanceof ParameterizedType)) {
@@ -49,6 +54,11 @@ public class ReflectionUtil {
         return actualTypeArguments[0];
     }
 
+    /**
+     * Get class of generic parameter.
+     * @param type the type
+     * @return the class
+     */
     public static Class<?> getGenericParameter(Type type) {
         if (!(type instanceof ParameterizedType)) {
             throw new RuntimeException("The sent in type " + type + " is not a ParameterizedType");
@@ -76,6 +86,11 @@ public class ReflectionUtil {
         return candidateMethod.getName().equals(method.getName()) && Arrays.equals(candidateMethod.getParameterTypes(), method.getParameterTypes());
     }
 
+    /**
+     * Find overridden method.
+     * @param method the method that overrides
+     * @return the overridden method or null if none found
+     */
     public static Method getOverriddenMethod(Method method) {
         Class<?> declaringClass = getUserDefinedClass(method.getDeclaringClass());
         Optional<Method> found;
@@ -112,6 +127,12 @@ public class ReflectionUtil {
         return clazz;
     }
 
+    /**
+     * Find method in class matching name and parameter types.
+     * @param method the method to match
+     * @param cls the class to search
+     * @return an Optional of method
+     */
     public static Optional<Method> findMethodInClass(Method method, Class<?> cls) {
         for (Method candidate : cls.getDeclaredMethods()) {
             if (methodsEquals(method, candidate)) {
@@ -121,6 +142,13 @@ public class ReflectionUtil {
         return Optional.empty();
     }
 
+    /**
+     * Find annotation on method or overridden methods thereof.
+     * @param method the method
+     * @param annotationClass the annotation class to look for
+     * @param <T> the type of annotation
+     * @return the annotation or null if not found
+     */
     public static <T extends Annotation> T getAnnotation(Method method, Class<T> annotationClass) {
         T annotation = method.getAnnotation(annotationClass);
 
@@ -134,6 +162,11 @@ public class ReflectionUtil {
         return annotation;
     }
 
+    /**
+     * Get all annotations for method or overridden methods thereof.
+     * @param method the method
+     * @return the annotations
+     */
     public static List<Annotation> getAnnotations(Method method) {
         List<Annotation> result     = new LinkedList<>(asList(method.getAnnotations()));
         Method           overridden = getOverriddenMethod(method);
@@ -143,6 +176,11 @@ public class ReflectionUtil {
         return result;
     }
 
+    /**
+     * Get annotations of the parameters of a method or overridden methods thereof.
+     * @param method the method
+     * @return the annotations
+     */
     public static List<List<Annotation>> getParameterAnnotations(Method method) {
         List<List<Annotation>> result               = new LinkedList<List<Annotation>>();
         Annotation[][]         annotations          = method.getParameterAnnotations();
@@ -163,6 +201,11 @@ public class ReflectionUtil {
         return result;
     }
 
+    /**
+     * Get annotations for parameter.
+     * @param parameter the parameter
+     * @return the annotations
+     */
     public static List<Annotation> getParameterAnnotations(Parameter parameter) {
         List<Annotation> annotations      = new ArrayList<>(asList(parameter.getAnnotations()));
         Method           method           = (Method)parameter.getDeclaringExecutable();
@@ -178,6 +221,11 @@ public class ReflectionUtil {
         return annotations;
     }
 
+    /**
+     * Get the type object representing the class or interface that declared a type.
+     * @param type the type
+     * @return the raw type
+     */
     public static Class<?> getRawType(Type type) {
         if (type == null) {
             return null;
@@ -291,8 +339,11 @@ public class ReflectionUtil {
 
     /**
      * If the method given is part of a proxy (e.g. for validating purposes), and that proxy implements Supplier in
-     * order to expose it's underlying implementation, then this will return the underlying Method definition, so that
+     * order to expose its underlying implementation, then this will return the underlying Method definition, so that
      * param factories can search the implementing class for annotations.
+     * @param method the method
+     * @param resourceInstance the resource instance
+     * @return the method
      */
     public static Method getInstanceMethod(Method method, Object resourceInstance) {
         if (!Proxy.isProxyClass(method.getDeclaringClass())) {
@@ -332,6 +383,12 @@ public class ReflectionUtil {
         }
     }
 
+    /**
+     * Get instantiator for class.
+     * @param cls the class
+     * @param <T> the type of class
+     * @return the instantiator in the form of a Supplier
+     */
     public static <T> Supplier<T> instantiator(Class<T> cls) {
         try {
             Constructor<?> constructor = Stream.of(cls.getDeclaredConstructors())

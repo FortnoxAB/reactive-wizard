@@ -17,6 +17,7 @@ public class IfThenElse<T> {
      * Executes when the boolean Observable is true.
      *
      * @param thenValue The observable to execute
+     * @return this class
      */
     public IfThenElse<T> then(Observable<T> thenValue) {
         this.thenValue = thenValue;
@@ -27,6 +28,7 @@ public class IfThenElse<T> {
      * Thrown when the boolean Observable is false.
      *
      * @param throwable The exception to throw
+     * @return then Observable or error Observable
      */
     public Observable<T> elseThrow(Throwable throwable) {
         return ifValue.flatMap(exists -> {
