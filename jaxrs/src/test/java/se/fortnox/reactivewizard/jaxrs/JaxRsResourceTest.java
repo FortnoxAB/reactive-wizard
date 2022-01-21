@@ -307,7 +307,7 @@ public class JaxRsResourceTest {
     }
 
     private void assertBadRequest(MockHttpServerResponse response,
-                                  String expectedBodyRegex
+        String expectedBodyRegex
     ) {
         if (!expectedBodyRegex.contains("\"")) {
             expectedBodyRegex = expectedBodyRegex.replaceAll("'", "\\\"");
@@ -1058,7 +1058,7 @@ public class JaxRsResourceTest {
         @Path("acceptsQueryArray")
         @GET
         Observable<Integer> acceptsQueryArray(@QueryParam("Stringarray") String[] strings,
-                                              @QueryParam("Integerarray") Integer[] integers
+            @QueryParam("Integerarray") Integer[] integers
         );
 
         @Path("acceptsQueryListWithEnum")

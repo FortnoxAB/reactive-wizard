@@ -9,7 +9,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-public class Transaction<T> {
+public class Transaction {
 
     private static final Logger LOG = LoggerFactory.getLogger(Transaction.class);
 

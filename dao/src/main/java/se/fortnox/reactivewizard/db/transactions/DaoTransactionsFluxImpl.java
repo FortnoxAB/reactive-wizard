@@ -1,46 +1,44 @@
 package se.fortnox.reactivewizard.db.transactions;
 
-import rx.Observable;
+import reactor.core.publisher.Flux;
 import se.fortnox.reactivewizard.util.ReactiveDecorator;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
 import java.util.List;
 
 import static java.util.Arrays.asList;
-import static rx.Observable.empty;
 
 @Singleton
-public class DaoTransactionsImpl implements DaoTransactions {
+public class DaoTransactionsFluxImpl implements DaoTransactionsFlux {
+
     private final TransactionExecutor transactionExecutor;
 
     @Inject
-    public DaoTransactionsImpl() {
+    public DaoTransactionsFluxImpl() {
         transactionExecutor = new TransactionExecutor();
     }
 
     @Override
-    public <T> Observable<Void> executeTransaction(Iterable<Observable<T>> daoCalls) {
+    public <T> Flux<Void> executeTransaction(Iterable<Flux<T>> daoCalls) {
         if (daoCalls == null) {
-            return empty();
+            return Flux.empty();
         }
-
         List<StatementContext> statementContexts = transactionExecutor.getStatementContexts(daoCalls, ReactiveDecorator::getDecoration);
         if (statementContexts.isEmpty()) {
-            return empty();
+            return Flux.empty();
         }
-        return Observable.unsafeCreate(subscription -> {
+        return Flux.create(subscription -> {
             ConnectionScheduler connectionScheduler = transactionExecutor.getConnectionScheduler(statementContexts);
-            connectionScheduler.schedule(subscription::onError, connection -> {
+            connectionScheduler.schedule(subscription::error, connection -> {
                 transactionExecutor.executeTransaction(statementContexts, connection);
-                subscription.onCompleted();
+                subscription.complete();
             });
         });
     }
 
     @Override
-    public <T> Observable<Void> executeTransaction(Observable<T>... daoCalls) {
+    public <T> Flux<Void> executeTransaction(Flux<T>... daoCalls) {
         return executeTransaction(asList(daoCalls));
     }
 }

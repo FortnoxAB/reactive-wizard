@@ -1,15 +1,16 @@
 package se.fortnox.reactivewizard.jaxrs.response;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
-import reactor.core.CoreSubscriber;
 import reactor.core.publisher.Flux;
 import rx.Observable;
 import rx.Observer;
+import se.fortnox.reactivewizard.util.ReactiveDecorator;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -55,21 +56,27 @@ public class ResponseDecorator {
      * @return DecoratedResponseBuilder&lt;T&gt;
      */
     @Nonnull
-    public static <T> DecoratedResponseBuilder<T> of(@Nonnull Observable<T> value) {
+    public static <T> DecoratedResponseBuilder<T> of(@Nonnull T value) {
         return new DecoratedResponseBuilder<>(value);
     }
 
     protected static <T> Flux<T> apply(@Nonnull Flux<T> output, @Nonnull JaxRsResult<T> result) {
-        if (output instanceof FluxWithHeaders) {
-            ResponseDecorations decorations = ((FluxWithHeaders<T>) output).getDecorations();
+        Optional<Object> decorations = ReactiveDecorator.getDecoration(output);
 
-            decorations.applyOn(result);
+        if (decorations.isPresent()) {
+            Object object = decorations.get();
 
-            ApplyDecorationsOnEmit<T> applyDecorations = new ApplyDecorationsOnEmit<>(decorations, result);
+            if (object instanceof ResponseDecorations) {
+                ResponseDecorations responseDecorations = (ResponseDecorations)object;
 
-            return output
-                .doOnNext(applyDecorations::onNext)
-                .doOnComplete(applyDecorations::onCompleted);
+                responseDecorations.applyOn(result);
+
+                ApplyDecorationsOnEmit<T> applyDecorations = new ApplyDecorationsOnEmit<>(responseDecorations, result);
+
+                return output
+                    .doOnNext(applyDecorations::onNext)
+                    .doOnComplete(applyDecorations::onCompleted);
+            }
         }
         return output;
     }
@@ -106,59 +113,12 @@ public class ResponseDecorator {
         }
     }
 
-    public static class ObservableWithHeaders<T> extends Observable<T> {
-
-        private final ResponseDecorations decorations;
-
-        protected ObservableWithHeaders(@Nonnull Observable<T> inner, @Nonnull ResponseDecorations decorations) {
-            super(inner::unsafeSubscribe);
-            this.decorations = decorations;
-        }
-
-        @Nonnull
-        public ResponseDecorations getDecorations() {
-            return decorations;
-        }
-
-        @Nonnull
-        public Map<String, String> getHeaders() {
-            return decorations.getHeaders();
-        }
-    }
-
-
-    public static class FluxWithHeaders<T> extends Flux<T> {
-
-        private final Flux<T> inner;
-        private final ResponseDecorations decorations;
-
-        public FluxWithHeaders(@Nonnull Flux<T> inner, @Nonnull ResponseDecorations decorations) {
-            this.inner = inner;
-            this.decorations = decorations;
-        }
-
-        @Nonnull
-        public ResponseDecorations getDecorations() {
-            return decorations;
-        }
-
-        @Nonnull
-        public Map<String, String> getHeaders() {
-            return decorations.getHeaders();
-        }
-
-        @Override
-        public void subscribe(@Nonnull CoreSubscriber<? super T> actual) {
-            inner.subscribe(actual);
-        }
-    }
-
     public static class DecoratedResponseBuilder<T> {
 
-        private final Observable<T> response;
+        private final T response;
         private final ResponseDecorations decorations = new ResponseDecorations();
 
-        public DecoratedResponseBuilder(@Nonnull final Observable<T> response) {
+        public DecoratedResponseBuilder(T response) {
             this.response = response;
         }
 
@@ -219,8 +179,8 @@ public class ResponseDecorator {
          * @return ObservableWithHeaders&lt;T&gt;
          */
         @Nonnull
-        public ObservableWithHeaders<T> build() {
-            return new ObservableWithHeaders<>(response, decorations);
+        public T build() {
+            return ReactiveDecorator.decorated(response, decorations);
         }
     }
 

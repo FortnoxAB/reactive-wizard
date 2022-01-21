@@ -3,19 +3,19 @@ package se.fortnox.reactivewizard.db;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
-import rx.Scheduler;
 import se.fortnox.reactivewizard.db.config.DatabaseConfig;
 import se.fortnox.reactivewizard.db.paging.PagingOutput;
 import se.fortnox.reactivewizard.db.statement.DbStatementFactory;
 import se.fortnox.reactivewizard.db.statement.Statement;
 import se.fortnox.reactivewizard.db.transactions.ConnectionScheduler;
-import se.fortnox.reactivewizard.db.transactions.DaoObservable;
 import se.fortnox.reactivewizard.db.transactions.StatementContext;
 import se.fortnox.reactivewizard.metrics.Metrics;
 import se.fortnox.reactivewizard.util.DebugUtil;
+import se.fortnox.reactivewizard.util.ReactiveDecorator;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -30,18 +30,20 @@ public class ObservableStatementFactory {
     private final PagingOutput               pagingOutput;
     private final Metrics                    metrics;
     private final DatabaseConfig             config;
+    private final Function<Observable<Object>, Object> resultConverter;
 
     public ObservableStatementFactory(
         DbStatementFactory statementFactory,
         PagingOutput pagingOutput,
         Function<Object[], String> paramSerializer,
         Metrics metrics,
-        DatabaseConfig config
-    ) {
+        DatabaseConfig config,
+        Function<Observable<Object>, Object> resultConverter) {
         this.statementFactory = statementFactory;
         this.pagingOutput = pagingOutput;
         this.metrics = metrics;
         this.config = config;
+        this.resultConverter = resultConverter;
     }
 
     private static void closeSilently(Connection connection) {
@@ -52,14 +54,14 @@ public class ObservableStatementFactory {
         }
     }
 
-    public Observable<Object> create(Object[] args, ConnectionScheduler connectionScheduler) {
-        Supplier<StatementContext> transactionHolderSupplier =
-            () -> new StatementContext(statementFactory.create(args), connectionScheduler);
+    public Object create(Object[] args, ConnectionScheduler connectionScheduler) {
+        StatementContext statementContext = new StatementContext(() -> statementFactory.create(args), connectionScheduler);
+
         Observable<Object> result = Observable.unsafeCreate(subscription -> {
             try {
-                transactionHolderSupplier.get().getConnectionScheduler()
-                    .schedule(subscription, (connection) -> {
-                        Statement dbStatement = transactionHolderSupplier.get().getStatement();
+                statementContext.getConnectionScheduler()
+                    .schedule(subscription::onError, (connection) -> {
+                        Statement dbStatement = statementContext.getStatement();
                         dbStatement.setSubscriber(subscription);
                         executeStatement(dbStatement, connection);
                     });
@@ -82,7 +84,7 @@ public class ObservableStatementFactory {
         result = metrics.measure(result, this::logSlowQuery);
         result = result.onBackpressureBuffer(RECORD_BUFFER_SIZE);
 
-        return new DaoObservable<>(result, transactionHolderSupplier);
+        return ReactiveDecorator.decorated(resultConverter.apply(result), statementContext);
     }
 
     private void logSlowQuery(long time) {

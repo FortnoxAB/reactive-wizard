@@ -625,10 +625,7 @@ public class HttpClientTest {
 
         Observable<String> hello = resource.getHello();
 
-        ObservableWithResponse<String> wrappedStringResponse = ObservableWithResponse.from((ObservableWithResponse)hello,
-            hello.doOnError(Throwable::printStackTrace));
-
-        Response<String> stringResponse = HttpClient.getFullResponse(wrappedStringResponse).toBlocking().singleOrDefault(null);
+        Response<String> stringResponse = HttpClient.getFullResponse(hello).toBlocking().singleOrDefault(null);
         assertThat(stringResponse).isNotNull();
         assertThat(stringResponse.getBody()).isEqualTo("OK");
         assertThat(stringResponse.getStatus()).isEqualTo(OK);
@@ -664,10 +661,7 @@ public class HttpClientTest {
 
         Single<String> hello = resource.getSingle();
 
-        SingleWithResponse<String> wrappedStringResponse = SingleWithResponse.from((SingleWithResponse)hello,
-            hello.doOnError(Throwable::printStackTrace));
-
-        Response<String> stringResponse = HttpClient.getFullResponse(wrappedStringResponse).toBlocking().value();
+        Response<String> stringResponse = HttpClient.getFullResponse(hello).toBlocking().value();
         assertThat(stringResponse).isNotNull();
         assertThat(stringResponse.getBody()).isEqualTo("OK");
         assertThat(stringResponse.getStatus()).isEqualTo(OK);

@@ -5,6 +5,7 @@ import rx.Subscriber;
 import se.fortnox.reactivewizard.db.ConnectionProvider;
 
 import java.sql.Connection;
+import java.util.function.Consumer;
 
 public class ConnectionScheduler {
     private final ConnectionProvider connectionProvider;
@@ -19,15 +20,13 @@ public class ConnectionScheduler {
         return connectionProvider != null;
     }
 
-    public void schedule(Subscriber<?> subscription, ThrowableAction action) {
+    public void schedule(Consumer<Throwable> onError, ThrowableAction action) {
         Scheduler.Worker worker = scheduler.createWorker();
         worker.schedule(() -> {
             try {
                 action.call(connectionProvider.get());
             } catch (Exception e) {
-                if (!subscription.isUnsubscribed()) {
-                    subscription.onError(e);
-                }
+                onError.accept(e);
             } finally {
                 worker.unsubscribe();
             }

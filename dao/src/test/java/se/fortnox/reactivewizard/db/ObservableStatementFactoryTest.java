@@ -92,12 +92,12 @@ public class ObservableStatementFactoryTest {
         });
         Function<Object[], String> paramSerializer = objects -> "";
         statementFactory = new ObservableStatementFactory(dbStatementFactory, pagingOutput, paramSerializer,
-            Metrics.get("test"), databaseConfig);
+            Metrics.get("test"), databaseConfig, o->o);
     }
 
     @Test
     public void shouldReleaseSchedulerWorkers() {
-        Observable<Object> stmt = statementFactory.create(new Object[0], new ConnectionScheduler(() -> mock(Connection.class), scheduler));
+        Observable<Object> stmt = (Observable<Object>)statementFactory.create(new Object[0], new ConnectionScheduler(() -> mock(Connection.class), scheduler));
         stmt.toBlocking().single();
         verify(scheduler, times(1)).createWorker();
         verify(worker).unsubscribe();

@@ -4,15 +4,12 @@ import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import rx.Observable;
 import se.fortnox.reactivewizard.db.config.DatabaseConfig;
-import se.fortnox.reactivewizard.db.transactions.DaoObservable;
 
 import java.sql.SQLException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 public class DaoObservableTest {
     private MockDb                      db                 = new MockDb();
@@ -27,17 +24,17 @@ public class DaoObservableTest {
         AtomicInteger error = new AtomicInteger();
         AtomicInteger completed = new AtomicInteger();
 
-        Observable<String> find1 = ((DaoObservable<String>) dao.find())
-            .onTerminate(terminated::incrementAndGet)
-            .onSubscribe(subscribed::incrementAndGet)
-            .doOnTransactionCompleted(completed::incrementAndGet)
-            .onError(throwable -> error.incrementAndGet());
+        Observable<String> find1 = dao.find()
+            .doOnTerminate(terminated::incrementAndGet)
+            .doOnSubscribe(subscribed::incrementAndGet)
+            .doOnCompleted(completed::incrementAndGet)
+            .doOnError(throwable -> error.incrementAndGet());
 
-        Observable<Integer> updateFail = ((DaoObservable<Integer>) dao.updateFail())
-            .onTerminate(terminated::incrementAndGet)
-            .onSubscribe(subscribed::incrementAndGet)
-            .doOnTransactionCompleted(completed::incrementAndGet)
-            .onError(throwable -> error.incrementAndGet());
+        Observable<Integer> updateFail = dao.updateFail()
+            .doOnTerminate(terminated::incrementAndGet)
+            .doOnSubscribe(subscribed::incrementAndGet)
+            .doOnCompleted(completed::incrementAndGet)
+            .doOnError(throwable -> error.incrementAndGet());
 
         find1.toBlocking().singleOrDefault(null);
         db.verifyConnectionsUsed(1);

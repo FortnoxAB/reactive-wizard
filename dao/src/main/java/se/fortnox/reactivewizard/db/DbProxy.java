@@ -12,6 +12,7 @@ import se.fortnox.reactivewizard.db.transactions.ConnectionScheduler;
 import se.fortnox.reactivewizard.json.JsonSerializerFactory;
 import se.fortnox.reactivewizard.metrics.Metrics;
 import se.fortnox.reactivewizard.util.DebugUtil;
+import se.fortnox.reactivewizard.util.FluxRxConverter;
 import se.fortnox.reactivewizard.util.ReflectionUtil;
 
 import javax.annotation.Nullable;
@@ -116,7 +117,8 @@ public class DbProxy implements InvocationHandler {
                 pagingOutput,
                 paramSerializer,
                 createMetrics(method),
-                databaseConfig);
+                databaseConfig,
+                FluxRxConverter.converterFromObservable(method.getReturnType()));
             statementFactories.put(method, observableStatementFactory);
         }
         return observableStatementFactory.create(args, connectionScheduler);
@@ -142,4 +144,5 @@ public class DbProxy implements InvocationHandler {
     public DatabaseConfig getDatabaseConfig() {
         return databaseConfig;
     }
+
 }

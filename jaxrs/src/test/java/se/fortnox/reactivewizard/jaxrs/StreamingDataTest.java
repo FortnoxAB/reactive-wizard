@@ -50,8 +50,10 @@ public class StreamingDataTest {
         assertThat(response.get().responseHeaders().get("Content-Type")).isEqualTo(MediaType.TEXT_PLAIN);
 
         //But at the end of the day
-        assertThat(body(get(streamingResource, "/stream"))).isEqualTo("ab");
-        assertThat(body(get(noStreamingResource, "/nostream"))).isEqualTo("a");
+        ByteBufCollector collector = new ByteBufCollector();
+        HttpClient httpClient = HttpClient.create().baseUrl("http://localhost:" + server.port());
+        assertThat(collector.collectString(httpClient.get().uri("/stream").responseContent()).block()).isEqualTo("ab");
+        assertThat(collector.collectString(httpClient.get().uri("/nostream").responseContent()).block()).isEqualTo("a");
     }
 
     @Test
