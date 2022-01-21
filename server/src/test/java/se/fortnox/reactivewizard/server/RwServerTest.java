@@ -9,21 +9,25 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 import reactor.core.publisher.Mono;
 import reactor.netty.DisposableServer;
 import reactor.netty.http.server.HttpServer;
+import reactor.netty.http.server.HttpServerConfig;
 import reactor.netty.tcp.TcpServer;
 import se.fortnox.reactivewizard.test.LoggingMockUtil;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.*;
+import static reactor.core.publisher.Mono.empty;
 import static reactor.core.publisher.Mono.just;
 import static se.fortnox.reactivewizard.test.TestUtil.matches;
 
@@ -93,15 +97,9 @@ public class RwServerTest {
     public void shouldAwaitShutDown() throws InterruptedException {
         ServerConfig serverConfig = new ServerConfig();
 
-        DisposableServer disposableServer = mock(DisposableServer.class);
-        when(disposableServer.onDispose()).thenReturn(Mono.empty());
-        HttpServer server = new HttpServer() {
-            @Override
-            protected Mono<? extends DisposableServer> bind(TcpServer b) {
-                return just(disposableServer);
-            }
-        };
-        RwServer rwServer = new RwServer(serverConfig, connectionCounter, server, compositeRequestHandler);
+        DisposableServer disposableServer = Mockito.mock(DisposableServer.class);
+        when(disposableServer.onDispose()).thenReturn(empty());
+        RwServer rwServer = new RwServer(serverConfig, connectionCounter, HttpServer.create(), compositeRequestHandler, disposableServer);
         rwServer.join();
 
         verify(disposableServer).onDispose();
@@ -135,16 +133,8 @@ public class RwServerTest {
     @Test
     public void shouldCallServerShutDownWhenShutdownHookIsInvoked() {
         DisposableServer disposableServer = mock(DisposableServer.class);
-        when(disposableServer.onDispose()).thenReturn(Mono.empty());
-        HttpServer server = new HttpServer() {
-            @Override
-            protected Mono<? extends DisposableServer> bind(TcpServer b) {
-                return just(disposableServer);
-            }
-        };
 
-        RwServer rwServer = new RwServer(new ServerConfig(), connectionCounter, server, compositeRequestHandler);
-        RwServer.shutdownHook(new ServerConfig(), rwServer.getServer(), connectionCounter);
+        RwServer.shutdownHook(new ServerConfig(), disposableServer, connectionCounter);
 
         verify(disposableServer).disposeNow(any());
     }
