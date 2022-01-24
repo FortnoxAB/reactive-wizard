@@ -108,7 +108,8 @@ public class JaxRsResourceTest {
                     paramResolvers,
                     new AnnotatedParamResolverFactories(),
                     new WrapSupportingParamTypeResolver()),
-                new JaxRsResultFactoryFactory()),
+                new JaxRsResultFactoryFactory(),
+                new RequestLogger()),
             false);
         JaxRsRequest jaxRsRequest = new JaxRsRequest(req, new ByteBufCollector());
         Mono<? extends JaxRsResult<?>> result = jaxRsResources.findResource(jaxRsRequest).call(jaxRsRequest);

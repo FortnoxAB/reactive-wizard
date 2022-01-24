@@ -24,6 +24,11 @@
 
 	<module name="SuppressWarningsFilter"/>
 
+    <module name="LineLength">
+        <property name="max" value="160" />
+        <property name="ignorePattern" value="^package.*|^import.*|a href|href|http://|https://|ftp://" />
+    </module>
+
 	<module name="TreeWalker">
 		<module name="SuppressWarningsHolder"/>
 		<module name="OuterTypeFilename" />
@@ -36,10 +41,6 @@
 			<property name="allowEscapesForControlCharacters" value="true" />
 			<property name="allowByTailComment" value="true" />
 			<property name="allowNonPrintableEscapes" value="true" />
-		</module>
-		<module name="LineLength">
-			<property name="max" value="160" />
-			<property name="ignorePattern" value="^package.*|^import.*|a href|href|http://|https://|ftp://" />
 		</module>
 		<module name="AvoidStarImport" />
 		<module name="OneTopLevelClass" />
@@ -124,7 +125,7 @@
 		</module>
 		<module name="AbbreviationAsWordInName">
 			<property name="ignoreFinal" value="false" />
-			<property name="allowedAbbreviationLength" value="1" />
+			<property name="allowedAbbreviationLength" value="5" />
 		</module>
 		<module name="OverloadMethodsDeclarationOrder" />
 		<module name="VariableDeclarationUsageDistance" />
@@ -171,16 +172,19 @@
 		</module>
 		<module name="JavadocMethod">
 			<property name="severity" value="warning"/>
-			<property name="ignoreMethodNamesRegex" value="set.*" />
 			<property name="tokens" value="METHOD_DEF, ANNOTATION_FIELD_DEF" />
-			<property name="scope" value="public" />
+			<property name="accessModifiers" value="public" />
 			<property name="allowMissingParamTags" value="true" />
-			<property name="allowMissingThrowsTags" value="true" />
-			<property name="allowMissingReturnTag" value="true" />
-			<property name="minLineCount" value="2" />
 			<property name="allowedAnnotations" value="Override, Test" />
-			<property name="allowThrowsTagsForSubclasses" value="true" />
 		</module>
+        <module name="MissingJavadocMethod">
+            <property name="severity" value="warning"/>
+            <property name="ignoreMethodNamesRegex" value="set.*" />
+            <property name="tokens" value="METHOD_DEF, ANNOTATION_FIELD_DEF" />
+            <property name="scope" value="public" />
+            <property name="minLineCount" value="2" />
+            <property name="allowedAnnotations" value="Override, Test" />
+        </module>
 
 		<module name="MethodName">
 			<property name="format" value="^[a-z][a-z0-9][a-zA-Z0-9_]*$" />

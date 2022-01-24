@@ -16,19 +16,26 @@ public class JaxRsResourceFactory {
 
     protected final ParamResolverFactories    paramResolverFactories;
     protected final JaxRsResultFactoryFactory jaxRsResultFactoryFactory;
+    private final RequestLogger requestLogger;
 
     public JaxRsResourceFactory() {
-        this(new ParamResolverFactories(), new JaxRsResultFactoryFactory());
+        this(new ParamResolverFactories(), new JaxRsResultFactoryFactory(), new RequestLogger());
     }
 
     @Inject
     public JaxRsResourceFactory(ParamResolverFactories paramResolverFactories,
-        JaxRsResultFactoryFactory jaxRsResultFactoryFactory
-    ) {
+                                JaxRsResultFactoryFactory jaxRsResultFactoryFactory,
+                                RequestLogger requestLogger) {
         this.paramResolverFactories = paramResolverFactories;
         this.jaxRsResultFactoryFactory = jaxRsResultFactoryFactory;
+        this.requestLogger = requestLogger;
     }
 
+    /**
+     * Create resources from services.
+     * @param services the services
+     * @return the resources
+     */
     public List<JaxRsResource> createResources(Object[] services) {
         List<JaxRsResource> resources = new ArrayList<JaxRsResource>();
         for (Object service : services) {
@@ -38,6 +45,11 @@ public class JaxRsResourceFactory {
         return resources;
     }
 
+    /**
+     * Create resource from service and to list of resources.
+     * @param service the service
+     * @param resources the other resources
+     */
     public void createResources(Object service, List<JaxRsResource> resources) {
         Class<? extends Object> cls  = service.getClass();
         Path                    path = JaxRsMeta.getPath(cls);
@@ -67,6 +79,6 @@ public class JaxRsResourceFactory {
     }
 
     protected JaxRsResource createResource(Method method, Object service, JaxRsMeta meta) {
-        return new JaxRsResource(method, service, paramResolverFactories, jaxRsResultFactoryFactory, meta);
+        return new JaxRsResource(method, service, paramResolverFactories, jaxRsResultFactoryFactory, meta, requestLogger);
     }
 }

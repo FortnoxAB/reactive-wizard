@@ -1,74 +1,129 @@
 package se.fortnox.reactivewizard.jaxrs;
 
+import org.junit.After;
 import org.junit.Test;
 
-import java.util.AbstractMap;
-import java.util.Comparator;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeSet;
 
+import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
 public class RequestLoggerTest {
 
-    @Test
-    public void shouldRedactAuthorizationValue() {
-        Map.Entry<String,String> header = new AbstractMap.SimpleEntry<>("Authorization", "secret");
+    private final RequestLogger requestLogger = new RequestLogger();
 
-        String result = RequestLogger.getHeaderValueOrRedact(header);
-        assertEquals("REDACTED", result);
+    @After
+    public void cleanup() {
+        requestLogger.clearTransformations();
     }
 
     @Test
-    public void shouldNotRedactAuthorizationValue() {
-        Map.Entry<String,String> header = new AbstractMap.SimpleEntry<>("OtherHeader", "notasecret");
-        String result = RequestLogger.getHeaderValueOrRedact(header);
-        assertEquals("notasecret", result);
+    public void shouldRedactAuthorizationValue() {
+        var header = entry("Authorization", "secret");
+
+        assertEquals("REDACTED", requestLogger.getHeaderValueOrRedactIncoming(header));
+        assertEquals("REDACTED", requestLogger.getHeaderValueOrRedactOutgoing(header));
+    }
+
+    @Test
+    public void shouldNotRedactNoneAuthorizationValue() {
+        var header = entry("OtherHeader", "notasecret");
+
+        assertEquals("notasecret", requestLogger.getHeaderValueOrRedactIncoming(header));
+        assertEquals("notasecret", requestLogger.getHeaderValueOrRedactOutgoing(header));
     }
 
     @Test
     public void shouldRedactAuthorizationValues() {
-        Map<String,String> headers = new HashMap<>();
-        headers.put("Authorization", "secret");
-        headers.put("OtherHeader", "notasecret");
+        var headers = Map.of(
+            "Authorization", "secret",
+            "OtherHeader", "notasecret"
+        );
+        var expectedValue = Map.of(
+            "Authorization", "REDACTED",
+            "OtherHeader", "notasecret"
+        );
 
-        Set<Map.Entry<String, String>> result = RequestLogger.getHeaderValuesOrRedact(headers);
-
-        Map<String, String> expectedValue = new HashMap<>();
-        expectedValue.put("Authorization", "REDACTED");
-        expectedValue.put("OtherHeader", "notasecret");
-        assertThat(result).isEqualTo(expectedValue.entrySet());
+        assertThat(requestLogger.getHeaderValuesOrRedactIncoming(headers))
+            .isEqualTo(expectedValue.entrySet());
+        assertThat(requestLogger.getHeaderValuesOrRedactOutgoing(headers))
+            .isEqualTo(expectedValue.entrySet());
     }
 
     @Test
     public void shouldRedactSuppliedSensitiveHeader() {
-        Map<String,String> headers = new HashMap<>();
-        headers.put("OtherHeader", "notasecret");
-        headers.put("Cookie", "oreo");
+        var headers = Map.of(
+            "OtherHeader", "notasecret",
+            "Cookie", "oreo"
+        );
+        requestLogger.addRedactedHeaderIncoming("Cookie");
+        requestLogger.addRedactedHeaderOutgoing("Cookie");
+        var expectedValue = Map.of(
+            "Cookie", "REDACTED",
+            "OtherHeader", "notasecret"
+        ).entrySet();
 
-        Set<String> sensitiveHeaders = new TreeSet<>(Comparator.comparing(String::toLowerCase));
-        sensitiveHeaders.add("cookie");
-
-        Set<Map.Entry<String, String>> result = RequestLogger.getHeaderValuesOrRedact(headers, sensitiveHeaders);
-
-        Map<String, String> expectedValue = new HashMap<>();
-        expectedValue.put("Cookie", "REDACTED");
-        expectedValue.put("OtherHeader", "notasecret");
-        assertThat(result).isEqualTo(expectedValue.entrySet());
+        assertThat(requestLogger.getHeaderValuesOrRedactIncoming(headers))
+            .containsExactlyInAnyOrderElementsOf(expectedValue);
+        assertThat(requestLogger.getHeaderValuesOrRedactOutgoing(headers))
+            .containsExactlyInAnyOrderElementsOf(expectedValue);
     }
 
     @Test
-    public void shouldReturnNull_getHeaderValuesOrRedact() {
-        Set<Map.Entry<String, String>> result = RequestLogger.getHeaderValuesOrRedact(null);
-        assertThat(result).isEmpty();
+    public void shouldReturnEmpty_getHeaderValuesOrRedact() {
+        assertThat(requestLogger.getHeaderValuesOrRedactIncoming(null))
+            .isEmpty();
+        assertThat(requestLogger.getHeaderValuesOrRedactOutgoing(null))
+            .isEmpty();
     }
 
     @Test
     public void shouldReturnNull_getHeaderValueOrRedact() {
-        assertNull(RequestLogger.getHeaderValueOrRedact(null));
+        assertNull(requestLogger.getHeaderValueOrRedactIncoming(null));
+        assertNull(requestLogger.getHeaderValueOrRedactOutgoing(null));
+    }
+
+    @Test
+    public void shouldTransformHeaders() {
+        var headers = Map.of(
+            "header1", "value1",
+            "header2", "value2",
+            "header3", "vaLue3",
+            "header4", "value4",
+            "header5", "value5"
+        );
+
+        requestLogger.addHeaderTransformationIncoming("header2", header -> header.replaceAll("\\d", "*"));
+        requestLogger.addHeaderTransformationIncoming("header3", String::toUpperCase);
+
+        Set<Map.Entry<String, String>> resultIncoming = requestLogger.getHeaderValuesOrRedactIncoming(headers);
+
+        assertThat(resultIncoming)
+            .hasSize(5)
+            .contains(
+                entry("header1", "value1"),
+                entry("header2", "value*"),
+                entry("header3", "VALUE3"),
+                entry("header4", "value4"),
+                entry("header5", "value5")
+            );
+
+        requestLogger.addHeaderTransformationOutgoing("header1", header -> header.replaceAll("\\d", "X"));
+        requestLogger.addHeaderTransformationOutgoing("header3", String::toLowerCase);
+
+        Set<Map.Entry<String, String>> resultOutgoing = requestLogger.getHeaderValuesOrRedactOutgoing(headers);
+
+        assertThat(resultOutgoing)
+            .hasSize(5)
+            .contains(
+                entry("header1", "valueX"),
+                entry("header2", "value2"),
+                entry("header3", "value3"),
+                entry("header4", "value4"),
+                entry("header5", "value5")
+            );
     }
 }

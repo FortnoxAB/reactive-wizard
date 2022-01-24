@@ -1,7 +1,6 @@
 package se.fortnox.reactivewizard.jaxrs;
 
 import org.junit.Test;
-import org.slf4j.event.Level;
 
 import java.util.regex.Pattern;
 

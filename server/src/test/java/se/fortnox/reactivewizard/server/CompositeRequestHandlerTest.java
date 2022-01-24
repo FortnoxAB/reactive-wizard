@@ -12,6 +12,7 @@ import reactor.netty.http.server.HttpServerRequest;
 import reactor.netty.http.server.HttpServerResponse;
 import se.fortnox.reactivewizard.ExceptionHandler;
 import se.fortnox.reactivewizard.RequestHandler;
+import se.fortnox.reactivewizard.jaxrs.RequestLogger;
 import se.fortnox.reactivewizard.jaxrs.WebException;
 
 import java.util.HashSet;
@@ -45,7 +46,7 @@ public class CompositeRequestHandlerTest {
         lenient().when(request.requestHeaders()).thenReturn(new DefaultHttpHeaders());
         lenient().when(response.responseHeaders()).thenReturn(new DefaultHttpHeaders());
         connectionCounter = new ConnectionCounter();
-        compositeRequestHandler = new CompositeRequestHandler(requestHandlers, exceptionHandler, connectionCounter);
+        compositeRequestHandler = new CompositeRequestHandler(requestHandlers, exceptionHandler, connectionCounter, new RequestLogger());
     }
 
     @Test
@@ -87,7 +88,7 @@ public class CompositeRequestHandlerTest {
         Flux.from(compositeRequestHandler.apply(request, response)).count().block();
 
         verify(exceptionHandler, times(1)).handleException(any(), any(), any(WebException.class));
-        assertThat(connectionCounter.getCount()).isEqualTo(0);
+        assertThat(connectionCounter.getCount()).isZero();
     }
 
     @Test

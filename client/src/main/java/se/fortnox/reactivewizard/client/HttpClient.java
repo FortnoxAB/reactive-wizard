@@ -21,6 +21,7 @@ import rx.Single;
 import se.fortnox.reactivewizard.jaxrs.ByteBufCollector;
 import se.fortnox.reactivewizard.jaxrs.FieldError;
 import se.fortnox.reactivewizard.jaxrs.JaxRsMeta;
+import se.fortnox.reactivewizard.jaxrs.RequestLogger;
 import se.fortnox.reactivewizard.jaxrs.WebException;
 import se.fortnox.reactivewizard.metrics.HealthRecorder;
 import se.fortnox.reactivewizard.metrics.PublisherMetrics;
@@ -57,14 +58,12 @@ import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalUnit;
 import java.util.ArrayList;
 import java.util.Base64;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
@@ -81,7 +80,6 @@ import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static reactor.core.Exceptions.isRetryExhausted;
 import static reactor.core.publisher.Mono.just;
-import static se.fortnox.reactivewizard.jaxrs.RequestLogger.getHeaderValuesOrRedact;
 
 public class HttpClient implements InvocationHandler {
     private static final Logger LOG            = LoggerFactory.getLogger(HttpClient.class);
@@ -96,11 +94,11 @@ public class HttpClient implements InvocationHandler {
     private final   Set<PreRequestHook>                               preRequestHooks;
     private final   ReactorRxClientProvider                           clientProvider;
     private final   ObjectMapper                                      objectMapper;
-    private final   Map<Class<?>, List<HttpClient.BeanParamProperty>> beanParamCache   = new ConcurrentHashMap<>();
-    private final   Map<Method, JaxRsMeta>                            jaxRsMetaMap     = new ConcurrentHashMap<>();
-    private         int                                               timeout          = 10;
-    private         TemporalUnit                                      timeoutUnit      = ChronoUnit.SECONDS;
-    private final   Set<String>                                       sensitiveHeaders = new TreeSet<>(Comparator.comparing(String::toLowerCase));
+    private final   RequestLogger                                     requestLogger;
+    private final   Map<Class<?>, List<HttpClient.BeanParamProperty>> beanParamCache = new ConcurrentHashMap<>();
+    private final   Map<Method, JaxRsMeta>                            jaxRsMetaMap   = new ConcurrentHashMap<>();
+    private         int                                               timeout        = 10;
+    private         TemporalUnit                                      timeoutUnit    = ChronoUnit.SECONDS;
     private final   Duration                                          retryDuration;
 
     @Inject
@@ -108,11 +106,13 @@ public class HttpClient implements InvocationHandler {
                       ReactorRxClientProvider clientProvider,
                       ObjectMapper objectMapper,
                       RequestParameterSerializers requestParameterSerializers,
-                      Set<PreRequestHook> preRequestHooks
+                      Set<PreRequestHook> preRequestHooks,
+                      RequestLogger requestLogger
     ) {
         this.config         = config;
         this.clientProvider = clientProvider;
         this.objectMapper   = objectMapper;
+        this.requestLogger = requestLogger;
         this.objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         this.requestParameterSerializers = requestParameterSerializers;
 
@@ -123,7 +123,8 @@ public class HttpClient implements InvocationHandler {
     }
 
     public HttpClient(HttpClientConfig config) {
-        this(config, new ReactorRxClientProvider(config, new HealthRecorder()), new ObjectMapper(), new RequestParameterSerializers(), emptySet());
+        this(config, new ReactorRxClientProvider(config, new HealthRecorder()), new ObjectMapper(), new RequestParameterSerializers(),
+            emptySet(), new RequestLogger());
     }
 
     public static void setTimeout(Object proxy, int timeout, ChronoUnit timeoutUnit) {
@@ -146,14 +147,14 @@ public class HttpClient implements InvocationHandler {
     private static void ifHttpClientDo(Object proxy, Consumer<HttpClient> consumer) {
         if (Proxy.isProxyClass(proxy.getClass())) {
             Object handler = Proxy.getInvocationHandler(proxy);
-            if (handler instanceof HttpClient) {
-                consumer.accept((HttpClient) handler);
+            if (handler instanceof HttpClient httpClient) {
+                consumer.accept(httpClient);
             }
         }
     }
 
     public void addSensitiveHeaders(Set<String> headers) {
-        this.sensitiveHeaders.addAll(headers);
+        headers.forEach(requestLogger::addRedactedHeaderOutgoing);
     }
 
     @SuppressWarnings("unchecked")
@@ -214,12 +215,12 @@ public class HttpClient implements InvocationHandler {
     }
 
     /**
-     * Should be used with an observable coming directly from another api-call to get access to meta data, such as status and headers
+     * Should be used with an observable coming directly from another api-call to get access to metadata, such as status and headers
      * from the response.
      *
      * @param source the source observable, must be observable returned from api call
      * @param <T>    the type of data that should be returned in the call
-     * @return an observable that along with the data passes the response meta data
+     * @return an observable that along with the data passes the response metadata
      */
     public static <T> Observable<Response<T>> getFullResponse(Observable<T> source) {
         Optional<Mono<Response<Flux<T>>>> responseFlux = ReactiveDecorator.getDecoration(source);
@@ -230,7 +231,7 @@ public class HttpClient implements InvocationHandler {
     }
 
     /**
-     * Should be used with a Single coming directly from another api-call to get access to meta data, such as status and header
+     * Should be used with a Single coming directly from another api-call to get access to metadata, such as status and header.
      *
      * @param source the source observable, must be observable returned from api call
      * @param <T>    the type of data that should be returned in the call
@@ -245,7 +246,7 @@ public class HttpClient implements InvocationHandler {
     }
 
     /**
-     * Should be used with a Flux coming directly from another api-call to get access to meta data, such as status and header
+     * Should be used with a Flux coming directly from another api-call to get access to metadata, such as status and header.
      *
      * @param source the source observable, must be observable returned from api call
      * @param <T>    the type of data that should be returned in the call
@@ -260,7 +261,7 @@ public class HttpClient implements InvocationHandler {
     }
 
     /**
-     * Should be used with a Mono coming directly from another api-call to get access to meta data, such as status and header
+     * Should be used with a Mono coming directly from another api-call to get access to metadata, such as status and header.
      *
      * @param source the source observable, must be observable returned from api call
      * @param <T>    the type of data that should be returned in the call
@@ -275,7 +276,7 @@ public class HttpClient implements InvocationHandler {
     }
 
     private <T> Mono<T> convertError(RequestBuilder fullReq, Throwable throwable) {
-        String request = format("%s, headers: %s", fullReq.getFullUrl(), getHeaderValuesOrRedact(fullReq.getHeaders(), sensitiveHeaders));
+        String request = format("%s, headers: %s", fullReq.getFullUrl(), requestLogger.getHeaderValuesOrRedactOutgoing(fullReq.getHeaders()));
         LOG.warn("Failed request. Url: {}", request, throwable);
 
         if (isRetryExhausted(throwable)) {
@@ -343,7 +344,8 @@ public class HttpClient implements InvocationHandler {
     }
 
     /**
-     * @return Basic auth string based on config
+     * Create basic auth string based on config.
+     * @return the auth string
      */
     private String createBasicAuthString() {
         Charset charset     = StandardCharsets.ISO_8859_1;
@@ -378,7 +380,7 @@ public class HttpClient implements InvocationHandler {
                 // Log the error on every retry.
                 LOG.info(format("Will retry because an error occurred. %s, headers: %s",
                     fullReq.getFullUrl(),
-                    getHeaderValuesOrRedact(fullReq.getHeaders(), sensitiveHeaders)), throwable);
+                    requestLogger.getHeaderValuesOrRedactOutgoing(fullReq.getHeaders())), throwable);
 
                 // Retry if it's 500+ error
                 return true;
@@ -412,11 +414,11 @@ public class HttpClient implements InvocationHandler {
                     if (requestBuilder.getHeaders().get(CONTENT_TYPE).startsWith(APPLICATION_JSON)) {
                         requestBuilder.setContent(objectMapper.writeValueAsBytes(value));
                     } else {
-                        if (value instanceof String) {
-                            requestBuilder.setContent((String)value);
+                        if (value instanceof String string) {
+                            requestBuilder.setContent(string);
                             return;
-                        } else if (value instanceof byte[]) {
-                            requestBuilder.setContent((byte[])value);
+                        } else if (value instanceof byte[] bytes) {
+                            requestBuilder.setContent(bytes);
                             return;
                         }
                         throw new IllegalArgumentException("When content type is not " + APPLICATION_JSON
@@ -442,8 +444,8 @@ public class HttpClient implements InvocationHandler {
 
     private FormParam getFormParam(Annotation[] annotations) {
         for (Annotation annotation : annotations) {
-            if (annotation instanceof FormParam) {
-                return (FormParam)annotation;
+            if (annotation instanceof FormParam formParam) {
+                return formParam;
             }
         }
         return null;
@@ -470,7 +472,7 @@ public class HttpClient implements InvocationHandler {
                         "\tData: %s",
                     status.code(),
                     request.getFullUrl(),
-                    getHeaderValuesOrRedact(request.getHeaders(), sensitiveHeaders),
+                    requestLogger.getHeaderValuesOrRedactOutgoing(request.getHeaders()),
                     formatHeaders(response.getHttpClientResponse()),
                     data);
                 Throwable detailedErrorCause = new HttpClient.ThrowableWithoutStack(message);
@@ -553,11 +555,11 @@ public class HttpClient implements InvocationHandler {
                 continue;
             }
             for (Annotation annotation : annotations[i]) {
-                if (annotation instanceof HeaderParam) {
-                    request.addHeader(((HeaderParam)annotation).value(), serialize(value));
-                } else if (annotation instanceof CookieParam) {
+                if (annotation instanceof HeaderParam headerParam) {
+                    request.addHeader(headerParam.value(), serialize(value));
+                } else if (annotation instanceof CookieParam cookieParam) {
                     final String currentCookieValue = request.getHeaders().get(COOKIE);
-                    final String cookiePart         = ((CookieParam)annotation).value() + "=" + serialize(value);
+                    final String cookiePart         = cookieParam.value() + "=" + serialize(value);
                     if (currentCookieValue != null) {
                         request.addHeader(COOKIE, format("%s; %s", currentCookieValue, cookiePart));
                     } else {
@@ -582,7 +584,7 @@ public class HttpClient implements InvocationHandler {
             return Mono.empty();
         }
 
-        if (String.class.equals(type) && !string.startsWith(QUOTE) && !"null".equalsIgnoreCase(string)) {   
+        if (String.class.equals(type) && !string.startsWith(QUOTE) && !"null".equalsIgnoreCase(string)) {
             return just(string);
         }
 
@@ -622,7 +624,7 @@ public class HttpClient implements InvocationHandler {
         for (int i = 0; i < args.size(); i++) {
             Object value = args.get(i);
             for (Annotation annotation : argumentAnnotations.get(i)) {
-                if (annotation instanceof QueryParam) {
+                if (annotation instanceof QueryParam queryParam) {
                     if (value == null) {
                         continue;
                     }
@@ -631,14 +633,14 @@ public class HttpClient implements InvocationHandler {
                     } else {
                         query.append('&');
                     }
-                    query.append(((QueryParam)annotation).value());
+                    query.append(queryParam.value());
                     query.append('=');
                     query.append(urlEncode(serialize(value)));
-                } else if (annotation instanceof PathParam) {
-                    if (path.contains("{" + ((PathParam)annotation).value() + ":.*}")) {
-                        path = path.replaceAll("\\{" + ((PathParam)annotation).value() + ":.*\\}", this.encode(this.serialize(value)));
+                } else if (annotation instanceof PathParam pathParam) {
+                    if (path.contains("{" + pathParam.value() + ":.*}")) {
+                        path = path.replaceAll("\\{" + pathParam.value() + ":.*\\}", this.encode(this.serialize(value)));
                     } else {
-                        path = path.replaceAll("\\{" + ((PathParam)annotation).value() + "\\}", this.urlEncode(this.serialize(value)));
+                        path = path.replaceAll("\\{" + pathParam.value() + "\\}", this.urlEncode(this.serialize(value)));
                     }
                 } else if (annotation instanceof BeanParam) {
                     if (value == null) {
@@ -674,7 +676,7 @@ public class HttpClient implements InvocationHandler {
     }
 
     /**
-     * Recursive function getting all declared fields from the passed in class and its ancestors
+     * Recursive function getting all declared fields from the passed in class and its ancestors.
      *
      * @param clazz the clazz fetching fields from
      * @return list of fields
@@ -689,15 +691,14 @@ public class HttpClient implements InvocationHandler {
     }
 
     protected String serialize(Object value) {
-        if (value instanceof Date) {
-            return String.valueOf(((Date)value).getTime());
+        if (value instanceof Date date) {
+            return String.valueOf(date.getTime());
         }
         if (value.getClass().isArray()) {
             value = asList((Object[])value);
         }
-        if (value instanceof List) {
+        if (value instanceof List list) {
             StringBuilder stringBuilder = new StringBuilder();
-            List          list          = (List)value;
             for (int i = 0; i < list.size(); i++) {
                 Object entryValue = list.get(i);
                 stringBuilder.append(entryValue);
@@ -728,6 +729,7 @@ public class HttpClient implements InvocationHandler {
             super(null, cause, false, false);
         }
 
+        @Override
         public String getMessage() {
             return message;
         }

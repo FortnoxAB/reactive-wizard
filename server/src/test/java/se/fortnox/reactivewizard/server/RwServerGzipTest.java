@@ -8,6 +8,7 @@ import reactor.core.publisher.Mono;
 import reactor.netty.http.client.HttpClient;
 import se.fortnox.reactivewizard.ExceptionHandler;
 import se.fortnox.reactivewizard.RequestHandler;
+import se.fortnox.reactivewizard.jaxrs.RequestLogger;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -67,7 +68,8 @@ public class RwServerGzipTest {
         config.setPort(0);
         config.setEnableGzip(compress);
         ConnectionCounter connectionCounter = new ConnectionCounter();
-        CompositeRequestHandler handlers = new CompositeRequestHandler(Collections.singleton(handler), new ExceptionHandler(new ObjectMapper()), connectionCounter);
+        RequestLogger requestLogger = new RequestLogger();
+        CompositeRequestHandler handlers = new CompositeRequestHandler(Collections.singleton(handler), new ExceptionHandler(new ObjectMapper(), requestLogger), connectionCounter, requestLogger);
         return new RwServer(config, handlers, connectionCounter);
     }
 
