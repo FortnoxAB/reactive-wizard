@@ -29,6 +29,12 @@ public class ResultTransformerFactories {
         this((Collection<ResultTransformerFactory>)resultTransformerFactories);
     }
 
+    /**
+     * Create result transformer from resource.
+     * @param resource the resource
+     * @param <T> the type of resource
+     * @return the result transformer
+     */
     public <T> ResultTransformer<T> createTransformers(JaxRsResource<T> resource) {
         List<ResultTransformer<T>> transformers = resultTransformerFactories
             .stream()

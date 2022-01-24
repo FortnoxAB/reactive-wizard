@@ -1,7 +1,7 @@
 package se.fortnox.reactivewizard.db.deserializing;
 
-import se.fortnox.reactivewizard.util.ReflectionUtil;
 import se.fortnox.reactivewizard.util.PropertyResolver;
+import se.fortnox.reactivewizard.util.ReflectionUtil;
 
 import java.lang.reflect.InvocationTargetException;
 import java.sql.ResultSet;
@@ -16,6 +16,15 @@ import java.util.function.Supplier;
  * A deserializer that uses reflection to instantiate an object and set values on it (using setters).
  */
 public class SimpleObjectDeserializer {
+
+    /**
+     * Create a deserializer.
+     * @param cls the class
+     * @param metaData the meta data
+     * @param <I> the type of deserializer
+     * @return the deserializer
+     * @throws SQLException on error
+     */
     public static <I> Deserializer create(Class<I> cls, ResultSetMetaData metaData) throws SQLException {
         Map<String[], PropertyDeserializer> deserializers = DeserializerUtil.createPropertyDeserializers(
                 cls,

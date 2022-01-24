@@ -8,5 +8,9 @@ import java.lang.annotation.Target;
 @Target({ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface UseInResource {
+    /**
+     * Resources to apply config to.
+     * @return resources
+     */
     Class[] value() default {};
 }

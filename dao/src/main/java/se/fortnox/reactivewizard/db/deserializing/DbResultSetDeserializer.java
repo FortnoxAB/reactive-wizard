@@ -14,6 +14,11 @@ public class DbResultSetDeserializer {
         this.cls = cls;
     }
 
+    /**
+     * Deserialize a ResultSet.
+     * @param rs the ResultSet
+     * @return the result
+     */
     public Object deserialize(ResultSet rs) {
         try {
             if (deserializer == null) {

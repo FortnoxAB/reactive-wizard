@@ -1,15 +1,14 @@
 package se.fortnox.reactivewizard.validation;
 
+import se.fortnox.reactivewizard.jaxrs.FieldError;
+
+import javax.validation.ConstraintViolation;
+import javax.validation.Path.Node;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-
-import javax.validation.ConstraintViolation;
-import javax.validation.Path.Node;
-
-import se.fortnox.reactivewizard.jaxrs.FieldError;
 
 
 class ValidationFieldError extends FieldError {

@@ -54,6 +54,11 @@ public class JaxRsResult<T> {
         return this;
     }
 
+    /**
+     * Write the response.
+     * @param response the response
+     * @return empty publisher
+     */
     public Publisher<Void> write(HttpServerResponse response) {
         AtomicBoolean headersWritten = new AtomicBoolean();
         return serializer.call(output)

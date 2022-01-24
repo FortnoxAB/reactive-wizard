@@ -1,12 +1,11 @@
 package se.fortnox.reactivewizard.jaxrs;
 
-import reactor.core.publisher.Flux;
-import reactor.netty.http.server.HttpServerRequest;
-import reactor.netty.http.server.HttpServerResponse;
-import se.fortnox.reactivewizard.ExceptionHandler;
 import io.netty.handler.codec.http.HttpMethod;
 import org.junit.Test;
+import reactor.core.publisher.Flux;
+import reactor.netty.http.server.HttpServerRequest;
 import rx.Observable;
+import se.fortnox.reactivewizard.ExceptionHandler;
 import se.fortnox.reactivewizard.mocks.MockHttpServerRequest;
 import se.fortnox.reactivewizard.mocks.MockHttpServerResponse;
 

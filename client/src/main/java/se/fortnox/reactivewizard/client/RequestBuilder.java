@@ -31,6 +31,12 @@ public class RequestBuilder {
         this.key = method + " " + key;
     }
 
+    /**
+     * Submit the request.
+     * @param client the client
+     * @param requestBuilder the request
+     * @return the response
+     */
     public Mono<RwHttpClientResponse> submit(
         reactor.netty.http.client.HttpClient client,
         RequestBuilder requestBuilder) {
@@ -84,6 +90,10 @@ public class RequestBuilder {
         headers.put(key, value);
     }
 
+    /**
+     * Check if the request method can have a body.
+     * @return whether it can have a body
+     */
     public boolean canHaveBody() {
         return method.equals(HttpMethod.POST)
             || method.equals(HttpMethod.PUT)

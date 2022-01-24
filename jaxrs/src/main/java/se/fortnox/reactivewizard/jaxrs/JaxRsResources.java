@@ -28,6 +28,11 @@ public class JaxRsResources {
         log.info(sb.toString());
     }
 
+    /**
+     * Return the request resource.
+     * @param request the request
+     * @return the resource
+     */
     public JaxRsResource<?> findResource(JaxRsRequest request) {
         if (reloadClasses) {
             resources = jaxRsResourceFactory.createResources(services);

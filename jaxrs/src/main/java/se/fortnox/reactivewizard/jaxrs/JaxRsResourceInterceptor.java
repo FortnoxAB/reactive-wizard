@@ -1,7 +1,6 @@
 package se.fortnox.reactivewizard.jaxrs;
 
 import org.reactivestreams.Publisher;
-import rx.Observable;
 
 import java.util.Set;
 
@@ -38,27 +37,32 @@ public interface JaxRsResourceInterceptor {
      */
     interface JaxRsResourceContext {
         /**
+         * Return the http method.
          * @return The http method as a String (GET, POST, UPDATE, DELETE...)
          */
         String getHttpMethod();
 
         /**
+         * Return the request uri.
          * @return The raw undecoded request uri of the http request including path and request parameters.
          */
         String getRequestUri();
 
         /**
+         * Return the request header names.
          * @return The names of all request headers
          */
         Set<String> getRequestHeaderNames();
 
         /**
+         * Return a request header.
          * @param name A request header name
          * @return The value of the request header with the given name
          */
         String getRequestHeader(String name);
 
         /**
+         * Return the resourcee path.
          * @return The full path to the intercepted resource
          */
         String getResourcePath();

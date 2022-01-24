@@ -22,7 +22,6 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -96,6 +95,12 @@ public class DbProxy implements InvocationHandler {
         return Schedulers.from(executor);
     }
 
+    /**
+     * Create proxy from interface.
+     * @param daoInterface the interface
+     * @param <T> the type of the interface
+     * @return the proxy
+     */
     public <T> T create(Class<T> daoInterface) {
         return (T)Proxy.newProxyInstance(daoInterface.getClassLoader(),
             new Class[]{daoInterface},

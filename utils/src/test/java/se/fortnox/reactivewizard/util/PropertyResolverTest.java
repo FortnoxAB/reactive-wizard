@@ -1,9 +1,7 @@
 package se.fortnox.reactivewizard.util;
 
 import org.junit.Test;
-import se.fortnox.reactivewizard.util.PropertyResolver;
 
-import java.util.Optional;
 import java.util.function.Function;
 
 import static org.assertj.core.api.Assertions.assertThat;

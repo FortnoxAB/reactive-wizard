@@ -32,6 +32,7 @@ public final class TestUtil {
      *
      * @param asserter a lambda expression doing assertions
      * @param <T>      is the type of consumer value
+     * @return null
      */
     public static <T> T matches(Consumer<T> asserter) {
         return argThat(new ArgumentMatcher<T>() {

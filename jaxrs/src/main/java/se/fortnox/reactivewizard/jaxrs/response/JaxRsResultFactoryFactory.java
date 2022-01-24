@@ -22,6 +22,12 @@ public class JaxRsResultFactoryFactory {
         this.jsonSerializerFactory = jsonSerializerFactory;
     }
 
+    /**
+     * Create a result factory.
+     * @param resource the resource
+     * @param <T> the type of resource
+     * @return the result factory
+     */
     public <T> JaxRsResultFactory<T> createResultFactory(JaxRsResource<T> resource) {
 
         boolean isSingleType = FluxRxConverter.isSingleType(resource.getInstanceMethod().getReturnType());

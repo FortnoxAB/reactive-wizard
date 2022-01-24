@@ -11,7 +11,6 @@ import se.fortnox.reactivewizard.utils.JaxRsTestUtil;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;

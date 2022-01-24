@@ -174,7 +174,7 @@ public class ResponseDecorator {
         }
 
         /**
-         * Create the decorated response Observable
+         * Create the decorated response Observable.
          *
          * @return ObservableWithHeaders&lt;T&gt;
          */
@@ -218,6 +218,10 @@ public class ResponseDecorator {
             return status.get();
         }
 
+        /**
+         * Apply this on a result.
+         * @param result the result
+         */
         public void applyOn(@Nonnull JaxRsResult<?> result) {
             headers.forEach(result::addHeader);
 

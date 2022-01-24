@@ -132,6 +132,10 @@ public class RwServer extends Thread {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> shutdownHook(config, server, connectionCounter)));
     }
 
+    /**
+     * Register Runnable to be run at shutdown.
+     * @param blockShutdownUntil the runnable
+     */
     public static void registerShutdownDependency(Runnable blockShutdownUntil) {
         if (RwServer.blockShutdownUntil != null && blockShutdownUntil != null) {
             throw new IllegalStateException("Shutdown dependency is already registered");

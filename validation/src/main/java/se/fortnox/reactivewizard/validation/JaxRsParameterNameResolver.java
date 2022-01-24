@@ -2,17 +2,16 @@ package se.fortnox.reactivewizard.validation;
 
 import se.fortnox.reactivewizard.util.ReflectionUtil;
 
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.List;
-
 import javax.validation.ParameterNameProvider;
 import javax.ws.rs.FormParam;
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Resolves field names from JAX-RS annotations so that api responses shows the name of the JAX-RS parameter rather than

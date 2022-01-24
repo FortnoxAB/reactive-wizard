@@ -8,7 +8,7 @@ import se.fortnox.reactivewizard.jaxrs.WebException;
 import static java.util.Optional.ofNullable;
 
 /**
- * Matcher for asserting HttpResponseStatus and error code in WebExceptions
+ * Matcher for asserting HttpResponseStatus and error code in WebExceptions.
  */
 public class WebExceptionMatcher extends TypeSafeMatcher<WebException> {
 

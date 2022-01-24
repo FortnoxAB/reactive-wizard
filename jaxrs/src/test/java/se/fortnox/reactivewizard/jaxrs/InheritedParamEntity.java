@@ -1,7 +1,6 @@
 package se.fortnox.reactivewizard.jaxrs;
 
 import javax.ws.rs.QueryParam;
-import java.util.List;
 
 public class InheritedParamEntity extends ParamEntity {
 

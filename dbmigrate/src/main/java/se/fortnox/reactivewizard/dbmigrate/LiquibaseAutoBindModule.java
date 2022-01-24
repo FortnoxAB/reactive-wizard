@@ -7,7 +7,6 @@ import se.fortnox.reactivewizard.binding.AutoBindModule;
 
 import javax.inject.Inject;
 import javax.inject.Named;
-import javax.inject.Provider;
 
 /**
  * Runs liquibase before the system is started, if parameter "db-migrate" is used. The following alternatives exists:

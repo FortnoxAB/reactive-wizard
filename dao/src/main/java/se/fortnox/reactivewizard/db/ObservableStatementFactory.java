@@ -15,9 +15,7 @@ import se.fortnox.reactivewizard.util.ReactiveDecorator;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 import static java.lang.String.format;
 import static rx.Observable.error;
@@ -54,6 +52,12 @@ public class ObservableStatementFactory {
         }
     }
 
+    /**
+     * Create observable statement.
+     * @param args the arguments
+     * @param connectionScheduler the sheduler
+     * @return the observable statement
+     */
     public Object create(Object[] args, ConnectionScheduler connectionScheduler) {
         StatementContext statementContext = new StatementContext(() -> statementFactory.create(args), connectionScheduler);
 

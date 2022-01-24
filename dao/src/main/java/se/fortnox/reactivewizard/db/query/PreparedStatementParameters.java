@@ -26,6 +26,12 @@ public class PreparedStatementParameters {
         preparedStatement.setObject(parameterIndex++, value);
     }
 
+    /**
+     * Add array parameter.
+     * @param listElementType the type name
+     * @param list the elements
+     * @throws SQLException on error
+     */
     public void addArray(String listElementType, List<?> list) throws SQLException {
         Connection connection = preparedStatement.getConnection();
         Array      dbArray    = connection.createArrayOf(listElementType, list.toArray());

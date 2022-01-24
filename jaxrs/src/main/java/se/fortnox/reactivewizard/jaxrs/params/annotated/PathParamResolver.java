@@ -6,7 +6,6 @@ import se.fortnox.reactivewizard.jaxrs.params.ParamResolver;
 import se.fortnox.reactivewizard.jaxrs.params.deserializing.Deserializer;
 import se.fortnox.reactivewizard.jaxrs.params.deserializing.DeserializerFactory;
 
-import javax.ws.rs.DefaultValue;
 import javax.ws.rs.PathParam;
 import java.lang.annotation.Annotation;
 

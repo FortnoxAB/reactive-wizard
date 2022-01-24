@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  *
- * Due to the fact that reactors HttpClient is reusable for multiple connections in parallel
+ * Due to the fact that reactors HttpClient is reusable for multiple connections in parallel.
  * this class is responsible for delivering singleton HttpClients connected to different servers (InetSocketAddresses)
  *
  */

@@ -1,8 +1,5 @@
 package se.fortnox.reactivewizard.binding.scanners;
 
-import io.github.classgraph.ClassInfo;
-import io.github.classgraph.ScanResult;
-
 import javax.inject.Singleton;
 import java.util.stream.Stream;
 

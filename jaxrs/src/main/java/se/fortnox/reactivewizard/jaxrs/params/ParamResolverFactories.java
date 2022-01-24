@@ -49,6 +49,12 @@ public class ParamResolverFactories {
             new WrapSupportingParamTypeResolver());
     }
 
+    /**
+     * Create param resolvers.
+     * @param method the method
+     * @param consumesAnnotation the consumes requirements
+     * @return the param resolvers
+     */
     public List<ParamResolver> createParamResolvers(Method method, String[] consumesAnnotation) {
         List<ParamResolver> paramResolvers = new ArrayList<>();
 
@@ -92,6 +98,11 @@ public class ParamResolverFactories {
         throw new RuntimeException("Could not find any deserializer for param of type " + paramType.getType());
     }
 
+    /**
+     * Find the value of the DefaultValue annotation.
+     * @param parameterAnnotations the annotations
+     * @return default value or null if not found
+     */
     public static String findDefaultValue(List<Annotation> parameterAnnotations) {
         DefaultValue defaultValueAnnotation = findDefaultValueAnnotation(parameterAnnotations);
         if (defaultValueAnnotation == null) {
@@ -100,6 +111,11 @@ public class ParamResolverFactories {
         return defaultValueAnnotation.value();
     }
 
+    /**
+     * Find the DefaultValue annotation.
+     * @param parameterAnnotations the annotations
+     * @return default value annotation or null if not found
+     */
     public static DefaultValue findDefaultValueAnnotation(List<Annotation> parameterAnnotations) {
         for (Annotation annotation : parameterAnnotations) {
             if (DefaultValue.class == annotation.annotationType()) {

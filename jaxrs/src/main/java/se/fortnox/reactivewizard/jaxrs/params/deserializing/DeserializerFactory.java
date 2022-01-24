@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 /**
  * Creates deserializers from Strings to a given type.
@@ -54,6 +53,12 @@ public class DeserializerFactory {
         this(() -> new StdDateFormat(), new JsonDeserializerFactory());
     }
 
+    /**
+     * Return Deserializer from param type.
+     * @param paramType the param type
+     * @param <T> the type of the deserializer
+     * @return the deserializer
+     */
     public <T> Deserializer<T> getParamDeserializer(TypeReference<T> paramType) {
         Class<?>        paramCls     = ReflectionUtil.getRawType(paramType.getType());
         Deserializer<T> deserializer = (Deserializer<T>)stringDeserializers.get(paramCls);
@@ -87,6 +92,13 @@ public class DeserializerFactory {
         throw new RuntimeException("Field of type " + paramType.getType() + " is not allowed to be used in query/form/header");
     }
 
+    /**
+     * Return the body deserializer for param type.
+     * @param paramType the param type
+     * @param consumes the consumes requirements
+     * @param <T> type of deserializer
+     * @return the deserializer
+     */
     public <T> BodyDeserializer<T> getBodyDeserializer(TypeReference<T> paramType, String[] consumes) {
         // Only support a single consumes for now
         String consume = consumes[0];

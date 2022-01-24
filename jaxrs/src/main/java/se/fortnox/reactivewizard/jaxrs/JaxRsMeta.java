@@ -55,6 +55,11 @@ public class JaxRsMeta {
         fullPath = concatPaths(classPath, methodPath);
     }
 
+    /**
+     * Return the path.
+     * @param cls the class
+     * @return the path
+     */
     public static Path getPath(Class<? extends Object> cls) {
         Path path = cls.getAnnotation(Path.class);
         if (path == null) {
@@ -68,6 +73,12 @@ public class JaxRsMeta {
         return path;
     }
 
+    /**
+     * Concatenate paths.
+     * @param path1 the first path
+     * @param path2 the second path
+     * @return the concatenated path
+     */
     public static String concatPaths(Path path1, Path path2) {
         final String        path1String   = path1 == null ? "" : path1.value();
         final StringBuilder stringBuilder = new StringBuilder();

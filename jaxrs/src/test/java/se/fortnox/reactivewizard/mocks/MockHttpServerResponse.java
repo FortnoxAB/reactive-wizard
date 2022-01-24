@@ -20,7 +20,6 @@ import reactor.netty.http.websocket.WebsocketOutbound;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;

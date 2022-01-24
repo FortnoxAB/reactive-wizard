@@ -17,7 +17,9 @@ public interface AutoBindModule extends Module, Comparable<AutoBindModule> {
     /**
      * Implement this in order to execute code before the binding takes place.
      */
-    default void preBind() { }
+    default void preBind() {
+
+    }
 
     @Override
     default int compareTo(AutoBindModule otherModules) {

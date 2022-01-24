@@ -1,8 +1,8 @@
 package se.fortnox.reactivewizard.db;
 
-import se.fortnox.reactivewizard.db.config.DatabaseConfig;
 import org.junit.Test;
 import rx.Observable;
+import se.fortnox.reactivewizard.db.config.DatabaseConfig;
 
 import java.sql.SQLException;
 

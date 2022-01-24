@@ -17,6 +17,9 @@ import java.lang.reflect.Field;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+/**
+ * Util for verifying logging in tests.
+ */
 public class LoggingMockUtil {
 
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(LoggingMockUtil.class);
@@ -27,6 +30,12 @@ public class LoggingMockUtil {
 
     }
 
+    /**
+     * Create mocked log appender.
+     *
+     * @param cls class for which to create appender
+     * @return appender
+     */
     public static org.apache.logging.log4j.core.Appender createMockedLogAppender(Class cls) {
         setLevel(Level.INFO);
         Logger logger       = LoggingMockUtil.getLogger(cls);
@@ -42,6 +51,10 @@ public class LoggingMockUtil {
         return mockAppender;
     }
 
+    /**
+     * Destroy mocked log appender.
+     * @param cls class for which to destroy appender
+     */
     public static void destroyMockedAppender(Class cls) {
         Logger logger = LoggingMockUtil.getLogger(cls);
         Appender appender = logger.getAppenders().get(MOCK_APPENDER);
@@ -74,10 +87,20 @@ public class LoggingMockUtil {
         }
     }
 
+    /**
+     * Set root level.
+     * @param level level
+     */
     public static void setLevel(Level level) {
         Configurator.setRootLevel(level);
     }
 
+    /**
+     * Set level for class.
+     * @param cls class
+     * @param level level
+     * @return old level
+     */
     public static Level setLevel(Class<?> cls, Level level) {
         org.apache.logging.log4j.Logger logger = LogManager.getLogger(cls);
         Level oldLevel = logger.getLevel();
@@ -86,7 +109,7 @@ public class LoggingMockUtil {
     }
 
     /**
-     * Needed in order to propagate immutable LogEvent to mock. Otherwise mockito will see a LogEvent that has been
+     * Needed in order to propagate immutable LogEvent to mock. Otherwise, mockito will see a LogEvent that has been
      * mutated.
      */
     private static class AppenderPreservingEvents implements Appender {

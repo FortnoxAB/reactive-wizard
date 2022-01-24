@@ -9,21 +9,21 @@ import java.lang.annotation.Annotation;
  */
 public interface ClassScanner extends Closeable {
     /**
-     * Find all classes having a method with the given annotation
+     * Find all classes having a method with the given annotation.
      * @param annotation the annotation that should be present on any method in the classes to find
      * @return classes found
      */
     Iterable<Class<?>> findClassesWithMethodAnnotation(Class<? extends Annotation> annotation);
 
     /**
-     * Find all classes having the given annotation
+     * Find all classes having the given annotation.
      * @param annotation the annotation that should be present on the classes to find
      * @return classes found
      */
     Iterable<Class<?>> findClassesAnnotatedWith(Class<? extends Annotation> annotation);
 
     /**
-     * Find all classes being subclasses of the given class
+     * Find all classes being subclasses of the given class.
      * @param parentClass the class that is a parent of the classes to find
      * @param <T> the parent class
      * @return classes found
@@ -31,7 +31,7 @@ public interface ClassScanner extends Closeable {
     <T> Iterable<Class<? extends T>> findSubclassesOf(Class<T> parentClass);
 
     /**
-     * Find all classes implementing the given interface
+     * Find all classes implementing the given interface.
      * @param interfaceClass the interface to implement
      * @param <T> the interface class
      * @return classes found

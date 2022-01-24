@@ -60,6 +60,7 @@ public class FirstThen {
 
     /**
      * An empty observable, signalling success or error.
+     * @return empty Observable
      */
     public <T> Observable<T> thenReturnEmpty() {
         return thenReturn(Observable.empty());

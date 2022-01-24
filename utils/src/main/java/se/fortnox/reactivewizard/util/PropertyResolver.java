@@ -1,6 +1,5 @@
 package se.fortnox.reactivewizard.util;
 
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.Optional;
@@ -19,6 +18,12 @@ public class PropertyResolver<I,T> {
         this.properties = properties;
     }
 
+    /**
+     * Get property resolver for type.
+     * @param type the type
+     * @param propertyNames the property names
+     * @return an optional of property resolver
+     */
     public static Optional<PropertyResolver> from(Type type, String[] propertyNames) {
         Property[] property = new Property[propertyNames.length];
         Class<?>   cls      = ReflectionUtil.getRawType(type);
@@ -42,6 +47,11 @@ public class PropertyResolver<I,T> {
         return genericType;
     }
 
+    /**
+     * Get property resolver for subpath.
+     * @param subPath the subpath
+     * @return an optional of property resolver
+     */
     public Optional<PropertyResolver> subPath(String[] subPath) {
         Optional<PropertyResolver> propsToAppend = from(getPropertyType(), subPath);
         if (propsToAppend.isPresent()) {
@@ -61,6 +71,10 @@ public class PropertyResolver<I,T> {
         return Arrays.toString(properties);
     }
 
+    /**
+     * Get getter.
+     * @return the getter
+     */
     public Function<I,T> getter() {
         if (properties.length == 0) {
             return (Function<I, T>) Function.identity();
