@@ -42,7 +42,7 @@ public class LoggingVerifier extends ExternalResource {
     }
 
     @Override
-    protected void before() throws Throwable {
+    public void before() throws Throwable {
         if (this.level != null) {
             this.originalLevel = LogManager.getLogger(this.clazz).getLevel();
             LoggingMockUtil.setLevel(this.clazz, this.level);
@@ -51,7 +51,7 @@ public class LoggingVerifier extends ExternalResource {
     }
 
     @Override
-    protected void after() {
+    public void after() {
         LoggingMockUtil.destroyMockedAppender(this.clazz);
         LoggingMockUtil.setLevel(this.clazz, originalLevel);
     }
