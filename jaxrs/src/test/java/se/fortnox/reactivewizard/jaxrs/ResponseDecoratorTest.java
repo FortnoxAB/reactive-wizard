@@ -29,6 +29,13 @@ public class ResponseDecoratorTest {
     }
 
     @Test
+    public void shouldReturnHeadersFromResourceWithEmptyBody() {
+        MockHttpServerResponse response = JaxRsTestUtil.get(new ResourceWithHeaders(), "/headers/empty-body");
+        assertThat(response.responseHeaders().get("custom_header")).isEqualTo("value");
+        assertThat(response.getOutp()).isEqualTo("");
+    }
+
+    @Test
     public void shouldReturnDeferredHeaderFromResource() {
         MockHttpServerResponse response = JaxRsTestUtil.get(new ResourceWithHeaders(), "/headers/deferred");
         assertThat(response.responseHeaders().get("custom_header")).isEqualTo("deferred");
@@ -44,6 +51,13 @@ public class ResponseDecoratorTest {
     }
 
     @Test
+    public void shouldReturnHeadersFromResourceWithEmptyBodyWithBuilder() {
+        MockHttpServerResponse response = JaxRsTestUtil.get(new ResourceWithHeaders(), "with-builder/headers/empty-body");
+        assertThat(response.responseHeaders().get("custom_header")).isEqualTo("value");
+        assertThat(response.getOutp()).isEqualTo("");
+    }
+
+    @Test
     public void shouldReturnDeferredHeaderFromResourceWithBuilder() {
         MockHttpServerResponse response = JaxRsTestUtil.get(new ResourceWithHeaders(), "/with-builder/headers/deferred");
         assertThat(response.responseHeaders().get("custom_header")).isEqualTo("deferred");
@@ -55,6 +69,13 @@ public class ResponseDecoratorTest {
         MockHttpServerResponse response = JaxRsTestUtil.get(new ResourceWithHeaders(), "/with-builder/status");
         assertThat(response.status()).isEqualTo(HttpResponseStatus.MOVED_PERMANENTLY);
         assertThat(response.getOutp()).isEqualTo("\"body\"");
+    }
+
+    @Test
+    public void shouldReturnStatusFromResourceWithEmptyWithBuilder() {
+        MockHttpServerResponse response = JaxRsTestUtil.get(new ResourceWithHeaders(), "/with-builder/status/empty");
+        assertThat(response.status()).isEqualTo(HttpResponseStatus.MOVED_PERMANENTLY);
+        assertThat(response.getOutp()).isEqualTo("");
     }
 
     @Test
@@ -76,13 +97,19 @@ public class ResponseDecoratorTest {
     }
 
     @Path("/")
-    public class ResourceWithHeaders {
+    public static class ResourceWithHeaders {
         @GET
         @Path("headers")
         public Observable<String> methodReturningHeaders() {
             Map<String, String> headers = new HashMap<>();
             headers.put("custom_header", "value");
             return ResponseDecorator.withHeaders(just("body"), headers);
+        }
+
+        @GET
+        @Path("headers/empty-body")
+        public Observable<Void> methodReturningWithHeadersWithEmptyBody() {
+            return ResponseDecorator.withHeaders(Observable.empty(), Map.of("custom_header", "value"));
         }
 
         @GET
@@ -113,13 +140,21 @@ public class ResponseDecoratorTest {
         }
 
         @GET
+        @Path("with-builder/headers/empty-body")
+        public Observable<Void> methodReturningWithHeadersWithEmptyBodyWithBuilder() {
+            return ResponseDecorator.of(Observable.<Void>empty())
+                .withHeader("custom_header", "value")
+                .build();
+        }
+
+        @GET
         @Path("with-builder/headers/deferred")
         public Observable<String> methodReturningDeferredHeadersWithBuilder() {
             Map<String, String> headers = new HashMap<>();
             return ResponseDecorator.of(defer(() -> {
-                headers.put("custom_header", "deferred");
-                return just("body");
-            }))
+                    headers.put("custom_header", "deferred");
+                    return just("body");
+                }))
                 .withHeaders(headers)
                 .build();
         }
@@ -133,13 +168,21 @@ public class ResponseDecoratorTest {
         }
 
         @GET
+        @Path("with-builder/status/empty")
+        public Observable<Void> methodReturningStatusWithEmptyBodyWithBuilder() {
+            return ResponseDecorator.of(Observable.<Void>empty())
+                .withStatus(HttpResponseStatus.MOVED_PERMANENTLY)
+                .build();
+        }
+
+        @GET
         @Path("with-builder/status/deferred")
         public Observable<String> methodReturningDeferredStatusWithBuilder() {
             AtomicReference<HttpResponseStatus> status = new AtomicReference<>(HttpResponseStatus.OK);
             return ResponseDecorator.of(defer(() -> {
-                status.set(HttpResponseStatus.MOVED_PERMANENTLY);
-                return just("body");
-            }))
+                    status.set(HttpResponseStatus.MOVED_PERMANENTLY);
+                    return just("body");
+                }))
                 .withStatus(status)
                 .build();
         }
