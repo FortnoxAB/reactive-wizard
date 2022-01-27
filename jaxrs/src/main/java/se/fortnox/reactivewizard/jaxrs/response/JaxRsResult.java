@@ -67,6 +67,7 @@ public class JaxRsResult<T> {
                     responseStatus = HttpResponseStatus.NO_CONTENT;
                 }
                 response.status(responseStatus);
+                headers.forEach(response::addHeader);
                 response.addHeader(CONTENT_LENGTH, "0");
                 return Flux.empty();
             }))
