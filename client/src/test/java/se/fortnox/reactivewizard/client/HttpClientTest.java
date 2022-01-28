@@ -39,7 +39,6 @@ import se.fortnox.reactivewizard.metrics.HealthRecorder;
 import se.fortnox.reactivewizard.server.ServerConfig;
 import se.fortnox.reactivewizard.test.LoggingMockUtil;
 import se.fortnox.reactivewizard.test.TestUtil;
-import se.fortnox.reactivewizard.test.WaitingTestUtils;
 import se.fortnox.reactivewizard.test.observable.ObservableAssertions;
 import se.fortnox.reactivewizard.util.rx.RetryWithDelay;
 
@@ -76,7 +75,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -101,7 +99,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.refEq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -766,7 +763,7 @@ public class HttpClientTest {
             config.setDevHeaders(headers);
             TestResource                       resource     = getHttpProxy(config);
 
-            requestLogger.addHeaderTransformationOutgoing("someHeader", String::toUpperCase);
+            requestLogger.addHeaderTransformationClient("someHeader", String::toUpperCase);
 
             assertThatExceptionOfType(WebException.class)
                 .isThrownBy(() -> resource.getHello()

@@ -129,7 +129,7 @@ public class ExceptionHandler {
      * @return the string that should be logged for this particular header in case of an Exception.
      */
     protected String getHeaderValue(Map.Entry<String, String> header) {
-        return requestLogger.getHeaderValueOrRedactIncoming(header);
+        return requestLogger.getHeaderValueOrRedactServer(header);
     }
 
     private void logException(HttpServerRequest request, WebException webException) {

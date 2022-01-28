@@ -154,7 +154,7 @@ public class HttpClient implements InvocationHandler {
     }
 
     public void addSensitiveHeaders(Set<String> headers) {
-        headers.forEach(requestLogger::addRedactedHeaderOutgoing);
+        headers.forEach(requestLogger::addRedactedHeaderClient);
     }
 
     @SuppressWarnings("unchecked")
@@ -276,7 +276,7 @@ public class HttpClient implements InvocationHandler {
     }
 
     private <T> Mono<T> convertError(RequestBuilder fullReq, Throwable throwable) {
-        String request = format("%s, headers: %s", fullReq.getFullUrl(), requestLogger.getHeaderValuesOrRedactOutgoing(fullReq.getHeaders()));
+        String request = format("%s, headers: %s", fullReq.getFullUrl(), requestLogger.getHeaderValuesOrRedactClient(fullReq.getHeaders()));
         LOG.warn("Failed request. Url: {}", request, throwable);
 
         if (isRetryExhausted(throwable)) {
@@ -380,7 +380,7 @@ public class HttpClient implements InvocationHandler {
                 // Log the error on every retry.
                 LOG.info(format("Will retry because an error occurred. %s, headers: %s",
                     fullReq.getFullUrl(),
-                    requestLogger.getHeaderValuesOrRedactOutgoing(fullReq.getHeaders())), throwable);
+                    requestLogger.getHeaderValuesOrRedactClient(fullReq.getHeaders())), throwable);
 
                 // Retry if it's 500+ error
                 return true;
@@ -472,7 +472,7 @@ public class HttpClient implements InvocationHandler {
                         "\tData: %s",
                     status.code(),
                     request.getFullUrl(),
-                    requestLogger.getHeaderValuesOrRedactOutgoing(request.getHeaders()),
+                    requestLogger.getHeaderValuesOrRedactClient(request.getHeaders()),
                     formatHeaders(response.getHttpClientResponse()),
                     data);
                 Throwable detailedErrorCause = new HttpClient.ThrowableWithoutStack(message);

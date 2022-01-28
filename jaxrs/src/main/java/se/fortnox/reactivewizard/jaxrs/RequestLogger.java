@@ -18,7 +18,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
 
 /**
- * Logs incoming requests to a Logger.
+ * Assists with logging in the client and server. Allows headers to be marked for masking or redaction.
  */
 @Singleton
 public class RequestLogger {
@@ -26,8 +26,8 @@ public class RequestLogger {
     private static final String AUTHORIZATION_HEADER = "Authorization";
     private static final String REDACTED = "REDACTED";
 
-    private final Map<String, UnaryOperator<String>> headerTransformationsOutgoing = new HashMap<>();
-    private final Map<String, UnaryOperator<String>> headerTransformationsIncoming = new HashMap<>();
+    private final Map<String, UnaryOperator<String>> headerTransformationsClient = new HashMap<>();
+    private final Map<String, UnaryOperator<String>> headerTransformationsServer = new HashMap<>();
 
     public RequestLogger() {
         redactAuthorization();
@@ -43,7 +43,7 @@ public class RequestLogger {
         request.requestHeaders().forEach(header ->
             logLine.append(header.getKey())
                 .append('=')
-                .append(getHeaderValueOrRedactIncoming(header))
+                .append(getHeaderValueOrRedactServer(header))
                 .append(' ')
         );
     }
@@ -58,29 +58,31 @@ public class RequestLogger {
         response.responseHeaders().forEach(header ->
             logLine.append(header.getKey())
                 .append('=')
-                .append(getHeaderValueOrRedactOutgoing(header))
+                .append(getHeaderValueOrRedactClient(header))
                 .append(' ')
         );
     }
 
     /**
-     * Returns the value of a header. If the header contains sensitive information the value will be replaced with "REDACTED".
+     * Returns the value of a header for the server. If the header contains sensitive information the value will be replaced with
+     * "REDACTED".
      *
      * @param header The header to get the value from
      * @return value of the header or "REDACTED" if the header contains sensitive information
      */
-    public String getHeaderValueOrRedactIncoming(Map.Entry<String, String> header) {
-        return getHeaderValueOrRedact(header, headerTransformationsIncoming);
+    public String getHeaderValueOrRedactServer(Map.Entry<String, String> header) {
+        return getHeaderValueOrRedact(header, headerTransformationsServer);
     }
 
     /**
-     * Returns the value of a header. If the header contains sensitive information the value will be replaced with "REDACTED".
+     * Returns the value of a header for the client. If the header contains sensitive information the value will be replaced with
+     * "REDACTED".
      *
      * @param header The header to get the value from
      * @return value of the header or "REDACTED" if the header contains sensitive information
      */
-    public String getHeaderValueOrRedactOutgoing(Map.Entry<String, String> header) {
-        return getHeaderValueOrRedact(header, headerTransformationsOutgoing);
+    public String getHeaderValueOrRedactClient(Map.Entry<String, String> header) {
+        return getHeaderValueOrRedact(header, headerTransformationsClient);
     }
 
     /**
@@ -101,32 +103,35 @@ public class RequestLogger {
     }
 
     /**
-     * Redact sensitive information from header values. Any header that contains sensitive information will have the value replaced with "REDACTED"
+     * Redact sensitive information from header values in the server. Any header that contains sensitive information will have the value
+     * replaced with "REDACTED"
      *
      * @param headers The headers to map
      * @return headers with sensitive information redacted
      */
-    public Set<Map.Entry<String, String>> getHeaderValuesOrRedactIncoming(Map<String, String> headers) {
+    public Set<Map.Entry<String, String>> getHeaderValuesOrRedactServer(Map<String, String> headers) {
         if (headers == null) {
             return Set.of();
         }
         return headers.entrySet().stream()
-            .collect(toMap(Map.Entry::getKey, this::getHeaderValueOrRedactIncoming, (a, b) -> a, TreeMap::new))
+            .collect(toMap(Map.Entry::getKey, this::getHeaderValueOrRedactServer, (a, b) -> a, TreeMap::new))
             .entrySet();
     }
 
     /**
-     * Redact sensitive information from header values. Any header that contains sensitive information will have the value replaced with "REDACTED"
+     * Redact sensitive information from header values in the client. Any header that contains sensitive information will have the value
+     * replaced
+     * with "REDACTED"
      *
      * @param headers The headers to map
      * @return headers with sensitive information redacted
      */
-    public Set<Map.Entry<String, String>> getHeaderValuesOrRedactOutgoing(Map<String, String> headers) {
+    public Set<Map.Entry<String, String>> getHeaderValuesOrRedactClient(Map<String, String> headers) {
         if (headers == null) {
             return Set.of();
         }
         return headers.entrySet().stream()
-            .collect(toMap(Map.Entry::getKey, this::getHeaderValueOrRedactOutgoing, (a, b) -> a, TreeMap::new))
+            .collect(toMap(Map.Entry::getKey, this::getHeaderValueOrRedactClient, (a, b) -> a, TreeMap::new))
             .entrySet();
     }
 
@@ -176,20 +181,38 @@ public class RequestLogger {
         logRequestResponse(request, response, requestStartTime, logger);
     }
 
-    public void addHeaderTransformationOutgoing(String header, UnaryOperator<String> transformation) {
-        addHeaderTransformation(header, transformation, headerTransformationsOutgoing);
+    /**
+     * Add header transformation that will be applied to log messages in the client.
+     * @param header header key on which to apply transformation (case-insensitive)
+     * @param transformation transformation that accepts the original header value and returns the transformed value
+     */
+    public void addHeaderTransformationClient(String header, UnaryOperator<String> transformation) {
+        addHeaderTransformation(header, transformation, headerTransformationsClient);
     }
 
-    public void addRedactedHeaderOutgoing(String header) {
-        addHeaderTransformationOutgoing(header, h -> REDACTED);
+    /**
+     * Mark header as redacted in the client, i.e. in log messages, the header value will be displayed as "REDACTED".
+     * @param header header key to be redacted
+     */
+    public void addRedactedHeaderClient(String header) {
+        addHeaderTransformationClient(header, h -> REDACTED);
     }
 
-    public void addHeaderTransformationIncoming(String header, UnaryOperator<String> transformation) {
-        addHeaderTransformation(header, transformation, headerTransformationsIncoming);
+    /**
+     * Add header transformation that will be applied to log messages in the server.
+     * @param header header key on which to apply transformation (case-insensitive)
+     * @param transformation transformation that accepts the original header value and returns the transformed value
+     */
+    public void addHeaderTransformationServer(String header, UnaryOperator<String> transformation) {
+        addHeaderTransformation(header, transformation, headerTransformationsServer);
     }
 
-    public void addRedactedHeaderIncoming(String header) {
-        addHeaderTransformationIncoming(header, h -> REDACTED);
+    /**
+     * Mark header as redacted in the server, i.e. in log messages, the header value will be displayed as "REDACTED".
+     * @param header header key to be redacted
+     */
+    public void addRedactedHeaderServer(String header) {
+        addHeaderTransformationServer(header, h -> REDACTED);
     }
 
     private static void addHeaderTransformation(String header, UnaryOperator<String> transformation, Map<String,
@@ -201,13 +224,13 @@ public class RequestLogger {
 
     @VisibleForTesting
     void clearTransformations() {
-        headerTransformationsIncoming.clear();
-        headerTransformationsOutgoing.clear();
+        headerTransformationsServer.clear();
+        headerTransformationsClient.clear();
         redactAuthorization();
     }
 
     private void redactAuthorization() {
-        addRedactedHeaderIncoming(AUTHORIZATION_HEADER);
-        addRedactedHeaderOutgoing(AUTHORIZATION_HEADER);
+        addRedactedHeaderServer(AUTHORIZATION_HEADER);
+        addRedactedHeaderClient(AUTHORIZATION_HEADER);
     }
 }

@@ -24,16 +24,16 @@ public class RequestLoggerTest {
     public void shouldRedactAuthorizationValue() {
         var header = entry("Authorization", "secret");
 
-        assertEquals("REDACTED", requestLogger.getHeaderValueOrRedactIncoming(header));
-        assertEquals("REDACTED", requestLogger.getHeaderValueOrRedactOutgoing(header));
+        assertEquals("REDACTED", requestLogger.getHeaderValueOrRedactServer(header));
+        assertEquals("REDACTED", requestLogger.getHeaderValueOrRedactClient(header));
     }
 
     @Test
     public void shouldNotRedactNoneAuthorizationValue() {
         var header = entry("OtherHeader", "notasecret");
 
-        assertEquals("notasecret", requestLogger.getHeaderValueOrRedactIncoming(header));
-        assertEquals("notasecret", requestLogger.getHeaderValueOrRedactOutgoing(header));
+        assertEquals("notasecret", requestLogger.getHeaderValueOrRedactServer(header));
+        assertEquals("notasecret", requestLogger.getHeaderValueOrRedactClient(header));
     }
 
     @Test
@@ -47,9 +47,9 @@ public class RequestLoggerTest {
             "OtherHeader", "notasecret"
         );
 
-        assertThat(requestLogger.getHeaderValuesOrRedactIncoming(headers))
+        assertThat(requestLogger.getHeaderValuesOrRedactServer(headers))
             .isEqualTo(expectedValue.entrySet());
-        assertThat(requestLogger.getHeaderValuesOrRedactOutgoing(headers))
+        assertThat(requestLogger.getHeaderValuesOrRedactClient(headers))
             .isEqualTo(expectedValue.entrySet());
     }
 
@@ -59,31 +59,31 @@ public class RequestLoggerTest {
             "OtherHeader", "notasecret",
             "Cookie", "oreo"
         );
-        requestLogger.addRedactedHeaderIncoming("Cookie");
-        requestLogger.addRedactedHeaderOutgoing("Cookie");
+        requestLogger.addRedactedHeaderServer("Cookie");
+        requestLogger.addRedactedHeaderClient("Cookie");
         var expectedValue = Map.of(
             "Cookie", "REDACTED",
             "OtherHeader", "notasecret"
         ).entrySet();
 
-        assertThat(requestLogger.getHeaderValuesOrRedactIncoming(headers))
+        assertThat(requestLogger.getHeaderValuesOrRedactServer(headers))
             .containsExactlyInAnyOrderElementsOf(expectedValue);
-        assertThat(requestLogger.getHeaderValuesOrRedactOutgoing(headers))
+        assertThat(requestLogger.getHeaderValuesOrRedactClient(headers))
             .containsExactlyInAnyOrderElementsOf(expectedValue);
     }
 
     @Test
     public void shouldReturnEmpty_getHeaderValuesOrRedact() {
-        assertThat(requestLogger.getHeaderValuesOrRedactIncoming(null))
+        assertThat(requestLogger.getHeaderValuesOrRedactServer(null))
             .isEmpty();
-        assertThat(requestLogger.getHeaderValuesOrRedactOutgoing(null))
+        assertThat(requestLogger.getHeaderValuesOrRedactClient(null))
             .isEmpty();
     }
 
     @Test
     public void shouldReturnNull_getHeaderValueOrRedact() {
-        assertNull(requestLogger.getHeaderValueOrRedactIncoming(null));
-        assertNull(requestLogger.getHeaderValueOrRedactOutgoing(null));
+        assertNull(requestLogger.getHeaderValueOrRedactServer(null));
+        assertNull(requestLogger.getHeaderValueOrRedactClient(null));
     }
 
     @Test
@@ -96,10 +96,10 @@ public class RequestLoggerTest {
             "header5", "value5"
         );
 
-        requestLogger.addHeaderTransformationIncoming("header2", header -> header.replaceAll("\\d", "*"));
-        requestLogger.addHeaderTransformationIncoming("header3", String::toUpperCase);
+        requestLogger.addHeaderTransformationServer("header2", header -> header.replaceAll("\\d", "*"));
+        requestLogger.addHeaderTransformationServer("header3", String::toUpperCase);
 
-        Set<Map.Entry<String, String>> resultIncoming = requestLogger.getHeaderValuesOrRedactIncoming(headers);
+        Set<Map.Entry<String, String>> resultIncoming = requestLogger.getHeaderValuesOrRedactServer(headers);
 
         assertThat(resultIncoming)
             .hasSize(5)
@@ -111,10 +111,10 @@ public class RequestLoggerTest {
                 entry("header5", "value5")
             );
 
-        requestLogger.addHeaderTransformationOutgoing("header1", header -> header.replaceAll("\\d", "X"));
-        requestLogger.addHeaderTransformationOutgoing("header3", String::toLowerCase);
+        requestLogger.addHeaderTransformationClient("header1", header -> header.replaceAll("\\d", "X"));
+        requestLogger.addHeaderTransformationClient("header3", String::toLowerCase);
 
-        Set<Map.Entry<String, String>> resultOutgoing = requestLogger.getHeaderValuesOrRedactOutgoing(headers);
+        Set<Map.Entry<String, String>> resultOutgoing = requestLogger.getHeaderValuesOrRedactClient(headers);
 
         assertThat(resultOutgoing)
             .hasSize(5)
