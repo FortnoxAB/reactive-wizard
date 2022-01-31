@@ -37,6 +37,11 @@ public class JsonArrayDeserializer {
         }
     }
 
+    /**
+     * Performs deserialization.
+     * @param buf the data
+     * @return publisher
+     */
     public Publisher<?> process(byte[] buf) {
         try {
             inputFeeder.feedInput(buf, 0, buf.length);

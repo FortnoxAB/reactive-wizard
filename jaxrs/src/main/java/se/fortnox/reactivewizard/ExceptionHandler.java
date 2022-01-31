@@ -14,6 +14,7 @@ import reactor.netty.http.server.HttpServerRequest;
 import reactor.netty.http.server.HttpServerResponse;
 import rx.exceptions.CompositeException;
 import rx.exceptions.OnErrorThrowable;
+import se.fortnox.reactivewizard.jaxrs.RequestLogger;
 import se.fortnox.reactivewizard.jaxrs.WebException;
 import se.fortnox.reactivewizard.json.InvalidJsonException;
 
@@ -24,30 +25,30 @@ import java.nio.file.FileSystemException;
 import java.util.List;
 import java.util.Map;
 
-import static se.fortnox.reactivewizard.jaxrs.RequestLogger.getHeaderValueOrRedact;
-
 /**
  * Handles exceptions and writes errors to the response and the log.
  */
 public class ExceptionHandler {
-    private static final Logger      LOG = LoggerFactory.getLogger(ExceptionHandler.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ExceptionHandler.class);
     private final ObjectMapper mapper;
+    private final RequestLogger requestLogger;
 
     @Inject
-    public ExceptionHandler(ObjectMapper mapper) {
+    public ExceptionHandler(ObjectMapper mapper, RequestLogger requestLogger) {
         this.mapper = mapper;
+        this.requestLogger = requestLogger;
     }
 
     public ExceptionHandler() {
-        this(new ObjectMapper());
+        this(new ObjectMapper(), new RequestLogger());
     }
 
     /**
      * Handle exceptions from server requests.
      *
-     * @param request The current request
-     * @param response The current response
-     * @param throwable The exception that occured
+     * @param request   The current request
+     * @param response  The current response
+     * @param throwable The exception that occurred
      * @return success or error
      */
     public Publisher<Void> handleException(HttpServerRequest request, HttpServerResponse response, Throwable throwable) {
@@ -55,9 +56,8 @@ public class ExceptionHandler {
             throwable = throwable.getCause();
         }
 
-        if (throwable instanceof CompositeException) {
-            CompositeException compositeException = (CompositeException)throwable;
-            List<Throwable>    exceptions         = compositeException.getExceptions();
+        if (throwable instanceof CompositeException compositeException) {
+            List<Throwable> exceptions = compositeException.getExceptions();
             throwable = exceptions.get(exceptions.size() - 1);
         }
 
@@ -66,8 +66,8 @@ public class ExceptionHandler {
             webException = new WebException(HttpResponseStatus.NOT_FOUND);
         } else if (throwable instanceof InvalidJsonException) {
             webException = new WebException(HttpResponseStatus.BAD_REQUEST, "invalidjson", throwable.getMessage());
-        } else if (throwable instanceof WebException) {
-            webException = (WebException)throwable;
+        } else if (throwable instanceof WebException we) {
+            webException = we;
         } else if (throwable instanceof ClosedChannelException || throwable instanceof AbortedException) {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Inbound connection has been closed: {} {}", request.method(), request.uri(), throwable);
@@ -122,39 +122,23 @@ public class ExceptionHandler {
 
     /**
      * Override this to specify own logic to handle certain headers.
-     *
+     * <p>
      * Typically redact sensitive stuff.
      *
      * @param header the header entry where the Map.Entry key is the header name and the Map.Entry value is the header value
      * @return the string that should be logged for this particular header in case of an Exception.
-     *
      */
     protected String getHeaderValue(Map.Entry<String, String> header) {
-        return getHeaderValueOrRedact(header);
+        return requestLogger.getHeaderValueOrRedactServer(header);
     }
 
     private void logException(HttpServerRequest request, WebException webException) {
         String logMessage = getLogMessage(request, webException);
         switch (webException.getLogLevel()) {
-            case WARN:
-                LOG.warn(logMessage, webException);
-                break;
-
-            case INFO:
-                LOG.info(logMessage, webException);
-                break;
-
-            case DEBUG:
-                LOG.debug(logMessage, webException);
-                break;
-
-            case TRACE:
-                LOG.debug(logMessage, webException);
-                break;
-
-            case ERROR:
-            default:
-                LOG.error(logMessage, webException);
+            case WARN -> LOG.warn(logMessage, webException);
+            case INFO -> LOG.info(logMessage, webException);
+            case DEBUG, TRACE -> LOG.debug(logMessage, webException);
+            default -> LOG.error(logMessage, webException);
         }
     }
 }

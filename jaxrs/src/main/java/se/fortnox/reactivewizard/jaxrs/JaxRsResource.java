@@ -1,6 +1,7 @@
 package se.fortnox.reactivewizard.jaxrs;
 
 import io.netty.handler.codec.http.HttpMethod;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -31,7 +32,7 @@ import static java.util.Arrays.asList;
  */
 public class JaxRsResource<T> implements Comparable<JaxRsResource> {
 
-    private static final RequestLogger REQUEST_LOGGER = new RequestLogger(LoggerFactory.getLogger(JaxRsResource.class));
+    private static final Logger LOG = LoggerFactory.getLogger(JaxRsResource.class);
     private static final Object EMPTY_ARG = new Object();
     private final Pattern                           pathPattern;
     private final Method                            method;
@@ -40,18 +41,20 @@ public class JaxRsResource<T> implements Comparable<JaxRsResource> {
     private final List<ParamResolver>               argumentExtractors;
     private final JaxRsResultFactory<T>             resultFactory;
     private final JaxRsMeta                         meta;
+    private final RequestLogger                     requestLogger;
     private final Function<Object[], Flux<T>> methodCaller;
 
     public JaxRsResource(Method method,
-        Object resourceInstance,
-        ParamResolverFactories paramResolverFactories,
-        JaxRsResultFactoryFactory jaxRsResultFactoryFactory,
-        JaxRsMeta meta
-    ) {
+                         Object resourceInstance,
+                         ParamResolverFactories paramResolverFactories,
+                         JaxRsResultFactoryFactory jaxRsResultFactoryFactory,
+                         JaxRsMeta meta,
+                         RequestLogger requestLogger) {
         this.method = method;
         this.meta = meta;
         this.pathPattern = createPathPattern(meta.getFullPath());
         this.paramCount = method.getParameterCount();
+        this.requestLogger = requestLogger;
 
         instanceMethod = ReflectionUtil.getInstanceMethod(method, resourceInstance);
 
@@ -71,6 +74,11 @@ public class JaxRsResource<T> implements Comparable<JaxRsResource> {
         return Pattern.compile(path);
     }
 
+    /**
+     * Check if this resource can handle a request.
+     * @param request the request to check for
+     * @return whether the resource can be handled
+     */
     public boolean canHandleRequest(JaxRsRequest request) {
         if (!request.hasMethod(meta.getHttpMethod())) {
             return false;
@@ -186,7 +194,7 @@ public class JaxRsResource<T> implements Comparable<JaxRsResource> {
     }
 
     public void log(HttpServerRequest request, HttpServerResponse response, long requestStartTime) {
-        REQUEST_LOGGER.log(request, response, requestStartTime);
+        requestLogger.log(LOG, request, response, requestStartTime);
     }
 
     public String getPath() {

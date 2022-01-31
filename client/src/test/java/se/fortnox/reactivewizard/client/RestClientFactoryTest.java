@@ -16,6 +16,7 @@ import se.fortnox.reactivewizard.binding.AutoBindModules;
 import se.fortnox.reactivewizard.binding.scanners.HttpConfigClassScanner;
 import se.fortnox.reactivewizard.binding.scanners.JaxRsClassScanner;
 import se.fortnox.reactivewizard.config.TestInjector;
+import se.fortnox.reactivewizard.jaxrs.RequestLogger;
 import se.fortnox.reactivewizard.metrics.HealthRecorder;
 import se.fortnox.reactivewizard.server.ServerConfig;
 
@@ -155,7 +156,7 @@ public class RestClientFactoryTest {
         DisposableServer server = HttpServer.create().port(0).handle((req, resp) -> resp.sendString(Mono.just("null"))).bindNow();
         try {
             HttpClientConfig config = new HttpClientConfig("http://localhost:"+server.port());
-            HttpClientProvider provider = new HttpClientProvider(new ObjectMapper(), new RequestParameterSerializers(), Collections.emptySet(), new HealthRecorder());
+            HttpClientProvider provider = new HttpClientProvider(new ObjectMapper(), new RequestParameterSerializers(), Collections.emptySet(), new HealthRecorder(), new RequestLogger());
             HttpClient client = provider.createClient(config);
             TestResource resource = client.create(TestResource.class);
 

@@ -8,6 +8,7 @@ public interface DaoTransactionsFlux {
      * The calls will be run in the order they are passed to this method.
      *
      * @param daoCalls dao calls to run as on single transaction
+     * @return empty Flux
      */
     <T> Flux<Void> executeTransaction(Iterable<Flux<T>> daoCalls);
 
@@ -16,6 +17,7 @@ public interface DaoTransactionsFlux {
      * The calls will be run in the order they are passed to this method.
      *
      * @param daoCalls dao calls to run as on single transaction
+     * @return  empty Flux
      */
     <T> Flux<Void> executeTransaction(Flux<T>... daoCalls);
 }

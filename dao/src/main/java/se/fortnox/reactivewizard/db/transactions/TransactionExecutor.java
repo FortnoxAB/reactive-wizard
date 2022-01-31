@@ -11,12 +11,12 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
- * class with helper methods used when executing stuff inside a database transaction
+ * class with helper methods used when executing stuff inside a database transaction.
  */
 class TransactionExecutor {
 
     /**
-     * Creates a Transaction based on a Collection of StatementContexts
+     * Creates a Transaction based on a Collection of StatementContexts.
      * @param statementContexts the collection of StatementContext to use
      * @return the Transaction
      */
@@ -32,7 +32,7 @@ class TransactionExecutor {
     }
 
     /**
-     * Execute all the statements contained in the list of StatementContext on the provided connection
+     * Execute all the statements contained in the list of StatementContext on the provided connection.
      * @param statementContexts list of StatementContext to use
      * @param connection the connection to use when executing statements.
      */
@@ -68,7 +68,7 @@ class TransactionExecutor {
 
     /**
      * Get the connection scheduler to use when executing the statements.
-     * Will get the first connection scheduler from the first StatementContext
+     * Will get the first connection scheduler from the first StatementContext.
      *
      * @param statementContexts list of StatementContext
      * @return the ConnectionScheduler to use

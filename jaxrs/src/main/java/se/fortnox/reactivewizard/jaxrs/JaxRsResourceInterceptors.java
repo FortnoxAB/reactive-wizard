@@ -1,7 +1,6 @@
 package se.fortnox.reactivewizard.jaxrs;
 
 import org.reactivestreams.Publisher;
-import rx.Observable;
 
 import javax.inject.Inject;
 import java.util.Set;

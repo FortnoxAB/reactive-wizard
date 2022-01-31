@@ -12,6 +12,14 @@ import java.util.function.Function;
 
 public class ReactiveDecorator {
 
+    /**
+     * Decorate reactive type.
+     * @param inner the reactive type to decorate
+     * @param decoration the decoration
+     * @param <T> reactive type
+     * @param <S> decoration type
+     * @return the decorated reactive type
+     */
     public static <T,S> T decorated(T inner, S decoration) {
         if (inner instanceof Observable) {
             return (T)new DecoratedObservable((Observable) inner, decoration);
@@ -25,6 +33,12 @@ public class ReactiveDecorator {
         throw new IllegalArgumentException("Type to decorate needs to be a reactive type (Flux, Mono, Observable, Single) but was " + inner.getClass());
     }
 
+    /**
+     * Get the decoration of an Observable.
+     * @param wrapper the Observable
+     * @param <T> the type of the decoration
+     * @return an Optional containing the decoration, if any
+     */
     public static <T> Optional<T> getDecoration(Observable<?> wrapper) {
         if (!(wrapper instanceof DecoratedObservable)) {
             return Optional.empty();
@@ -32,6 +46,12 @@ public class ReactiveDecorator {
         return Optional.of((T) ((DecoratedObservable)wrapper).getDecoration());
     }
 
+    /**
+     * Get the decoration of a Single.
+     * @param wrapper the Single
+     * @param <T> the type of the decoration
+     * @return an Optional containing the decoration, if any
+     */
     public static <T> Optional<T> getDecoration(Single<?> wrapper) {
         if (!(wrapper instanceof DecoratedSingle)) {
             return Optional.empty();
@@ -39,6 +59,12 @@ public class ReactiveDecorator {
         return Optional.of((T) ((DecoratedSingle)wrapper).getDecoration());
     }
 
+    /**
+     * Get the decoration of a Flux.
+     * @param wrapper the Flux
+     * @param <T> the type of the decoration
+     * @return an Optional containing the decoration, if any
+     */
     public static <T> Optional<T> getDecoration(Flux<?> wrapper) {
         if (!(wrapper instanceof DecoratedFlux)) {
             return Optional.empty();
@@ -46,6 +72,12 @@ public class ReactiveDecorator {
         return Optional.of((T) ((DecoratedFlux)wrapper).getDecoration());
     }
 
+    /**
+     * Get the decoration of a Mono.
+     * @param wrapper the Mono
+     * @param <T> the type of the decoration
+     * @return an Optional containing the decoration, if any
+     */
     public static <T> Optional<T> getDecoration(Mono<?> wrapper) {
         if (!(wrapper instanceof DecoratedMono)) {
             return Optional.empty();

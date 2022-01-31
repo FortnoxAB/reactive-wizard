@@ -1,6 +1,7 @@
 package se.fortnox.reactivewizard.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import se.fortnox.reactivewizard.jaxrs.RequestLogger;
 import se.fortnox.reactivewizard.metrics.HealthRecorder;
 
 import javax.inject.Inject;
@@ -19,17 +20,19 @@ public class HttpClientProvider {
     protected final Set<PreRequestHook>                                             preRequestHooks;
     private final HealthRecorder healthRecorder;
     private final   Map<Class<? extends HttpClientConfig>, ReactorRxClientProvider> rxClientProviderCache = new HashMap<>();
+    private final RequestLogger requestLogger;
 
     @Inject
     public HttpClientProvider(ObjectMapper objectMapper,
-                                     RequestParameterSerializers requestParameterSerializers,
-                                     Set<PreRequestHook> preRequestHooks,
-                                     HealthRecorder healthRecorder
-    ) {
+                              RequestParameterSerializers requestParameterSerializers,
+                              Set<PreRequestHook> preRequestHooks,
+                              HealthRecorder healthRecorder,
+                              RequestLogger requestLogger) {
         this.objectMapper = objectMapper;
         this.requestParameterSerializers = requestParameterSerializers;
         this.preRequestHooks = preRequestHooks;
         this.healthRecorder = healthRecorder;
+        this.requestLogger = requestLogger;
     }
 
     private ReactorRxClientProvider getRxClientProvider(HttpClientConfig httpClientConfig) {
@@ -38,7 +41,7 @@ public class HttpClientProvider {
     }
 
     protected HttpClient instantiateClient(HttpClientConfig httpClientConfig, ReactorRxClientProvider rxClientProvider) {
-        return new HttpClient(httpClientConfig, rxClientProvider, objectMapper, requestParameterSerializers, preRequestHooks);
+        return new HttpClient(httpClientConfig, rxClientProvider, objectMapper, requestParameterSerializers, preRequestHooks, requestLogger);
     }
 
     public HttpClient createClient(HttpClientConfig httpClientConfig) {

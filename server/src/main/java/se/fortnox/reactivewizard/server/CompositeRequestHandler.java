@@ -24,12 +24,15 @@ public class CompositeRequestHandler implements RequestHandler {
     private final Set<RequestHandler> handlers;
     private final ExceptionHandler exceptionHandler;
     private final ConnectionCounter connectionCounter;
+    private final RequestLogger requestLogger;
 
     @Inject
-    public CompositeRequestHandler(Set<RequestHandler> handlers, ExceptionHandler exceptionHandler, ConnectionCounter connectionCounter) {
+    public CompositeRequestHandler(Set<RequestHandler> handlers, ExceptionHandler exceptionHandler,
+                                   ConnectionCounter connectionCounter, RequestLogger requestLogger) {
         this.handlers = handlers;
         this.exceptionHandler = exceptionHandler;
         this.connectionCounter = connectionCounter;
+        this.requestLogger = requestLogger;
     }
 
     @Override
@@ -50,7 +53,7 @@ public class CompositeRequestHandler implements RequestHandler {
         return Flux.from(exceptionHandler.handleException(request,
                 response,
                 new WebException(HttpResponseStatus.NOT_FOUND)))
-                .doOnTerminate(() -> RequestLogger.logRequestResponse(request, response, requestStartTime, log))
+                .doOnTerminate(() -> requestLogger.logRequestResponse(request, response, requestStartTime, log))
                 .doOnSubscribe(s -> connectionCounter.increase())
                 .doFinally(s -> connectionCounter.decrease());
     }

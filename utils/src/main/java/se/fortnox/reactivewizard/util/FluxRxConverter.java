@@ -14,6 +14,12 @@ public class FluxRxConverter {
         return Flux.from(RxReactiveStreams.toPublisher(result));
     }
 
+    /**
+     * Create converter from a reactive type to Flux.
+     * @param returnType the return type
+     * @param <T> the type of Flux
+     * @return the converter or null if unable to create converter
+     */
     public static <T> Function<Object, Flux<T>> converterToFlux(Class<?> returnType) {
 
         if (Flux.class.isAssignableFrom(returnType)) {
@@ -60,6 +66,11 @@ public class FluxRxConverter {
         }
     }
 
+    /**
+     * Create converter from Flux to a reactive type.
+     * @param returnType the return type
+     * @return the converter
+     */
     public static Function<Flux, Object> converterFromFlux(Class<?> returnType) {
         if (Observable.class.isAssignableFrom(returnType)) {
             return (flux) -> RxReactiveStreams.toObservable(flux);
@@ -74,6 +85,11 @@ public class FluxRxConverter {
         }
     }
 
+    /**
+     * Determine if a Class is of a reactive type that can be handled by this class.
+     * @param returnType the type to check
+     * @return whether the type is reactive
+     */
     public static boolean isReactiveType(Class<?> returnType) {
         return Observable.class.isAssignableFrom(returnType)
                 || Single.class.isAssignableFrom(returnType)
@@ -85,6 +101,11 @@ public class FluxRxConverter {
         return !Flux.class.isAssignableFrom(returnType);
     }
 
+    /**
+     * Create a converter from Observable to a reactive type.
+     * @param targetReactiveType class of reactive type
+     * @return the converter
+     */
     public static Function<Observable<Object>, Object> converterFromObservable(Class<?> targetReactiveType) {
         if (Observable.class.isAssignableFrom(targetReactiveType)) {
             return result -> result;

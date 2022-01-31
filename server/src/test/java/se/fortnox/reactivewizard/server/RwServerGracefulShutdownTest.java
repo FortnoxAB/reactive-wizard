@@ -8,6 +8,7 @@ import reactor.netty.DisposableServer;
 import reactor.netty.http.client.HttpClient;
 import se.fortnox.reactivewizard.ExceptionHandler;
 import se.fortnox.reactivewizard.RequestHandler;
+import se.fortnox.reactivewizard.jaxrs.RequestLogger;
 
 import java.time.Duration;
 import java.util.Collections;
@@ -101,7 +102,8 @@ public class RwServerGracefulShutdownTest {
 
     private RwServer server(RequestHandler handler) {
         ConnectionCounter connectionCounter = new ConnectionCounter();
-        CompositeRequestHandler handlers = new CompositeRequestHandler(Collections.singleton(handler), new ExceptionHandler(new ObjectMapper()), connectionCounter);
+        RequestLogger requestLogger = new RequestLogger();
+        CompositeRequestHandler handlers = new CompositeRequestHandler(Collections.singleton(handler), new ExceptionHandler(new ObjectMapper(), requestLogger), connectionCounter, requestLogger);
         return new RwServer(serverConfig, handlers, connectionCounter) {
             @Override
             void registerShutdownHook() {
