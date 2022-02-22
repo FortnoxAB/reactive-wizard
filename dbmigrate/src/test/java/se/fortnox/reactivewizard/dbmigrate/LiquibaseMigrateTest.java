@@ -34,7 +34,7 @@ public class LiquibaseMigrateTest {
         Connection connection = getConnection(liquibaseConfig);
         try {
             ResultSet resultSet = connection.createStatement().executeQuery("select * from TESTSCHEMA.test");
-            resultSet.next();
+            assertThat(resultSet.next()).isTrue();
             assertThat(resultSet.getInt(1)).isEqualTo(4);
         } finally {
             connection.close();

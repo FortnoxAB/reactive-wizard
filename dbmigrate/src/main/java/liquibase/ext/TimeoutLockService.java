@@ -1,7 +1,7 @@
 package liquibase.ext;
 
-import liquibase.configuration.GlobalConfiguration;
-import liquibase.configuration.LiquibaseConfiguration;
+import liquibase.GlobalConfiguration;
+import liquibase.Scope;
 import liquibase.database.Database;
 import liquibase.datatype.DataTypeFactory;
 import liquibase.exception.DatabaseException;
@@ -10,7 +10,6 @@ import liquibase.executor.Executor;
 import liquibase.executor.ExecutorService;
 import liquibase.lockservice.DatabaseChangeLogLock;
 import liquibase.lockservice.StandardLockService;
-import liquibase.logging.LogFactory;
 import liquibase.logging.Logger;
 import liquibase.statement.core.UpdateStatement;
 import rx.functions.Func0;
@@ -26,9 +25,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class TimeoutLockService extends StandardLockService {
 
-    private static final Logger log = LogFactory.getInstance().getLog();
+    private static final Logger log = Scope.getCurrentScope().getLog(TimeoutLockService.class);
     public static final int DEFAULT_LOCK_RENEWAL_INTERVAL = 60000;
-    private static AtomicBoolean shouldRenewLock = new AtomicBoolean(false);
+    private static final AtomicBoolean SHOULD_RENEW_LOCK = new AtomicBoolean(false);
+
     private final long timeoutMilliseconds;
     private Thread lockRenewalThread;
     private final long lockRenewalInterval;
@@ -41,7 +41,7 @@ public class TimeoutLockService extends StandardLockService {
 
     public TimeoutLockService(long lockRenewalInterval) {
         this.lockRenewalInterval = lockRenewalInterval;
-        timeoutMilliseconds = LiquibaseConfiguration.getInstance().getConfiguration(GlobalConfiguration.class).getDatabaseChangeLogLockWaitTime() * 60 * 1000;
+        timeoutMilliseconds = GlobalConfiguration.CHANGELOGLOCK_WAIT_TIME.getCurrentValue() * 60 * 1000;
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             if (hasChangeLogLock()) {
                 try {
@@ -105,16 +105,16 @@ public class TimeoutLockService extends StandardLockService {
     @Override
     public synchronized void releaseLock() throws LockException {
         super.releaseLock();
-        shouldRenewLock.set(false);
+        SHOULD_RENEW_LOCK.set(false);
         if (lockRenewalThread != null) {
             lockRenewalThread.interrupt();
         }
     }
 
     private void ensureLockRenewalRunning() {
-        if (shouldRenewLock.compareAndSet(false, true)) {
+        if (SHOULD_RENEW_LOCK.compareAndSet(false, true)) {
             lockRenewalThread = new Thread(() -> {
-                while (shouldRenewLock.get()) {
+                while (SHOULD_RENEW_LOCK.get()) {
                     try {
                         Thread.sleep(lockRenewalInterval);
                         renewLock();
@@ -131,10 +131,11 @@ public class TimeoutLockService extends StandardLockService {
     }
 
     private synchronized void renewLock() throws DatabaseException {
-        if (shouldRenewLock.get() && hasChangeLogLock()) {
+        if (SHOULD_RENEW_LOCK.get() && hasChangeLogLock()) {
             Database renewalDatabase = createRenewalConnectionCreator.call();
             try {
-                Executor executor = ExecutorService.getInstance().getExecutor(renewalDatabase);
+                ExecutorService executorService = Scope.getCurrentScope().getSingleton(ExecutorService.class);
+                Executor executor = executorService.getExecutor("jdbc", renewalDatabase);
 
                 String liquibaseSchema = database.getLiquibaseSchemaName();
                 String liquibaseCatalog = database.getLiquibaseCatalogName();

@@ -1,11 +1,12 @@
 package se.fortnox.reactivewizard.dbmigrate;
 
+import liquibase.Scope;
 import liquibase.exception.DatabaseException;
 import liquibase.exception.LockException;
 import liquibase.executor.Executor;
 import liquibase.executor.ExecutorService;
 import liquibase.ext.TimeoutLockService;
-import liquibase.sdk.database.MockDatabase;
+import liquibase.database.core.MockDatabase;
 import liquibase.statement.SqlStatement;
 import liquibase.statement.core.LockDatabaseChangeLogStatement;
 import liquibase.statement.core.UpdateStatement;
@@ -55,7 +56,8 @@ public class TimeoutLockServiceTest {
 
         when(executor.queryForObject(any(), any())).thenReturn(Boolean.FALSE);
         when(executor.update(any())).thenReturn(1);
-        ExecutorService.getInstance().setExecutor(database, executor);
+        ExecutorService executorService = Scope.getCurrentScope().getSingleton(ExecutorService.class);
+        executorService.setExecutor("jdbc", database, executor);
 
         timeoutLockService.setDatabase(database);
     }
