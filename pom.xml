@@ -81,7 +81,7 @@
         <hikaricp.version>5.0.1</hikaricp.version>
         <slf4j.version>1.7.36</slf4j.version>
         <junit.version>4.13.2</junit.version>
-        <h2.version>1.4.200</h2.version>
+        <h2.version>2.1.210</h2.version>
         <snakeyaml.version>1.30</snakeyaml.version>
         <hibernate-validator.version>6.2.0.Final</hibernate-validator.version>
         <fest-assert.version>1.4</fest-assert.version>
