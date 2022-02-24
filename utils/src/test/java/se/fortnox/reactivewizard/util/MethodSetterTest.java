@@ -2,11 +2,16 @@ package se.fortnox.reactivewizard.util;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@RunWith(Parameterized.class)
 public class MethodSetterTest extends AccessorTest {
     private Setter value;
     private Setter longObservable;
@@ -15,14 +20,19 @@ public class MethodSetterTest extends AccessorTest {
     private Setter superKey;
     private Setter superValue;
 
-    @Before
-    public void setUp() {
+    public MethodSetterTest(boolean useLambdas) {
+        LambdaCompiler.useLambdas = useLambdas;
         value = ReflectionUtil.getSetter(GenericMethodSubclass.class, "value");
         longObservable = ReflectionUtil.getSetter(GenericMethodSubclass.class, "longObservable");
         genericSuperKey = ReflectionUtil.getSetter(GenericMethodSubclass.class, "superKey");
         genericSuperValue = ReflectionUtil.getSetter(GenericMethodSubclass.class, "superValue");
         superKey = ReflectionUtil.getSetter(MethodSubclass.class, "superKey");
         superValue = ReflectionUtil.getSetter(MethodSubclass.class, "superValue");
+    }
+
+    @Parameterized.Parameters
+    public static Collection useLambdasParameters() {
+        return List.of(new Object[][] {{ true }, { false }});
     }
 
     @Test

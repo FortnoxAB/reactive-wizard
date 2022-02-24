@@ -1,11 +1,8 @@
 package se.fortnox.reactivewizard.util;
 
 
-import java.lang.invoke.CallSite;
-import java.lang.invoke.LambdaMetafactory;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.function.BiConsumer;
@@ -32,30 +29,10 @@ public class MethodSetter<I,T> implements Setter<I,T> {
 
         try {
             MethodHandle methodHandle = lookup.unreflect(method);
-            setterLambda = compileLambda(lookup, methodHandle);
+            setterLambda = LambdaCompiler.compileLambdaBiConsumer(lookup, methodHandle);
         } catch (Throwable t) {
             throw new RuntimeException(t);
         }
-
-    }
-
-    private BiConsumer<I,T> compileLambda(MethodHandles.Lookup lookup, MethodHandle methodHandle) throws Throwable {
-        CallSite callSite = LambdaMetafactory.metafactory(
-                lookup,
-                "accept",
-                MethodType.methodType(BiConsumer.class),
-                MethodType.methodType(void.class, Object.class, Object.class),
-                methodHandle,
-                wrapMethodType(methodHandle.type())
-        );
-        return (BiConsumer<I,T>) callSite.getTarget().invoke();
-    }
-
-    private MethodType wrapMethodType(MethodType methodType) {
-        // JDK9+ has made changes to LambdaMetaFactory that prevent lambdas from being able to do proper
-        // adaptation of types. In particular boxed types are no longer widened appropriately and
-        // Object can no longer be adapted to primitive types.
-        return methodType.wrap().changeReturnType(void.class);
     }
 
     @Override
