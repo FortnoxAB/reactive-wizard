@@ -1,6 +1,10 @@
 package se.fortnox.reactivewizard.dbmigrate;
 
-import liquibase.*;
+import liquibase.CatalogAndSchema;
+import liquibase.Contexts;
+import liquibase.LabelExpression;
+import liquibase.Liquibase;
+import liquibase.Scope;
 import liquibase.changelog.ChangeLogHistoryServiceFactory;
 import liquibase.database.Database;
 import liquibase.database.DatabaseFactory;
@@ -40,8 +44,8 @@ public class LiquibaseMigrate {
         JdbcConnection conn = new JdbcConnection(getConnection(liquibaseConfig));
 
         Enumeration<URL> resources = this.getClass()
-            .getClassLoader()
-            .getResources(liquibaseConfig.getMigrationsFile());
+                .getClassLoader()
+                .getResources(liquibaseConfig.getMigrationsFile());
         if (!resources.hasMoreElements()) {
             throw new RuntimeException("Could not find migrations file " + liquibaseConfig.getMigrationsFile());
         }

@@ -9,7 +9,7 @@ import javax.inject.Inject;
 import javax.inject.Named;
 
 /**
- * Runs liquibase before the system is started, if parameter "db-migrate" is used. The following alternatives exists:
+ * Runs liquibase before the system is started, if parameter "db-migrate" is used. The following alternatives exist:
  * <ul>
  * <li> "db-migrate": Run migrations and shutdown system. Use this locally to avoid liquibase migrations during normal run.</li>
  * <li> "db-migrate-run": Run migrations and start the system. Use this in production, when you want to run migrations before the system is started.</li>
