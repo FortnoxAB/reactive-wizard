@@ -2,19 +2,30 @@ package se.fortnox.reactivewizard.jaxrs;
 
 import io.netty.handler.codec.http.HttpMethod;
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import reactor.netty.ByteBufFlux;
+import reactor.netty.channel.AbortedException;
 import reactor.netty.http.server.HttpServerRequest;
 import se.fortnox.reactivewizard.mocks.MockHttpServerRequest;
+import se.fortnox.reactivewizard.test.LoggingVerifier;
 
 import java.nio.charset.Charset;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static org.apache.logging.log4j.Level.DEBUG;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class JaxRsRequestTest {
+
+    @Rule
+    public LoggingVerifier loggingVerifier = new LoggingVerifier(JaxRsRequest.class, DEBUG);
+
     @Test
     public void shouldDecodeMultiChunkBody() {
         byte[]                  byteArray = "ö".getBytes(Charset.defaultCharset());
@@ -81,6 +92,27 @@ public class JaxRsRequestTest {
         MockHttpServerRequest serverReq = new MockHttpServerRequest("https://localhost:8080/path?query");
         JaxRsRequest          req       = new JaxRsRequest(serverReq, null, new byte[0], new ByteBufCollector());
         assertThat(req.getUri()).isEqualTo(serverReq.uri());
+    }
+
+    @Test
+    public void shouldLogOnDebugWhenRequestWasAborted() {
+        HttpServerRequest httpRequest = mock(HttpServerRequest.class);
+        when(httpRequest.method())
+            .thenReturn(HttpMethod.POST);
+        when(httpRequest.uri())
+            .thenReturn("/path");
+
+        ByteBufFlux byteBufFluxError = ByteBufFlux.fromInbound(Flux.error(new AbortedException("poff")));
+        when(httpRequest.receive())
+            .thenReturn(byteBufFluxError);
+
+        JaxRsRequest request = new JaxRsRequest(httpRequest);
+        request.loadBody()
+            .onErrorResume((error) -> Mono.empty())
+            .block();
+
+        loggingVerifier
+            .verify(DEBUG, "Error reading data for request POST /path");
     }
 
 
