@@ -4,12 +4,9 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.impl.PropertySerializerMap;
+import se.fortnox.reactivewizard.util.Getter;
+import se.fortnox.reactivewizard.util.MethodGetter;
 
-import java.lang.invoke.CallSite;
-import java.lang.invoke.LambdaMetafactory;
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
 import java.lang.reflect.Modifier;
 import java.util.function.Function;
 
@@ -31,18 +28,9 @@ public class LambdaWriter extends BeanPropertyWriter {
             if (!Modifier.isPublic(_accessorMethod.getModifiers()) || !Modifier.isPublic(_accessorMethod.getDeclaringClass().getModifiers())) {
                 return;
             }
-            final MethodHandles.Lookup lookup = MethodHandles.lookup();
             try {
-                MethodHandle methodHandle = lookup.unreflect(_accessorMethod);
-                CallSite callSite = LambdaMetafactory.metafactory(
-                        lookup,
-                        "apply",
-                        MethodType.methodType(Function.class),
-                        MethodType.methodType(Object.class, Object.class),
-                        methodHandle,
-                        methodHandle.type()
-                );
-                lambda = (Function<Object,Object>) callSite.getTarget().invoke();
+                Getter<Object,Object> getter = MethodGetter.create(_accessorMethod.getDeclaringClass(), _accessorMethod);
+                lambda = getter.getterFunction();
             } catch (Throwable t) {
                 throw new RuntimeException(t);
             }

@@ -6,17 +6,15 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.function.Function;
 
-import static se.fortnox.reactivewizard.util.ReflectionUtil.lambdaForFunction;
-
 /**
  * Represents a getter method.
  */
 public class MethodGetter<I,T> implements Getter<I,T> {
     private final Function<I, T> getterLambda;
 
-    public static Getter create(Class<?> cls, Method method) {
+    public static <I,T> Getter<I,T> create(Class<?> cls, Method method) {
         AccessorUtil.MemberTypeInfo memberTypeInfo = AccessorUtil.getterTypeInfo(cls, method);
-        return new MethodGetter(method, memberTypeInfo.getReturnType(), memberTypeInfo.getGenericReturnType());
+        return new MethodGetter<I,T>(method, memberTypeInfo.getReturnType(), memberTypeInfo.getGenericReturnType());
     }
 
     private final Class<?> returnType;
@@ -30,7 +28,7 @@ public class MethodGetter<I,T> implements Getter<I,T> {
 
         try {
             MethodHandle methodHandle = lookup.unreflect(method);
-            getterLambda = lambdaForFunction(lookup, methodHandle);
+            getterLambda = LambdaCompiler.compileLambdaFunction(lookup, methodHandle);
         } catch (Throwable t) {
             throw new RuntimeException(t);
         }

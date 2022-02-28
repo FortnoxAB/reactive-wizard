@@ -9,12 +9,14 @@ import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.util.StdDateFormat;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.lang.reflect.Type;
 import java.util.function.Function;
 
 /**
  * Creates instances of JSON serializers.
  */
+@Singleton
 public class JsonSerializerFactory {
     private final ObjectMapper mapper;
 

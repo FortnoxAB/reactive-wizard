@@ -2,11 +2,8 @@ package se.fortnox.reactivewizard.util;
 
 import javax.inject.Provider;
 import java.lang.annotation.Annotation;
-import java.lang.invoke.CallSite;
-import java.lang.invoke.LambdaMetafactory;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
 import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -398,15 +395,7 @@ public class ReflectionUtil {
             MethodHandles.Lookup lookup = lookupFor(cls, constructor);
             constructor.setAccessible(true);
             MethodHandle methodHandle = lookup.unreflectConstructor(constructor);
-            CallSite callSite = LambdaMetafactory.metafactory(
-                    lookup,
-                    "get",
-                    MethodType.methodType(Supplier.class),
-                    MethodType.methodType(Object.class),
-                    methodHandle,
-                    methodHandle.type()
-            );
-            return (Supplier<T>)callSite.getTarget().invoke();
+            return LambdaCompiler.compileLambdaSupplier(lookup, methodHandle);
         } catch (NoSuchMethodException e) {
             throw new RuntimeException("No constructor with zero parameters found on " + cls.getSimpleName(), e);
         } catch (Throwable e) {
@@ -430,19 +419,6 @@ public class ReflectionUtil {
             throw new RuntimeException(e);
         }
     }
-
-    static <I,T> Function<I, T> lambdaForFunction(MethodHandles.Lookup lookup, MethodHandle methodHandle) throws Throwable {
-        CallSite callSite = LambdaMetafactory.metafactory(
-                lookup,
-                "apply",
-                MethodType.methodType(Function.class),
-                MethodType.methodType(Object.class, Object.class),
-                methodHandle,
-                methodHandle.type()
-        );
-        return (Function<I,T>) callSite.getTarget().invoke();
-    }
-
 
     public static <I,T> Optional<Function<I,T>> getter(Class<I> instanceCls, String propertyPath) {
         Optional<PropertyResolver> propertyResolver = ReflectionUtil.getPropertyResolver(instanceCls, propertyPath.split("\\."));

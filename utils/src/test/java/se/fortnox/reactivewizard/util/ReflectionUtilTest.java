@@ -6,6 +6,8 @@ import com.google.inject.Injector;
 import com.google.inject.matcher.Matchers;
 import org.aopalliance.intercept.Joinpoint;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import rx.Observable;
 
 import javax.inject.Provider;
@@ -16,6 +18,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -26,7 +29,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 
+@RunWith(Parameterized.class)
 public class ReflectionUtilTest {
+
+    public ReflectionUtilTest(boolean useLambdas) {
+        LambdaCompiler.useLambdas = useLambdas;
+    }
+
+    @Parameterized.Parameters
+    public static Collection useLambdasParameters() {
+        return List.of(new Object[][] {{ true }, { false }});
+    }
+
     @Test
     public void shouldFindDeclaredMethods() {
         Getter getter = ReflectionUtil.getGetter(Child.class, "j");
