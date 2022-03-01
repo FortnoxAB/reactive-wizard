@@ -1,10 +1,10 @@
 package se.fortnox.reactivewizard.dbmigrate;
 
-import com.google.common.collect.Sets;
 import liquibase.CatalogAndSchema;
 import liquibase.Contexts;
 import liquibase.LabelExpression;
 import liquibase.Liquibase;
+import liquibase.Scope;
 import liquibase.changelog.ChangeLogHistoryServiceFactory;
 import liquibase.database.Database;
 import liquibase.database.DatabaseFactory;
@@ -15,11 +15,14 @@ import liquibase.executor.ExecutorService;
 import liquibase.ext.TimeoutLockService;
 import liquibase.lockservice.LockServiceFactory;
 import liquibase.resource.ClassLoaderResourceAccessor;
+import liquibase.resource.InputStreamList;
 import se.fortnox.reactivewizard.db.DbDriver;
 
 import javax.inject.Inject;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -27,7 +30,6 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
-import java.util.Set;
 
 /**
  * Runs liquibase migrations for each file on the classpath named according to config. In a development environment this
@@ -35,15 +37,15 @@ import java.util.Set;
  */
 public class LiquibaseMigrate {
 
-    private List<Liquibase> liquibaseList;
+    private final List<Liquibase> liquibaseList;
 
     @Inject
     public LiquibaseMigrate(LiquibaseConfig liquibaseConfig) throws LiquibaseException, IOException {
         JdbcConnection conn = new JdbcConnection(getConnection(liquibaseConfig));
 
         Enumeration<URL> resources = this.getClass()
-            .getClassLoader()
-            .getResources(liquibaseConfig.getMigrationsFile());
+                .getClassLoader()
+                .getResources(liquibaseConfig.getMigrationsFile());
         if (!resources.hasMoreElements()) {
             throw new RuntimeException("Could not find migrations file " + liquibaseConfig.getMigrationsFile());
         }
@@ -52,11 +54,11 @@ public class LiquibaseMigrate {
 
         liquibaseList = new ArrayList<>();
         while (resources.hasMoreElements()) {
-            URL       url            = resources.nextElement();
-            String    file           = url.toExternalForm();
-            int       jarFileSep     = file.lastIndexOf('!');
-            String    loggedFileName = file.substring(jarFileSep + 1);
-            Liquibase liquibase      = new Liquibase(loggedFileName, new UrlAwareClassLoaderResourceAccessor(file), conn);
+            URL url = resources.nextElement();
+            String file = url.toExternalForm();
+            int jarFileSep = file.lastIndexOf('!');
+            String loggedFileName = file.substring(jarFileSep + 1);
+            Liquibase liquibase = new Liquibase(loggedFileName, new UrlAwareClassLoaderResourceAccessor(file), conn);
             liquibase.getDatabase().setDefaultSchemaName(liquibaseConfig.getSchema());
 
             liquibaseList.add(liquibase);
@@ -86,16 +88,18 @@ public class LiquibaseMigrate {
 
     /**
      * Run this migration.
+     *
      * @throws LiquibaseException on error
      */
     public void run() throws LiquibaseException {
         for (Liquibase liquibase : liquibaseList) {
-            liquibase.update((String)null);
+            liquibase.update((String) null);
         }
     }
 
     /**
      * Drop all db objects.
+     *
      * @throws DatabaseException on error
      */
     public void drop() throws DatabaseException {
@@ -108,12 +112,13 @@ public class LiquibaseMigrate {
 
     /**
      * Force drop all db objects.
+     *
      * @throws DatabaseException on error
      */
     public void forceDrop() throws DatabaseException {
         for (Liquibase liquibase : liquibaseList) {
-            Database         database = liquibase.getDatabase();
-            CatalogAndSchema schema   = new CatalogAndSchema(database.getDefaultCatalogName(), database.getDefaultSchemaName());
+            Database database = liquibase.getDatabase();
+            CatalogAndSchema schema = new CatalogAndSchema(database.getDefaultCatalogName(), database.getDefaultSchemaName());
             try {
                 liquibase.checkLiquibaseTables(false, null, new Contexts(), new LabelExpression());
                 database.dropDatabaseObjects(schema);
@@ -125,7 +130,8 @@ public class LiquibaseMigrate {
                 LockServiceFactory.getInstance().getLockService(database).destroy();
                 LockServiceFactory.getInstance().resetAll();
                 ChangeLogHistoryServiceFactory.getInstance().resetAll();
-                ExecutorService.getInstance().reset();
+                ExecutorService executorService = Scope.getCurrentScope().getSingleton(ExecutorService.class);
+                executorService.reset();
             }
             return;
         }
@@ -136,26 +142,33 @@ public class LiquibaseMigrate {
     }
 
     class UrlAwareClassLoaderResourceAccessor extends ClassLoaderResourceAccessor {
-        private String realFileName;
+        private final String realFileName;
 
         public UrlAwareClassLoaderResourceAccessor(String realFileName) {
             this.realFileName = realFileName;
         }
 
         @Override
-        public Set<InputStream> getResourcesAsStream(String path) throws IOException {
+        public InputStreamList openStreams(String relativeTo, String path) throws IOException {
             if (realFileName.endsWith(path)) {
                 path = realFileName;
             }
 
             if (path.startsWith("file:") || path.startsWith("jar:file:")) {
-                URL         url              = new URL(path);
+                URL url = new URL(path);
                 InputStream resourceAsStream = url.openStream();
+                InputStreamList inputStreamList = new InputStreamList();
+                URI uri;
+                try {
+                    uri = url.toURI();
+                } catch (URISyntaxException e) {
+                    throw new RuntimeException(e);
+                }
+                inputStreamList.add(uri, resourceAsStream);
 
-                return Sets.newHashSet(resourceAsStream);
+                return inputStreamList;
             }
-
-            return super.getResourcesAsStream(path);
+            return super.openStreams(relativeTo, path);
         }
     }
 }
