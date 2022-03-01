@@ -7,6 +7,7 @@ import io.netty.handler.codec.http.cookie.Cookie;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
+import reactor.netty.channel.AbortedException;
 import reactor.netty.http.server.HttpServerRequest;
 
 import java.util.List;
@@ -15,16 +16,16 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static io.netty.handler.codec.http.HttpMethod.DELETE;
 import static io.netty.handler.codec.http.HttpMethod.PATCH;
 import static io.netty.handler.codec.http.HttpMethod.POST;
 import static io.netty.handler.codec.http.HttpMethod.PUT;
-import static io.netty.handler.codec.http.HttpMethod.DELETE;
 
 /**
  * Represents an incoming request. Helps with extracting different types of data from the request.
  */
 public class JaxRsRequest {
-    private static final Logger LOG = LoggerFactory.getLogger(JaxRsResource.class);
+    private static final Logger LOG = LoggerFactory.getLogger(JaxRsRequest.class);
 
     private final HttpServerRequest   req;
     private final byte[]              body;
@@ -69,13 +70,20 @@ public class JaxRsRequest {
 
     /**
      * Load the body.
+     *
      * @return the body
      */
     public Mono<JaxRsRequest> loadBody() {
         HttpMethod httpMethod = req.method();
         if (POST.equals(httpMethod) || PUT.equals(httpMethod) || PATCH.equals(httpMethod) || DELETE.equals(httpMethod)) {
             return collector.collectBytes(req.receive()
-                .doOnError(e -> LOG.error("Error reading data for request " + httpMethod + " " + req.uri(), e)))
+                    .doOnError(e -> {
+                        if (e instanceof AbortedException) {
+                            LOG.debug("Error reading data for request " + httpMethod + " " + req.uri(), e);
+                        } else {
+                            LOG.error("Error reading data for request " + httpMethod + " " + req.uri(), e);
+                        }
+                    }))
                 .defaultIfEmpty(new byte[0])
                 .map(reqBody -> create(req, matcher, reqBody, collector));
         }
