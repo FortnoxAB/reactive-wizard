@@ -4,6 +4,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Module;
 import com.google.inject.name.Names;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import se.fortnox.reactivewizard.binding.AutoBindModules;
 import se.fortnox.reactivewizard.config.ConfigFactory;
@@ -17,6 +18,8 @@ import java.nio.file.NoSuchFileException;
  * Requires a config file as last parameter.
  */
 public class Main {
+    private static final Logger LOG = LoggerFactory.getLogger(Main.class);
+
     /**
      * Main application entry point.
      *
@@ -33,11 +36,8 @@ public class Main {
                 }
             };
             Guice.createInjector(new AutoBindModules(bootstrap));
-        } catch (Exception e) {
-            // Since logging is configured at runtime we cant have a static logger.
-            LoggerFactory
-                .getLogger(Main.class)
-                .error("Caught exception at startup.", e);
+        } catch (Exception exception) {
+            LOG.error("Caught exception at startup.", exception);
             System.exit(-1);
         }
     }
