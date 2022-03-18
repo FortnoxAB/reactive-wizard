@@ -12,7 +12,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 
 import static java.util.Collections.singleton;
-import static org.fest.assertions.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static rx.Observable.just;
 
 public class JaxRsRequestHandlerTest {

@@ -1,8 +1,9 @@
 package se.fortnox.reactivewizard.client;
 
-import org.fest.util.Collections;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -11,7 +12,7 @@ public class RequestParameterSerializersTest {
 
     @Before
     public void setUp() {
-        serializers = new RequestParameterSerializers(Collections.set(new Foo(), new Bar()));
+        serializers = new RequestParameterSerializers(Set.of(new Foo(), new Bar()));
     }
 
     @Test

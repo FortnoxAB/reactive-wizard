@@ -1,6 +1,6 @@
 package se.fortnox.reactivewizard.db;
 
-import org.fest.assertions.Fail;
+import org.assertj.core.api.Fail;
 import org.junit.Test;
 import org.mockito.InOrder;
 import reactor.core.publisher.Flux;
@@ -217,7 +217,7 @@ public class DaoTransactionsTest {
             fail("exception expected");
         } catch (Exception e) {}
 
-        assertThat(completed.get()).isEqualTo(0);
+        assertThat(completed.get()).isZero();
         assertThat(failed.get()).isEqualTo(1);
 
         db.verifyConnectionsUsed(1);

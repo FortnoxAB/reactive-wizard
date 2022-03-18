@@ -8,7 +8,7 @@ import rx.Single;
 
 import java.util.Optional;
 
-import static org.fest.assertions.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class ReactiveDecoratorTest {
     Object decoration = new Object();
@@ -21,8 +21,7 @@ public class ReactiveDecoratorTest {
         assertThat(decorated.toBlocking().single()).isEqualTo("test");
 
         Optional<Object> foundDecoration = ReactiveDecorator.getDecoration(decorated);
-        assertThat(foundDecoration.isPresent()).isTrue();
-        assertThat(foundDecoration.get()).isSameAs(decoration);
+        assertThat(foundDecoration).containsSame(decoration);
     }
 
     @Test
@@ -30,7 +29,7 @@ public class ReactiveDecoratorTest {
         Flux<String> decorated = ReactiveDecorator.decorated(Flux.just("test"), decoration);
 
         assertThat(decorated.single().block()).isEqualTo("test");
-        assertThat(ReactiveDecorator.getDecoration(decorated).get()).isSameAs(decoration);
+        assertThat(ReactiveDecorator.getDecoration(decorated)).containsSame(decoration);
     }
 
     @Test
@@ -38,7 +37,7 @@ public class ReactiveDecoratorTest {
         Mono<String> decorated = ReactiveDecorator.decorated(Mono.just("test"), decoration);
 
         assertThat(decorated.block()).isEqualTo("test");
-        assertThat(ReactiveDecorator.getDecoration(decorated).get()).isSameAs(decoration);
+        assertThat(ReactiveDecorator.getDecoration(decorated)).containsSame(decoration);
     }
 
     @Test
@@ -46,14 +45,14 @@ public class ReactiveDecoratorTest {
         Single<String> decorated = ReactiveDecorator.decorated(Single.just("test"), decoration);
 
         assertThat(decorated.toBlocking().value()).isEqualTo("test");
-        assertThat(ReactiveDecorator.getDecoration(decorated).get()).isSameAs(decoration);
+        assertThat(ReactiveDecorator.getDecoration(decorated)).containsSame(decoration);
     }
 
     @Test
     public void willGetEmptyOptionalForNonDecorated() {
-        assertThat(ReactiveDecorator.getDecoration(Observable.just("hej")).isPresent()).isFalse();
-        assertThat(ReactiveDecorator.getDecoration(Flux.just("hej")).isPresent()).isFalse();
-        assertThat(ReactiveDecorator.getDecoration(Mono.just("hej")).isPresent()).isFalse();
-        assertThat(ReactiveDecorator.getDecoration(Single.just("hej")).isPresent()).isFalse();
+        assertThat(ReactiveDecorator.getDecoration(Observable.just("hej"))).isEmpty();
+        assertThat(ReactiveDecorator.getDecoration(Flux.just("hej"))).isEmpty();
+        assertThat(ReactiveDecorator.getDecoration(Mono.just("hej"))).isEmpty();
+        assertThat(ReactiveDecorator.getDecoration(Single.just("hej"))).isEmpty();
     }
 }

@@ -6,7 +6,7 @@ import org.junit.Test;
 
 import java.util.Optional;
 
-import static org.fest.assertions.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class JaxRsRequestContextTest {
     @Before
@@ -30,7 +30,7 @@ public class JaxRsRequestContextTest {
         assertThat(JaxRsRequestContext.getValue("foo").orElse(null)).isEqualTo("bar");
 
         JaxRsRequestContext.close();
-        assertThat(JaxRsRequestContext.getValue("foo").isPresent()).isFalse();
+        assertThat(JaxRsRequestContext.getValue("foo")).isEmpty();
     }
 
     @Test
@@ -38,6 +38,6 @@ public class JaxRsRequestContextTest {
         JaxRsRequestContext.close();
 
         JaxRsRequestContext.setValue("foo", "bar");
-        assertThat(JaxRsRequestContext.getValue("foo")).isEqualTo(Optional.empty());
+        assertThat(JaxRsRequestContext.getValue("foo")).isEmpty();
     }
 }
