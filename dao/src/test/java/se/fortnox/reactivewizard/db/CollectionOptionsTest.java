@@ -154,6 +154,13 @@ public class CollectionOptionsTest {
         mockDb.verifySelect("select name, lastname from customers where name = ANY(select first_name from persons order by first_name) order by name ASC, lastname LIMIT 101");
     }
 
+    @Test
+    public void shouldFindOrderByWithoutSpaceBefore() throws SQLException {
+        CollectionOptions collectionOptions = new CollectionOptions("name", CollectionOptions.SortOrder.ASC);
+        collectionOptionsDao.selectWithoutSpaceBeforeOrderBy(collectionOptions).toBlocking().singleOrDefault(null);
+        mockDb.verifySelect("select * from table\norder by name ASC, id LIMIT 101");
+    }
+
     interface CollectionOptionsDao {
         @Query("select * from table")
         Observable<String> selectWithPaging(CollectionOptions collectionOptions);
@@ -178,5 +185,8 @@ public class CollectionOptionsTest {
 
         @Query(value= "select name, lastname from customers where name = ANY(select first_name from persons order by first_name) order by lastname", allowedSortColumns = {"name"})
         Observable<String> selectWithMultipleOrderBy(CollectionOptions collectionOptions);
+
+        @Query(value = "select * from table\norder by id", allowedSortColumns = {"name"})
+        Observable<String> selectWithoutSpaceBeforeOrderBy(CollectionOptions collectionOptions);
     }
 }

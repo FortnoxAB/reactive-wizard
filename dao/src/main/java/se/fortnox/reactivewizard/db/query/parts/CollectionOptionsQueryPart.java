@@ -12,7 +12,7 @@ import static com.google.common.collect.Iterables.indexOf;
 import static java.util.Arrays.asList;
 
 public class CollectionOptionsQueryPart implements QueryPart {
-    private static final String ORDER_BY = " ORDER BY ";
+    private static final String ORDER_BY = "ORDER BY ";
     private final        int    collectionOptionsArgIndex;
     private final        Query  queryAnnotation;
 
@@ -87,6 +87,7 @@ public class CollectionOptionsQueryPart implements QueryPart {
             orderByClause.append(", ");
             sql.insert(pos, orderByClause);
         } else {
+            sql.append(" ");
             sql.append(ORDER_BY);
             sql.append(orderByClause);
         }
