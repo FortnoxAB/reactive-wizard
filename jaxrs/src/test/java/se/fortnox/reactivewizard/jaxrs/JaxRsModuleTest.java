@@ -7,12 +7,12 @@ import org.junit.Test;
 
 import java.util.Set;
 
-import static org.fest.assertions.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class JaxRsModuleTest {
     @Test
     public void shouldRegisterInterceptorBinding() {
-        TypeLiteral<Set<JaxRsResourceInterceptor>> type = new TypeLiteral<Set<JaxRsResourceInterceptor>>() {};
+        TypeLiteral<Set<JaxRsResourceInterceptor>> type = new TypeLiteral<>() {};
         Set<JaxRsResourceInterceptor> interceptors = Guice.createInjector(new JaxRsModule()).getInstance(Key.get(type));
 
         assertThat(interceptors).isNotNull();

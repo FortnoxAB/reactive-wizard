@@ -7,7 +7,7 @@ import org.junit.rules.ExpectedException;
 import se.fortnox.reactivewixard.jaxrs.WebExceptionMatcher;
 
 import static java.util.Optional.ofNullable;
-import static org.fest.assertions.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class WebExceptionMatcherTest {
     @Rule

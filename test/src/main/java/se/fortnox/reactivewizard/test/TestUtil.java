@@ -1,7 +1,6 @@
 package se.fortnox.reactivewizard.test;
 
 import org.assertj.core.api.AbstractThrowableAssert;
-import org.fest.assertions.ThrowableAssert;
 import org.mockito.ArgumentMatcher;
 
 import java.util.function.Consumer;
@@ -42,7 +41,7 @@ public final class TestUtil {
             @Override
             public boolean matches(Object argument) {
                 try {
-                    asserter.accept((T)argument);
+                    asserter.accept((T) argument);
                 } catch (Error t) {
                     error = t;
                     return false;
@@ -58,28 +57,6 @@ public final class TestUtil {
                 return "";
             }
         });
-    }
-
-    /**
-     * Assert the type of an exception.
-     * This method does not with AssertJ.
-     *
-     * @param throwable The exception to apply assertion on
-     * @param type      Expected type of exception
-     * @param <T>       The type of the expected exception
-     * @return The assertion for further assertion chaining
-     * @deprecated Use AssertJ and {@link #assertNestedException assertNestedException} instead
-     */
-    @Deprecated
-    public static <T extends Throwable> ThrowableAssert assertException(Throwable throwable, Class<T> type) {
-        while (throwable != null && !type.isAssignableFrom(throwable.getClass())) {
-            Throwable cause = throwable.getCause();
-            if (cause == throwable || cause == null) {
-                org.fest.assertions.Fail.fail("Expected exception of type " + type.getCanonicalName());
-            }
-            throwable = cause;
-        }
-        return org.fest.assertions.Assertions.assertThat(throwable);
     }
 
     /**

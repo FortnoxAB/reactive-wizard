@@ -10,7 +10,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static se.fortnox.reactivewizard.test.TestUtil.assertException;
 import static se.fortnox.reactivewizard.test.TestUtil.assertNestedException;
 import static se.fortnox.reactivewizard.test.TestUtil.matches;
 
@@ -32,55 +31,30 @@ public class TestUtilTest {
             verify(testClass).doNothing(matches(string -> assertThat(string).isEqualTo("expected")));
             fail("Expected ComparisonFailure, but none was thrown");
         } catch (ArgumentsAreDifferent comparisonFailure) {
-            assertThat(comparisonFailure.getActual()).isEqualTo("testClass.doNothing(\n" +
-                    "    \"unexpected\"\n" +
-                    ");\n");
-            assertThat(comparisonFailure.getExpected()).isEqualTo("testClass.doNothing(\n" +
-                "    expected:<\"[]expected\"> but was:<\"[un]expected\">\n" +
-                ");");
-            assertThat(comparisonFailure.getMessage()).isEqualTo("\n" +
-                    "Argument(s) are different! Wanted:\n" +
-                    "testClass.doNothing(\n" +
-                    "    expected:<\"[]expected\"> but was:<\"[un]expected\">\n" +
-                    ");\n" +
-                    "-> at se.fortnox.reactivewizard.test.TestUtilTest.testMatchesFailure(TestUtilTest.java:32)\n" +
-                    "Actual invocations have different arguments:\n" +
-                    "testClass.doNothing(\n" +
-                    "    \"unexpected\"\n" +
-                    ");\n" +
-                    "-> at se.fortnox.reactivewizard.test.TestUtilTest.testMatchesFailure(TestUtilTest.java:29)\n");
+            assertThat(comparisonFailure.getActual()).isEqualTo("""
+                    testClass.doNothing(
+                        "unexpected"
+                    );
+                    """);
+            assertThat(comparisonFailure.getExpected()).isEqualTo("""
+                    testClass.doNothing(
+                        expected:<"[]expected"> but was:<"[un]expected">
+                    );""");
+            assertThat(comparisonFailure.getMessage()).isEqualTo("""
+
+                    Argument(s) are different! Wanted:
+                    testClass.doNothing(
+                        expected:<"[]expected"> but was:<"[un]expected">
+                    );
+                    -> at se.fortnox.reactivewizard.test.TestUtilTest.testMatchesFailure(TestUtilTest.java:31)
+                    Actual invocations have different arguments:
+                    testClass.doNothing(
+                        "unexpected"
+                    );
+                    -> at se.fortnox.reactivewizard.test.TestUtilTest.testMatchesFailure(TestUtilTest.java:28)
+                    """);
         }
     }
-
-    @Test
-    public void testAssertTypeOfExceptionFest() {
-        TestException exception = new TestException();
-        assertException(exception, TestException.class);
-    }
-
-    @Test
-    public void testAssertExceptionHandlingNullFest() {
-        assertException(null, TestException.class);
-    }
-
-    @Test
-    public void testAssertTypeOfCauseFest() {
-        TestException exception = new TestException(new SQLException());
-        assertException(exception, SQLException.class);
-    }
-
-    @Test
-    public void testExceptionOfWrongTypeFest() {
-        TestException exception = new TestException(new SQLException());
-
-        try {
-            assertException(exception, IOException.class);
-            fail("Expected AssertionError, but none was thrown");
-        } catch (AssertionError assertionError) {
-            assertThat(assertionError).hasMessage("Expected exception of type java.io.IOException");
-        }
-    }
-
 
     @Test
     public void testAssertTypeOfException() {
