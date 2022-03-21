@@ -11,16 +11,13 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
-import reactor.core.publisher.Mono;
 import reactor.netty.DisposableServer;
 import reactor.netty.http.server.HttpServer;
-import reactor.netty.http.server.HttpServerConfig;
-import reactor.netty.tcp.TcpServer;
 import se.fortnox.reactivewizard.test.LoggingMockUtil;
 
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -28,7 +25,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.*;
 import static reactor.core.publisher.Mono.empty;
-import static reactor.core.publisher.Mono.just;
 import static se.fortnox.reactivewizard.test.TestUtil.matches;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -199,5 +195,23 @@ public class RwServerTest {
         verify(mockAppender).append(matches(log ->
             assertThat(log.getMessage().getFormattedMessage()).matches("Shutdown dependency completed, continue...")
         ));
+    }
+
+    @Test
+    public void shouldUseServerConfigurers() {
+        RwServer rwServer = null;
+
+        try {
+            final ServerConfig config = new ServerConfig();
+            config.setPort(0);
+            final ReactorServerConfigurer mock = mock(ReactorServerConfigurer.class);
+            when(mock.configure(any(HttpServer.class))).thenAnswer(invocationOnMock -> {
+                return invocationOnMock.getArgument(0, HttpServer.class);
+            });
+            rwServer = new RwServer(config, compositeRequestHandler, connectionCounter, Set.of(mock));
+            verify(mock).configure(any(HttpServer.class));
+        } finally {
+            rwServer.getServer().disposeNow();
+        }
     }
 }

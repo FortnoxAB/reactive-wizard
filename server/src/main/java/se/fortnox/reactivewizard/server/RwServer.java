@@ -12,6 +12,8 @@ import reactor.netty.http.server.HttpServerRequest;
 import reactor.netty.http.server.HttpServerResponse;
 import rx.functions.Action0;
 import se.fortnox.reactivewizard.RequestHandler;
+import se.fortnox.reactivewizard.server.modifiers.NoContentFixConfigurer;
+import se.fortnox.reactivewizard.server.modifiers.RequestSizesConfigurer;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -47,8 +49,12 @@ public class RwServer extends Thread {
     private static Runnable blockShutdownUntil;
 
     @Inject
+    public RwServer(ServerConfig config, CompositeRequestHandler compositeRequestHandler, ConnectionCounter connectionCounter, Set<ReactorServerConfigurer> serverConfigurers) {
+        this(config, connectionCounter, createHttpServer(config, serverConfigurers), compositeRequestHandler);
+    }
+
     public RwServer(ServerConfig config, CompositeRequestHandler compositeRequestHandler, ConnectionCounter connectionCounter) {
-        this(config, connectionCounter, createHttpServer(config), compositeRequestHandler);
+        this(config, compositeRequestHandler, connectionCounter, Set.of(new NoContentFixConfigurer(), new RequestSizesConfigurer(config)));
     }
 
     RwServer(ServerConfig config, ConnectionCounter connectionCounter, HttpServer httpServer,
@@ -76,25 +82,24 @@ public class RwServer extends Thread {
         }
     }
 
-    private static HttpServer createHttpServer(ServerConfig config) {
+    private static HttpServer createHttpServer(ServerConfig config, Set<ReactorServerConfigurer> serverConfigurers) {
         if (!config.isEnabled()) {
             return null;
         }
 
-        return HttpServer
+        HttpServer server = HttpServer
             .create()
             .compress(COMPRESSION_THRESHOLD_BYTES)
             .compress(isCompressionEnabled(config).and(isCompressibleResponse()))
             .port(config.getPort())
             // Register a channel group, when invoking disposeNow() the implementation will wait for the active requests to finish
-            .channelGroup(new DefaultChannelGroup(new DefaultEventExecutor()))
-            .doOnChannelInit((connectionObserver, channel, socketAddress) -> {
-                NoContentFixConfigurator noContentFixConfigurator = new NoContentFixConfigurator();
-                noContentFixConfigurator.call(channel.pipeline());
-            })
-            .httpRequestDecoder(requestDecoderSpec -> requestDecoderSpec
-                .maxInitialLineLength(config.getMaxInitialLineLengthDefault())
-                .maxHeaderSize(config.getMaxHeaderSize()));
+            .channelGroup(new DefaultChannelGroup(new DefaultEventExecutor()));
+
+        for (ReactorServerConfigurer serverConfigurer : serverConfigurers) {
+            server = serverConfigurer.configure(server);
+        }
+
+        return server;
     }
 
     private static BiPredicate<HttpServerRequest, HttpServerResponse> isCompressibleResponse() {
