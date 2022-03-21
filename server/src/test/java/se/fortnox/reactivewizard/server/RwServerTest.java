@@ -16,8 +16,11 @@ import reactor.netty.http.server.HttpServer;
 import se.fortnox.reactivewizard.test.LoggingMockUtil;
 
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -198,20 +201,35 @@ public class RwServerTest {
     }
 
     @Test
-    public void shouldUseServerConfigurers() {
+    public void shouldUseServerConfigurersInPrioOrder() {
         RwServer rwServer = null;
 
         try {
             final ServerConfig config = new ServerConfig();
             config.setPort(0);
-            final ReactorServerConfigurer mock = mock(ReactorServerConfigurer.class);
-            when(mock.configure(any(HttpServer.class))).thenAnswer(invocationOnMock -> {
-                return invocationOnMock.getArgument(0, HttpServer.class);
+            AtomicBoolean firstCalledFirst = new AtomicBoolean();
+            final ReactorServerConfigurer configurer = mockConfigurerWithPrio(1, () -> {
+                final boolean result = firstCalledFirst.compareAndSet(false, true);
+                assertThat(result).isTrue();
             });
-            rwServer = new RwServer(config, compositeRequestHandler, connectionCounter, Set.of(mock));
-            verify(mock).configure(any(HttpServer.class));
+
+            final ReactorServerConfigurer configurer2 = mockConfigurerWithPrio(2, () -> {
+                assertThat(firstCalledFirst.get()).isTrue();
+            });
+
+            rwServer = new RwServer(config, compositeRequestHandler, connectionCounter, Set.of(configurer2, configurer));
         } finally {
             rwServer.getServer().disposeNow();
         }
+    }
+
+    private ReactorServerConfigurer mockConfigurerWithPrio(int prio, Runnable verifier) {
+        final ReactorServerConfigurer configurer = mock(ReactorServerConfigurer.class);
+        when(configurer.configure(any(HttpServer.class))).thenAnswer(invocationOnMock -> {
+            verifier.run();
+            return invocationOnMock.getArgument(0, HttpServer.class);
+        });
+        when(configurer.prio()).thenReturn(prio);
+        return configurer;
     }
 }

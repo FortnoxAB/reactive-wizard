@@ -19,13 +19,16 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiPredicate;
 
 import static java.util.Arrays.asList;
+import static java.util.Comparator.comparingInt;
 
 /**
  * Runs an Reactor @{@link HttpServer} with all registered @{@link RequestHandler}s.
@@ -96,7 +99,12 @@ public class RwServer extends Thread {
             // Register a channel group, when invoking disposeNow() the implementation will wait for the active requests to finish
             .channelGroup(new DefaultChannelGroup(new DefaultEventExecutor()));
 
-        for (ReactorServerConfigurer serverConfigurer : serverConfigurers) {
+        final List<ReactorServerConfigurer> orderedListByPrio = serverConfigurers
+            .stream()
+            .sorted(comparingInt(ReactorServerConfigurer::prio))
+            .toList();
+
+        for (ReactorServerConfigurer serverConfigurer : orderedListByPrio) {
             server = serverConfigurer.configure(server);
         }
 
