@@ -49,7 +49,8 @@ public class RwServer extends Thread {
     private static Runnable blockShutdownUntil;
 
     @Inject
-    public RwServer(ServerConfig config, CompositeRequestHandler compositeRequestHandler, ConnectionCounter connectionCounter, Set<ReactorServerConfigurer> serverConfigurers) {
+    public RwServer(ServerConfig config, CompositeRequestHandler compositeRequestHandler, ConnectionCounter connectionCounter,
+        Set<ReactorServerConfigurer> serverConfigurers) {
         this(config, connectionCounter, createHttpServer(config, serverConfigurers), compositeRequestHandler);
     }
 

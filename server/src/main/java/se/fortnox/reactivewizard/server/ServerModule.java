@@ -71,9 +71,9 @@ public class ServerModule implements AutoBindModule {
 
         binder.bind(RwServer.class).asEagerSingleton();
 
-        Multibinder<ReactorServerConfigurer> serverModifierMultibinder = Multibinder.newSetBinder(binder, new TypeLiteral<ReactorServerConfigurer>(){});
-        serverConfigurerScanner.getClasses().forEach(serverModifierClass -> {
-            serverModifierMultibinder.addBinding().to((Class<? extends ReactorServerConfigurer>)serverModifierClass);
+        Multibinder<ReactorServerConfigurer> serverModifierMultibinder = Multibinder.newSetBinder(binder, new TypeLiteral<ReactorServerConfigurer>() {
         });
+        serverConfigurerScanner.getClasses().forEach(serverModifierClass ->
+            serverModifierMultibinder.addBinding().to((Class<? extends ReactorServerConfigurer>)serverModifierClass));
     }
 }
