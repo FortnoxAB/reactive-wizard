@@ -16,7 +16,10 @@ public interface ReactorServerConfigurer {
     /**
      * Returns which prio this configurer has.
      *
-     * prio 1 will be executed before prio 2
+     * Configurer with prio 1 will be executed before prio 2
+     * which means that configurations executed in a configurer with prio2 could override configurations in prio1.
+     *
+     * Set a high number if the configuration is really important.
      *
      */
     default int prio() {
