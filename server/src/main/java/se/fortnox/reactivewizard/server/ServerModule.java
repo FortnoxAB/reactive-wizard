@@ -30,12 +30,14 @@ import java.util.Optional;
 public class ServerModule implements AutoBindModule {
 
     private final InjectAnnotatedScanner injectAnnotatedScanner;
-    private final ServerConfig           config;
+    private final ServerConfig            config;
+    private final ServerConfigurerScanner serverConfigurerScanner;
 
     @Inject
-    public ServerModule(InjectAnnotatedScanner injectAnnotatedScanner, ConfigFactory configFactory) {
+    public ServerModule(InjectAnnotatedScanner injectAnnotatedScanner, ConfigFactory configFactory, ServerConfigurerScanner serverConfigurerScanner) {
         this.injectAnnotatedScanner = injectAnnotatedScanner;
         this.config                 = configFactory.get(ServerConfig.class);
+        this.serverConfigurerScanner = serverConfigurerScanner;
     }
 
     @Override
@@ -68,5 +70,10 @@ public class ServerModule implements AutoBindModule {
         }
 
         binder.bind(RwServer.class).asEagerSingleton();
+
+        Multibinder<ReactorServerConfigurer> serverModifierMultibinder = Multibinder.newSetBinder(binder, new TypeLiteral<ReactorServerConfigurer>() {
+        });
+        serverConfigurerScanner.getClasses().forEach(serverModifierClass ->
+            serverModifierMultibinder.addBinding().to((Class<? extends ReactorServerConfigurer>)serverModifierClass));
     }
 }

@@ -11,16 +11,16 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
-import reactor.core.publisher.Mono;
 import reactor.netty.DisposableServer;
 import reactor.netty.http.server.HttpServer;
-import reactor.netty.http.server.HttpServerConfig;
-import reactor.netty.tcp.TcpServer;
 import se.fortnox.reactivewizard.test.LoggingMockUtil;
 
+import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -28,7 +28,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.*;
 import static reactor.core.publisher.Mono.empty;
-import static reactor.core.publisher.Mono.just;
 import static se.fortnox.reactivewizard.test.TestUtil.matches;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -199,5 +198,38 @@ public class RwServerTest {
         verify(mockAppender).append(matches(log ->
             assertThat(log.getMessage().getFormattedMessage()).matches("Shutdown dependency completed, continue...")
         ));
+    }
+
+    @Test
+    public void shouldUseServerConfigurersInPrioOrder() {
+        RwServer rwServer = null;
+
+        try {
+            final ServerConfig config = new ServerConfig();
+            config.setPort(0);
+            AtomicBoolean firstCalledFirst = new AtomicBoolean();
+            final ReactorServerConfigurer configurer = mockConfigurerWithPrio(1, () -> {
+                final boolean result = firstCalledFirst.compareAndSet(false, true);
+                assertThat(result).isTrue();
+            });
+
+            final ReactorServerConfigurer configurer2 = mockConfigurerWithPrio(2, () -> {
+                assertThat(firstCalledFirst.get()).isTrue();
+            });
+
+            rwServer = new RwServer(config, compositeRequestHandler, connectionCounter, Set.of(configurer2, configurer));
+        } finally {
+            rwServer.getServer().disposeNow();
+        }
+    }
+
+    private ReactorServerConfigurer mockConfigurerWithPrio(int prio, Runnable verifier) {
+        final ReactorServerConfigurer configurer = mock(ReactorServerConfigurer.class);
+        when(configurer.configure(any(HttpServer.class))).thenAnswer(invocationOnMock -> {
+            verifier.run();
+            return invocationOnMock.getArgument(0, HttpServer.class);
+        });
+        when(configurer.prio()).thenReturn(prio);
+        return configurer;
     }
 }
