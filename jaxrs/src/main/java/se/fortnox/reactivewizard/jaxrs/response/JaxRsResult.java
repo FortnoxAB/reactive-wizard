@@ -11,6 +11,7 @@ import rx.functions.Func1;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static javax.ws.rs.core.HttpHeaders.CONTENT_LENGTH;
@@ -46,6 +47,14 @@ public class JaxRsResult<T> {
 
     public JaxRsResult<T> doOnOutput(Action1<T> action) {
         output = output.doOnNext(action::call);
+        return this;
+    }
+
+    public JaxRsResult<T> doOnEmpty(Runnable action) {
+        output = output.switchIfEmpty(Flux.defer(() -> {
+            action.run();
+            return Flux.empty();
+        }));
         return this;
     }
 
