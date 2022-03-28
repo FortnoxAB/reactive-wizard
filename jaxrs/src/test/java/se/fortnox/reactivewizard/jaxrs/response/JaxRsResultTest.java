@@ -9,12 +9,12 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.fest.assertions.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class JaxRsResultTest {
 
     @Test
-    public void shouldInvokeDonEmptyRunnableSuppliedWhenEmpty() {
+    public void shouldInvokeDoOnEmptyRunnableSuppliedWhenEmpty() {
 
         JaxRsResult jaxRsResult = new JaxRsResult(Flux.empty(), HttpResponseStatus.NO_CONTENT, flux -> flux, Collections.emptyMap());
 

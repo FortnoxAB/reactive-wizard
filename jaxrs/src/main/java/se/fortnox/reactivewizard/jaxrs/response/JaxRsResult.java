@@ -11,7 +11,6 @@ import rx.functions.Func1;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static javax.ws.rs.core.HttpHeaders.CONTENT_LENGTH;
