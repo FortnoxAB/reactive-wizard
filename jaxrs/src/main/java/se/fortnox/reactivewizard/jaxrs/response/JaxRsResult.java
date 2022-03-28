@@ -49,6 +49,14 @@ public class JaxRsResult<T> {
         return this;
     }
 
+    public JaxRsResult<T> doOnEmpty(Runnable action) {
+        output = output.switchIfEmpty(Flux.defer(() -> {
+            action.run();
+            return Flux.empty();
+        }));
+        return this;
+    }
+
     public JaxRsResult<T> map(Func1<Flux<T>, Flux<T>> mapFunction) {
         output = mapFunction.call(output);
         return this;
