@@ -20,7 +20,7 @@ public class CollectionOptions {
     @QueryParam("order")
     private SortOrder order;
 
-    private boolean lastRecord = true;
+    private boolean lastRecord = false;
 
     public CollectionOptions() {
     }
