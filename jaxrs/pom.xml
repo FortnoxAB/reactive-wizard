@@ -63,7 +63,19 @@
             <groupId>io.projectreactor.netty</groupId>
             <artifactId>reactor-netty</artifactId>
         </dependency>
-	</dependencies>
+		<dependency>
+			<groupId>se.fortnox.reactivewizard</groupId>
+			<artifactId>reactivewizard-dao</artifactId>
+			<scope>test</scope>
+		</dependency>
+        <dependency>
+            <groupId>se.fortnox.reactivewizard</groupId>
+            <artifactId>reactivewizard-dao</artifactId>
+            <classifier>tests</classifier>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
 
 	<build>
 		<plugins>
