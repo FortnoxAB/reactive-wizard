@@ -12,7 +12,7 @@ import java.lang.annotation.Annotation;
 /**
  * Bind a query parameter to a method parameter.
  */
-class QueryParamResolver<T> extends AnnotatedParamResolver<T> {
+public class QueryParamResolver<T> extends AnnotatedParamResolver<T> {
 
     public QueryParamResolver(Deserializer<T> deserializer, Annotation queryParamAnnotation, String defaultValue) {
         super(deserializer, ((QueryParam)queryParamAnnotation).value(), defaultValue);

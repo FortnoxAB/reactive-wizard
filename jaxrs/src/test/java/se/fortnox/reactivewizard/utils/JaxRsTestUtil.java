@@ -13,6 +13,15 @@ import se.fortnox.reactivewizard.RequestHandler;
 import se.fortnox.reactivewizard.jaxrs.JaxRsRequestHandler;
 import se.fortnox.reactivewizard.jaxrs.JaxRsResourceFactory;
 import se.fortnox.reactivewizard.jaxrs.JaxRsResources;
+import se.fortnox.reactivewizard.jaxrs.RequestLogger;
+import se.fortnox.reactivewizard.jaxrs.params.ParamResolverFactories;
+import se.fortnox.reactivewizard.jaxrs.params.ParamResolvers;
+import se.fortnox.reactivewizard.jaxrs.params.ParamTypeResolver;
+import se.fortnox.reactivewizard.jaxrs.params.annotated.AnnotatedParamResolverFactories;
+import se.fortnox.reactivewizard.jaxrs.params.deserializing.DeserializerFactory;
+import se.fortnox.reactivewizard.jaxrs.response.JaxRsResultFactoryFactory;
+import se.fortnox.reactivewizard.jaxrs.response.ResultTransformerFactories;
+import se.fortnox.reactivewizard.json.JsonSerializerFactory;
 import se.fortnox.reactivewizard.mocks.MockHttpServerRequest;
 import se.fortnox.reactivewizard.mocks.MockHttpServerResponse;
 
@@ -78,7 +87,11 @@ public class JaxRsTestUtil {
 
     private static JaxRsRequestHandler getJaxRsRequestHandler(Object... services) {
         return new JaxRsRequestHandler(services,
-            new JaxRsResourceFactory(), new ExceptionHandler(), true);
+            new JaxRsResourceFactory(
+                new ParamResolverFactories(new DeserializerFactory(), new ParamResolvers(),
+                    new AnnotatedParamResolverFactories(new DeserializerFactory()), new ParamTypeResolver()),
+                new JaxRsResultFactoryFactory(),
+                new RequestLogger()), new ExceptionHandler(), true);
     }
 
     public static MockHttpServerResponse processRequestWithHandler(JaxRsRequestHandler handler, HttpServerRequest request) {

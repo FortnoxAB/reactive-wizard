@@ -22,6 +22,7 @@ public class PagingOperator<T> implements Operator<T, T> {
 
             @Override
             public void onCompleted() {
+                collectionOptions.setLastRecord(count <= limit);
                 if (!child.isUnsubscribed()) {
                     child.onCompleted();
                 }
@@ -42,8 +43,6 @@ public class PagingOperator<T> implements Operator<T, T> {
                 count++;
                 if (count <= limit) {
                     child.onNext(item);
-                } else if (collectionOptions != null) {
-                    collectionOptions.setLastRecord(false);
                 }
             }
         };

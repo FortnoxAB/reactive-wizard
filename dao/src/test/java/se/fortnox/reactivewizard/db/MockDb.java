@@ -113,6 +113,33 @@ public class MockDb {
         }
     }
 
+    public <T> T mockDao(int cnt, Class<T> tClass) throws SQLException {
+        con = mock(Connection.class);
+        mockDbResultSet(cnt);
+        DbProxy   dbProxy = new DbProxy(new DatabaseConfig(), () -> con);
+        T dao     = dbProxy.create(tClass);
+        return dao;
+    }
+
+    public void mockDbResultSet(int cnt) throws SQLException {
+        PreparedStatement ps        = mock(PreparedStatement.class);
+        ParameterMetaData paramMeta = mock(ParameterMetaData.class);
+        when(paramMeta.getParameterCount()).thenReturn(0);
+        when(ps.getParameterMetaData()).thenReturn(paramMeta);
+        when(con.prepareStatement(any())).thenReturn(ps);
+
+        ResultSet         rs   = mock(ResultSet.class);
+        ResultSetMetaData meta = mock(ResultSetMetaData.class);
+        when(rs.getMetaData()).thenReturn(meta);
+        OngoingStubbing<Boolean> rsNext = when(rs.next());
+        for (int i = 0; i < cnt; i++) {
+            rsNext = rsNext.thenReturn(true);
+        }
+        rsNext = rsNext.thenReturn(false);
+
+        when(ps.executeQuery()).thenReturn(rs);
+    }
+
     public ConnectionProvider getConnectionProvider() {
         if (connectionProvider != null) {
             throw new RuntimeException("getConnectionProvider called more than once");

@@ -1430,7 +1430,7 @@ public class HttpClientTest {
 
     @Test
     public void shouldHandleHttpsAgainstKnownHost() throws URISyntaxException {
-        HttpClientConfig httpClientConfig = new HttpClientConfig("https://sha512.badssl.com/");
+        HttpClientConfig httpClientConfig = new HttpClientConfig("https://www.google.com");
         Injector         injector         = injectorWithProgrammaticHttpClientConfig(httpClientConfig);
         ReactorRxClientProvider rxClientProvider = injector.getInstance(ReactorRxClientProvider.class);
 
