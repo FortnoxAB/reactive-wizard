@@ -14,6 +14,10 @@ public class FluxRxConverter {
         return Flux.from(RxReactiveStreams.toPublisher(result));
     }
 
+    public static <T> Mono<T> observableToMono(Observable<T> result) {
+        return Mono.from(RxReactiveStreams.toPublisher(result));
+    }
+
     /**
      * Create converter from a reactive type to Flux.
      * @param returnType the return type
@@ -114,7 +118,7 @@ public class FluxRxConverter {
         } else if (Flux.class.isAssignableFrom(targetReactiveType)) {
             return FluxRxConverter::observableToFlux;
         } else if (Mono.class.isAssignableFrom(targetReactiveType)) {
-            return result -> observableToFlux(result).single();
+            return FluxRxConverter::observableToMono;
         }
         return null;
     }

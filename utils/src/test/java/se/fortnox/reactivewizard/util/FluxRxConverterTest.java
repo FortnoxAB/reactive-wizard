@@ -40,6 +40,9 @@ public class FluxRxConverterTest {
 
         Mono<String> monoResult = (Mono<String>) FluxRxConverter.converterFromObservable(Mono.class).apply(Observable.just(nbrSingle));
         assertThat(monoResult.block()).isEqualTo(nbrSingle);
+
+        Mono<String> emptyMonoResult = (Mono<String>) FluxRxConverter.converterFromObservable(Mono.class).apply(Observable.empty());
+        assertThat(emptyMonoResult.block()).isNull();
     }
 
     @Test
