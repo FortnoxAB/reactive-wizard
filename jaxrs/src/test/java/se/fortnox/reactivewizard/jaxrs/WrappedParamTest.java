@@ -65,8 +65,7 @@ public class WrappedParamTest {
                 new JaxRsResourceFactory(),
                 new ExceptionHandler(),
                 new ByteBufCollector(),
-                false,
-                new JaxRsResourceInterceptors(emptySet())
+                false
         );
     }
 

@@ -406,7 +406,6 @@ public class JaxRsResourceTest {
                     .findAndRegisterModules()
                     .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
                     .setDateFormat(new CustomDateFormat()));
-                Multibinder.newSetBinder(binder(), JaxRsResourceInterceptor.class);
             }
         };
         Injector injector = Guice.createInjector(customDateModule);
