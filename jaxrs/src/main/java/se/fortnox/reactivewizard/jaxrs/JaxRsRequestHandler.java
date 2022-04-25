@@ -11,7 +11,6 @@ import se.fortnox.reactivewizard.util.DebugUtil;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.Collections;
 
 /**
  * Handles incoming requests. If the request matches a resource an Observable which completes the request is returned.
