@@ -11,7 +11,6 @@ import se.fortnox.reactivewizard.util.DebugUtil;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.Collections;
 
 /**
  * Handles incoming requests. If the request matches a resource an Observable which completes the request is returned.
@@ -21,53 +20,33 @@ public class JaxRsRequestHandler implements RequestHandler {
     private final JaxRsResources   resources;
     private final ExceptionHandler exceptionHandler;
     private final ByteBufCollector          collector;
-    private final JaxRsResourceInterceptors requestInterceptors;
 
     @Inject
     public JaxRsRequestHandler(JaxRsResourcesProvider services,
                                JaxRsResourceFactory jaxRsResourceFactory,
                                ExceptionHandler exceptionHandler,
-                               ByteBufCollector collector,
-                               JaxRsResourceInterceptors requestInterceptors
+                               ByteBufCollector collector
     ) {
         this(services.getResources(),
             jaxRsResourceFactory,
             exceptionHandler,
             collector,
-            null,
-            requestInterceptors);
-    }
-
-    public JaxRsRequestHandler(JaxRsResourcesProvider services,
-        JaxRsResourceFactory jaxRsResourceFactory,
-        ExceptionHandler exceptionHandler,
-        ByteBufCollector collector) {
-        this(services.getResources(), jaxRsResourceFactory, exceptionHandler, collector, null,
-            new JaxRsResourceInterceptors(Collections.emptySet()));
+            null);
     }
 
     public JaxRsRequestHandler(Object[] services,
         JaxRsResourceFactory jaxRsResourceFactory,
         ExceptionHandler exceptionHandler,
-        Boolean classReloading) {
-        this(services, jaxRsResourceFactory, exceptionHandler, classReloading, new JaxRsResourceInterceptors(Collections.emptySet()));
-    }
-
-    public JaxRsRequestHandler(Object[] services,
-        JaxRsResourceFactory jaxRsResourceFactory,
-        ExceptionHandler exceptionHandler,
-        Boolean classReloading,
-        JaxRsResourceInterceptors requestInterceptors
+        Boolean classReloading
     ) {
-        this(services, jaxRsResourceFactory, exceptionHandler, new ByteBufCollector(), classReloading, requestInterceptors);
+        this(services, jaxRsResourceFactory, exceptionHandler, new ByteBufCollector(), classReloading);
     }
 
     public JaxRsRequestHandler(Object[] services,
         JaxRsResourceFactory jaxRsResourceFactory,
         ExceptionHandler exceptionHandler,
         ByteBufCollector collector,
-        Boolean classReloading,
-        JaxRsResourceInterceptors requestInterceptors
+        Boolean classReloading
     ) {
         this.collector = collector;
         this.exceptionHandler = exceptionHandler;
@@ -75,7 +54,6 @@ public class JaxRsRequestHandler implements RequestHandler {
             classReloading = DebugUtil.IS_DEBUG;
         }
         this.resources = new JaxRsResources(services, jaxRsResourceFactory, classReloading);
-        this.requestInterceptors = requestInterceptors;
     }
 
     /**
@@ -99,17 +77,13 @@ public class JaxRsRequestHandler implements RequestHandler {
         long requestStartTime = System.currentTimeMillis();
 
         Publisher<Void> resourceCall = null;
-        JaxRsResourceInterceptor.JaxRsResourceContext resourceContext = new JaxRsResourceCallContext(request, resource);
-        try {
-            requestInterceptors.preHandle(resourceContext);
-            resourceCall = resource.call(jaxRsRequest)
-                .flatMap(result -> Mono.from(writeResult(response, result)))
-                .onErrorResume(e -> Mono.from(exceptionHandler.handleException(request, response, e)))
-                .doAfterTerminate(() -> resource.log(request, response, requestStartTime));
-            return resourceCall;
-        } finally {
-            requestInterceptors.postHandle(resourceContext, resourceCall);
-        }
+
+        resourceCall = resource.call(jaxRsRequest)
+            .flatMap(result -> Mono.from(writeResult(response, result)))
+            .onErrorResume(e -> Mono.from(exceptionHandler.handleException(request, response, e)))
+            .doAfterTerminate(() -> resource.log(request, response, requestStartTime));
+        return resourceCall;
+
     }
 
     /**

@@ -24,8 +24,7 @@ public class StatusTest {
             new JaxRsResourceFactory(),
             exceptionHandler,
             new ByteBufCollector(),
-            false,
-            new JaxRsResourceInterceptors(emptySet())
+            false
     );
 
     @Test
