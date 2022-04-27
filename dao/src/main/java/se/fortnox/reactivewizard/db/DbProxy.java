@@ -32,9 +32,9 @@ public class DbProxy implements InvocationHandler {
 
     private final DbStatementFactoryFactory               dbStatementFactoryFactory;
     private final Scheduler                               scheduler;
-    private final Map<Method, ObservableStatementFactory> statementFactories;
+    protected final Map<Method, ObservableStatementFactory> statementFactories;
     private final ConnectionScheduler                     connectionScheduler;
-    private final Function<Object[], String>              paramSerializer;
+    protected final Function<Object[], String>            paramSerializer;
     private final DatabaseConfig                          databaseConfig;
 
     @Inject
@@ -70,7 +70,7 @@ public class DbProxy implements InvocationHandler {
             new JsonSerializerFactory());
     }
 
-    private DbProxy(DatabaseConfig databaseConfig,
+    protected DbProxy(DatabaseConfig databaseConfig,
         Scheduler scheduler,
         ConnectionProvider connectionProvider,
         DbStatementFactoryFactory dbStatementFactoryFactory,
