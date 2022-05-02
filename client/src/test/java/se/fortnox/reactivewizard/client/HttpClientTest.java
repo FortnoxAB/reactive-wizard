@@ -74,6 +74,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -183,7 +184,8 @@ public class HttpClientTest {
         ObjectMapper mapper = new ObjectMapper().findAndRegisterModules()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         requestLogger = new RequestLogger();
-        HttpClient client = new HttpClient(config, new ReactorRxClientProvider(config, healthRecorder), mapper, new RequestParameterSerializers(), Collections.emptySet(), requestLogger);
+        HttpClient client = new HttpClient(config, new ReactorRxClientProvider(config, healthRecorder), mapper, new RequestParameterSerializers(
+            Set.of(new SessionParameterSerializer())), Collections.emptySet(), requestLogger);
         return client.create(TestResource.class);
     }
 
@@ -1241,7 +1243,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldNotWriteRequestAuthenticatorsToRequestBody() {
+    public void shouldNotWriteParametersWithRequestParameterSerializersToRequestBody() {
         AtomicReference<HttpServerRequest> recordedRequest     = new AtomicReference<>();
         AtomicReference<String>                     recordedRequestBody = new AtomicReference<>();
         DisposableServer server = HttpServer.create().port(0).handle((request, response) -> {
@@ -1254,12 +1256,12 @@ public class HttpClientTest {
         }).bindNow();
 
         TestResource resource = getHttpProxy(server.port());
-        SessionImpl sessionImpl = new SessionImpl();
-        sessionImpl.setSessionId(UUID.randomUUID());
-        resource.postWithRequestAuthenticatorParam(sessionImpl).toBlocking().singleOrDefault(null);
+
+        final SessionImpl session = new SessionImpl();
+        resource.postWithRequestAuthenticatorParam(session).toBlocking().singleOrDefault(null);
 
         assertThat(recordedRequestBody.get()).isNull();
-        assertThat(recordedRequest.get().requestHeaders().get("SESSION")).isEqualTo(sessionImpl.getSessionId().toString());
+        assertThat(recordedRequest.get().requestHeaders().get("SESSION")).isEqualTo(session.getSessionId().toString());
 
         server.disposeNow();
     }
@@ -1834,26 +1836,23 @@ public class HttpClientTest {
 
     private interface SessionInterface {
         UUID getSessionId();
-        void setSessionId(UUID sessionId);
     }
 
-    private class SessionImpl implements SessionInterface, RequestAuthenticator {
+    private static class SessionImpl implements SessionInterface {
 
-        private UUID sessionId;
-
-        @Override
-        public void authenticate(RequestBuilder request) {
-            request.addHeader("SESSION", sessionId.toString());
-        }
+        private UUID sessionId = UUID.randomUUID();
 
         @Override
         public UUID getSessionId() {
             return this.sessionId;
         }
+    }
+
+    private static class SessionParameterSerializer implements RequestParameterSerializer<SessionInterface> {
 
         @Override
-        public void setSessionId(UUID sessionId) {
-            this.sessionId = sessionId;
+        public void addParameter(SessionInterface param, RequestBuilder request) {
+            request.addHeader("SESSION", param.getSessionId().toString());
         }
     }
 }
