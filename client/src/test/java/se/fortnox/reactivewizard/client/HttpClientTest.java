@@ -1241,6 +1241,30 @@ public class HttpClientTest {
     }
 
     @Test
+    public void shouldNotWriteRequestAuthenticatorsToRequestBody() {
+        AtomicReference<HttpServerRequest> recordedRequest     = new AtomicReference<>();
+        AtomicReference<String>                     recordedRequestBody = new AtomicReference<>();
+        DisposableServer server = HttpServer.create().port(0).handle((request, response) -> {
+            recordedRequest.set(request);
+            response.status(HttpResponseStatus.CREATED);
+            return request.receive().flatMap(buf -> {
+                recordedRequestBody.set(buf.toString(Charset.defaultCharset()));
+                return Flux.empty();
+            });
+        }).bindNow();
+
+        TestResource resource = getHttpProxy(server.port());
+        SessionImpl sessionImpl = new SessionImpl();
+        sessionImpl.setSessionId(UUID.randomUUID());
+        resource.postWithRequestAuthenticatorParam(sessionImpl).toBlocking().singleOrDefault(null);
+
+        assertThat(recordedRequestBody.get()).isNull();
+        assertThat(recordedRequest.get().requestHeaders().get("SESSION")).isEqualTo(sessionImpl.getSessionId().toString());
+
+        server.disposeNow();
+    }
+
+    @Test
     public void shouldUseConsumesAnnotationAsContentTypeHeader() {
         AtomicReference<HttpServerRequest> recordedRequest = new AtomicReference<>();
         DisposableServer                   server          = startServer(OK, "", recordedRequest::set);
@@ -1742,6 +1766,9 @@ public class HttpClientTest {
         );
 
         @POST
+        Observable<String> postWithRequestAuthenticatorParam(SessionInterface session);
+
+        @POST
         @Consumes("my-test-value")
         Observable<String> consumesAnnotation();
 
@@ -1802,6 +1829,31 @@ public class HttpClientTest {
 
         public void setName(String name) {
             this.name = name;
+        }
+    }
+
+    private interface SessionInterface {
+        UUID getSessionId();
+        void setSessionId(UUID sessionId);
+    }
+
+    private class SessionImpl implements SessionInterface, RequestAuthenticator {
+
+        private UUID sessionId;
+
+        @Override
+        public void authenticate(RequestBuilder request) {
+            request.addHeader("SESSION", sessionId.toString());
+        }
+
+        @Override
+        public UUID getSessionId() {
+            return this.sessionId;
+        }
+
+        @Override
+        public void setSessionId(UUID sessionId) {
+            this.sessionId = sessionId;
         }
     }
 }

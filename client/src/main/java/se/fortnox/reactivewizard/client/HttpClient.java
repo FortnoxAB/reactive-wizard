@@ -406,7 +406,7 @@ public class HttpClient implements InvocationHandler {
             if (formParam != null) {
                 addFormParamToOutput(output, value, formParam);
                 requestBuilder.getHeaders().put(CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED);
-            } else if (isBodyArg(types[i], annotations[i])) {
+            } else if (isBodyArg(value, types[i], annotations[i])) {
                 try {
                     if (!requestBuilder.getHeaders().containsKey(CONTENT_TYPE)) {
                         requestBuilder.getHeaders().put(CONTENT_TYPE, APPLICATION_JSON);
@@ -451,13 +451,14 @@ public class HttpClient implements InvocationHandler {
         return null;
     }
 
-    protected boolean isBodyArg(@SuppressWarnings("unused") Class<?> cls, Annotation[] annotations) {
+    protected boolean isBodyArg(Object parameter, @SuppressWarnings("unused") Class<?> cls, Annotation[] annotations) {
         for (Annotation annotation : annotations) {
             if (annotation instanceof QueryParam || annotation instanceof PathParam || annotation instanceof HeaderParam || annotation instanceof CookieParam) {
                 return false;
             }
         }
-        return true;
+
+        return !(parameter instanceof RequestAuthenticator);
     }
 
     protected Mono<Response<Flux<?>>> handleError(RequestBuilder request, RwHttpClientResponse response) {
@@ -527,6 +528,11 @@ public class HttpClient implements InvocationHandler {
         applyPreRequestHooks(request);
 
         addContent(method, arguments, request);
+
+        RequestAuthenticator requestAuthenticator = getRequestAuthenticator(arguments);
+        if (requestAuthenticator != null) {
+            requestAuthenticator.authenticate(request);
+        }
 
         return request;
     }
@@ -607,11 +613,7 @@ public class HttpClient implements InvocationHandler {
     }
 
     protected String urlEncode(String path) {
-        try {
-            return URLEncoder.encode(path, "UTF-8");
-        } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException(e);
-        }
+        return URLEncoder.encode(path, StandardCharsets.UTF_8);
     }
 
     protected String getPath(Method method, Object[] arguments, JaxRsMeta meta) {
@@ -785,6 +787,15 @@ public class HttpClient implements InvocationHandler {
             this.getter      = getter;
             this.annotations = annotations;
         }
+    }
+
+    protected RequestAuthenticator getRequestAuthenticator(Object[] args) {
+        for (Object argument : args) {
+            if (argument instanceof RequestAuthenticator requestAuthenticator) {
+                return requestAuthenticator;
+            }
+        }
+        return null;
     }
 
 }
