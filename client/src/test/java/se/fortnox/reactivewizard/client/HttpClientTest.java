@@ -74,6 +74,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -183,7 +184,8 @@ public class HttpClientTest {
         ObjectMapper mapper = new ObjectMapper().findAndRegisterModules()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         requestLogger = new RequestLogger();
-        HttpClient client = new HttpClient(config, new ReactorRxClientProvider(config, healthRecorder), mapper, new RequestParameterSerializers(), Collections.emptySet(), requestLogger);
+        HttpClient client = new HttpClient(config, new ReactorRxClientProvider(config, healthRecorder), mapper, new RequestParameterSerializers(
+            Set.of(new SessionParameterSerializer())), Collections.emptySet(), requestLogger);
         return client.create(TestResource.class);
     }
 
@@ -1241,6 +1243,30 @@ public class HttpClientTest {
     }
 
     @Test
+    public void shouldNotWriteParametersWithRequestParameterSerializersToRequestBody() {
+        AtomicReference<HttpServerRequest> recordedRequest     = new AtomicReference<>();
+        AtomicReference<String>                     recordedRequestBody = new AtomicReference<>();
+        DisposableServer server = HttpServer.create().port(0).handle((request, response) -> {
+            recordedRequest.set(request);
+            response.status(HttpResponseStatus.CREATED);
+            return request.receive().flatMap(buf -> {
+                recordedRequestBody.set(buf.toString(Charset.defaultCharset()));
+                return Flux.empty();
+            });
+        }).bindNow();
+
+        TestResource resource = getHttpProxy(server.port());
+
+        final SessionImpl session = new SessionImpl();
+        resource.postWithRequestAuthenticatorParam(session).toBlocking().singleOrDefault(null);
+
+        assertThat(recordedRequestBody.get()).isNull();
+        assertThat(recordedRequest.get().requestHeaders().get("SESSION")).isEqualTo(session.getSessionId().toString());
+
+        server.disposeNow();
+    }
+
+    @Test
     public void shouldUseConsumesAnnotationAsContentTypeHeader() {
         AtomicReference<HttpServerRequest> recordedRequest = new AtomicReference<>();
         DisposableServer                   server          = startServer(OK, "", recordedRequest::set);
@@ -1742,6 +1768,9 @@ public class HttpClientTest {
         );
 
         @POST
+        Observable<String> postWithRequestAuthenticatorParam(SessionInterface session);
+
+        @POST
         @Consumes("my-test-value")
         Observable<String> consumesAnnotation();
 
@@ -1802,6 +1831,28 @@ public class HttpClientTest {
 
         public void setName(String name) {
             this.name = name;
+        }
+    }
+
+    private interface SessionInterface {
+        UUID getSessionId();
+    }
+
+    private static class SessionImpl implements SessionInterface {
+
+        private UUID sessionId = UUID.randomUUID();
+
+        @Override
+        public UUID getSessionId() {
+            return this.sessionId;
+        }
+    }
+
+    private static class SessionParameterSerializer implements RequestParameterSerializer<SessionInterface> {
+
+        @Override
+        public void addParameter(SessionInterface param, RequestBuilder request) {
+            request.addHeader("SESSION", param.getSessionId().toString());
         }
     }
 }

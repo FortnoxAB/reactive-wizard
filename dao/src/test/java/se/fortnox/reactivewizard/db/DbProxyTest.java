@@ -1,8 +1,10 @@
 package se.fortnox.reactivewizard.db;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.inject.Injector;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mockito;
 import rx.Observable;
 import rx.Scheduler;
 import rx.Subscriber;
@@ -11,16 +13,20 @@ import rx.observers.TestSubscriber;
 import rx.schedulers.Schedulers;
 import se.fortnox.reactivewizard.config.TestInjector;
 import se.fortnox.reactivewizard.db.config.DatabaseConfig;
+import se.fortnox.reactivewizard.json.JsonSerializerFactory;
 
+import java.lang.reflect.Type;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.YearMonth;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.doThrow;
@@ -46,6 +52,26 @@ public class DbProxyTest {
         verify(mockDb.getPreparedStatement()).close();
         verify(mockDb.getResultSet()).close();
         verify(mockDb.getConnection()).close();
+    }
+
+    @Test
+    public void shouldReuseTypeReference() {
+        final JsonSerializerFactory       jsonSerialierFactoryReal     = new JsonSerializerFactory();
+        final JsonSerializerFactory       jsonSerializerFactory        = Mockito.spy(jsonSerialierFactoryReal);
+        AtomicReference<TypeReference<?>> typeReferenceAtomicReference = new AtomicReference<>();
+
+        when(jsonSerializerFactory.createStringSerializer(any(TypeReference.class))).thenAnswer(invocationOnMock -> {
+            final TypeReference<?> argument = invocationOnMock.getArgument(0);
+            typeReferenceAtomicReference.set(argument);
+            return jsonSerialierFactoryReal.createStringSerializer(argument);
+        });
+        new DbProxy(new DatabaseConfig(), null, null, jsonSerializerFactory);
+
+        final TypeReference<?> firstTypeReference = typeReferenceAtomicReference.get();
+        new DbProxy(new DatabaseConfig(), null, null, jsonSerializerFactory);
+        final TypeReference<?> secondTypeReference = typeReferenceAtomicReference.get();
+
+        assertThat(firstTypeReference).isSameAs(secondTypeReference);
     }
 
     @Test

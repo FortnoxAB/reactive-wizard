@@ -23,46 +23,60 @@ public class CollectionOptionsTest {
     @Test
     public void shouldAddLimitFromCollectionOptions() throws SQLException {
         mockDb.addRows(4);
-        assertThat(collectionOptionsDao.selectWithPaging(new CollectionOptions(3, null)).toList().toBlocking().single()).hasSize(3);
+        final CollectionOptions collectionOptions = new CollectionOptions(3, null);
+        assertThat(collectionOptionsDao.selectWithPaging(collectionOptions).toList().toBlocking().single()).hasSize(3);
         mockDb.verifySelect("select * from table LIMIT 4");
+        assertThat(collectionOptions.isLastRecord()).isFalse();
     }
 
     @Test
     public void shouldAddOffsetFromCollectionOptions() throws SQLException {
         mockDb.addRows(3);
-        assertThat(collectionOptionsDao.selectWithPaging(new CollectionOptions(null, 3)).toList().toBlocking().single()).hasSize(3);
+        final CollectionOptions collectionOptions = new CollectionOptions(null, 3);
+        assertThat(collectionOptionsDao.selectWithPaging(collectionOptions).toList().toBlocking().single()).hasSize(3);
         mockDb.verifySelect("select * from table LIMIT 101 OFFSET 3");
+        assertThat(collectionOptions.isLastRecord()).isTrue();
     }
 
     @Test
     public void shouldAddLimitAndOffsetFromCollectionOptions() throws SQLException {
         mockDb.addRows(4);
-        assertThat(collectionOptionsDao.selectWithPaging(new CollectionOptions(3, 3)).toList().toBlocking().single()).hasSize(3);
+        final CollectionOptions collectionOptions = new CollectionOptions(3, 3);
+        assertThat(collectionOptionsDao.selectWithPaging(collectionOptions).toList().toBlocking().single()).hasSize(3);
         mockDb.verifySelect("select * from table LIMIT 4 OFFSET 3");
+        assertThat(collectionOptions.isLastRecord()).isFalse();
     }
 
     @Test
     public void shouldNotSetOffsetIfNegative() throws SQLException {
-        collectionOptionsDao.selectWithPaging(new CollectionOptions(2, -1)).toList().toBlocking().single();
+        final CollectionOptions collectionOptions = new CollectionOptions(2, -1);
+        collectionOptionsDao.selectWithPaging(collectionOptions).toList().toBlocking().single();
         mockDb.verifySelect("select * from table LIMIT 3");
+        assertThat(collectionOptions.isLastRecord()).isTrue();
     }
 
     @Test
     public void shouldNotSetLimitIfNegative() throws SQLException {
-        collectionOptionsDao.selectWithPaging(new CollectionOptions(-1, 2)).toList().toBlocking().single();
+        final CollectionOptions collectionOptions = new CollectionOptions(-1, 2);
+        collectionOptionsDao.selectWithPaging(collectionOptions).toList().toBlocking().single();
         mockDb.verifySelect("select * from table LIMIT 101 OFFSET 2");
+        assertThat(collectionOptions.isLastRecord()).isTrue();
     }
 
     @Test
     public void shouldNotSetLimitAboveMaxLimit() throws SQLException {
-        collectionOptionsDao.selectWithMaxLimit3(new CollectionOptions(5, 2)).toList().toBlocking().single();
+        final CollectionOptions collectionOptions = new CollectionOptions(5, 2);
+        collectionOptionsDao.selectWithMaxLimit3(collectionOptions).toList().toBlocking().single();
         mockDb.verifySelect("select * from table LIMIT 4 OFFSET 2");
+        assertThat(collectionOptions.isLastRecord()).isTrue();
     }
 
     @Test
     public void shouldUseConfiguredDefaultLimit() throws SQLException {
-        collectionOptionsDao.selectWithDefaultLimit10(null).toList().toBlocking().single();
+        final CollectionOptions collectionOptions = new CollectionOptions();
+        collectionOptionsDao.selectWithDefaultLimit10(collectionOptions).toList().toBlocking().single();
         mockDb.verifySelect("select * from table LIMIT 11");
+        assertThat(collectionOptions.isLastRecord()).isTrue();
     }
 
     @Test

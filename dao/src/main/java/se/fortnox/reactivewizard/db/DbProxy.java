@@ -30,12 +30,14 @@ import java.util.function.Function;
 @Singleton
 public class DbProxy implements InvocationHandler {
 
-    private final DbStatementFactoryFactory               dbStatementFactoryFactory;
-    private final Scheduler                               scheduler;
-    protected final Map<Method, ObservableStatementFactory> statementFactories;
-    private final ConnectionScheduler                     connectionScheduler;
-    protected final Function<Object[], String>            paramSerializer;
-    private final DatabaseConfig                          databaseConfig;
+    private static final TypeReference<Object[]>                 OBJECT_ARRAY_TYPE_REFERENCE = new TypeReference<>() {
+    };
+    private final       DbStatementFactoryFactory               dbStatementFactoryFactory;
+    private final       Scheduler                               scheduler;
+    protected final     Map<Method, ObservableStatementFactory> statementFactories;
+    private final       ConnectionScheduler                     connectionScheduler;
+    protected final     Function<Object[], String>              paramSerializer;
+    private final       DatabaseConfig                          databaseConfig;
 
     @Inject
     public DbProxy(DatabaseConfig databaseConfig,
@@ -57,8 +59,7 @@ public class DbProxy implements InvocationHandler {
         JsonSerializerFactory jsonSerializerFactory
     ) {
         this(databaseConfig, scheduler, connectionProvider, dbStatementFactoryFactory,
-            jsonSerializerFactory.createStringSerializer(new TypeReference<Object[]>() {
-            }),
+            jsonSerializerFactory.createStringSerializer(OBJECT_ARRAY_TYPE_REFERENCE),
             new ConcurrentHashMap<>());
     }
 

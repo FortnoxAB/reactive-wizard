@@ -40,7 +40,6 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
@@ -457,7 +456,8 @@ public class HttpClient implements InvocationHandler {
                 return false;
             }
         }
-        return true;
+
+        return requestParameterSerializers.getSerializer(cls) == null;
     }
 
     protected Mono<Response<Flux<?>>> handleError(RequestBuilder request, RwHttpClientResponse response) {
@@ -607,11 +607,7 @@ public class HttpClient implements InvocationHandler {
     }
 
     protected String urlEncode(String path) {
-        try {
-            return URLEncoder.encode(path, "UTF-8");
-        } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException(e);
-        }
+        return URLEncoder.encode(path, StandardCharsets.UTF_8);
     }
 
     protected String getPath(Method method, Object[] arguments, JaxRsMeta meta) {
@@ -786,5 +782,4 @@ public class HttpClient implements InvocationHandler {
             this.annotations = annotations;
         }
     }
-
 }
