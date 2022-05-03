@@ -20,6 +20,18 @@ public class PagingOperatorTest {
         shouldNotBeLastRecord(fetchPageFromStreamWithSize(PAGE_SIZE+1));
     }
 
+    @Test
+    public void shouldSignalLastRecordIfLimitIsNull() {
+        CollectionOptions collectionOptions = new CollectionOptions();
+        collectionOptions.setLimit(null);
+
+        PagingOperator<Integer> pagingOperator = new PagingOperator<>(collectionOptions);
+
+        assertThat(collectionOptions.isLastRecord()).isFalse();
+        final List<Integer> items = Observable.range(1, 5).lift(pagingOperator).toList().toBlocking().first();
+        assertThat(collectionOptions.isLastRecord()).isTrue();
+    }
+
 
     private void shouldBeLastRecord(CollectionOptions collectionOptions) {
         assertThat(collectionOptions.isLastRecord()).isTrue();
