@@ -11,7 +11,7 @@ public class PagingOperator<T> implements Operator<T, T> {
 
     public PagingOperator(CollectionOptions collectionOptions) {
         this.collectionOptions = collectionOptions;
-        this.limit = collectionOptions.getLimit();
+        this.limit = collectionOptions.getLimit() != null ? collectionOptions.getLimit() : Integer.MAX_VALUE;
     }
 
     @Override
