@@ -11,3 +11,10 @@ updates:
       interval: "weekly"
     reviewers:
       - "FortnoxAB/PlatMap"
+      - "flowertwig"
+      - "rassmate"
+      - "jepp3"
+      - "j-holmstrom"
+    ignore:
+      - dependency-name: "com.fasterxml.jackson:jackson-bom"
+        versions: ["2.13.2.20220324", "2.13.2.20220328"]
