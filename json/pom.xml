@@ -16,7 +16,6 @@
         <dependency>
             <groupId>se.fortnox.reactivewizard</groupId>
             <artifactId>reactivewizard-test</artifactId>
-            <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
 
@@ -48,7 +47,7 @@
         <dependency>
             <groupId>javax.inject</groupId>
             <artifactId>javax.inject</artifactId>
-            <version>1</version>
+            <version>${javax.inject.version}</version>
         </dependency>
     </dependencies>
 

@@ -1,7 +1,6 @@
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>se.fortnox.reactivewizard</groupId>
     <artifactId>reactivewizard-metrics</artifactId>
 
     <parent>
@@ -14,7 +13,6 @@
         <dependency>
             <groupId>se.fortnox.reactivewizard</groupId>
             <artifactId>reactivewizard-test</artifactId>
-            <version>999.9.9-SNAPSHOT</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -26,7 +24,7 @@
         <dependency>
             <groupId>io.dropwizard.metrics</groupId>
             <artifactId>metrics-core</artifactId>
-            <version>4.2.9</version>
+            <version>${metrics-core.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.slf4j</groupId>
@@ -48,7 +46,7 @@
         <dependency>
             <groupId>javax.inject</groupId>
             <artifactId>javax.inject</artifactId>
-            <version>1</version>
+            <version>${javax.inject.version}</version>
         </dependency>
     </dependencies>
 

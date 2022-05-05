@@ -14,38 +14,31 @@
         <dependency>
             <groupId>se.fortnox.reactivewizard</groupId>
             <artifactId>reactivewizard-api</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>se.fortnox.reactivewizard</groupId>
             <artifactId>reactivewizard-json</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>se.fortnox.reactivewizard</groupId>
             <artifactId>reactivewizard-config</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>se.fortnox.reactivewizard</groupId>
             <artifactId>reactivewizard-test</artifactId>
-            <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>se.fortnox.reactivewizard</groupId>
             <artifactId>reactivewizard-utils</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>se.fortnox.reactivewizard</groupId>
             <artifactId>reactivewizard-binding</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>se.fortnox.reactivewizard</groupId>
             <artifactId>reactivewizard-metrics</artifactId>
-            <version>${project.version}</version>
         </dependency>
 
         <dependency>
@@ -80,7 +73,6 @@
             <artifactId>reactivewizard-config</artifactId>
             <scope>test</scope>
             <classifier>tests</classifier>
-            <version>${project.version}</version>
         </dependency>
 
     </dependencies>
