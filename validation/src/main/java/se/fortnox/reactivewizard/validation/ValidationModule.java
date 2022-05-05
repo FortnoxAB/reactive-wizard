@@ -9,8 +9,8 @@ import se.fortnox.reactivewizard.jaxrs.JaxRsMeta;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
-import javax.validation.Validation;
-import javax.validation.Validator;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
 import java.util.Optional;
 
 public class ValidationModule implements AutoBindModule {

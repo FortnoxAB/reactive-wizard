@@ -61,11 +61,6 @@
 		</dependency>
 
 		<dependency>
-			<groupId>javax.validation</groupId>
-			<artifactId>validation-api</artifactId>
-		</dependency>
-
-		<dependency>
 			<groupId>se.fortnox.reactivewizard</groupId>
 			<artifactId>reactivewizard-test</artifactId>
 			<scope>test</scope>
