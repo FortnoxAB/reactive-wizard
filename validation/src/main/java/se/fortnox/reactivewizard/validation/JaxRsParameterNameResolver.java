@@ -2,7 +2,7 @@ package se.fortnox.reactivewizard.validation;
 
 import se.fortnox.reactivewizard.util.ReflectionUtil;
 
-import javax.validation.ParameterNameProvider;
+import jakarta.validation.ParameterNameProvider;
 import javax.ws.rs.FormParam;
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.PathParam;
@@ -42,17 +42,17 @@ class JaxRsParameterNameResolver implements ParameterNameProvider {
 
     private String getName(List<Annotation> annotations, int index) {
         for (Annotation annotation : annotations) {
-            if (annotation instanceof QueryParam) {
-                return ((QueryParam) annotation).value();
+            if (annotation instanceof QueryParam queryParam) {
+                return queryParam.value();
             }
-            if (annotation instanceof PathParam) {
-                return ((PathParam) annotation).value();
+            if (annotation instanceof PathParam pathParam) {
+                return pathParam.value();
             }
-            if (annotation instanceof FormParam) {
-                return ((FormParam) annotation).value();
+            if (annotation instanceof FormParam formParam) {
+                return formParam.value();
             }
-            if (annotation instanceof HeaderParam) {
-                return ((HeaderParam) annotation).value();
+            if (annotation instanceof HeaderParam headerParam) {
+                return headerParam.value();
             }
         }
         return "arg" + index;

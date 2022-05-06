@@ -13,26 +13,22 @@
 		<dependency>
 			<groupId>se.fortnox.reactivewizard</groupId>
 			<artifactId>reactivewizard-dao</artifactId>
-			<version>999.9.9-SNAPSHOT</version>
 		</dependency>
 
 		<dependency>
 			<groupId>se.fortnox.reactivewizard</groupId>
 			<artifactId>reactivewizard-config</artifactId>
-			<version>999.9.9-SNAPSHOT</version>
 		</dependency>
 
 		<dependency>
 			<groupId>se.fortnox.reactivewizard</groupId>
 			<artifactId>reactivewizard-binding</artifactId>
-			<version>999.9.9-SNAPSHOT</version>
 		</dependency>
 
 		<dependency>
 			<groupId>se.fortnox.reactivewizard</groupId>
 			<artifactId>reactivewizard-test</artifactId>
 			<scope>test</scope>
-			<version>999.9.9-SNAPSHOT</version>
 		</dependency>
 
 		<dependency>
@@ -66,7 +62,7 @@
 		<dependency>
 			<groupId>com.mattbertolini</groupId>
 			<artifactId>liquibase-slf4j</artifactId>
-			<version>2.0.0</version>
+			<version>${liquibase-slf4j.version}</version>
 		</dependency>
 
         <dependency>
@@ -74,14 +70,12 @@
             <artifactId>reactivewizard-config</artifactId>
             <scope>test</scope>
             <classifier>tests</classifier>
-            <version>999.9.9-SNAPSHOT</version>
         </dependency>
 
         <dependency>
             <groupId>se.fortnox.reactivewizard</groupId>
             <artifactId>reactivewizard-server</artifactId>
             <scope>test</scope>
-            <version>999.9.9-SNAPSHOT</version>
         </dependency>
     </dependencies>
 

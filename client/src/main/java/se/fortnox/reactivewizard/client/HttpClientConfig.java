@@ -3,9 +3,9 @@ package se.fortnox.reactivewizard.client;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import se.fortnox.reactivewizard.config.Config;
 
-import javax.validation.Valid;
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Size;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
@@ -40,9 +40,6 @@ public class HttpClientConfig {
     private Map<String, String> devHeaders;
 
     private int maxResponseSize = 10 * 1024 * 1024;
-
-    private long poolAutoCleanupInterval = TimeUnit.MILLISECONDS.convert(10, MINUTES);
-    private long maxRequestTime          = TimeUnit.MILLISECONDS.convert(1, MINUTES);
 
     private boolean isHttps;
     private int     retryCount             = 3;

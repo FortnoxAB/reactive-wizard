@@ -15,7 +15,6 @@
         <dependency>
             <groupId>se.fortnox.reactivewizard</groupId>
             <artifactId>reactivewizard-jaxrs-api</artifactId>
-            <version>${project.version}</version>
         </dependency>
 
         <dependency>

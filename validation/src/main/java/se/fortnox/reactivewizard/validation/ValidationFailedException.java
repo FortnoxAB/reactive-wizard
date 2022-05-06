@@ -4,7 +4,7 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import org.slf4j.event.Level;
 import se.fortnox.reactivewizard.jaxrs.WebException;
 
-import javax.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolation;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -25,7 +25,7 @@ public class ValidationFailedException extends WebException {
     private List<Map<String, String>> getUserError() {
         List<Map<String, String>> outp = new LinkedList<>();
         for (ConstraintViolation<Object> v : result) {
-            Map<String, String> err = new HashMap<String, String>();
+            Map<String, String> err = new HashMap<>();
             err.put(v.getPropertyPath().toString(), v.getMessage());
             outp.add(err);
         }

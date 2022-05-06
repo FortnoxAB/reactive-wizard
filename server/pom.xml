@@ -14,24 +14,20 @@
 		<dependency>
 			<groupId>se.fortnox.reactivewizard</groupId>
 			<artifactId>reactivewizard-binding</artifactId>
-			<version>999.9.9-SNAPSHOT</version>
 		</dependency>
 
 		<dependency>
 			<groupId>se.fortnox.reactivewizard</groupId>
 			<artifactId>reactivewizard-test</artifactId>
-			<version>999.9.9-SNAPSHOT</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>se.fortnox.reactivewizard</groupId>
 			<artifactId>reactivewizard-jaxrs</artifactId>
-			<version>999.9.9-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>se.fortnox.reactivewizard</groupId>
 			<artifactId>reactivewizard-config</artifactId>
-			<version>999.9.9-SNAPSHOT</version>
 		</dependency>
         <dependency>
             <groupId>io.projectreactor.netty</groupId>
@@ -46,7 +42,6 @@
         <dependency>
             <groupId>org.awaitility</groupId>
             <artifactId>awaitility</artifactId>
-            <version>4.2.0</version>
             <scope>test</scope>
         </dependency>
 	</dependencies>

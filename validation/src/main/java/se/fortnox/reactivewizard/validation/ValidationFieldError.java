@@ -2,8 +2,8 @@ package se.fortnox.reactivewizard.validation;
 
 import se.fortnox.reactivewizard.jaxrs.FieldError;
 
-import javax.validation.ConstraintViolation;
-import javax.validation.Path.Node;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Path.Node;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;

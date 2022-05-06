@@ -6,7 +6,7 @@ import org.junit.Test;
 import se.fortnox.reactivewizard.config.Config;
 import se.fortnox.reactivewizard.config.TestInjector;
 
-import javax.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotEmpty;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
@@ -49,7 +49,7 @@ public class ConfigValidationTest {
         var config = injector.getInstance(ValidatedConfigRecord.class);
 
         assertThat(config.mykey()).isEqualTo("myvalue");
-        assertThat(config.anInt()).isEqualTo(0);
+        assertThat(config.anInt()).isZero();
         assertThat(config.aNestedConfig()).isNull();
     }
 

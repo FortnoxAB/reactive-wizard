@@ -7,12 +7,13 @@ import se.fortnox.reactivewizard.config.TestInjector;
 import se.fortnox.reactivewizard.server.ServerConfig;
 
 import javax.inject.Inject;
-import javax.validation.constraints.Min;
+import jakarta.validation.constraints.Min;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.QueryParam;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.fail;
 import static rx.Observable.just;
 
@@ -37,7 +38,8 @@ public class ResourceValidationTest {
 
     @Test
     public void shouldSucceedForCorrectResourceCall() {
-        validatedResource.acceptLong(200L).toBlocking().single();
+        assertThatNoException()
+                .isThrownBy(() -> validatedResource.acceptLong(200L).toBlocking().single());
     }
 
     @Path("/")
