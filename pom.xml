@@ -90,7 +90,7 @@
         <mockito.version>4.5.1</mockito.version>
         <jacoco.version>0.8.8</jacoco.version>
         <reactiversecontexts.version>1.0.1</reactiversecontexts.version>
-        <classgraph.version>4.8.146</classgraph.version>
+        <classgraph.version>4.8.147</classgraph.version>
 
         <maven-gpg-plugin.version>3.0.1</maven-gpg-plugin.version>
         <surefire.version>3.0.0-M6</surefire.version>
