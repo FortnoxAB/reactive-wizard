@@ -19,7 +19,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.lenient;
 
 /**
  * Util class for mocking response from server with headers
@@ -33,8 +33,8 @@ public class HttpClientTestUtil {
 
         HttpHeaders httpHeaders = new DefaultHttpHeaders();
         headers.forEach(httpHeaders::add);
-        when(httpClientResponse.responseHeaders()).thenReturn(httpHeaders);
-        when(httpClientResponse.status()).thenReturn(httpResponseStatus);
+        lenient().when(httpClientResponse.responseHeaders()).thenReturn(httpHeaders);
+        lenient().when(httpClientResponse.status()).thenReturn(httpResponseStatus);
 
         Mono<Response<Flux<?>>> response = Mono.just(new Response<>(httpClientResponse, Flux.from(RxReactiveStreams.toPublisher(source))));
         return ReactiveDecorator.decorated(source, response);
@@ -49,9 +49,9 @@ public class HttpClientTestUtil {
         });
         HttpHeaders httpHeaders = new DefaultHttpHeaders();
         headers.forEach(httpHeaders::add);
-        when(httpClientResponse.responseHeaders()).thenReturn(httpHeaders);
-        when(httpClientResponse.cookies()).thenReturn(cookieMap);
-        when(httpClientResponse.status()).thenReturn(httpResponseStatus);
+        lenient().when(httpClientResponse.responseHeaders()).thenReturn(httpHeaders);
+        lenient().when(httpClientResponse.cookies()).thenReturn(cookieMap);
+        lenient().when(httpClientResponse.status()).thenReturn(httpResponseStatus);
 
         Mono<Response<Flux<?>>> response = Mono.just(new Response<>(httpClientResponse, Flux.from(RxReactiveStreams.toPublisher(source))));
         return ReactiveDecorator.decorated(source, response);
@@ -62,8 +62,8 @@ public class HttpClientTestUtil {
 
         HttpHeaders httpHeaders = new DefaultHttpHeaders();
         headers.forEach(httpHeaders::add);
-        when(httpClientResponse.responseHeaders()).thenReturn(httpHeaders);
-        when(httpClientResponse.status()).thenReturn(httpResponseStatus);
+        lenient().when(httpClientResponse.responseHeaders()).thenReturn(httpHeaders);
+        lenient().when(httpClientResponse.status()).thenReturn(httpResponseStatus);
 
         Mono<Response<Flux<?>>> response = Mono.just(new Response<>(httpClientResponse, Flux.from(RxReactiveStreams.toPublisher(source))));
         return ReactiveDecorator.decorated(source, response);
@@ -78,9 +78,9 @@ public class HttpClientTestUtil {
         });
         HttpHeaders httpHeaders = new DefaultHttpHeaders();
         headers.forEach(httpHeaders::add);
-        when(httpClientResponse.responseHeaders()).thenReturn(httpHeaders);
-        when(httpClientResponse.cookies()).thenReturn(cookieMap);
-        when(httpClientResponse.status()).thenReturn(httpResponseStatus);
+        lenient().when(httpClientResponse.responseHeaders()).thenReturn(httpHeaders);
+        lenient().when(httpClientResponse.cookies()).thenReturn(cookieMap);
+        lenient().when(httpClientResponse.status()).thenReturn(httpResponseStatus);
 
 
         Mono<Response<Flux<?>>> response = Mono.just(new Response<>(httpClientResponse, Flux.from(RxReactiveStreams.toPublisher(source))));
