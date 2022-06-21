@@ -13,16 +13,6 @@
         <dependency>
             <groupId>org.hibernate.validator</groupId>
             <artifactId>hibernate-validator</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>log4j</groupId>
-                    <artifactId>log4j</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.logging.log4j</groupId>
-                    <artifactId>log4j-api</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>se.fortnox.reactivewizard</groupId>
@@ -41,9 +31,11 @@
             <artifactId>reactivewizard-utils</artifactId>
         </dependency>
         <dependency>
+            <!--Needed by ValidationModule-->
             <groupId>org.glassfish</groupId>
             <artifactId>jakarta.el</artifactId>
             <version>${jakarta.el.version}</version>
+            <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>se.fortnox.reactivewizard</groupId>
