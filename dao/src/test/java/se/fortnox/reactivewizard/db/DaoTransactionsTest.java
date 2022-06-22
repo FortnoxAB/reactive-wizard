@@ -5,9 +5,9 @@ import org.junit.Test;
 import org.mockito.InOrder;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
+import reactor.test.scheduler.VirtualTimeScheduler;
 import rx.Observable;
-import rx.schedulers.Schedulers;
-import rx.schedulers.TestScheduler;
 import se.fortnox.reactivewizard.db.config.DatabaseConfig;
 import se.fortnox.reactivewizard.db.statement.DbStatementFactoryFactory;
 import se.fortnox.reactivewizard.db.statement.MinimumAffectedRowsException;
@@ -45,12 +45,12 @@ import static org.mockito.Mockito.when;
 /**
  */
 public class DaoTransactionsTest {
-    private MockDb             db                 = new MockDb();
+    private MockDb db = new MockDb();
     private ConnectionProvider connectionProvider = db.getConnectionProvider();
-    private DbProxy            dbProxy            = new DbProxy(new DatabaseConfig(), connectionProvider);
-    private TestDao            dao                = dbProxy.create(TestDao.class);
-    private DaoTransactions    daoTransactions    = new DaoTransactionsImpl();
-    private DaoTransactionsFlux daoTransactionsFlux    = new DaoTransactionsFluxImpl();
+    private DbProxy dbProxy = new DbProxy(new DatabaseConfig(), connectionProvider);
+    private TestDao dao = dbProxy.create(TestDao.class);
+    private DaoTransactions daoTransactions = new DaoTransactionsImpl();
+    private DaoTransactionsFlux daoTransactionsFlux = new DaoTransactionsFluxImpl();
 
     @Test
     public void shouldHaveEmptyInjectAnnotatedConstructor() {
@@ -122,9 +122,9 @@ public class DaoTransactionsTest {
     @Test
     public void shouldRunOnTransactionCompletedCallback() throws SQLException {
         when(db.getPreparedStatement().executeBatch())
-            .thenReturn(new int[]{1, 1});
+                .thenReturn(new int[]{1, 1});
 
-        final boolean[] cbExecuted   = {false, false, false, false};
+        final boolean[] cbExecuted = {false, false, false, false};
         Observable<Integer> daoObsWithCb = dao.updateSuccess();
 
         Optional<StatementContext> decoration = ReactiveDecorator.getDecoration(daoObsWithCb);
@@ -132,10 +132,10 @@ public class DaoTransactionsTest {
 
         decoration.get().onTransactionCompleted(() -> cbExecuted[0] = true);
 
-        daoObsWithCb = ReactiveDecorator.keepDecoration(daoObsWithCb, obs->{
+        daoObsWithCb = ReactiveDecorator.keepDecoration(daoObsWithCb, obs -> {
             return obs.doOnCompleted(() -> cbExecuted[1] = true)
-                .doOnSubscribe(() -> cbExecuted[2] = true)
-                .doOnTerminate(() -> cbExecuted[3] = true);
+                    .doOnSubscribe(() -> cbExecuted[2] = true)
+                    .doOnTerminate(() -> cbExecuted[3] = true);
         });
 
         Observable<Integer> updateSuccess = dao.updateSuccess();
@@ -152,7 +152,7 @@ public class DaoTransactionsTest {
     @Test
     public void shouldRunOnTransactionCompletedCallbackForFlux() throws SQLException {
         when(db.getPreparedStatement().executeBatch())
-            .thenReturn(new int[]{1, 1});
+                .thenReturn(new int[]{1, 1});
 
         Runnable runnable = mock(Runnable.class);
         Flux<Integer> daoObsWithCb = dao.updateSuccessFlux();
@@ -192,8 +192,8 @@ public class DaoTransactionsTest {
     public void shouldRunOnCompletedOnceWhenTransactionFinished() throws SQLException {
         AtomicInteger completed = new AtomicInteger();
         daoTransactions.executeTransaction(dao.updateSuccess(), dao.updateOtherSuccess(), dao.updateSuccess(), dao.updateOtherSuccess())
-            .doOnCompleted(completed::incrementAndGet)
-            .toBlocking().subscribe();
+                .doOnCompleted(completed::incrementAndGet)
+                .toBlocking().subscribe();
 
         assertThat(completed.get()).isEqualTo(1);
 
@@ -211,11 +211,12 @@ public class DaoTransactionsTest {
         AtomicInteger failed = new AtomicInteger();
         try {
             daoTransactions.executeTransaction(find1, find2)
-                .doOnCompleted(() -> completed.incrementAndGet())
-                .doOnError(throwable -> failed.incrementAndGet())
-                .toBlocking().subscribe();
+                    .doOnCompleted(() -> completed.incrementAndGet())
+                    .doOnError(throwable -> failed.incrementAndGet())
+                    .toBlocking().subscribe();
             fail("exception expected");
-        } catch (Exception e) {}
+        } catch (Exception e) {
+        }
 
         assertThat(completed.get()).isZero();
         assertThat(failed.get()).isEqualTo(1);
@@ -238,7 +239,7 @@ public class DaoTransactionsTest {
         daoTransactions.executeTransaction(find1, find2).toBlocking().subscribe();
 
         Connection connection = db.getConnection();
-        InOrder    inOrder    = inOrder(connection);
+        InOrder inOrder = inOrder(connection);
 
         inOrder.verify(connection).prepareStatement("select * from test");
         inOrder.verify(connection).prepareStatement("select * from test2");
@@ -247,13 +248,13 @@ public class DaoTransactionsTest {
     @Test
     public void shouldFailAllQueriesIfOneUpdateHasNotReachedMinimumUpdates() throws SQLException {
         when(db.getPreparedStatement().getUpdateCount())
-            .thenReturn(1)
-            .thenReturn(0);
+                .thenReturn(1)
+                .thenReturn(0);
 
         try {
             daoTransactions.executeTransaction(
-                dao.updateSuccess(),
-                dao.updateFail()
+                    dao.updateSuccess(),
+                    dao.updateFail()
             ).toBlocking().single();
             fail("expected exception");
         } catch (Exception e) {
@@ -273,11 +274,11 @@ public class DaoTransactionsTest {
     @Test
     public void shouldBatchWhenSameQuery() throws SQLException {
         when(db.getPreparedStatement().executeBatch())
-            .thenReturn(new int[]{1, 1});
+                .thenReturn(new int[]{1, 1});
 
         daoTransactions.executeTransaction(
-            dao.updateSuccess(),
-            dao.updateSuccess()
+                dao.updateSuccess(),
+                dao.updateSuccess()
         ).toBlocking().singleOrDefault(null);
 
         verify(db.getPreparedStatement(), times(2)).addBatch();
@@ -291,14 +292,14 @@ public class DaoTransactionsTest {
     @Test
     public void shouldBatchWhenSameQueryInSequence() throws SQLException {
         when(db.getPreparedStatement().executeBatch())
-            .thenReturn(new int[]{1, 1});
+                .thenReturn(new int[]{1, 1});
         when(db.getPreparedStatement().getUpdateCount())
-            .thenReturn(1);
+                .thenReturn(1);
 
         daoTransactions.executeTransaction(
-            dao.updateSuccess(),
-            dao.updateSuccess(),
-            dao.updateOtherSuccess()
+                dao.updateSuccess(),
+                dao.updateSuccess(),
+                dao.updateOtherSuccess()
         ).toBlocking().singleOrDefault(null);
 
         verify(db.getPreparedStatement(), times(2)).addBatch();
@@ -332,7 +333,7 @@ public class DaoTransactionsTest {
     public void shouldBeAbleToUseRetryOnTransaction() throws SQLException {
 
         when(db.getPreparedStatement().getUpdateCount())
-            .thenReturn(0);
+                .thenReturn(0);
 
         final Observable<Integer> update = dao.updateFail();
 
@@ -346,7 +347,7 @@ public class DaoTransactionsTest {
     public void shouldBeAbleToUseRetryOnFluxTransaction() throws SQLException {
 
         when(db.getPreparedStatement().getUpdateCount())
-            .thenReturn(0);
+                .thenReturn(0);
 
         final Flux<Integer> update = dao.updateFailFlux();
 
@@ -394,9 +395,9 @@ public class DaoTransactionsTest {
     @Test
     public void shouldAllowOnlyVoidsInTransaction() throws SQLException {
         when(db.getPreparedStatement().executeBatch())
-            .thenReturn(new int[]{1, 1});
+                .thenReturn(new int[]{1, 1});
         try {
-            daoTransactions.executeTransaction(asList(dao.updateSuccessVoid(),dao.updateSuccessVoid())).toBlocking().lastOrDefault(null);
+            daoTransactions.executeTransaction(asList(dao.updateSuccessVoid(), dao.updateSuccessVoid())).toBlocking().lastOrDefault(null);
         } catch (Exception e) {
             Fail.fail("Unexpected exception when testing transactions with only voids");
         }
@@ -424,64 +425,63 @@ public class DaoTransactionsTest {
     }
 
     @Test
-    public void shoulUseSpecifiedConnectionAndScheduler() throws SQLException {
+    public void shouldUseSpecifiedConnectionAndScheduler() throws SQLException {
         MockDb otherDb = new MockDb();
         ConnectionProvider otherConnectionProvider = otherDb.getConnectionProvider();
 
-        TestScheduler otherScheduler = new TestScheduler();
+        VirtualTimeScheduler otherScheduler = VirtualTimeScheduler.create();
         DbProxy otherDbProxy = new DbProxy(
             new DatabaseConfig(), otherScheduler,
             null, new DbStatementFactoryFactory(), new JsonSerializerFactory());
         otherDbProxy = otherDbProxy.usingConnectionProvider(otherConnectionProvider);
 
         when(otherDb.getPreparedStatement().executeBatch())
-            .thenReturn(new int[]{1, 1});
+                .thenReturn(new int[]{1, 1});
 
         TestDao otherTestDao = otherDbProxy.create(TestDao.class);
-        daoTransactions.executeTransaction(otherTestDao.updateSuccess(), otherTestDao.updateSuccess())
-            .subscribeOn(otherScheduler).subscribe();
-        otherScheduler.triggerActions();
+        daoTransactionsFlux.executeTransaction(otherTestDao.updateSuccessFlux(), otherTestDao.updateSuccessFlux())
+                .subscribeOn(otherScheduler).subscribe();
+        otherScheduler.advanceTime();
 
         otherDb.verifyConnectionsUsed(1);
         db.verifyConnectionsUsed(0);
 
         // Execute transaction without custom db proxy
         when(db.getPreparedStatement().executeBatch())
-            .thenReturn(new int[]{1, 1});
+                .thenReturn(new int[]{1, 1});
 
         daoTransactions.executeTransaction(dao.updateSuccess(), dao.updateSuccess())
-            .toBlocking().subscribe();
+                .toBlocking().subscribe();
         otherDb.verifyConnectionsUsed(1);
         db.verifyConnectionsUsed(1);
     }
 
     @Test
-    public void shoulUseSecondConnectionAndSchedulerIfFirstObservableHasNoConnectionProvider() throws SQLException {
+    public void shouldUseSecondConnectionAndSchedulerIfFirstObservableHasNoConnectionProvider() throws SQLException {
         MockDb secondDb = new MockDb();
         ConnectionProvider otherConnectionProvider = secondDb.getConnectionProvider();
 
         DbProxy dbProxyWithoutConnectionProvider = new DbProxy(
-            new DatabaseConfig(), Schedulers.io(),
-            null, new DbStatementFactoryFactory(), new JsonSerializerFactory());
+                new DatabaseConfig(), Schedulers.boundedElastic(), null, new DbStatementFactoryFactory(), new JsonSerializerFactory());
         DbProxy dbProxyWithConnectionProvider = dbProxyWithoutConnectionProvider.usingConnectionProvider(otherConnectionProvider);
 
         when(secondDb.getPreparedStatement().executeBatch())
-            .thenReturn(new int[]{1, 1});
+                .thenReturn(new int[]{1, 1});
 
         TestDao daoWithConnectionProvider = dbProxyWithConnectionProvider.create(TestDao.class);
         TestDao daoWithoutConnectionProvider = dbProxyWithoutConnectionProvider.create(TestDao.class);
 
         daoTransactions.executeTransaction(daoWithoutConnectionProvider.updateSuccess(), daoWithConnectionProvider.updateSuccess())
-            .test()
-            .awaitTerminalEvent()
-            .assertNoErrors();
+                .test()
+                .awaitTerminalEvent()
+                .assertNoErrors();
 
         secondDb.verifyConnectionsUsed(1);
         db.verifyConnectionsUsed(0);
 
         assertThatExceptionOfType(RuntimeException.class)
-            .isThrownBy(() -> daoTransactions.executeTransaction(daoWithoutConnectionProvider.updateSuccess()).toBlocking().subscribe())
-            .withMessage("No DaoObservable with a valid connection provider was found");
+                .isThrownBy(() -> daoTransactions.executeTransaction(daoWithoutConnectionProvider.updateSuccess()).toBlocking().subscribe())
+                .withMessage("No DaoObservable with a valid connection provider was found");
     }
 
     interface TestDao {

@@ -5,30 +5,42 @@ import org.mockito.stubbing.OngoingStubbing;
 import org.mockito.stubbing.Stubber;
 import se.fortnox.reactivewizard.db.config.DatabaseConfig;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.ParameterMetaData;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.Calendar;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static java.sql.Statement.RETURN_GENERATED_KEYS;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.withSettings;
 
 public class MockDb {
 
-    public static final int                INFINITE    = -1;
-    private             Connection         con         = mock(Connection.class);
-    private             ResultSetMetaData  meta        = mock(ResultSetMetaData.class);
-    private             PreparedStatement  ps          = mock(PreparedStatement.class);
-    private             ResultSet          rs          = mock(ResultSet.class);
-    private             ConnectionProvider connectionProvider;
-    private             int                columnCount = 0;
-    private             boolean            generatedKeys;
-
+    public static final int INFINITE = -1;
+    private Connection con = mock(Connection.class);
+    private ResultSetMetaData meta = mock(ResultSetMetaData.class);
+    private PreparedStatement ps = mock(PreparedStatement.class);
+    private ResultSet rs = mock(ResultSet.class);
+    private ConnectionProvider connectionProvider;
+    private int columnCount = 0;
     private DatabaseConfig databaseConfig;
-    private int            rows;
-    private int            connectionsUsed;
-    private int            parameterCount;
+    private int rows;
+    private int connectionsUsed;
+    private int parameterCount;
 
     ArgumentCaptor<String> generatedKeysCaptor = ArgumentCaptor.forClass(String.class);
 
@@ -39,11 +51,7 @@ public class MockDb {
 
         try {
             when(con.prepareStatement(any())).thenReturn(ps);
-            when(con.prepareStatement(any(),
-                eq(Statement.RETURN_GENERATED_KEYS))).thenAnswer((inv) -> {
-                generatedKeys = true;
-                return ps;
-            });
+            when(con.prepareStatement(any(), eq(RETURN_GENERATED_KEYS))).thenAnswer(inv -> ps);
             when(ps.executeQuery()).thenReturn(rs);
             when(ps.getGeneratedKeys()).thenReturn(rs);
             when(rs.getMetaData()).thenReturn(meta);
@@ -75,18 +83,18 @@ public class MockDb {
             }
             AtomicInteger count = new AtomicInteger();
             when(rs.next())
-                .thenAnswer(invocation -> {
-                    count.incrementAndGet();
-                    if(count.incrementAndGet() < rows) {
-                        return true;
-                    }
-                    return false;
-                });
+                    .thenAnswer(invocation -> {
+                        count.incrementAndGet();
+                        if (count.incrementAndGet() < rows) {
+                            return true;
+                        }
+                        return false;
+                    });
             OngoingStubbing<Boolean> rsNext = when(rs.next());
             for (int i = 0; i < rows; i++) {
                 rsNext = rsNext.thenReturn(true);
             }
-            rsNext = rsNext.thenReturn(false);
+            rsNext.thenReturn(false);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -103,11 +111,11 @@ public class MockDb {
         when(meta.getColumnCount()).thenReturn(columnCount);
         when(meta.getColumnLabel(column)).thenReturn(name);
         if (type.equals(String.class)) {
-            when(rs.getString(column)).thenReturn((String)value);
+            when(rs.getString(column)).thenReturn((String) value);
         } else if (type.equals(Long.class)) {
-            when(rs.getLong(column)).thenReturn((Long)value);
+            when(rs.getLong(column)).thenReturn((Long) value);
         } else if (type.equals(Integer.class)) {
-            when(rs.getInt(column)).thenReturn((Integer)value);
+            when(rs.getInt(column)).thenReturn((Integer) value);
         } else {
             throw new RuntimeException("Unsupported type " + type);
         }
@@ -116,28 +124,35 @@ public class MockDb {
     public <T> T mockDao(int cnt, Class<T> tClass) throws SQLException {
         con = mock(Connection.class);
         mockDbResultSet(cnt);
-        DbProxy   dbProxy = new DbProxy(new DatabaseConfig(), () -> con);
-        T dao     = dbProxy.create(tClass);
-        return dao;
+        DbProxy dbProxy = new DbProxy(new DatabaseConfig(), () -> con);
+        return dbProxy.create(tClass);
     }
 
     public void mockDbResultSet(int cnt) throws SQLException {
-        PreparedStatement ps        = mock(PreparedStatement.class);
+        PreparedStatement ps = mock(PreparedStatement.class);
         ParameterMetaData paramMeta = mock(ParameterMetaData.class);
-        when(paramMeta.getParameterCount()).thenReturn(0);
-        when(ps.getParameterMetaData()).thenReturn(paramMeta);
-        when(con.prepareStatement(any())).thenReturn(ps);
+        when(paramMeta.getParameterCount())
+                .thenReturn(0);
+        when(ps.getParameterMetaData())
+                .thenReturn(paramMeta);
+        when(con.prepareStatement(any()))
+                .thenReturn(ps);
 
-        ResultSet         rs   = mock(ResultSet.class);
+        ResultSet rs = mock(ResultSet.class);
         ResultSetMetaData meta = mock(ResultSetMetaData.class);
-        when(rs.getMetaData()).thenReturn(meta);
-        OngoingStubbing<Boolean> rsNext = when(rs.next());
-        for (int i = 0; i < cnt; i++) {
-            rsNext = rsNext.thenReturn(true);
-        }
-        rsNext = rsNext.thenReturn(false);
-
-        when(ps.executeQuery()).thenReturn(rs);
+        when(rs.getMetaData())
+                .thenReturn(meta);
+        AtomicInteger nextCalls = new AtomicInteger(0);
+        when(rs.next())
+                .then(invocation -> nextCalls.getAndIncrement() < cnt);
+        when(rs.getString(anyInt()))
+                .thenReturn("test");
+        when(meta.getColumnCount())
+                .thenReturn(columnCount);
+        when(meta.getColumnLabel(anyInt()))
+                .thenReturn("col1");
+        when(ps.executeQuery())
+                .thenReturn(rs);
     }
 
     public ConnectionProvider getConnectionProvider() {
@@ -173,18 +188,18 @@ public class MockDb {
                 verify(ps).setNull(eq(i + 1), anyInt());
             } else if (args[i].getClass().equals(Timestamp.class)) {
                 Calendar cal = getCalendar();
-                cal.setTimeInMillis(((Timestamp)args[i]).getTime());
-                verify(ps).setTimestamp(i + 1, (Timestamp)args[i], cal);
+                cal.setTimeInMillis(((Timestamp) args[i]).getTime());
+                verify(ps).setTimestamp(i + 1, (Timestamp) args[i], cal);
             } else {
                 verify(ps).setObject(i + 1, args[i]);
             }
         }
 
         verify(con, atLeast(0)).prepareStatement(generatedKeysCaptor.capture(),
-            eq(Statement.RETURN_GENERATED_KEYS));
+                eq(RETURN_GENERATED_KEYS));
 
         if (!generatedKeysCaptor.getAllValues().isEmpty()) {
-            verify(con).prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
+            verify(con).prepareStatement(query, RETURN_GENERATED_KEYS);
         } else {
             verify(con).prepareStatement(query);
         }
@@ -197,13 +212,13 @@ public class MockDb {
                 verify(ps).setNull(eq(i + 1), anyInt());
             } else if (args[i].getClass().equals(Timestamp.class)) {
                 Calendar cal = getCalendar();
-                cal.setTimeInMillis(((Timestamp)args[i]).getTime());
-                verify(ps).setTimestamp(i + 1, (Timestamp)args[i], cal);
+                cal.setTimeInMillis(((Timestamp) args[i]).getTime());
+                verify(ps).setTimestamp(i + 1, (Timestamp) args[i], cal);
             } else {
                 verify(ps).setObject(i + 1, args[i]);
             }
         }
-        verify(con).prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
+        verify(con).prepareStatement(query, RETURN_GENERATED_KEYS);
         verify(ps).executeUpdate();
     }
 

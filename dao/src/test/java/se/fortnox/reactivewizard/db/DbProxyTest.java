@@ -4,27 +4,28 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.inject.Injector;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Mockito;
+import reactor.core.publisher.Flux;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
+import reactor.test.StepVerifier;
 import rx.Observable;
-import rx.Scheduler;
-import rx.Subscriber;
-import rx.exceptions.MissingBackpressureException;
 import rx.observers.TestSubscriber;
-import rx.schedulers.Schedulers;
 import se.fortnox.reactivewizard.config.TestInjector;
 import se.fortnox.reactivewizard.db.config.DatabaseConfig;
 import se.fortnox.reactivewizard.json.JsonSerializerFactory;
 
-import java.lang.reflect.Type;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.YearMonth;
-import java.util.concurrent.TimeUnit;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static java.time.Duration.ofSeconds;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.anyInt;
@@ -32,15 +33,15 @@ import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static reactor.core.Exceptions.isOverflow;
 
-/**
- */
 public class DbProxyTest {
 
-    MockDb         mockDb;
+    MockDb mockDb;
     DbProxyTestDao dbProxyTestDao;
 
     @Test
@@ -56,14 +57,14 @@ public class DbProxyTest {
 
     @Test
     public void shouldReuseTypeReference() {
-        final JsonSerializerFactory       jsonSerialierFactoryReal     = new JsonSerializerFactory();
-        final JsonSerializerFactory       jsonSerializerFactory        = Mockito.spy(jsonSerialierFactoryReal);
+        final JsonSerializerFactory jsonSerializerFactoryReal = new JsonSerializerFactory();
+        final JsonSerializerFactory jsonSerializerFactory = spy(jsonSerializerFactoryReal);
         AtomicReference<TypeReference<?>> typeReferenceAtomicReference = new AtomicReference<>();
 
         when(jsonSerializerFactory.createStringSerializer(any(TypeReference.class))).thenAnswer(invocationOnMock -> {
             final TypeReference<?> argument = invocationOnMock.getArgument(0);
             typeReferenceAtomicReference.set(argument);
-            return jsonSerialierFactoryReal.createStringSerializer(argument);
+            return jsonSerializerFactoryReal.createStringSerializer(argument);
         });
         new DbProxy(new DatabaseConfig(), null, null, jsonSerializerFactory);
 
@@ -146,7 +147,7 @@ public class DbProxyTest {
     }
 
     @Test
-    public void shouldThrowExceptionForBadReturnTypeOnUpdate() throws SQLException {
+    public void shouldThrowExceptionForBadReturnTypeOnUpdate() {
         try {
             dbProxyTestDao.insertBadreturnType().toBlocking().single();
             fail("expected exception");
@@ -158,7 +159,7 @@ public class DbProxyTest {
     }
 
     @Test
-    public void shouldThrowExceptionMethodsWithoutAnnotation() throws SQLException {
+    public void shouldThrowExceptionMethodsWithoutAnnotation() {
         try {
             dbProxyTestDao.methodMissingAnnotation().toBlocking().singleOrDefault(null);
             fail("expected exception");
@@ -241,9 +242,9 @@ public class DbProxyTest {
         newConfig.setUrl("bar");
 
         // when
-        DbProxy oldDbProxy = new DbProxy(oldConfig,mock(ConnectionProvider.class));
+        DbProxy oldDbProxy = new DbProxy(oldConfig, mock(ConnectionProvider.class));
 
-        DbProxy newDbProxy = oldDbProxy.usingConnectionProvider(mock(ConnectionProvider.class),newConfig);
+        DbProxy newDbProxy = oldDbProxy.usingConnectionProvider(mock(ConnectionProvider.class), newConfig);
 
         // then
         assertThat(oldDbProxy).isNotSameAs(newDbProxy);
@@ -262,10 +263,10 @@ public class DbProxyTest {
         when(newConnectionProvider.get()).thenReturn(mockDb.getConnection());
 
         Scheduler newScheduler = mock(Scheduler.class);
-        when(newScheduler.createWorker()).thenReturn(Schedulers.io().createWorker());
+        when(newScheduler.createWorker()).thenReturn(Schedulers.boundedElastic().createWorker());
 
         // when
-        DbProxy oldDbProxy = new DbProxy(config,mock(ConnectionProvider.class));
+        DbProxy oldDbProxy = new DbProxy(config, mock(ConnectionProvider.class));
 
         DbProxy newDbProxy = oldDbProxy.usingConnectionProvider(newConnectionProvider, newScheduler);
         newDbProxy.create(DbProxyTestDao.class).select("").toBlocking().subscribe();
@@ -318,7 +319,8 @@ public class DbProxyTest {
         // Throws on resultset.next
         setup();
         mockDb.addUpdatedRowId(1L);
-        Observable<GeneratedKey<Long>> resultsetError = dbProxyTestDao.insert().lift(new ThrowOnNext<>(new RuntimeException("next")));
+        Observable<GeneratedKey<Long>> resultsetError = dbProxyTestDao.insert()
+                .concatMap(o -> Observable.error(new RuntimeException("next")));
         insertAndAssertError(resultsetError, "next");
 
         // Throws on close
@@ -331,8 +333,9 @@ public class DbProxyTest {
         setup();
         mockDb.addUpdatedRowId(1L);
         doThrow(new SQLException("close")).when(mockDb.getResultSet()).close();
-        resultsetError = dbProxyTestDao.insert().lift(new ThrowOnNext<>(new RuntimeException("next")));
-        insertAndAssertError(resultsetError, "next");
+        Flux<GeneratedKey<Long>> r = dbProxyTestDao.insertFlux()
+                .concatMap(o -> Flux.error(new RuntimeException("next")));
+        insertAndAssertError(r, "next");
 
         // Throws in resource specification
         setup();
@@ -388,7 +391,7 @@ public class DbProxyTest {
             insert.toBlocking().singleOrDefault(null);
             fail("expected exception");
         } catch (Exception e) {
-            Exception cause = (Exception)e.getCause();
+            Exception cause = (Exception) e.getCause();
             if (cause != null) {
                 e = cause;
             }
@@ -398,10 +401,20 @@ public class DbProxyTest {
         }
     }
 
+    private void insertAndAssertError(Flux<?> insert, String message) {
+        assertThatExceptionOfType(Exception.class)
+                .isThrownBy(insert::blockLast)
+                .satisfies(exception -> {
+                    Throwable selfOrCause = Optional.ofNullable(exception.getCause()).orElse(exception);
+                    assertThat(selfOrCause.getMessage()).contains(message);
+                });
+    }
+
     @Test
     public void shouldPassIfUpdateReturnsZeroAffectedRowsAndQueryAllowsZeroUpdates() throws SQLException {
         mockDb.setUpdatedRows(0);
-        dbProxyTestDao.updateAllowingZeroAffectedRows("mykey", "myval").toBlocking().singleOrDefault(null);
+        assertThatNoException()
+                .isThrownBy(() -> dbProxyTestDao.updateAllowingZeroAffectedRows("mykey", "myval").toBlocking().singleOrDefault(null));
     }
 
     @Test
@@ -448,14 +461,16 @@ public class DbProxyTest {
 
     @Test
     public void shouldReturnErrorOnFullBuffer() throws SQLException {
-        mockDb.setRowCount(-1);
+        mockDb.setRowCount(MockDb.INFINITE);
         mockDb.addRowColumn(-1, 1, "name", String.class, "row2");
-        TestSubscriber<DbTestObj> testSubscriber = new TestSubscriber<>(0);
-        dbProxyTestDao.select("mykey").subscribe(testSubscriber);
-
-        testSubscriber.requestMore(1);
-        testSubscriber.awaitTerminalEvent(10000, TimeUnit.MILLISECONDS);
-        testSubscriber.assertError(MissingBackpressureException.class);
+        StepVerifier.create(
+                        dbProxyTestDao.selectFlux("mykey")
+                                .concatMap(o -> Flux.just(o).delayElements(ofSeconds(5)))
+                )
+                .verifyErrorSatisfies(throwable -> {
+                    assertThat(isOverflow(throwable))
+                            .isTrue();
+                });
     }
 
     @Before
@@ -467,36 +482,5 @@ public class DbProxyTest {
         });
         dbProxyTestDao = injector.getInstance(DbProxyTestDao.class);
     }
-
-    private class ThrowOnNext<T> implements Observable.Operator<T, T> {
-
-        private final RuntimeException err;
-
-        public ThrowOnNext(RuntimeException err) {
-            this.err = err;
-        }
-
-        @Override
-        public Subscriber<? super T> call(Subscriber<? super T> subscriber) {
-            return new Subscriber<T>(subscriber) {
-
-                @Override
-                public void onCompleted() {
-                    subscriber.onCompleted();
-                }
-
-                @Override
-                public void onError(Throwable e) {
-                    subscriber.onError(e);
-                }
-
-                @Override
-                public void onNext(T t) {
-                    throw err;
-                }
-            };
-        }
-    }
-
 }
 

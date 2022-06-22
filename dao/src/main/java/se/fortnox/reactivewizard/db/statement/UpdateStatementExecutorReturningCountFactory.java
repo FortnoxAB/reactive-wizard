@@ -1,6 +1,6 @@
 package se.fortnox.reactivewizard.db.statement;
 
-import rx.Subscriber;
+import reactor.core.publisher.FluxSink;
 import se.fortnox.reactivewizard.db.query.ParameterizedQuery;
 
 import java.sql.Connection;
@@ -14,11 +14,11 @@ public class UpdateStatementExecutorReturningCountFactory extends AbstractUpdate
     }
 
     @Override
-    protected void executeStatement(Connection connection, Object[] args, Subscriber subscriber)
-        throws SQLException {
+    protected void executeStatement(Connection connection, Object[] args, FluxSink fluxSink)
+            throws SQLException {
         try (PreparedStatement statement = parameterizedQuery.createStatement(connection, args)) {
             parameterizedQuery.addParameters(args, statement);
-            executed(statement.executeUpdate(), subscriber);
+            executed(statement.executeUpdate(), fluxSink);
         }
     }
 
@@ -33,16 +33,16 @@ public class UpdateStatementExecutorReturningCountFactory extends AbstractUpdate
         return preparedStatement;
     }
 
-    protected void executed(int count, Subscriber subscriber) throws SQLException {
+    protected void executed(int count, FluxSink fluxSink) throws SQLException {
         ensureMinimumReached(count);
-        if (subscriber != null) {
-            subscriber.onNext(count);
+        if (fluxSink != null) {
+            fluxSink.next(count);
         }
     }
 
     @Override
-    protected void batchExecuted(int count, Subscriber subscriber) throws SQLException {
-        executed(count, subscriber);
+    protected void batchExecuted(int count, FluxSink fluxSink) throws SQLException {
+        executed(count, fluxSink);
     }
 
     @Override

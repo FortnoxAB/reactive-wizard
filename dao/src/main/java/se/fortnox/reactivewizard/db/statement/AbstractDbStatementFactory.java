@@ -1,6 +1,6 @@
 package se.fortnox.reactivewizard.db.statement;
 
-import rx.Subscriber;
+import reactor.core.publisher.FluxSink;
 import se.fortnox.reactivewizard.db.query.ParameterizedQuery;
 
 import java.sql.Connection;
@@ -14,14 +14,14 @@ public abstract class AbstractDbStatementFactory implements DbStatementFactory {
         this.parameterizedQuery = parameterizedQuery;
     }
 
-    protected abstract void executeStatement(Connection connection, Object[] args, Subscriber subscriber)
-        throws SQLException;
+    protected abstract void executeStatement(Connection connection, Object[] args, FluxSink<?> fluxSink)
+            throws SQLException;
 
     protected PreparedStatement batch(Connection connection, PreparedStatement preparedStatement, Object[] args) throws SQLException {
         throw new UnsupportedOperationException();
     }
 
-    protected void batchExecuted(int count, Subscriber subscriber) throws SQLException {
+    protected void batchExecuted(int count, FluxSink<?> fluxSink) throws SQLException {
         throw new UnsupportedOperationException();
     }
 
@@ -36,9 +36,9 @@ public abstract class AbstractDbStatementFactory implements DbStatementFactory {
 
     private class StatementImpl implements Statement {
 
-        private final Object[]           args;
+        private final Object[] args;
         private final ParameterizedQuery parameterizedQuery;
-        private       Subscriber         subscriber;
+        private FluxSink<?> fluxSink;
 
         private StatementImpl(Object[] args, ParameterizedQuery parameterizedQuery) {
             this.args = args;
@@ -47,7 +47,7 @@ public abstract class AbstractDbStatementFactory implements DbStatementFactory {
 
         @Override
         public void execute(Connection connection) throws SQLException {
-            executeStatement(connection, args, subscriber);
+            executeStatement(connection, args, fluxSink);
         }
 
         @Override
@@ -57,34 +57,34 @@ public abstract class AbstractDbStatementFactory implements DbStatementFactory {
 
         @Override
         public void batchExecuted(int count) throws SQLException {
-            AbstractDbStatementFactory.this.batchExecuted(count, subscriber);
+            AbstractDbStatementFactory.this.batchExecuted(count, fluxSink);
         }
 
         @Override
         public boolean sameBatch(Statement statement) {
-            if (!(statement instanceof StatementImpl)) {
+            if (!(statement instanceof StatementImpl statementImpl)) {
                 return false;
             }
-            return AbstractDbStatementFactory.this.sameBatch(((StatementImpl)statement).parameterizedQuery);
+            return AbstractDbStatementFactory.this.sameBatch(statementImpl.parameterizedQuery);
         }
 
         @Override
         public void onCompleted() {
-            if (subscriber != null) {
-                subscriber.onCompleted();
+            if (fluxSink != null) {
+                fluxSink.complete();
             }
         }
 
         @Override
         public void onError(Throwable throwable) {
-            if (subscriber != null) {
-                subscriber.onError(throwable);
+            if (fluxSink != null) {
+                fluxSink.error(throwable);
             }
         }
 
         @Override
-        public void setSubscriber(Subscriber<?> subscriber) {
-            this.subscriber = subscriber;
+        public void setFluxSink(FluxSink<?> fluxSink) {
+            this.fluxSink = fluxSink;
         }
     }
 

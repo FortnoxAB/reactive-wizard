@@ -1,10 +1,11 @@
 package se.fortnox.reactivewizard.db.statement;
 
-import rx.Subscriber;
+import reactor.core.publisher.FluxSink;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+
 
 public interface Statement {
     void execute(Connection connection) throws SQLException;
@@ -35,13 +36,15 @@ public interface Statement {
 
     /**
      * Checks compatibility with other batch.
+     *
      * @return <code>true</code> if the specified statement might be added to the batch.
      */
     boolean sameBatch(Statement statement);
 
     /**
-     * Set the subscriber.
-     * @param subscriber the subscriber
+     * Set the FluxSink.
+     *
+     * @param fluxSink the FluxSink
      */
-    void setSubscriber(Subscriber<?> subscriber);
+    void setFluxSink(FluxSink<?> fluxSink);
 }

@@ -1,6 +1,6 @@
 package se.fortnox.reactivewizard.db.statement;
 
-import rx.Subscriber;
+import reactor.core.publisher.FluxSink;
 import se.fortnox.reactivewizard.db.query.ParameterizedQuery;
 
 import java.sql.SQLException;
@@ -12,7 +12,7 @@ public class UpdateStatementReturningVoidFactory extends UpdateStatementExecutor
     }
 
     @Override
-    protected void executed(int count, Subscriber subscriber) throws SQLException {
+    protected void executed(int count, FluxSink fluxSink) throws SQLException {
         ensureMinimumReached(count);
     }
 }
