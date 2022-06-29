@@ -1,12 +1,14 @@
 package se.fortnox.reactivewizard.db.paging;
 
 import org.junit.Test;
-import rx.Observable;
+import reactor.core.publisher.Flux;
+import reactor.test.StepVerifier;
 import se.fortnox.reactivewizard.CollectionOptions;
 
-import java.util.List;
-
+import static java.lang.Math.min;
 import static org.assertj.core.api.Assertions.assertThat;
+import static reactor.core.publisher.Flux.range;
+import static reactor.core.publisher.Operators.liftPublisher;
 
 public class PagingOperatorTest {
 
@@ -15,9 +17,9 @@ public class PagingOperatorTest {
     @Test
     public void shouldManipulateCollectionOptionsCorrectly() {
         shouldBeLastRecord(fetchPageFromStreamWithSize(0));
-        shouldBeLastRecord(fetchPageFromStreamWithSize(PAGE_SIZE-1));
+        shouldBeLastRecord(fetchPageFromStreamWithSize(PAGE_SIZE - 1));
         shouldBeLastRecord(fetchPageFromStreamWithSize(PAGE_SIZE));
-        shouldNotBeLastRecord(fetchPageFromStreamWithSize(PAGE_SIZE+1));
+        shouldNotBeLastRecord(fetchPageFromStreamWithSize(PAGE_SIZE + 1));
     }
 
     @Test
@@ -25,10 +27,12 @@ public class PagingOperatorTest {
         CollectionOptions collectionOptions = new CollectionOptions();
         collectionOptions.setLimit(null);
 
-        PagingOperator<Integer> pagingOperator = new PagingOperator<>(collectionOptions);
+        PagingOperator pagingOperator = new PagingOperator<>(collectionOptions);
 
         assertThat(collectionOptions.isLastRecord()).isFalse();
-        final List<Integer> items = Observable.range(1, 5).lift(pagingOperator).toList().toBlocking().first();
+        StepVerifier.create(range(1, 5).transformDeferred(liftPublisher(pagingOperator)))
+                .expectNext(1, 2, 3, 4, 5)
+                .verifyComplete();
         assertThat(collectionOptions.isLastRecord()).isTrue();
     }
 
@@ -45,10 +49,11 @@ public class PagingOperatorTest {
         CollectionOptions collectionOptions = new CollectionOptions();
         collectionOptions.setLimit(PAGE_SIZE);
 
-        PagingOperator<Integer> pagingOperator = new PagingOperator<>(collectionOptions);
+        PagingOperator pagingOperator = new PagingOperator<>(collectionOptions);
 
-        final List<Integer> items = Observable.range(1, streamSize).lift(pagingOperator).toList().toBlocking().first();
-        assertThat(items).hasSize(Math.min(PAGE_SIZE, streamSize));
+        Flux<Integer> items = range(1, streamSize).transformDeferred(liftPublisher(pagingOperator));
+        assertThat(items.collectList().block())
+                .hasSize(min(PAGE_SIZE, streamSize));
         return collectionOptions;
     }
 

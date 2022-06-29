@@ -32,6 +32,9 @@ public interface DbProxyTestDao {
     @Update("insert into table")
     Observable<GeneratedKey<Long>> insert();
 
+    @Update("insert into table")
+    Flux<GeneratedKey<Long>> insertFlux();
+
     @Update("insert into table (date) values (:date)")
     Observable<GeneratedKey<Long>> insertWithGeneratedKey(LocalDate date);
 

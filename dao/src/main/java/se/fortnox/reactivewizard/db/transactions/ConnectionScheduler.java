@@ -1,6 +1,6 @@
 package se.fortnox.reactivewizard.db.transactions;
 
-import rx.Scheduler;
+import reactor.core.scheduler.Scheduler;
 import se.fortnox.reactivewizard.db.ConnectionProvider;
 
 import java.sql.Connection;
@@ -21,8 +21,9 @@ public class ConnectionScheduler {
 
     /**
      * Schedule action.
+     *
      * @param onError the error handler
-     * @param action the action
+     * @param action  the action
      */
     public void schedule(Consumer<Throwable> onError, ThrowableAction action) {
         Scheduler.Worker worker = scheduler.createWorker();
@@ -32,7 +33,7 @@ public class ConnectionScheduler {
             } catch (Exception e) {
                 onError.accept(e);
             } finally {
-                worker.unsubscribe();
+                worker.dispose();
             }
         });
     }

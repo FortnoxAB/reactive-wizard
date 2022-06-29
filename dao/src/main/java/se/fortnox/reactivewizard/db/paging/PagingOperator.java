@@ -1,12 +1,16 @@
 package se.fortnox.reactivewizard.db.paging;
 
-import rx.Observable.Operator;
-import rx.Subscriber;
+import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
+import reactor.core.Disposable;
 import se.fortnox.reactivewizard.CollectionOptions;
 
-public class PagingOperator<T> implements Operator<T, T> {
+import java.util.function.BiFunction;
 
-    private final int               limit;
+public class PagingOperator<T> implements BiFunction<Publisher<T>, CoreSubscriber<T>, CoreSubscriber<T>> {
+
+    private final int limit;
     private final CollectionOptions collectionOptions;
 
     public PagingOperator(CollectionOptions collectionOptions) {
@@ -15,35 +19,46 @@ public class PagingOperator<T> implements Operator<T, T> {
     }
 
     @Override
-    public Subscriber<? super T> call(final Subscriber<? super T> child) {
-        return new Subscriber<T>(child) {
+    public CoreSubscriber<T> apply(Publisher<T> publisher, CoreSubscriber<T> child) {
+        return new CoreSubscriber<>() {
 
             int count = 0;
 
             @Override
-            public void onCompleted() {
+            public void onComplete() {
                 collectionOptions.setLastRecord(count <= limit);
-                if (!child.isUnsubscribed()) {
-                    child.onCompleted();
+                if (!isDisposed(child)) {
+                    child.onComplete();
                 }
             }
 
             @Override
             public void onError(Throwable throwable) {
-                if (!child.isUnsubscribed()) {
+                if (!isDisposed(child)) {
                     child.onError(throwable);
                 }
             }
 
             @Override
             public void onNext(T item) {
-                if (child.isUnsubscribed()) {
+                if (isDisposed(child)) {
                     return;
                 }
                 count++;
                 if (count <= limit) {
                     child.onNext(item);
                 }
+            }
+
+            @Override
+            public void onSubscribe(Subscription subscription) {
+                if (!isDisposed(child)) {
+                    child.onSubscribe(subscription);
+                }
+            }
+
+            private static boolean isDisposed(CoreSubscriber<?> coreSubscriber) {
+                return coreSubscriber instanceof Disposable disposable && disposable.isDisposed();
             }
         };
     }

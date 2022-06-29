@@ -1,6 +1,6 @@
 package se.fortnox.reactivewizard.db.paging;
 
-import rx.Observable;
+import reactor.core.publisher.Flux;
 import se.fortnox.reactivewizard.CollectionOptions;
 import se.fortnox.reactivewizard.db.Query;
 
@@ -9,6 +9,7 @@ import java.lang.reflect.Method;
 import static com.google.common.collect.Iterables.indexOf;
 import static java.lang.Math.min;
 import static java.util.Arrays.asList;
+import static reactor.core.publisher.Operators.liftPublisher;
 
 public class PagingOutput {
     private final int index;
@@ -30,17 +31,18 @@ public class PagingOutput {
 
     /**
      * Apply paging to result.
+     *
      * @param result the result
-     * @param args the arguments
-     * @param <T> the type of result
+     * @param args   the arguments
+     * @param <T>    the type of result
      * @return the paged result
      */
-    public <T> Observable<T> apply(Observable<T> result, Object[] args) {
+    public <T> Flux<T> apply(Flux<T> result, Object[] args) {
         if (index == -1) {
             return result;
         }
 
-        CollectionOptions collectionOptions = (CollectionOptions)args[index];
+        CollectionOptions collectionOptions = (CollectionOptions) args[index];
         if (collectionOptions == null) {
             return result;
         }
@@ -50,7 +52,6 @@ public class PagingOutput {
         }
 
         collectionOptions.setLimit(min(maxLimit, collectionOptions.getLimit()));
-
-        return result.lift(new PagingOperator(collectionOptions));
+        return result.transformDeferred(liftPublisher(new PagingOperator(collectionOptions)));
     }
 }
