@@ -590,9 +590,14 @@ public class HttpClient implements InvocationHandler {
 
         try {
             JavaType     javaType = TypeFactory.defaultInstance().constructType(type);
-            ObjectReader reader   = objectMapper.readerFor(javaType);
-            Object       value    = reader.readValue(string);
-            return Mono.justOrEmpty(value);
+            try {
+                ObjectReader reader = objectMapper.readerFor(javaType);
+                Object       value    = reader.readValue(string);
+                return Mono.justOrEmpty(value);
+            } catch (NoClassDefFoundError e) {
+                // Add type info on serialization errors to help with debugging
+                throw new RuntimeException(String.format("Could not create deserializer for class %s", type.getTypeName()), e);
+            }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
