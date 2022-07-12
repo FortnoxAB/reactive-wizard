@@ -305,21 +305,9 @@
             </dependency>
 
             <dependency>
-                <groupId>com.netflix.blitz4j</groupId>
-                <artifactId>blitz4j</artifactId>
-                <version>${blitz4j.version}</version>
-            </dependency>
-
-            <dependency>
                 <groupId>junit</groupId>
                 <artifactId>junit</artifactId>
                 <version>${junit.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.netflix.servo</groupId>
-                <artifactId>servo-core</artifactId>
-                <version>${servocore.version}</version>
             </dependency>
 
             <dependency>
