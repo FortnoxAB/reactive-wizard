@@ -14,13 +14,11 @@
 		<dependency>
 			<groupId>com.google.inject</groupId>
 			<artifactId>guice</artifactId>
-			<version>${guice.version}</version>
 		</dependency>
 
 		<dependency>
 			<groupId>io.github.classgraph</groupId>
 			<artifactId>classgraph</artifactId>
-			<version>${classgraph.version}</version>
 		</dependency>
 
 		<dependency>

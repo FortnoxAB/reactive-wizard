@@ -15,7 +15,6 @@
 		<dependency>
 			<groupId>javax.inject</groupId>
 			<artifactId>javax.inject</artifactId>
-			<version>${javax.inject.version}</version>
 		</dependency>
 
 		<dependency>
@@ -76,7 +75,6 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-jar-plugin</artifactId>
-				<version>${maven-jar-plugin.version}</version>
 				<executions>
 					<execution>
 						<goals>
@@ -89,7 +87,6 @@
 			<plugin>
 				<groupId>org.jacoco</groupId>
 				<artifactId>jacoco-maven-plugin</artifactId>
-				<version>${jacoco.version}</version>
 				<executions>
 					<execution>
 						<id>default-prepare-agent</id>

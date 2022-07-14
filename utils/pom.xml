@@ -2,42 +2,41 @@
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-	<parent>
-		<artifactId>reactivewizard-parent</artifactId>
-		<groupId>se.fortnox.reactivewizard</groupId>
-		<version>999.9.9-SNAPSHOT</version>
-	</parent>
-	<modelVersion>4.0.0</modelVersion>
+    <parent>
+        <artifactId>reactivewizard-parent</artifactId>
+        <groupId>se.fortnox.reactivewizard</groupId>
+        <version>999.9.9-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
 
-	<artifactId>reactivewizard-utils</artifactId>
+    <artifactId>reactivewizard-utils</artifactId>
 
-	<dependencies>
-		<dependency>
-			<groupId>se.fortnox.reactivewizard</groupId>
-			<artifactId>reactivewizard-test</artifactId>
-			<scope>test</scope>
-		</dependency>
+    <dependencies>
+        <dependency>
+            <groupId>se.fortnox.reactivewizard</groupId>
+            <artifactId>reactivewizard-test</artifactId>
+            <scope>test</scope>
+        </dependency>
 
-		<dependency>
-			<groupId>com.fasterxml.jackson.core</groupId>
-			<artifactId>jackson-databind</artifactId>
-		</dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
 
-		<dependency>
-			<groupId>javax.inject</groupId>
-			<artifactId>javax.inject</artifactId>
-			<version>${javax.inject.version}</version>
-		</dependency>
+        <dependency>
+            <groupId>javax.inject</groupId>
+            <artifactId>javax.inject</artifactId>
+        </dependency>
 
-		<dependency>
-			<groupId>io.reactivex</groupId>
-			<artifactId>rxjava</artifactId>
-		</dependency>
+        <dependency>
+            <groupId>io.reactivex</groupId>
+            <artifactId>rxjava</artifactId>
+        </dependency>
 
-		<dependency>
-			<groupId>org.slf4j</groupId>
-			<artifactId>slf4j-api</artifactId>
-		</dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>io.projectreactor</groupId>
@@ -53,13 +52,6 @@
 		<dependency>
 			<groupId>io.reactivex</groupId>
 			<artifactId>rxjava-reactive-streams</artifactId>
-			<version>${rxjava-reactive-streams.version}</version>
-			<exclusions>
-				<exclusion>
-					<groupId>io.reactivex</groupId>
-					<artifactId>rxjava</artifactId>
-				</exclusion>
-			</exclusions>
 		</dependency>
 
         <!-- Test dependencies -->
@@ -67,17 +59,16 @@
         <dependency>
             <groupId>com.google.inject</groupId>
             <artifactId>guice</artifactId>
-            <version>${guice.version}</version>
             <scope>test</scope>
         </dependency>
 
-		<dependency>
-			<groupId>javax.ws.rs</groupId>
-			<artifactId>javax.ws.rs-api</artifactId>
-			<scope>test</scope>
-		</dependency>
+        <dependency>
+            <groupId>javax.ws.rs</groupId>
+            <artifactId>javax.ws.rs-api</artifactId>
+            <scope>test</scope>
+        </dependency>
 
-	</dependencies>
+    </dependencies>
 
     <build>
         <plugins>
@@ -85,7 +76,9 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
-                    <argLine>@{argLine} --add-opens java.base/java.lang.invoke=ALL-UNNAMED --add-opens java.base/java.util=ALL-UNNAMED</argLine>
+                    <argLine>@{argLine} --add-opens java.base/java.lang.invoke=ALL-UNNAMED --add-opens
+                        java.base/java.util=ALL-UNNAMED
+                    </argLine>
                 </configuration>
             </plugin>
         </plugins>
