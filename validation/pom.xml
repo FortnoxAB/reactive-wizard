@@ -34,7 +34,6 @@
             <!--Needed by ValidationModule-->
             <groupId>org.glassfish</groupId>
             <artifactId>jakarta.el</artifactId>
-            <version>${jakarta.el.version}</version>
             <scope>runtime</scope>
         </dependency>
         <dependency>
