@@ -1,7 +1,7 @@
 package se.fortnox.reactivewizard.test;
 
 import org.junit.Test;
-import org.mockito.exceptions.verification.junit.ArgumentsAreDifferent;
+import org.opentest4j.AssertionFailedError;
 
 import java.io.IOException;
 import java.sql.SQLException;
@@ -30,29 +30,31 @@ public class TestUtilTest {
         try {
             verify(testClass).doNothing(matches(string -> assertThat(string).isEqualTo("expected")));
             fail("Expected ComparisonFailure, but none was thrown");
-        } catch (ArgumentsAreDifferent comparisonFailure) {
-            assertThat(comparisonFailure.getActual()).isEqualTo("""
+        } catch (AssertionFailedError assertionFailedError) {
+            assertThat(assertionFailedError.getActual().getStringRepresentation()).isEqualTo("""
                     testClass.doNothing(
                         "unexpected"
                     );
                     """);
-            assertThat(comparisonFailure.getExpected()).isEqualTo("""
-                    testClass.doNothing(
-                        expected:<"[]expected"> but was:<"[un]expected">
-                    );""");
-            assertThat(comparisonFailure.getMessage()).isEqualTo("""
+            assertThat(assertionFailedError.getExpected().getStringRepresentation()).isEqualTo("""
+                   testClass.doNothing(\n\s\s\s\s
+                   expected: "expected"
+                    but was: "unexpected"
+                   );""");
+            assertThat(assertionFailedError.getMessage()).isEqualTo("""
 
-                    Argument(s) are different! Wanted:
-                    testClass.doNothing(
-                        expected:<"[]expected"> but was:<"[un]expected">
-                    );
-                    -> at se.fortnox.reactivewizard.test.TestUtilTest.testMatchesFailure(TestUtilTest.java:31)
-                    Actual invocations have different arguments:
-                    testClass.doNothing(
-                        "unexpected"
-                    );
-                    -> at se.fortnox.reactivewizard.test.TestUtilTest.testMatchesFailure(TestUtilTest.java:28)
-                    """);
+                   Argument(s) are different! Wanted:
+                   testClass.doNothing(\n\s\s\s\s
+                   expected: "expected"
+                    but was: "unexpected"
+                   );
+                   -> at se.fortnox.reactivewizard.test.TestUtilTest.testMatchesFailure(TestUtilTest.java:31)
+                   Actual invocations have different arguments:
+                   testClass.doNothing(
+                       "unexpected"
+                   );
+                   -> at se.fortnox.reactivewizard.test.TestUtilTest.testMatchesFailure(TestUtilTest.java:28)
+                   """);
         }
     }
 

@@ -80,6 +80,7 @@
         <hikaricp.version>5.0.1</hikaricp.version>
         <slf4j.version>1.7.36</slf4j.version>
         <junit.version>4.13.2</junit.version>
+        <junit5.version>5.9.0</junit5.version>
         <h2.version>2.1.214</h2.version>
         <snakeyaml.version>1.30</snakeyaml.version>
         <hibernate-validator.version>7.0.5.Final</hibernate-validator.version>
@@ -114,6 +115,7 @@
         <javax.ws.rs-api.version>2.1.1</javax.ws.rs-api.version>
         <reactive-streams.version>1.0.4</reactive-streams.version>
         <maven-deploy-plugin.version>3.0.0</maven-deploy-plugin.version>
+	    <byte-buddy.version>1.12.13</byte-buddy.version>
 
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         <sonar.organization>fortnoxab</sonar.organization>
@@ -141,6 +143,14 @@
                 <groupId>com.fasterxml.jackson</groupId>
                 <artifactId>jackson-bom</artifactId>
                 <version>${jackson-bom.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.junit</groupId>
+                <artifactId>junit-bom</artifactId>
+                <version>${junit5.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -317,11 +327,18 @@
                 <version>${junit.version}</version>
             </dependency>
 
+	    <dependency>
+		    <groupId>net.bytebuddy</groupId>
+		    <artifactId>byte-buddy</artifactId>
+		    <version>${byte-buddy.version}</version>
+	    </dependency>
+
             <dependency>
                 <groupId>com.h2database</groupId>
                 <artifactId>h2</artifactId>
                 <version>${h2.version}</version>
             </dependency>
+
 
             <dependency>
                 <groupId>org.yaml</groupId>
