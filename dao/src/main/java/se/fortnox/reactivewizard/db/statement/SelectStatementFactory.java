@@ -28,8 +28,8 @@ public class SelectStatementFactory extends AbstractDbStatementFactory {
             try (ResultSet resultSet = statement.executeQuery()) {
                 while (resultSet.next()) {
                     if (fluxSink != null) {
-                        var val = deserializer.deserialize(resultSet);
-                        if(val == null){
+                        var value = deserializer.deserialize(resultSet);
+                        if (value == null) {
                             throw new NullPointerException("""
                                 One or more selected values from the database is null.
                                 Project Reactor does not allow emitting null values in a stream. Wrap the return value from the dao interface
@@ -39,10 +39,8 @@ public class SelectStatementFactory extends AbstractDbStatementFactory {
                                     String maybeNullValue
                                 }
                                 """);
-                        } else {
-                            fluxSink.next(val);
                         }
-
+                        fluxSink.next(value);
                     }
                 }
             }

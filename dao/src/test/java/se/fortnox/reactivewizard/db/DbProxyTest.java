@@ -13,6 +13,7 @@ import rx.observers.TestSubscriber;
 import se.fortnox.reactivewizard.config.TestInjector;
 import se.fortnox.reactivewizard.db.config.DatabaseConfig;
 import se.fortnox.reactivewizard.json.JsonSerializerFactory;
+import se.fortnox.reactivewizard.util.DebugUtil;
 
 import java.sql.SQLException;
 import java.time.LocalDate;
@@ -58,14 +59,16 @@ public class DbProxyTest {
     @Test
     public void shouldThrowExceptionWhenDirectlySelectingNullValues() throws SQLException {
         mockDb.addRowColumn(1, 1, "sql_val", String.class, null);
-
         StepVerifier.create(dbProxyTestDao.selectSpecificColumn("mykey"))
                 .expectErrorSatisfies((throwable -> {
-                    assertThat(throwable)
-                        .isInstanceOf(RuntimeException.class);
-                    assertThat(throwable.getCause())
+                    Throwable throwableToAssert = throwable;
+                    if(DebugUtil.IS_DEBUG) {
+                        throwableToAssert = throwable.getCause();
+                    }
+                    assertThat(throwableToAssert)
                         .isInstanceOf(NullPointerException.class);
-                    assertThat(throwable.getCause().getMessage())
+
+                    assertThat(throwableToAssert.getMessage())
                         .isEqualTo("""
                                 One or more selected values from the database is null.
                                 Project Reactor does not allow emitting null values in a stream. Wrap the return value from the dao interface
