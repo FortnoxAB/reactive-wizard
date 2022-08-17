@@ -1,13 +1,16 @@
 package se.fortnox.reactivewizard.db.statement;
 
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import se.fortnox.reactivewizard.db.deserializing.DbResultSetDeserializer;
 import se.fortnox.reactivewizard.db.query.ParameterizedQuery;
 
+import java.lang.reflect.Type;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Optional;
 
 public class SelectStatementFactory extends AbstractDbStatementFactory {
     private final DbResultSetDeserializer deserializer;
@@ -25,7 +28,21 @@ public class SelectStatementFactory extends AbstractDbStatementFactory {
             try (ResultSet resultSet = statement.executeQuery()) {
                 while (resultSet.next()) {
                     if (fluxSink != null) {
-                        fluxSink.next(deserializer.deserialize(resultSet));
+                        var val = deserializer.deserialize(resultSet);
+                        if(val == null){
+                            throw new NullPointerException("""
+                                One or more selected values from the database is null.
+                                Project Reactor does not allow emitting null values in a stream. Wrap the return value from the dao interface
+                                in a 'wrapping class' to solve the issue.
+                                Example: 
+                                class WrappingClass {    
+                                    String maybeNullValue
+                                }
+                                """);
+                        } else {
+                            fluxSink.next(val);
+                        }
+
                     }
                 }
             }

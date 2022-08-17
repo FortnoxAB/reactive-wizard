@@ -56,6 +56,35 @@ public class DbProxyTest {
     }
 
     @Test
+    public void shouldThrowExceptionWhenDirectlySelectingNullValues() throws SQLException {
+        mockDb.addRowColumn(1, 1, "sql_val", String.class, null);
+
+        StepVerifier.create(dbProxyTestDao.selectSpecificColumn("mykey"))
+                .expectErrorSatisfies((throwable -> {
+                    assertThat(throwable)
+                        .isInstanceOf(RuntimeException.class);
+                    assertThat(throwable.getCause())
+                        .isInstanceOf(NullPointerException.class);
+                    assertThat(throwable.getCause().getMessage())
+                        .isEqualTo("""
+                                One or more selected values from the database is null.
+                                Project Reactor does not allow emitting null values in a stream. Wrap the return value from the dao interface
+                                in a 'wrapping class' to solve the issue.
+                                Example: 
+                                class WrappingClass {    
+                                    String maybeNullValue
+                                }
+                                """);
+                }))
+                .verify();
+
+        mockDb.verifySelect("select sql_val from table where key=?", "mykey");
+        verify(mockDb.getPreparedStatement()).close();
+        verify(mockDb.getResultSet()).close();
+        verify(mockDb.getConnection()).close();
+    }
+
+    @Test
     public void shouldReuseTypeReference() {
         final JsonSerializerFactory jsonSerializerFactoryReal = new JsonSerializerFactory();
         final JsonSerializerFactory jsonSerializerFactory = spy(jsonSerializerFactoryReal);
