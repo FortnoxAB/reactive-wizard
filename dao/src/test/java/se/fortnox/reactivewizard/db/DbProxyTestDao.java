@@ -9,6 +9,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.YearMonth;
+import java.util.Optional;
 
 public interface DbProxyTestDao {
     @Update("update table set val=:val where key=:key")
@@ -19,6 +20,9 @@ public interface DbProxyTestDao {
 
     @Query("select * from table where key=:key")
     Observable<DbTestObj> select(String key);
+
+    @Query("select sql_val from table where key=:key")
+    Flux<String> selectSpecificColumn(String key);
 
     @Query("select * from table where key=:key")
     Flux<DbTestObj> selectFlux(String key);
