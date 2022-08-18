@@ -1,6 +1,6 @@
 package se.fortnox.reactivewizard.test;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.opentest4j.AssertionFailedError;
 
 import java.io.IOException;

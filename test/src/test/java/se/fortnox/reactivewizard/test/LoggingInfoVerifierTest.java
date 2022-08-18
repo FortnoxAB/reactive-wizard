@@ -3,6 +3,7 @@ package se.fortnox.reactivewizard.test;
 import org.apache.logging.log4j.Level;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.jupiter.params.ParameterizedTest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,6 +14,7 @@ public class LoggingInfoVerifierTest {
 
     @Rule
     public LoggingVerifier loggingVerifier = new LoggingVerifier(LoggingInfoVerifierTest.class);
+
 
     @Test
     public void verifyLogging() {
