@@ -30,15 +30,16 @@ public class SelectStatementFactory extends AbstractDbStatementFactory {
                     if (fluxSink != null) {
                         var value = deserializer.deserialize(resultSet);
                         if (value == null) {
+                            var sqlQuery = parameterizedQuery.toString();
                             throw new NullPointerException("""
-                                One or more selected values from the database is null.
+                                One or more of the values returned in the resultset of the following query was null:
+                                {{sqlQuery}}
+                                  
                                 Project Reactor does not allow emitting null values in a stream. Wrap the return value from the dao interface
-                                in a 'wrapping class' to solve the issue.
+                                in a 'wrapper' to solve the issue.
                                 Example: 
-                                class WrappingClass {    
-                                    String maybeNullValue
-                                }
-                                """);
+                                record Wrapper(String nullableValue) {};
+                                """.replace("{{sqlQuery}}", sqlQuery));
                         }
                         fluxSink.next(value);
                     }
