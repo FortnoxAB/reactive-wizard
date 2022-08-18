@@ -70,13 +70,13 @@ public class DbProxyTest {
 
                     assertThat(throwableToAssert.getMessage())
                         .isEqualTo("""
-                                One or more selected values from the database is null.
-                                Project Reactor does not allow emitting null values in a stream. Wrap the return value from the dao interface
-                                in a 'wrapping class' to solve the issue.
-                                Example: 
-                                class WrappingClass {    
-                                    String maybeNullValue
-                                }
+                            One or more of the values returned in the resultset of the following query was null:
+                            select sql_val from table where key=:key
+                              
+                            Project Reactor does not allow emitting null values in a stream. Wrap the return value from the dao interface
+                            in a 'wrapper' to solve the issue.
+                            Example: 
+                            record Wrapper(String nullableValue) {};
                                 """);
                 }))
                 .verify();
