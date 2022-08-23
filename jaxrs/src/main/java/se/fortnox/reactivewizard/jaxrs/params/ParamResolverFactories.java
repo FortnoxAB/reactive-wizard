@@ -18,6 +18,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 
 /**
@@ -29,6 +30,7 @@ public class ParamResolverFactories {
     private final ParamResolvers                  paramResolvers;
     private final AnnotatedParamResolverFactories annotatedParamResolverFactories;
     private final ParamTypeResolver               paramTypeResolver;
+
 
     @Inject
     public ParamResolverFactories(DeserializerFactory deserializerFactory,
@@ -92,7 +94,15 @@ public class ParamResolverFactories {
 
         BodyDeserializer<T> bodyDeserializer = deserializerFactory.getBodyDeserializer(paramType, consumesAnnotation);
         if (bodyDeserializer != null) {
-            return request -> Mono.just(deserializeBody(bodyDeserializer, request.getBody()));
+            return request -> {
+                T deserializedBody = deserializeBody(bodyDeserializer, request.getBody());
+
+                if (Objects.isNull(deserializedBody)) {
+                    return Mono.error(new WebException(HttpResponseStatus.BAD_REQUEST, "body.deserializer.error", "Deserialized body is null"));
+                }
+
+                return Mono.just(deserializeBody(bodyDeserializer, request.getBody()));
+            };
         }
 
         throw new RuntimeException("Could not find any deserializer for param of type " + paramType.getType());
