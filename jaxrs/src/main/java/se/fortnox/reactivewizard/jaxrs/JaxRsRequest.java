@@ -108,8 +108,14 @@ public class JaxRsRequest {
     public String getQueryParam(String key, String defaultValue) {
         if (queryParameters == null) {
             QueryStringDecoder queryStringDecoder = new QueryStringDecoder(req.uri());
-            queryParameters = queryStringDecoder.parameters();
+            try {
+                queryParameters = queryStringDecoder.parameters();
+            } catch (IllegalArgumentException e) {
+                LOG.error("Failed to decode HTTP query params for request {} {}", req.method().name(), req.uri(), e);
+                throw new WebException(HttpResponseStatus.BAD_REQUEST);
+            }
         }
+
         List<String> list = queryParameters.get(key);
         if (list != null && !list.isEmpty()) {
             return list.get(0);

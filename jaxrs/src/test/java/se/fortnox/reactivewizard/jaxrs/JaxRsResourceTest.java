@@ -5,9 +5,10 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.util.StdDateFormat;
 import com.google.inject.Module;
 import com.google.inject.*;
-import com.google.inject.multibindings.Multibinder;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.cookie.DefaultCookie;
+import org.apache.logging.log4j.Level;
+import org.junit.Rule;
 import org.junit.Test;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -21,6 +22,7 @@ import se.fortnox.reactivewizard.jaxrs.response.JaxRsResultFactoryFactory;
 import se.fortnox.reactivewizard.jaxrs.response.ResultTransformerFactories;
 import se.fortnox.reactivewizard.mocks.MockHttpServerRequest;
 import se.fortnox.reactivewizard.mocks.MockHttpServerResponse;
+import se.fortnox.reactivewizard.test.LoggingVerifier;
 import se.fortnox.reactivewizard.utils.JaxRsTestUtil;
 
 import javax.ws.rs.*;
@@ -48,6 +50,9 @@ public class JaxRsResourceTest {
     }
 
     private final TestresourceInterface service = new TestresourceImpl();
+
+    @Rule
+    public final LoggingVerifier jaxRsRequestLoggingVerifier = new LoggingVerifier(JaxRsRequest.class);
 
     @Test
     public void shouldConcatPaths() {
@@ -744,6 +749,25 @@ public class JaxRsResourceTest {
     @Test
     public void shouldAcceptBeanParamInherited() {
         assertThat(get(service, "/test/acceptsBeanParamInherited?name=foo&age=3&items=1,2&inherited=YES").getOutp()).isEqualTo("\"foo - 3 2 - YES\"");
+    }
+
+
+    @Test
+    public void shouldGive400ErrorForInvalidHexByteInQuery() {
+        assertBadRequestOnInvalidHexByteInQuery("/test/accepts?myarg=%A");
+        assertBadRequestOnInvalidHexByteInQuery("/test/accepts?%A");
+        assertBadRequestOnInvalidHexByteInQuery("/test/accepts?%=");
+        assertBadRequestOnInvalidHexByteInQuery("/test/accepts?%?");
+        assertBadRequestOnInvalidHexByteInQuery("/test/accepts?%AG");
+        assertBadRequestOnInvalidHexByteInQuery("/test/accepts?%A@");
+    }
+
+    private void assertBadRequestOnInvalidHexByteInQuery(String uri) {
+        MockHttpServerResponse mockHttpServerResponse = get(service, uri);
+
+        assertThat(mockHttpServerResponse.status()).isEqualTo(HttpResponseStatus.BAD_REQUEST);
+
+        jaxRsRequestLoggingVerifier.verify(Level.ERROR, String.format("Failed to decode HTTP query params for request GET %s", uri));
     }
 
     @Path("test")
