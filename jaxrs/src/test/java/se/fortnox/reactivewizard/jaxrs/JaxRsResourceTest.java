@@ -54,6 +54,9 @@ public class JaxRsResourceTest {
     @Rule
     public final LoggingVerifier jaxRsRequestLoggingVerifier = new LoggingVerifier(JaxRsRequest.class);
 
+    @Rule
+    public final LoggingVerifier paramResolverFactoriesLoggingVerifier = new LoggingVerifier(ParamResolverFactories.class);
+
     @Test
     public void shouldConcatPaths() {
         JaxRsResources resources = new JaxRsResources(new Object[]{new Testresource()}, new JaxRsResourceFactory(), false);
@@ -754,8 +757,8 @@ public class JaxRsResourceTest {
     @Test
     public void shouldGiveErrorWhenBodyIsNullString() {
         assertThat(post(service, "/test/applicationJson", "null").status()).isEqualTo(HttpResponseStatus.BAD_REQUEST);
+        paramResolverFactoriesLoggingVerifier.verify(Level.WARN, "Body deserializer returned null when deserializing body: 'null'");
     }
-
 
     @Test
     public void shouldGive400ErrorForInvalidHexByteInQuery() {

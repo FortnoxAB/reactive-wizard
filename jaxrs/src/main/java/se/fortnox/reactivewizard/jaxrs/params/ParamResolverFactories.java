@@ -2,6 +2,8 @@ package se.fortnox.reactivewizard.jaxrs.params;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
 import se.fortnox.reactivewizard.jaxrs.WebException;
 import se.fortnox.reactivewizard.jaxrs.params.annotated.AnnotatedParamResolverFactories;
@@ -16,6 +18,7 @@ import javax.ws.rs.DefaultValue;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -31,6 +34,7 @@ public class ParamResolverFactories {
     private final AnnotatedParamResolverFactories annotatedParamResolverFactories;
     private final ParamTypeResolver               paramTypeResolver;
 
+    private static final Logger LOG = LoggerFactory.getLogger(ParamResolverFactory.class);
 
     @Inject
     public ParamResolverFactories(DeserializerFactory deserializerFactory,
@@ -98,10 +102,12 @@ public class ParamResolverFactories {
                 T deserializedBody = deserializeBody(bodyDeserializer, request.getBody());
 
                 if (Objects.isNull(deserializedBody)) {
-                    return Mono.error(new WebException(HttpResponseStatus.BAD_REQUEST, "body.deserializer.error", "Deserialized body is null"));
+                    String body = new String(request.getBody(), StandardCharsets.UTF_8);
+                    LOG.warn("Body deserializer returned null when deserializing body: '{}'", body);
+                    return Mono.error(new WebException(HttpResponseStatus.BAD_REQUEST));
                 }
 
-                return Mono.just(deserializeBody(bodyDeserializer, request.getBody()));
+                return Mono.just(deserializedBody);
             };
         }
 
