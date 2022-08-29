@@ -15,6 +15,7 @@ updates:
       - "rassmate"
       - "jepp3"
       - "j-holmstrom"
+      - "softqwewasd"
     ignore:
       - dependency-name: "com.fasterxml.jackson:jackson-bom"
         versions: ["2.13.2.20220324", "2.13.2.20220328"]
