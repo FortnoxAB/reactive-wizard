@@ -2,7 +2,10 @@ package se.fortnox.reactivewizard.jaxrs;
 
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import reactor.core.publisher.Flux;
 import rx.Observable;
 import se.fortnox.reactivewizard.ExceptionHandler;
@@ -12,7 +15,8 @@ import se.fortnox.reactivewizard.mocks.MockHttpServerResponse;
 
 import javax.ws.rs.*;
 
-import static java.util.Collections.emptySet;
+import java.util.stream.Stream;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static rx.Observable.just;
 
@@ -27,11 +31,18 @@ public class StatusTest {
             false
     );
 
-    @Test
-    public void shouldReturn200ForGetPutPatch() {
-        assertStatus("/test/get", HttpMethod.GET, HttpResponseStatus.OK);
-        assertStatus("/test/put", HttpMethod.PUT, HttpResponseStatus.OK);
-        assertStatus("/test/patch", HttpMethod.PATCH, HttpResponseStatus.OK);
+    @ParameterizedTest
+    @MethodSource("httpPathAndMethodProvider")
+    public void shouldReturn200ForGetPutPatch(String path, HttpMethod httpMethod) {
+        assertStatus(path, httpMethod, HttpResponseStatus.OK);
+    }
+
+    private static Stream<Arguments> httpPathAndMethodProvider() {
+        return Stream.of(
+            Arguments.arguments("/test/get", HttpMethod.GET),
+            Arguments.arguments("/test/put", HttpMethod.PUT),
+            Arguments.arguments("/test/patch", HttpMethod.PATCH)
+        );
     }
 
     @Test
