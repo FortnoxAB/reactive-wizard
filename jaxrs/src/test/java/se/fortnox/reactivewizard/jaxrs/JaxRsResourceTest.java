@@ -54,6 +54,9 @@ public class JaxRsResourceTest {
     @Rule
     public final LoggingVerifier jaxRsRequestLoggingVerifier = new LoggingVerifier(JaxRsRequest.class);
 
+    @Rule
+    public final LoggingVerifier paramResolverFactoriesLoggingVerifier = new LoggingVerifier(ParamResolverFactories.class);
+
     @Test
     public void shouldConcatPaths() {
         JaxRsResources resources = new JaxRsResources(new Object[]{new Testresource()}, new JaxRsResourceFactory(), false);
@@ -751,6 +754,11 @@ public class JaxRsResourceTest {
         assertThat(get(service, "/test/acceptsBeanParamInherited?name=foo&age=3&items=1,2&inherited=YES").getOutp()).isEqualTo("\"foo - 3 2 - YES\"");
     }
 
+    @Test
+    public void shouldGiveErrorWhenBodyIsNullString() {
+        assertThat(post(service, "/test/applicationJson", "null").status()).isEqualTo(HttpResponseStatus.BAD_REQUEST);
+        paramResolverFactoriesLoggingVerifier.verify(Level.WARN, "Body deserializer returned null when deserializing body: 'null'");
+    }
 
     @Test
     public void shouldGive400ErrorForInvalidHexByteInQuery() {
@@ -994,6 +1002,11 @@ public class JaxRsResourceTest {
         @Path("textPlain")
         @Consumes(MediaType.TEXT_PLAIN)
         Observable<String> textPlain(String input);
+
+        @POST
+        @Path("applicationJson")
+        @Consumes(MediaType.APPLICATION_JSON)
+        Observable<String> applicationJson(String input);
 
         @POST
         @Path("byteArray")
@@ -1280,6 +1293,11 @@ public class JaxRsResourceTest {
 
         @Override
         public Observable<String> textPlain(String input) {
+            return just(input);
+        }
+
+        @Override
+        public Observable<String> applicationJson(String input) {
             return just(input);
         }
 
