@@ -111,7 +111,7 @@ public class JaxRsRequest {
             try {
                 queryParameters = queryStringDecoder.parameters();
             } catch (IllegalArgumentException e) {
-                LOG.error("Failed to decode HTTP query params for request {} {}", req.method().name(), req.uri(), e);
+                LOG.info("Failed to decode HTTP query params for request {} {}", req.method().name(), req.uri(), e);
                 throw new WebException(HttpResponseStatus.BAD_REQUEST);
             }
         }
