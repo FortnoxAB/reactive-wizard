@@ -115,7 +115,7 @@
         <javax.ws.rs-api.version>2.1.1</javax.ws.rs-api.version>
         <reactive-streams.version>1.0.4</reactive-streams.version>
         <maven-deploy-plugin.version>3.0.0</maven-deploy-plugin.version>
-	    <byte-buddy.version>1.12.13</byte-buddy.version>
+	    <byte-buddy.version>1.12.14</byte-buddy.version>
 
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         <sonar.organization>fortnoxab</sonar.organization>
