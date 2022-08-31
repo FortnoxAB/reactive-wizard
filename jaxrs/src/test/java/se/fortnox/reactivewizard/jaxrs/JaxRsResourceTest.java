@@ -7,7 +7,6 @@ import com.google.inject.Module;
 import com.google.inject.*;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.cookie.DefaultCookie;
-import org.apache.logging.log4j.Level;
 import org.junit.Rule;
 import org.junit.Test;
 import reactor.core.publisher.Flux;
@@ -35,8 +34,12 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.*;
 
+import static io.netty.handler.codec.http.HttpResponseStatus.BAD_REQUEST;
 import static java.util.Arrays.asList;
+import static org.apache.logging.log4j.Level.INFO;
+import static org.apache.logging.log4j.Level.WARN;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -137,9 +140,10 @@ public class JaxRsResourceTest {
         assertThat(body(getWithHeaders(service, "/test/acceptsDefaultCookie", new HashMap<>()))).isEqualTo("\"Default: 5\"");
     }
 
-    @Test(expected = UnsupportedOperationException.class)
+    @Test
     public void shouldNotSupportDefaultValueForPathParam() throws Exception {
-        body(get(new DefaultPathParamResource(), "/default/param"));
+        assertThatExceptionOfType(UnsupportedOperationException.class)
+            .isThrownBy(() -> body(get(new DefaultPathParamResource(), "/default/param")));
     }
 
     @Test
@@ -241,7 +245,7 @@ public class JaxRsResourceTest {
     public void shouldSupportSimpleHeaderParamTypes() {
         assertThat(body(JaxRsTestUtil.getWithHeaders(service,
             "/test/acceptsHeaderString",
-            new HashMap<String, List<String>>() {
+            new HashMap<>() {
                 {
                     put("myHeader", asList("accepts"));
                 }
@@ -250,14 +254,14 @@ public class JaxRsResourceTest {
 
         assertThat(body(JaxRsTestUtil.getWithHeaders(service,
             "/test/acceptsHeaderInteger",
-            new HashMap<String, List<String>>() {
+            new HashMap<>() {
                 {
                     put("myHeader", asList("4"));
                 }
             }
         ))).isEqualTo("\"header: 4\"");
         assertThat(body(JaxRsTestUtil.getWithHeaders(service, "/test/acceptsHeaderEnum",
-            new HashMap<String, List<String>>() {
+            new HashMap<>() {
                 {
                     put("myHeader", asList("ONE"));
                 }
@@ -332,7 +336,7 @@ public class JaxRsResourceTest {
             .replaceAll("\\[", "\\\\[")
             .replaceAll("\\]", "\\\\]");
         assertThat(response.status())
-            .isEqualTo(HttpResponseStatus.BAD_REQUEST);
+            .isEqualTo(BAD_REQUEST);
         assertThat(response.getOutp())
             .matches(expectedBodyRegex);
     }
@@ -402,7 +406,7 @@ public class JaxRsResourceTest {
         Module customDateModule = new AbstractModule() {
             @Override
             protected void configure() {
-                bind(DateFormat.class).toProvider(() -> new CustomDateFormat());
+                bind(DateFormat.class).toProvider(CustomDateFormat::new);
                 bind(JaxRsResourcesProvider.class).toInstance(() -> new Object[]{service});
                 bind(ByteBufCollector.class).toInstance(new ByteBufCollector());
                 bind(new TypeLiteral<Set<ParamResolver>>() {{
@@ -592,7 +596,7 @@ public class JaxRsResourceTest {
     @Test
     public void shouldGive400ErrorForBadUuid() {
         MockHttpServerResponse response = get(service, "/test/acceptsUuid/baduuid");
-        assertThat(response.status()).isEqualTo(HttpResponseStatus.BAD_REQUEST);
+        assertThat(response.status()).isEqualTo(BAD_REQUEST);
         assertThat(body(response)).contains("\"error\":\"validation\",\"fields\":[{\"field\":\"id\",\"error\":\"validation.invalid.uuid\"}]}");
     }
 
@@ -601,7 +605,7 @@ public class JaxRsResourceTest {
         UUID uuid = UUID.randomUUID();
         assertThat(body(JaxRsTestUtil.getWithHeaders(service,
             "/test/acceptsUuidHeader",
-            new HashMap<String, List<String>>() {
+            new HashMap<>() {
                 {
                     put("id", asList(uuid.toString()));
                 }
@@ -756,8 +760,8 @@ public class JaxRsResourceTest {
 
     @Test
     public void shouldGiveErrorWhenBodyIsNullString() {
-        assertThat(post(service, "/test/applicationJson", "null").status()).isEqualTo(HttpResponseStatus.BAD_REQUEST);
-        paramResolverFactoriesLoggingVerifier.verify(Level.WARN, "Body deserializer returned null when deserializing body: 'null'");
+        assertThat(post(service, "/test/applicationJson", "null").status()).isEqualTo(BAD_REQUEST);
+        paramResolverFactoriesLoggingVerifier.verify(WARN, "Body deserializer returned null when deserializing body: 'null'");
     }
 
     @Test
@@ -773,9 +777,9 @@ public class JaxRsResourceTest {
     private void assertBadRequestOnInvalidHexByteInQuery(String uri) {
         MockHttpServerResponse mockHttpServerResponse = get(service, uri);
 
-        assertThat(mockHttpServerResponse.status()).isEqualTo(HttpResponseStatus.BAD_REQUEST);
+        assertThat(mockHttpServerResponse.status()).isEqualTo(BAD_REQUEST);
 
-        jaxRsRequestLoggingVerifier.verify(Level.ERROR, String.format("Failed to decode HTTP query params for request GET %s", uri));
+        jaxRsRequestLoggingVerifier.verify(INFO, String.format("Failed to decode HTTP query params for request GET %s", uri));
     }
 
     @Path("test")
