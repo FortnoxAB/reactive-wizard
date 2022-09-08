@@ -7,8 +7,8 @@ import com.google.inject.Module;
 import com.google.inject.*;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.cookie.DefaultCookie;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import rx.Observable;
@@ -22,6 +22,8 @@ import se.fortnox.reactivewizard.jaxrs.response.ResultTransformerFactories;
 import se.fortnox.reactivewizard.mocks.MockHttpServerRequest;
 import se.fortnox.reactivewizard.mocks.MockHttpServerResponse;
 import se.fortnox.reactivewizard.test.LoggingVerifier;
+import se.fortnox.reactivewizard.test.LoggingVerifierExtension;
+import se.fortnox.reactivewizard.test.LoggingVerifierFor;
 import se.fortnox.reactivewizard.utils.JaxRsTestUtil;
 
 import javax.ws.rs.*;
@@ -46,56 +48,57 @@ import static org.mockito.Mockito.when;
 import static rx.Observable.just;
 import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.*;
 
-public class JaxRsResourceTest {
+@ExtendWith(LoggingVerifierExtension.class)
+class JaxRsResourceTest {
 
-    public enum TestEnum {
+    enum TestEnum {
         ONE, TWO, THREE
     }
 
     private final TestresourceInterface service = new TestresourceImpl();
 
-    @Rule
-    public final LoggingVerifier jaxRsRequestLoggingVerifier = new LoggingVerifier(JaxRsRequest.class);
+    @LoggingVerifierFor(JaxRsRequest.class)
+    LoggingVerifier jaxRsRequestLoggingVerifier;
 
-    @Rule
-    public final LoggingVerifier paramResolverFactoriesLoggingVerifier = new LoggingVerifier(ParamResolverFactories.class);
+    @LoggingVerifierFor(ParamResolverFactories.class)
+    LoggingVerifier paramResolverFactoriesLoggingVerifier;
 
     @Test
-    public void shouldConcatPaths() {
+    void shouldConcatPaths() {
         JaxRsResources resources = new JaxRsResources(new Object[]{new Testresource()}, new JaxRsResourceFactory(), false);
         JaxRsRequest jaxRsRequest = new JaxRsRequest(new MockHttpServerRequest("/test/acceptsString"), new ByteBufCollector());
         assertThat(resources.findResource(jaxRsRequest).call(jaxRsRequest)).isNotNull();
     }
 
     @Test
-    public void shouldResolveArgs() {
+    void shouldResolveArgs() {
         assertThat(body(get(new Testresource(), "/test/acceptsString?myarg=hepp")))
             .isEqualTo("\"inp: hepp\"");
     }
 
     @Test
-    public void shouldHandleHeaderOnClassAsAResource() {
+    void shouldHandleHeaderOnClassAsAResource() {
         assertThat(get(new Testresource(), "/test/serverSideAnnotationsOnClassAsResource").responseHeaders().get("Content-Disposition")).isNotNull();
     }
 
     @Test
-    public void shouldIgnoreHeaderOnInterface() {
+    void shouldIgnoreHeaderOnInterface() {
         assertThat(get(new Testresource(), "/test/shouldIgnoreHeadersAnnotationOnInterface").responseHeaders().get("Content-Disposition")).isNull();
     }
 
     @Test
-    public void shouldAcceptHeaderOnImplementingClass() {
+    void shouldAcceptHeaderOnImplementingClass() {
         assertThat(get(service, "/test/acceptsHeadersOnImplementation").responseHeaders().get("Content-Disposition")).isNotNull();
     }
 
     @Test
-    public void shouldHandleInterfaceAnnotations() throws Exception {
+    void shouldHandleInterfaceAnnotations() throws Exception {
         assertThat(body(get(service, "/test/accepts?myarg=hepp")))
             .isEqualTo("\"accepts from interface: hepp\"");
     }
 
     @Test
-    public void shouldResolveCustomType() throws IllegalArgumentException {
+    void shouldResolveCustomType() throws IllegalArgumentException {
 
         MockHttpServerRequest req = new MockHttpServerRequest("/test/accepts/res?fid=5678");
         req.cookies().put("fnox_5678", new HashSet<>(asList(new DefaultCookie("fnox_5678", "888"))));
@@ -133,7 +136,7 @@ public class JaxRsResourceTest {
     }
 
     @Test
-    public void shouldSupportDefaultValue() throws Exception {
+    void shouldSupportDefaultValue() {
         assertThat(body(get(service, "/test/defaultQuery"))).isEqualTo("\"Default: 5\"");
         assertThat(body(post(service, "/test/acceptsDefaultForm", ""))).isEqualTo("\"Default: 5\"");
         assertThat(body(getWithHeaders(service, "/test/acceptsDefaultHeader", new HashMap<>()))).isEqualTo("\"Default: 5\"");
@@ -141,13 +144,13 @@ public class JaxRsResourceTest {
     }
 
     @Test
-    public void shouldNotSupportDefaultValueForPathParam() throws Exception {
+    void shouldNotSupportDefaultValueForPathParam() {
         assertThatExceptionOfType(UnsupportedOperationException.class)
             .isThrownBy(() -> body(get(new DefaultPathParamResource(), "/default/param")));
     }
 
     @Test
-    public void shouldSupportSimpleQueryParamTypes() throws Exception {
+    void shouldSupportSimpleQueryParamTypes() {
         assertThat(
             body(get(service, "/test/acceptsBoolean?myarg=true")))
             .isEqualTo("\"Boolean: true\"");
@@ -170,7 +173,7 @@ public class JaxRsResourceTest {
     }
 
     @Test
-    public void shouldSupportSimplePathParamTypes() throws Exception {
+    void shouldSupportSimplePathParamTypes() {
         assertThat(body(get(service, "/test/acceptsBoolean/true")))
             .isEqualTo("\"Boolean: true\"");
 
@@ -192,7 +195,7 @@ public class JaxRsResourceTest {
     }
 
     @Test
-    public void shouldSupportregexInPathParams() throws Exception {
+    void shouldSupportregexInPathParams() {
         assertThat(
             body(get(service, "/test/acceptsSlashVar/my/var/with/slashes")))
             .isEqualTo("\"var: my/var/with/slashes\"");
@@ -200,20 +203,20 @@ public class JaxRsResourceTest {
     }
 
     @Test
-    public void shouldSupportTrailingSlashInResource() {
+    void shouldSupportTrailingSlashInResource() {
         assertThat(get(service, "/test/trailingSlash/").status()).isEqualTo(HttpResponseStatus.OK);
         assertThat(get(service, "/test/trailingSlash").status()).isEqualTo(HttpResponseStatus.OK);
     }
 
     @Test
-    public void shouldSupportWhitespace() {
+    void shouldSupportWhitespace() {
         assertThat(get(service, "/test/accepts").status()).isEqualTo(HttpResponseStatus.OK);
         assertThat(get(service, "/test/accepts%20%20%20").status()).isEqualTo(HttpResponseStatus.OK);
         assertThat(get(service, "/test/accepts%09%09").status()).isEqualTo(HttpResponseStatus.OK);
     }
 
     @Test
-    public void shouldSupportSimpleFormParamTypes() {
+    void shouldSupportSimpleFormParamTypes() {
         assertThat(
             body(post(service, "/test/acceptsPostString", "myString=accepts")))
             .isEqualTo("\"String: accepts\"");
@@ -242,7 +245,7 @@ public class JaxRsResourceTest {
     }
 
     @Test
-    public void shouldSupportSimpleHeaderParamTypes() {
+    void shouldSupportSimpleHeaderParamTypes() {
         assertThat(body(JaxRsTestUtil.getWithHeaders(service,
             "/test/acceptsHeaderString",
             new HashMap<>() {
@@ -270,7 +273,7 @@ public class JaxRsResourceTest {
     }
 
     @Test
-    public void shouldSupportMissingHeaderParams() {
+    void shouldSupportMissingHeaderParams() {
         assertThat(body(JaxRsTestUtil.getWithHeaders(service,
             "/test/acceptsHeaderString",
             new HashMap<String, List<String>>() {
@@ -282,7 +285,7 @@ public class JaxRsResourceTest {
     }
 
     @Test
-    public void shouldSupportMissingNullableParams() {
+    void shouldSupportMissingNullableParams() {
         assertThat(body(post(service, "/test/acceptsPostBoolean", "dummy=true")))
             .isEqualTo("\"Boolean: null\"");
 
@@ -298,7 +301,7 @@ public class JaxRsResourceTest {
     }
 
     @Test
-    public void shouldGiveErrorForMissingNotNullableParams() {
+    void shouldGiveErrorForMissingNotNullableParams() {
         assertBadRequest(post(service, "/test/acceptsPostNotNullBool", "dummy=true"),
             "{'id':'.*','error':'validation','fields':[{'field':'myBoolean','error':'validation.invalid.boolean'}]}");
         assertBadRequest(post(service, "/test/acceptsPostNotNullInt", "dummy=678"),
@@ -310,7 +313,7 @@ public class JaxRsResourceTest {
     }
 
     @Test
-    public void shouldSupportOverloadedMethods() throws Exception {
+    void shouldSupportOverloadedMethods() throws Exception {
         assertThat(body(get(service, "/test/overloadedMethod?param1=myparam")))
             .isEqualTo("\"Param1: myparam, Param2: null\"");
         assertThat(body(get(service, "/test/overloadedMethod")))
@@ -320,7 +323,7 @@ public class JaxRsResourceTest {
     }
 
     private void assertBadRequest(MockHttpServerResponse response,
-        String expectedBodyRegex
+                                  String expectedBodyRegex
     ) {
         if (!expectedBodyRegex.contains("\"")) {
             expectedBodyRegex = expectedBodyRegex.replaceAll("'", "\\\"");
@@ -342,7 +345,7 @@ public class JaxRsResourceTest {
     }
 
     @Test
-    public void shouldGiveErrorForBadRequests() throws Exception {
+    void shouldGiveErrorForBadRequests() {
         assertBadRequest(get(service, "/test/acceptsInteger?myarg=badvalue"),
             "{'id':'.*','error':'validation','fields':[{'field':'myarg','error':'validation.invalid.int'}]}");
         assertBadRequest(get(service, "/test/acceptsLong?myarg=badvalue"),
@@ -352,7 +355,7 @@ public class JaxRsResourceTest {
     }
 
     @Test
-    public void shouldGiveErrorForBadDates() throws Exception {
+    void shouldGiveErrorForBadDates() {
         assertBadRequest(get(service, "/test/acceptsDate?myarg=20aa-01-01"),
             "{'id':'.*','error':'validation','fields':[{'field':'myarg','error':'validation.invalid.date'}]}");
 
@@ -368,7 +371,7 @@ public class JaxRsResourceTest {
     }
 
     @Test
-    public void shouldSupportDatesAsString() throws Exception {
+    void shouldSupportDatesAsString() {
         assertThat(body(
             get(service, "/test/acceptsDate?myarg=2010-01-01")))
             .isEqualTo("\"2010-01-01T00:00:00.000+0000\"");
@@ -379,7 +382,7 @@ public class JaxRsResourceTest {
 
     class CustomDateFormat extends StdDateFormat {
 
-        public CustomDateFormat() {
+        CustomDateFormat() {
             super(TimeZone.getTimeZone("Europe/Stockholm"), Locale.getDefault(), true);
         }
 
@@ -402,7 +405,7 @@ public class JaxRsResourceTest {
 
 
     @Test
-    public void shouldSupportCustomDates() throws Exception {
+    void shouldSupportCustomDates() {
         Module customDateModule = new AbstractModule() {
             @Override
             protected void configure() {
@@ -430,39 +433,39 @@ public class JaxRsResourceTest {
     }
 
     @Test
-    public void shouldSupportLocalDate() {
+    void shouldSupportLocalDate() {
         assertThat(body(
             get(service, "/test/acceptsLocalDate?myarg=2010-01-01")))
             .isEqualTo("{\"localDate\":\"2010-01-01\"}");
     }
 
     @Test
-    public void shouldSupportLocalTime() {
+    void shouldSupportLocalTime() {
         assertThat(body(
             get(service, "/test/acceptsLocalTime?myarg=13:37:37")))
             .isEqualTo("{\"localTime\":\"13:37:37\"}");
     }
 
     @Test
-    public void shouldReturnErrorWhenServiceThrowsError() {
+    void shouldReturnErrorWhenServiceThrowsError() {
         assertThat(get(service,
             "/test/throwInsufficientStorage").status()).isEqualTo(HttpResponseStatus.INSUFFICIENT_STORAGE);
     }
 
     @Test
-    public void shouldReturnErrorWhenServiceThrowsRuntimeException() {
+    void shouldReturnErrorWhenServiceThrowsRuntimeException() {
         assertThat(get(service,
             "/test/throwRuntimeException").status()).isEqualTo(HttpResponseStatus.INTERNAL_SERVER_ERROR);
     }
 
     @Test
-    public void shouldReturnErrorWhenServiceThrowsException() {
+    void shouldReturnErrorWhenServiceThrowsException() {
         assertThat(get(service,
             "/test/throwException").status()).isEqualTo(HttpResponseStatus.INTERNAL_SERVER_ERROR);
     }
 
     @Test
-    public void shouldReturnErrorForBadJson() {
+    void shouldReturnErrorForBadJson() {
         String expectedBodyRegex1 = "{\"id\":\".*\",\"error\":\"invalidjson\"," +
             "\"message\":\"Unexpected character ('h' (code 104)): was expecting double-quote to start field name\"}";
         assertBadRequest(post(service, "/test/jsonParam", "{hej}"), expectedBodyRegex1);
@@ -477,7 +480,7 @@ public class JaxRsResourceTest {
     }
 
     @Test
-    public void shouldAcceptTextPlainInput() {
+    void shouldAcceptTextPlainInput() {
         String text = "my plain text";
         MockHttpServerResponse resp = post(service, "/test/textPlain", text);
         assertThat(resp.status()).isEqualTo(HttpResponseStatus.CREATED);
@@ -485,7 +488,7 @@ public class JaxRsResourceTest {
     }
 
     @Test
-    public void shouldAcceptByteArrayInput() {
+    void shouldAcceptByteArrayInput() {
         String text = "my bytes";
         MockHttpServerResponse resp = post(service, "/test/byteArray", text);
         assertThat(resp.status()).isEqualTo(HttpResponseStatus.CREATED);
@@ -493,7 +496,7 @@ public class JaxRsResourceTest {
     }
 
     @Test
-    public void shouldAcceptByteArrayInputAnyMimeType() {
+    void shouldAcceptByteArrayInputAnyMimeType() {
         String text = "my bytes";
         MockHttpServerResponse resp = post(service, "/test/byteArrayAnyType", text);
         assertThat(resp.status()).isEqualTo(HttpResponseStatus.CREATED);
@@ -501,7 +504,7 @@ public class JaxRsResourceTest {
     }
 
     @Test
-    public void shouldErrorForUnknownBodyType() {
+    void shouldErrorForUnknownBodyType() {
         @Path("test")
         class InvalidQueryParam {
             @POST
@@ -524,13 +527,13 @@ public class JaxRsResourceTest {
     }
 
     @Test
-    public void shouldGiveErrorForBadEnumValue() {
+    void shouldGiveErrorForBadEnumValue() {
         assertBadRequest(post(service, "/test/acceptsPostEnum", "myEnum=BAD"),
             "{'id':'.*','error':'validation','fields':[{'field':'myEnum','error':'validation.invalid.enum'}]}");
     }
 
     @Test
-    public void shouldGiveErrorForUnparsableType() {
+    void shouldGiveErrorForUnparsableType() {
 
         @Path("test")
         class InvalidQueryParam {
@@ -553,13 +556,13 @@ public class JaxRsResourceTest {
     }
 
     @Test
-    public void shouldHandleNoMatchingResource() {
+    void shouldHandleNoMatchingResource() {
         assertThat(get(service, "/noservice/nomethod").status())
             .isEqualTo(HttpResponseStatus.NOT_FOUND);
     }
 
     @Test
-    public void shouldSupportUuidAsQueryParameter() {
+    void shouldSupportUuidAsQueryParameter() {
         UUID uuid = UUID.randomUUID();
         assertThat(body(
             get(service, "/test/acceptsUuid?id=" + uuid.toString())))
@@ -567,7 +570,7 @@ public class JaxRsResourceTest {
     }
 
     @Test
-    public void shouldSupportEmptyUuidAsQueryParameter() {
+    void shouldSupportEmptyUuidAsQueryParameter() {
         assertThat(body(
             get(service, "/test/acceptsUuid?id=")))
             .isEqualTo("\"Id: null\"");
@@ -578,7 +581,7 @@ public class JaxRsResourceTest {
     }
 
     @Test
-    public void shouldSupportUuidAsFormParameter() {
+    void shouldSupportUuidAsFormParameter() {
         UUID uuid = UUID.randomUUID();
         assertThat(body(
             post(service, "/test/acceptsUuid", "id=" + uuid)))
@@ -586,7 +589,7 @@ public class JaxRsResourceTest {
     }
 
     @Test
-    public void shouldSupportUuidAsPathParameter() {
+    void shouldSupportUuidAsPathParameter() {
         UUID uuid = UUID.randomUUID();
         assertThat(body(
             get(service, "/test/acceptsUuid/" + uuid)))
@@ -594,14 +597,14 @@ public class JaxRsResourceTest {
     }
 
     @Test
-    public void shouldGive400ErrorForBadUuid() {
+    void shouldGive400ErrorForBadUuid() {
         MockHttpServerResponse response = get(service, "/test/acceptsUuid/baduuid");
         assertThat(response.status()).isEqualTo(BAD_REQUEST);
         assertThat(body(response)).contains("\"error\":\"validation\",\"fields\":[{\"field\":\"id\",\"error\":\"validation.invalid.uuid\"}]}");
     }
 
     @Test
-    public void shouldSupportUuidAsHeader() {
+    void shouldSupportUuidAsHeader() {
         UUID uuid = UUID.randomUUID();
         assertThat(body(JaxRsTestUtil.getWithHeaders(service,
             "/test/acceptsUuidHeader",
@@ -614,19 +617,19 @@ public class JaxRsResourceTest {
     }
 
     @Test
-    public void shouldSetContentType() {
+    void shouldSetContentType() {
         assertThat(get(new Testresource(), "/test/acceptsString").responseHeaders().get("Content-Type"))
             .isEqualTo("application/json");
     }
 
     @Test
-    public void shouldSupportReturningNullFromResource() {
+    void shouldSupportReturningNullFromResource() {
         assertThat(get(new Testresource(), "/test/returnsNull").status())
             .isEqualTo(HttpResponseStatus.NO_CONTENT);
     }
 
     @Test
-    public void shouldMatchExactPathBeforePathparam() {
+    void shouldMatchExactPathBeforePathparam() {
         SpecialResource service = new SpecialResource();
         assertThat(body(get(service, "/special/single/frenberg"))).isEqualTo("\"frenberg\"");
         assertThat(body(get(service, "/special/single/strings"))).isEqualTo("[\"string\",\"string\"]");
@@ -635,12 +638,12 @@ public class JaxRsResourceTest {
     }
 
     @Test
-    public void shouldSupportGenericParams() {
+    void shouldSupportGenericParams() {
         assertThat(body(post(service, "/test/generic-param", "[{\"name\":\"test\"}]"))).isEqualTo("\"ParamEntity\"");
     }
 
     @Test
-    public void shouldSupportGenericParamsWhenProxied() {
+    void shouldSupportGenericParamsWhenProxied() {
         TestresourceInterface proxy = (TestresourceInterface) Proxy.newProxyInstance(
             TestresourceInterface.class.getClassLoader(),
             new Class[]{TestresourceInterface.class},
@@ -650,7 +653,7 @@ public class JaxRsResourceTest {
     }
 
     @Test
-    public void shouldResolveCookieParam() {
+    void shouldResolveCookieParam() {
         assertThat(body(getWithHeaders(service, "/test/acceptsCookieParam", new HashMap() {
             {
                 put("Cookie", asList("fnox_session=testcookie"));
@@ -659,113 +662,113 @@ public class JaxRsResourceTest {
     }
 
     @Test
-    public void shouldAcceptBodyForPut() {
+    void shouldAcceptBodyForPut() {
         assertThat(body(put(service, "/test/acceptBodyPut", "{\"name\":\"test\"}"))).isEqualTo("{\"name\":\"test\",\"age\":0,\"items\":null}");
     }
 
     @Test
-    public void shouldAcceptBodyForPutRecord() {
+    void shouldAcceptBodyForPutRecord() {
         assertThat(body(put(service, "/test/acceptBodyPutRecord", "{\"name\":\"test\"}"))).isEqualTo("{\"name\":\"test\",\"age\":0,\"items\":null}");
     }
 
     @Test
-    public void shouldAcceptBodyForPost() {
+    void shouldAcceptBodyForPost() {
         assertThat(body(post(service, "/test/acceptBodyPost", "{\"name\":\"test\"}"))).isEqualTo("{\"name\":\"test\",\"age\":0,\"items\":null}");
     }
 
     @Test
-    public void shouldAcceptBodyForPostRecord() {
+    void shouldAcceptBodyForPostRecord() {
         assertThat(body(post(service, "/test/acceptBodyPostRecord", "{\"name\":\"test\"}"))).isEqualTo("{\"name\":\"test\",\"age\":0,\"items\":null}");
     }
 
     @Test
-    public void shouldAcceptBodyForPatch() {
+    void shouldAcceptBodyForPatch() {
         assertThat(body(patch(service, "/test/acceptBodyPatch", "{\"name\":\"test\"}"))).isEqualTo("{\"name\":\"test\",\"age\":0,\"items\":null}");
     }
 
     @Test
-    public void shouldAcceptBodyForPatchRecord() {
+    void shouldAcceptBodyForPatchRecord() {
         assertThat(body(patch(service, "/test/acceptBodyPatchRecord", "{\"name\":\"test\"}"))).isEqualTo("{\"name\":\"test\",\"age\":0,\"items\":null}");
     }
 
     @Test
-    public void shouldAcceptBodyForDelete() {
+    void shouldAcceptBodyForDelete() {
         assertThat(body(delete(service, "/test/acceptBodyDelete", "{\"name\":\"test\"}"))).isEqualTo("{\"name\":\"test\",\"age\":0,\"items\":null}");
     }
 
     @Test
-    public void shouldAcceptBodyForDeleteRecord() {
+    void shouldAcceptBodyForDeleteRecord() {
         assertThat(body(delete(service, "/test/acceptBodyDeleteRecord", "{\"name\":\"test\"}"))).isEqualTo("{\"name\":\"test\",\"age\":0,\"items\":null}");
     }
 
     @Test
-    public void shouldDenyLargeBodies() {
+    void shouldDenyLargeBodies() {
         assertBadRequest(
             post(service, "/test/acceptsPostString", new byte[11 * 1024 * 1024]),
             "{'id':'.*','error':'too.large.input'}");
     }
 
     @Test
-    public void shouldAcceptLargeBodiesWithinLimits() {
+    void shouldAcceptLargeBodiesWithinLimits() {
         assertThat(post(service, "/test/acceptsPostString", new byte[10 * 1024 * 1024]).status())
             .isEqualTo(HttpResponseStatus.CREATED);
     }
 
     @Test
-    public void shouldAcceptQueryParamArrayValues() {
+    void shouldAcceptQueryParamArrayValues() {
         assertThat(get(service, "/test/acceptsQueryArray?Stringarray=val1,val2,val3").getOutp()).isEqualTo("3");
         assertThat(get(service, "/test/acceptsQueryArray?Integerarray=1,2,3,4").getOutp()).isEqualTo("4");
     }
 
     @Test
-    public void shouldAcceptQueryParamListValues() {
+    void shouldAcceptQueryParamListValues() {
         assertThat(get(service, "/test/acceptsQueryList?Stringlist=val1,val2,val3").getOutp()).isEqualTo("3");
         assertThat(get(service, "/test/acceptsQueryList?Integerlist=1,2,3,4").getOutp()).isEqualTo("4");
     }
 
     @Test
-    public void shouldAcceptQueryParamListWithEnumValues() {
+    void shouldAcceptQueryParamListWithEnumValues() {
         assertThat(get(service, "/test/acceptsQueryListWithEnum?EnumList=ONE,TWO,THREE").getOutp()).isEqualTo("3");
     }
 
     @Test
-    public void shouldAcceptBeanParam() {
+    void shouldAcceptBeanParam() {
         assertThat(get(service, "/test/acceptsBeanParam?name=foo&age=3&items=1,2").getOutp()).isEqualTo("\"foo - 3 2\"");
     }
 
     @Test
-    public void shouldAcceptBeanParamWithDefaults() {
+    void shouldAcceptBeanParamWithDefaults() {
         assertThat(get(service, "/test/acceptsBeanParam?name=foo&items=1,2").getOutp()).isEqualTo("\"foo - 123 2\"");
     }
 
     @Test
-    public void shouldAcceptBeanParamRecord() {
+    void shouldAcceptBeanParamRecord() {
         assertThat(get(service, "/test/acceptsBeanParamRecord?name=foo&age=3&items=1,2").getOutp()).isEqualTo("\"ParamEntityRecord[name=foo, age=3, items=[1, 2]]\"");
     }
 
     @Test
-    public void shouldAcceptBeanParamRecordWithDefaults() {
+    void shouldAcceptBeanParamRecordWithDefaults() {
         assertThat(get(service, "/test/acceptsBeanParamRecord?name=foo&items=1,2").getOutp()).isEqualTo("\"ParamEntityRecord[name=foo, age=123, items=[1, 2]]\"");
     }
 
     @Test
-    public void shouldAcceptBeanParamRecordWithDefaultsAndMissingFields() {
+    void shouldAcceptBeanParamRecordWithDefaultsAndMissingFields() {
         assertThat(get(service, "/test/acceptsBeanParamRecord").getOutp()).isEqualTo("\"ParamEntityRecord[name=null, age=123, items=null]\"");
     }
 
     @Test
-    public void shouldAcceptBeanParamInherited() {
+    void shouldAcceptBeanParamInherited() {
         assertThat(get(service, "/test/acceptsBeanParamInherited?name=foo&age=3&items=1,2&inherited=YES").getOutp()).isEqualTo("\"foo - 3 2 - YES\"");
     }
 
     @Test
-    public void shouldGiveErrorWhenBodyIsNullString() {
+    void shouldGiveErrorWhenBodyIsNullString() {
         assertThat(post(service, "/test/applicationJson", "null").status()).isEqualTo(BAD_REQUEST);
         paramResolverFactoriesLoggingVerifier.verify(WARN, "Body deserializer returned null when deserializing body: 'null'");
     }
 
     @Test
-    public void shouldGive400ErrorForInvalidHexByteInQuery() {
+    void shouldGive400ErrorForInvalidHexByteInQuery() {
         assertBadRequestOnInvalidHexByteInQuery("/test/accepts?myarg=%A");
         assertBadRequestOnInvalidHexByteInQuery("/test/accepts?%A");
         assertBadRequestOnInvalidHexByteInQuery("/test/accepts?%=");
@@ -1099,7 +1102,7 @@ public class JaxRsResourceTest {
         @Path("acceptsQueryArray")
         @GET
         Observable<Integer> acceptsQueryArray(@QueryParam("Stringarray") String[] strings,
-            @QueryParam("Integerarray") Integer[] integers
+                                              @QueryParam("Integerarray") Integer[] integers
         );
 
         @Path("acceptsQueryListWithEnum")
