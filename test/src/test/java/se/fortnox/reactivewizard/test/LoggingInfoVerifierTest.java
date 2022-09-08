@@ -1,9 +1,9 @@
 package se.fortnox.reactivewizard.test;
 
 import org.apache.logging.log4j.Level;
+import org.junit.AfterClass;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.jupiter.params.ParameterizedTest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,5 +27,12 @@ public class LoggingInfoVerifierTest {
         loggingVerifier.verify(Level.INFO, logEvent -> assertThat(logEvent.getMessage().getFormattedMessage()).isEqualTo("info"));
         loggingVerifier.verify(Level.WARN, "warn");
         loggingVerifier.verify(Level.ERROR, "error");
+    }
+
+    @AfterClass
+    public static void verifyLoggerDestroyed() {
+        org.apache.logging.log4j.core.Logger logger = LoggingMockUtil.getLogger(LoggingInfoVerifierTest.class);
+        assertThat(logger.getAppenders())
+            .isEmpty();
     }
 }
