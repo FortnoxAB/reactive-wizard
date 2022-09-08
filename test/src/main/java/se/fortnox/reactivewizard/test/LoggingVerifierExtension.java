@@ -14,25 +14,23 @@ import static org.junit.platform.commons.support.AnnotationSupport.findAnnotated
 import static org.junit.platform.commons.support.ModifierSupport.isStatic;
 
 /**
- * <p>Extension for JUnit Jupiter that provides support for injecting instances of LoggingVerifier and providing lifecycle support, i.e. creating and destroying appenders
- * after each test case.
- * <p>Fields that are to be injected must be annotated with @LoggingVerifierFor(ClassToVerify.class).
- * <h2>Example
+ * <p>Extension for JUnit Jupiter that provides support for injecting instances of LoggingVerifier and providing lifecycle support,
+ * i.e. creating and destroying appenders
+ * after each test case.</p>
+ * <p>Fields that are to be injected must be annotated with @LoggingVerifierFor(ClassToVerify.class).</p>
+ * <h2>Example</h2>
  *
- * <pre>
  * <code class='java'>
  * {@literal @}ExtendWith(LoggingVerifierExtension.class)
  * class ExampleTestCase {
- *
  *    {@literal @}LoggingVerifierFor(ClassThatLogsThings.class)
  *    LoggingVerifier verifier;
- *
  *    {@literal @}Test
  *    void test() {
  *       ...
  *    }
- * }</code>
- * </pre>
+ * }
+ * </code>
  */
 public class LoggingVerifierExtension implements TestInstancePostProcessor, BeforeEachCallback, AfterEachCallback {
 

@@ -12,5 +12,10 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @Retention(RUNTIME)
 @Target(FIELD)
 public @interface LoggingVerifierFor {
+    /**
+     * Get the class for which the LoggingVerifier should be created.
+     *
+     * @return the class
+     */
     Class<?> value();
 }

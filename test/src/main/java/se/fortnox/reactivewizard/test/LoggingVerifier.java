@@ -98,6 +98,11 @@ public class LoggingVerifier extends ExternalResource {
             });
     }
 
+    /**
+     * Get the mocked appender for use with Mockito.verify.
+     *
+     * @return the appender
+     */
     public Appender getMockedAppender() {
         return appender;
     }
