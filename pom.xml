@@ -82,7 +82,7 @@
         <junit.version>4.13.2</junit.version>
         <junit5.version>5.9.0</junit5.version>
         <h2.version>2.1.214</h2.version>
-        <snakeyaml.version>1.31</snakeyaml.version>
+        <snakeyaml.version>1.32</snakeyaml.version>
         <hibernate-validator.version>7.0.5.Final</hibernate-validator.version>
         <jakarta.validation-api.version>3.0.2</jakarta.validation-api.version>
         <log4j.version>2.18.0</log4j.version>
