@@ -89,7 +89,7 @@
 
         <guice.version>5.1.0</guice.version>
         <assertj.version>3.23.1</assertj.version>
-        <mockito.version>4.7.0</mockito.version>
+        <mockito.version>4.8.0</mockito.version>
         <jacoco.version>0.8.8</jacoco.version>
         <reactiversecontexts.version>1.0.1</reactiversecontexts.version>
         <classgraph.version>4.8.149</classgraph.version>
