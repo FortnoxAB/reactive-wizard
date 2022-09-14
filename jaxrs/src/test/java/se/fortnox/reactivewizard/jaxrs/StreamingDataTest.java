@@ -31,12 +31,22 @@ public class StreamingDataTest {
     private NoStreamingResource noStreamingResource = new NoStreamingResourceImpl();
 
     @Test
-    public void testStreamingWithRealServer() {
+    public void testObservableStreamingWithRealServer() {
 
         DisposableServer      server   = testServer(streamingResource, noStreamingResource).getServer();
         HttpClient            client   = HttpClient.create().port(server.port());
         final AtomicReference<HttpClientResponse>    response = new AtomicReference<>();
         List<String> strings = client.get().uri("/stream").response((resp, body)->{
+            response.set(resp);
+            return body.asString();
+        }).collectList().block();
+
+        assertThat(strings).hasSize(2);
+        assertThat(strings.get(0)).isEqualTo("a");
+        assertThat(strings.get(1)).isEqualTo("b");
+        assertThat(response.get().responseHeaders().get("Content-Type")).isEqualTo(MediaType.TEXT_PLAIN);
+
+        strings = client.get().uri("/stream/flux").response((resp, body)->{
             response.set(resp);
             return body.asString();
         }).collectList().block();
@@ -188,7 +198,12 @@ public class StreamingDataTest {
     interface StreamingResource {
         @GET
         @Produces(MediaType.TEXT_PLAIN)
-        Observable<String> streamOfStrings();
+        Observable<String> observableStreamOfStrings();
+
+        @GET
+        @Produces(MediaType.TEXT_PLAIN)
+        @Path("flux")
+        Flux<String> fluxStreamOfStrings();
 
         @GET
         @Produces(MediaType.TEXT_PLAIN)
@@ -235,8 +250,13 @@ public class StreamingDataTest {
 
         @Override
         @Stream
-        public Observable<String> streamOfStrings() {
+        public Observable<String> observableStreamOfStrings() {
             return just("a", "b");
+        }
+
+        @Override
+        public Flux<String> fluxStreamOfStrings() {
+            return Flux.just("a", "b");
         }
 
         @Override
