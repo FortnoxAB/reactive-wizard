@@ -23,7 +23,6 @@ import se.fortnox.reactivewizard.mocks.MockHttpServerRequest;
 import se.fortnox.reactivewizard.mocks.MockHttpServerResponse;
 import se.fortnox.reactivewizard.test.LoggingVerifier;
 import se.fortnox.reactivewizard.test.LoggingVerifierExtension;
-import se.fortnox.reactivewizard.test.LoggingVerifierFor;
 import se.fortnox.reactivewizard.utils.JaxRsTestUtil;
 
 import javax.ws.rs.*;
@@ -57,11 +56,9 @@ class JaxRsResourceTest {
 
     private final TestresourceInterface service = new TestresourceImpl();
 
-    @LoggingVerifierFor(JaxRsRequest.class)
-    LoggingVerifier jaxRsRequestLoggingVerifier;
+    LoggingVerifier jaxRsRequestLoggingVerifier = new LoggingVerifier(JaxRsRequest.class);
 
-    @LoggingVerifierFor(ParamResolverFactories.class)
-    LoggingVerifier paramResolverFactoriesLoggingVerifier;
+    LoggingVerifier paramResolverFactoriesLoggingVerifier = new LoggingVerifier(ParamResolverFactories.class);
 
     @Test
     void shouldConcatPaths() {

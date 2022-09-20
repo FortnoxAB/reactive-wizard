@@ -15,7 +15,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.atLeastOnce;
 
 /**
- * Use as a @Rule annotated field in your unit tests to assert logs att various levels.
+ * Use as a @Rule annotated field in your JUnit 4 tests to assert logs att various levels.
+ * Use with <code>@ExtendWith(LoggingVerifierExtension.class)</code> on your JUnit 5 tests.
  */
 public class LoggingVerifier extends ExternalResource {
     private final Class<?> clazz;

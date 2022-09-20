@@ -1,7 +1,6 @@
 package se.fortnox.reactivewizard.test;
 
 import org.apache.logging.log4j.Level;
-import org.junit.AfterClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -37,9 +36,10 @@ public class LoggingVerifierTest {
         }));
     }
 
-    @AfterClass
-    public static void verifyLoggerDestroyed() {
-        org.apache.logging.log4j.core.Logger logger = LoggingMockUtil.getLogger(LoggingInfoVerifierTest.class);
+    @Test
+    public void verifyLoggerDestroyedOnAfter() {
+        loggingVerifier.after();
+        org.apache.logging.log4j.core.Logger logger = LoggingMockUtil.getLogger(LoggingVerifierTest.class);
         assertThat(logger.getAppenders())
             .isEmpty();
     }
