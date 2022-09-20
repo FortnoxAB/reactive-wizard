@@ -1,6 +1,6 @@
 package se.fortnox.reactivewizard.db.transactions;
 
-import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import se.fortnox.reactivewizard.util.ReactiveDecorator;
 
 import javax.inject.Inject;
@@ -20,25 +20,25 @@ public class DaoTransactionsFluxImpl implements DaoTransactionsFlux {
     }
 
     @Override
-    public <T> Flux<Void> executeTransaction(Iterable<Flux<T>> daoCalls) {
+    public <T> Mono<Void> executeTransaction(Iterable<Mono<T>> daoCalls) {
         if (daoCalls == null) {
-            return Flux.empty();
+            return Mono.empty();
         }
         List<StatementContext> statementContexts = transactionExecutor.getStatementContexts(daoCalls, ReactiveDecorator::getDecoration);
         if (statementContexts.isEmpty()) {
-            return Flux.empty();
+            return Mono.empty();
         }
-        return Flux.create(subscription -> {
+        return Mono.create(subscription -> {
             ConnectionScheduler connectionScheduler = transactionExecutor.getConnectionScheduler(statementContexts);
             connectionScheduler.schedule(subscription::error, connection -> {
                 transactionExecutor.executeTransaction(statementContexts, connection);
-                subscription.complete();
+                subscription.success();
             });
         });
     }
 
     @Override
-    public <T> Flux<Void> executeTransaction(Flux<T>... daoCalls) {
+    public <T> Mono<Void> executeTransaction(Mono<T>... daoCalls) {
         return executeTransaction(asList(daoCalls));
     }
 }

@@ -1,6 +1,6 @@
 package se.fortnox.reactivewizard.db.transactions;
 
-import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 public interface DaoTransactionsFlux {
     /**
@@ -10,7 +10,7 @@ public interface DaoTransactionsFlux {
      * @param daoCalls dao calls to run as on single transaction
      * @return empty Flux
      */
-    <T> Flux<Void> executeTransaction(Iterable<Flux<T>> daoCalls);
+    <T> Mono<Void> executeTransaction(Iterable<Mono<T>> daoCalls);
 
     /**
      * Creates and executes a transaction for the passed dao-calls.
@@ -19,5 +19,5 @@ public interface DaoTransactionsFlux {
      * @param daoCalls dao calls to run as on single transaction
      * @return  empty Flux
      */
-    <T> Flux<Void> executeTransaction(Flux<T>... daoCalls);
+    <T> Mono<Void> executeTransaction(Mono<T>... daoCalls);
 }
