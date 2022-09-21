@@ -1,5 +1,6 @@
 package se.fortnox.reactivewizard.db.transactions;
 
+import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
 import se.fortnox.reactivewizard.util.ReactiveDecorator;
 
@@ -20,7 +21,7 @@ public class DaoTransactionsFluxImpl implements DaoTransactionsFlux {
     }
 
     @Override
-    public <T> Mono<Void> executeTransaction(Iterable<Mono<T>> daoCalls) {
+    public <T> Mono<Void> executeTransaction(Iterable<? extends Publisher<T>> daoCalls) {
         if (daoCalls == null) {
             return Mono.empty();
         }
@@ -38,7 +39,7 @@ public class DaoTransactionsFluxImpl implements DaoTransactionsFlux {
     }
 
     @Override
-    public <T> Mono<Void> executeTransaction(Mono<T>... daoCalls) {
+    public <T> Mono<Void> executeTransaction(Publisher<T>... daoCalls) {
         return executeTransaction(asList(daoCalls));
     }
 }

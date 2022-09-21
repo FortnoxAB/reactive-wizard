@@ -73,6 +73,24 @@ public class ReactiveDecorator {
     }
 
     /**
+     * Get the decoration of a Publisher.
+     * @param wrapper the Publisher
+     * @param <T> the type of the decoration
+     * @return an Optional containing the decoration, if any
+     */
+    public static <T> Optional<T> getDecoration(Publisher<?> wrapper) {
+        if (wrapper instanceof DecoratedFlux decoratedFlux) {
+            return getDecoration(decoratedFlux);
+        }
+
+        if (wrapper instanceof DecoratedMono decoratedMono) {
+            return getDecoration(decoratedMono);
+        }
+
+        return Optional.empty();
+    }
+
+    /**
      * Get the decoration of a Mono.
      * @param wrapper the Mono
      * @param <T> the type of the decoration
