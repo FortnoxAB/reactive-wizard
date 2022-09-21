@@ -84,9 +84,7 @@ public class DaoTransactionsTest {
 
     @Test
     public void shouldSupportFlux() throws SQLException {
-        Mono<Long> count = daoTransactionsFlux.executeTransaction(dao.fluxFind(), dao.fluxFind()).count();
-
-        count.block();
+        daoTransactionsFlux.executeTransaction(dao.fluxFind(), dao.fluxFind()).block();
 
         db.verifyConnectionsUsed(1);
         verify(db.getConnection(), times(1)).setAutoCommit(false);
@@ -101,13 +99,13 @@ public class DaoTransactionsTest {
     @Test
     public void shouldSupportMoreThan256Flux() throws SQLException {
 
-        List<Flux<String>> finds = new ArrayList<>();
+        List<Mono<String>> finds = new ArrayList<>();
 
         for (int i = 0; i < 500; i++) {
             finds.add(dao.fluxFind());
         }
 
-        daoTransactionsFlux.executeTransaction(finds).count().block();
+        daoTransactionsFlux.executeTransaction(finds).block();
 
         db.verifyConnectionsUsed(1);
         verify(db.getConnection(), times(1)).setAutoCommit(false);
@@ -155,11 +153,11 @@ public class DaoTransactionsTest {
                 .thenReturn(new int[]{1, 1});
 
         Runnable runnable = mock(Runnable.class);
-        Flux<Integer> daoObsWithCb = dao.updateSuccessFlux();
+        Mono<Integer> daoObsWithCb = dao.updateSuccessFlux();
         Optional<StatementContext> decoration = ReactiveDecorator.getDecoration(daoObsWithCb);
         decoration.get().onTransactionCompleted(runnable);
 
-        daoTransactionsFlux.executeTransaction(dao.updateSuccessFlux(), daoObsWithCb).count().block();
+        daoTransactionsFlux.executeTransaction(dao.updateSuccessFlux(), daoObsWithCb).block();
 
         verify(runnable).run();
     }
@@ -349,10 +347,10 @@ public class DaoTransactionsTest {
         when(db.getPreparedStatement().getUpdateCount())
                 .thenReturn(0);
 
-        final Flux<Integer> update = dao.updateFailFlux();
+        final Mono<Integer> update = dao.updateFailFlux();
 
         try {
-            daoTransactionsFlux.executeTransaction(update).retry(3).count().block();
+            daoTransactionsFlux.executeTransaction(update).retry(3).block();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -504,16 +502,16 @@ public class DaoTransactionsTest {
         Observable<Integer> updateFail();
 
         @Update("update foo set other_key=val")
-        Flux<Integer> updateFailFlux();
+        Mono<Integer> updateFailFlux();
 
         @Update(value = "update foo set key=val", minimumAffected = 0)
         Observable<GeneratedKey<Long>> updateSuccessResultSet();
 
         @Query("select * from test")
-        Flux<String> fluxFind();
+        Mono<String> fluxFind();
 
         @Update(value = "update foo set key=val", minimumAffected = 0)
-        Flux<Integer> updateSuccessFlux();
+        Mono<Integer> updateSuccessFlux();
     }
 
 }
