@@ -4,5 +4,5 @@ Also provides dependencies to the test frameworks used.
 
 # Key classes
 `ObservableAssertions` - asserter for observables.
-`LoggingMockUtil` - asserter for logging.
+`LoggingVerifier` - asserter for logging.
 `WaitingTestUtils` - asserter with wait functionality.

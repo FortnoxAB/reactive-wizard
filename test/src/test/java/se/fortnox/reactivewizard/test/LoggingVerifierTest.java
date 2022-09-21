@@ -35,4 +35,12 @@ public class LoggingVerifierTest {
             assertThat(logEvent.getMessage().getFormattedMessage()).isEqualTo("Test");
         }));
     }
+
+    @Test
+    public void verifyLoggerDestroyedOnAfter() {
+        loggingVerifier.after();
+        org.apache.logging.log4j.core.Logger logger = LoggingMockUtil.getLogger(LoggingVerifierTest.class);
+        assertThat(logger.getAppenders())
+            .isEmpty();
+    }
 }

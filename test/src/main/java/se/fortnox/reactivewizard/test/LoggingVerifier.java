@@ -12,10 +12,11 @@ import org.mockito.verification.VerificationMode;
 import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.atLeastOnce;
 
 /**
- * Use as a @Rule annotated field in your unit tests to assert logs att various levels.
+ * Use as a @Rule annotated field in your JUnit 4 tests to assert logs att various levels.
+ * Use with <code>@ExtendWith(LoggingVerifierExtension.class)</code> on your JUnit 5 tests.
  */
 public class LoggingVerifier extends ExternalResource {
     private final Class<?> clazz;
@@ -25,6 +26,7 @@ public class LoggingVerifier extends ExternalResource {
 
     /**
      * Create instance for class.
+     *
      * @param clazz the class
      */
     public LoggingVerifier(Class<?> clazz) {
@@ -33,6 +35,7 @@ public class LoggingVerifier extends ExternalResource {
 
     /**
      * Create instance for class and level.
+     *
      * @param clazz the class
      * @param level the level
      */
@@ -42,7 +45,7 @@ public class LoggingVerifier extends ExternalResource {
     }
 
     @Override
-    public void before() throws Throwable {
+    public void before() {
         if (this.level != null) {
             this.originalLevel = LogManager.getLogger(this.clazz).getLevel();
             LoggingMockUtil.setLevel(this.clazz, this.level);
@@ -58,27 +61,30 @@ public class LoggingVerifier extends ExternalResource {
 
     /**
      * Verify some error Message.
-     * @param level the level to assert
+     *
+     * @param level        the level to assert
      * @param errorMessage the error message to assert
      */
     public void verify(Level level, String errorMessage) {
-        this.verify(Mockito.atLeastOnce(), level, logEvent -> assertThat(logEvent.getMessage().getFormattedMessage()).isEqualTo(errorMessage));
+        this.verify(atLeastOnce(), level, logEvent -> assertThat(logEvent.getMessage().getFormattedMessage()).isEqualTo(errorMessage));
     }
 
     /**
      * Verify some LogEvent is sent at least once.
-     * @param level the level to assert
+     *
+     * @param level            the level to assert
      * @param logEventAsserter the consumer of a LogEvent responsible for asserting the values of the LogEvent
      */
     public void verify(Level level, Consumer<LogEvent> logEventAsserter) {
-        this.verify(Mockito.atLeastOnce(), level, logEventAsserter);
+        this.verify(atLeastOnce(), level, logEventAsserter);
     }
 
     /**
      * Verify logging is carried out at a certain level.
      * The logEventAsserter is responsible for asserting the correctness of the logEvent object.
-     * @param verificationMode  the verification mode
-     * @param level the log level
+     *
+     * @param verificationMode the verification mode
+     * @param level            the log level
      * @param logEventAsserter the log event asserter
      */
     public void verify(VerificationMode verificationMode, Level level, Consumer<LogEvent> logEventAsserter) {
@@ -93,6 +99,11 @@ public class LoggingVerifier extends ExternalResource {
             });
     }
 
+    /**
+     * Get the mocked appender for use with Mockito.verify.
+     *
+     * @return the appender
+     */
     public Appender getMockedAppender() {
         return appender;
     }
