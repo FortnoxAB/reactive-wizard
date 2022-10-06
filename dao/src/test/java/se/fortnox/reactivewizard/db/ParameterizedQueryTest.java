@@ -2,18 +2,25 @@ package se.fortnox.reactivewizard.db;
 
 import com.google.common.collect.Lists;
 import org.junit.Test;
-import rx.Observable;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import se.fortnox.reactivewizard.db.config.DatabaseConfig;
 
 import java.sql.Array;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class ParameterizedQueryTest {
 
@@ -23,7 +30,7 @@ public class ParameterizedQueryTest {
 
     @Test
     public void shouldResolveParametersFromQuery() throws SQLException {
-        dao.namedParameters("myid", "myname").toBlocking().singleOrDefault(null);
+        dao.namedParameters("myid", "myname").blockLast();
 
         verify(db.getConnection()).prepareStatement("SELECT * FROM foo WHERE id=? AND name=?");
         verify(db.getPreparedStatement()).setObject(1, "myid");
@@ -32,7 +39,7 @@ public class ParameterizedQueryTest {
 
     @Test
     public void shouldResolveNestedParametersFromQuery() throws SQLException {
-        dao.nestedParameters("myid", new MyTestParam()).toBlocking().singleOrDefault(null);
+        dao.nestedParameters("myid", new MyTestParam()).blockLast();
 
         verify(db.getConnection()).prepareStatement("SELECT * FROM foo WHERE id=? AND name=?");
         verify(db.getPreparedStatement()).setObject(1, "myid");
@@ -41,7 +48,7 @@ public class ParameterizedQueryTest {
 
     @Test
     public void shouldResolveNestedRecordParametersFromQuery() throws SQLException {
-        dao.nestedRecordParameters("myid", new MyTestParamRecord("testName")).toBlocking().singleOrDefault(null);
+        dao.nestedRecordParameters("myid", new MyTestParamRecord("testName")).blockLast();
 
         verify(db.getConnection()).prepareStatement("SELECT * FROM foo WHERE id=? AND name=?");
         verify(db.getPreparedStatement()).setObject(1, "myid");
@@ -50,7 +57,7 @@ public class ParameterizedQueryTest {
 
     @Test
     public void shouldResolveParametersWithoutAnnotationFromQuery() throws SQLException {
-        dao.missingParamNames("myid", "myname").toBlocking().singleOrDefault(null);
+        dao.missingParamNames("myid", "myname").blockLast();
 
         verify(db.getConnection()).prepareStatement("SELECT * FROM foo WHERE id=? AND name=?");
         verify(db.getPreparedStatement()).setObject(1, "myid");
@@ -60,7 +67,7 @@ public class ParameterizedQueryTest {
     @Test
     public void shouldThrowExceptionIfUnnamedParamsUsedInQuery() {
         try {
-            dao.unnamedParameters("myid", "myname").toBlocking().singleOrDefault(null);
+            dao.unnamedParameters("myid", "myname").blockLast();
             fail("Exptected exception");
         } catch (Exception e) {
             assertThat(e.getMessage())
@@ -71,7 +78,7 @@ public class ParameterizedQueryTest {
     @Test
     public void shouldThrowExceptionIfNotAllParametersAreFound() {
         try {
-            dao.missingParamName("myid", "myname").toBlocking().singleOrDefault(null);
+            dao.missingParamName("myid", "myname").blockLast();
             fail("Exptected exception");
         } catch (Exception e) {
             assertThat(e.getMessage()).isEqualTo(
@@ -83,7 +90,7 @@ public class ParameterizedQueryTest {
     public void shouldSendEnumTypesAsStrings() throws SQLException {
         TestObject myobj = new TestObject();
         myobj.setMyEnum(TestEnum.T3);
-        dao.enumParameter(myobj).toBlocking().singleOrDefault(null);
+        dao.enumParameter(myobj).block();
 
         verify(db.getConnection()).prepareStatement("INSERT INTO a VALUES (?)");
         verify(db.getPreparedStatement()).setObject(1, "T3");
@@ -95,7 +102,7 @@ public class ParameterizedQueryTest {
         TestObject myobj = new TestObject();
         myobj.setFinished(true);
 
-        dao.booleanWithIsPrefixAsParameter(myobj).toBlocking().singleOrDefault(null);
+        dao.booleanWithIsPrefixAsParameter(myobj).block();
 
         verify(db.getConnection()).prepareStatement("INSERT INTO a VALUES (?)");
         verify(db.getPreparedStatement()).setObject(1, true);
@@ -106,11 +113,11 @@ public class ParameterizedQueryTest {
 
         TestObject myobj = new TestObject();
         myobj.setFinished(false);
-        Map<String, String> aMap = new HashMap<String, String>();
+        Map<String, String> aMap = new HashMap<>();
         aMap.put("aKey", "aValue");
         myobj.setMap(aMap);
 
-        dao.mapParam(myobj).toBlocking().singleOrDefault(null);
+        dao.mapParam(myobj).block();
 
         verify(db.getConnection()).prepareStatement(
             "INSERT INTO a (a, b, c) VALUES (?::json, ?, \"a\")");
@@ -122,11 +129,11 @@ public class ParameterizedQueryTest {
     public void shouldSendMapTypesAsStringsAsLastArg() throws SQLException {
         TestObject myobj = new TestObject();
         myobj.setFinished(false);
-        Map<String, String> aMap = new HashMap<String, String>();
+        Map<String, String> aMap = new HashMap<>();
         aMap.put("aKey", "aValue");
         myobj.setMap(aMap);
 
-        dao.mapParamLast(myobj).toBlocking().singleOrDefault(null);
+        dao.mapParamLast(myobj).block();
 
         verify(db.getConnection()).prepareStatement(
             "INSERT INTO a (a, b, c) VALUES (?, \"a\", ?::json)");
@@ -138,11 +145,11 @@ public class ParameterizedQueryTest {
     public void shouldSendMapTypesAsStringsAsMiddleArg() throws SQLException {
         TestObject myobj = new TestObject();
         myobj.setFinished(false);
-        Map<String, String> aMap = new HashMap<String, String>();
+        Map<String, String> aMap = new HashMap<>();
         aMap.put("aKey", "aValue");
         myobj.setMap(aMap);
 
-        dao.mapParamMiddle(myobj).toBlocking().singleOrDefault(null);
+        dao.mapParamMiddle(myobj).block();
 
         verify(db.getConnection()).prepareStatement(
             "INSERT INTO a (a, b, c) VALUES ( ?, ?::json, \"a\")");
@@ -159,7 +166,7 @@ public class ParameterizedQueryTest {
         list.add(new MyTestParam());
         myobj.setList(list);
 
-        dao.listParam(myobj).toBlocking().singleOrDefault(null);
+        dao.listParam(myobj).block();
 
         verify(db.getConnection()).prepareStatement(
             "INSERT INTO a (a) VALUES (?)");
@@ -171,7 +178,7 @@ public class ParameterizedQueryTest {
         TestObject myobj = new TestObject();
         myobj.setLongList(Lists.newArrayList(1L, 2L));
 
-        dao.longListParam(myobj).toBlocking().singleOrDefault(null);
+        dao.longListParam(myobj).block();
 
         verify(db.getConnection()).prepareStatement("INSERT INTO a (a) VALUES (?)");
         verify(db.getConnection()).createArrayOf("bigint", new Long[]{1L, 2L});
@@ -184,7 +191,7 @@ public class ParameterizedQueryTest {
         TestObject myobj = new TestObject();
         myobj.setIntegerList(Lists.newArrayList(1, 2));
 
-        dao.integerListParam(myobj).toBlocking().singleOrDefault(null);
+        dao.integerListParam(myobj).block();
 
         verify(db.getConnection()).prepareStatement("INSERT INTO a (a) VALUES (?)");
         verify(db.getConnection()).createArrayOf("integer", new Integer[]{1, 2});
@@ -197,7 +204,7 @@ public class ParameterizedQueryTest {
         List<Long> param = Lists.newArrayList(1L, 2L);
         when(db.getConnection().createArrayOf(any(), any())).thenReturn(mock(Array.class));
 
-        dao.notInClauseBigint(param).toBlocking().singleOrDefault(null);
+        dao.notInClauseBigint(param).blockLast();
 
         verify(db.getConnection()).prepareStatement("SELECT a FROM b WHERE c !=ALL(?)");
         verify(db.getConnection()).createArrayOf("bigint", new Object[]{1L, 2L});
@@ -210,7 +217,7 @@ public class ParameterizedQueryTest {
         List<String> param = Lists.newArrayList("A", "B");
         when(db.getConnection().createArrayOf(any(), any())).thenReturn(mock(Array.class));
 
-        dao.inClauseVarchar(param).toBlocking().singleOrDefault(null);
+        dao.inClauseVarchar(param).blockLast();
 
         verify(db.getConnection()).prepareStatement("SELECT x FROM y WHERE z =ANY(?)");
         verify(db.getConnection()).createArrayOf("varchar", new Object[]{"A", "B"});
@@ -223,7 +230,7 @@ public class ParameterizedQueryTest {
         List<String> param = Lists.newArrayList("A", "B");
         when(db.getConnection().createArrayOf(any(), any())).thenReturn(mock(Array.class));
 
-        dao.inClauseVarcharNoSpace(param).toBlocking().singleOrDefault(null);
+        dao.inClauseVarcharNoSpace(param).blockLast();
 
         verify(db.getConnection()).prepareStatement("SELECT x FROM y WHERE z =ANY(?)");
     }
@@ -233,7 +240,7 @@ public class ParameterizedQueryTest {
         List<String> param = Lists.newArrayList("A", "B");
         when(db.getConnection().createArrayOf(any(), any())).thenReturn(mock(Array.class));
 
-        dao.lowerCaseInClauseVarchar(param).toBlocking().singleOrDefault(null);
+        dao.lowerCaseInClauseVarchar(param).blockLast();
 
         verify(db.getConnection()).prepareStatement("SELECT x FROM y WHERE z =ANY(?)");
     }
@@ -247,7 +254,7 @@ public class ParameterizedQueryTest {
         when(db.getConnection().createArrayOf(any(), any())).thenReturn(mock(Array.class));
 
         // When
-        dao.inClauseUuid(param).toBlocking().singleOrDefault(null);
+        dao.inClauseUuid(param).blockLast();
 
         // Then
         verify(db.getConnection()).prepareStatement("SELECT x FROM y WHERE z =ANY(?)");
@@ -260,64 +267,64 @@ public class ParameterizedQueryTest {
 
     interface TestDao {
         @Query("SELECT * FROM foo WHERE id=:id AND name=:name")
-        Observable<String> namedParameters(String id, String name);
+        Flux<String> namedParameters(String id, String name);
 
         @Query("SELECT * FROM foo WHERE id=:id AND name=:test.name")
-        Observable<String> nestedParameters(String id, MyTestParam test);
+        Flux<String> nestedParameters(String id, MyTestParam test);
 
         @Query("SELECT * FROM foo WHERE id=:id AND name=:test.name")
-        Observable<String> nestedRecordParameters(String id, MyTestParamRecord test);
+        Flux<String> nestedRecordParameters(String id, MyTestParamRecord test);
 
         @Query("SELECT * FROM foo WHERE id=? AND name=?")
-        Observable<String> unnamedParameters(String id, String name);
+        Flux<String> unnamedParameters(String id, String name);
 
         @Query("SELECT * FROM foo WHERE id=:id AND name=:name")
-        Observable<String> missingParamName(String id, String misspelledName);
+        Flux<String> missingParamName(String id, String misspelledName);
 
         @Query("SELECT * FROM foo WHERE id=:id AND name=:name")
-        Observable<String> missingParamNames(String id, String name);
+        Flux<String> missingParamNames(String id, String name);
 
         @Query("INSERT INTO a VALUES (:testObject.myEnum)")
-        Observable<String> enumParameter(TestObject testObject);
+        Mono<String> enumParameter(TestObject testObject);
 
         @Query("INSERT INTO a VALUES (:testObject.finished)")
-        Observable<String> booleanWithIsPrefixAsParameter(TestObject testObject);
+        Mono<String> booleanWithIsPrefixAsParameter(TestObject testObject);
 
         @Query("INSERT INTO a (a, b, c) VALUES (:testObject.map::json, :testObject.finished, \"a\")")
-        Observable<String> mapParam(TestObject testObject);
+        Mono<String> mapParam(TestObject testObject);
 
         @Query("INSERT INTO a (a, b, c) VALUES (:testObject.finished, \"a\", :testObject.map::json)")
-        Observable<String> mapParamLast(TestObject testObject);
+        Mono<String> mapParamLast(TestObject testObject);
 
         @Query("INSERT INTO a (a, b, c) VALUES ( :testObject.finished, :testObject.map::json, \"a\")")
-        Observable<String> mapParamMiddle(TestObject testObject);
+        Mono<String> mapParamMiddle(TestObject testObject);
 
         @Query("INSERT INTO a (a) VALUES (:testObject.list)")
-        Observable<String> listParam(TestObject testObject);
+        Mono<String> listParam(TestObject testObject);
 
         @Query("INSERT INTO a (a) VALUES (:testObject.longList)")
-        Observable<String> longListParam(TestObject testObject);
+        Mono<String> longListParam(TestObject testObject);
 
         @Query("INSERT INTO a (a) VALUES (:testObject.integerList)")
-        Observable<String> integerListParam(TestObject testObject);
+        Mono<String> integerListParam(TestObject testObject);
 
         @Query("SELECT a FROM b WHERE c NOT IN (:param)")
-        Observable<String> notInClauseBigint(List<Long> param);
+        Flux<String> notInClauseBigint(List<Long> param);
 
         @Query("SELECT x FROM y WHERE z IN (:param)")
-        Observable<String> inClauseVarchar(List<String> param);
+        Flux<String> inClauseVarchar(List<String> param);
 
         @Query("SELECT x FROM y WHERE z in (:param)")
-        Observable<String> lowerCaseInClauseVarchar(List<String> param);
+        Flux<String> lowerCaseInClauseVarchar(List<String> param);
 
         @Query("SELECT x FROM y WHERE z IN(:param)")
-        Observable<String> inClauseVarcharNoSpace(List<String> param);
+        Flux<String> inClauseVarcharNoSpace(List<String> param);
 
         @Query("SELECT x FROM y WHERE z IN (:param)")
-        Observable<String> inClauseUuid(List<UUID> param);
+        Flux<String> inClauseUuid(List<UUID> param);
 
         @Query("SELECT x FROM y WHERE z IN (:param)")
-        Observable<String> unsupportedArrayType(List<Boolean> param);
+        Flux<String> unsupportedArrayType(List<Boolean> param);
     }
 
     public class TestObject {

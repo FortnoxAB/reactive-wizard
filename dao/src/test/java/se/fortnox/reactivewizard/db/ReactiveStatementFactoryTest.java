@@ -92,7 +92,8 @@ public class ReactiveStatementFactoryTest {
             }
 
         });
-        statementFactory = new ReactiveStatementFactory(dbStatementFactory, pagingOutput, PublisherMetrics.get("test"), databaseConfig, o -> o);
+
+        statementFactory = new ReactiveStatementFactory(dbStatementFactory, pagingOutput, PublisherMetrics.get("test"), databaseConfig, o -> o, null);
     }
 
     @Test

@@ -1,15 +1,15 @@
 package se.fortnox.reactivewizard.db.transactions;
 
-import rx.Observable;
+import org.reactivestreams.Publisher;
+import reactor.core.publisher.Mono;
 import se.fortnox.reactivewizard.util.ReactiveDecorator;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
 import java.util.List;
 
 import static java.util.Arrays.asList;
-import static rx.Observable.empty;
+import static reactor.core.publisher.Mono.empty;
 
 @Singleton
 public class DaoTransactionsImpl implements DaoTransactions {
@@ -21,26 +21,25 @@ public class DaoTransactionsImpl implements DaoTransactions {
     }
 
     @Override
-    public <T> Observable<Void> executeTransaction(Iterable<Observable<T>> daoCalls) {
+    public <T> Mono<Void> executeTransaction(Iterable<? extends Publisher<T>> daoCalls) {
         if (daoCalls == null) {
             return empty();
         }
-
         List<StatementContext> statementContexts = transactionExecutor.getStatementContexts(daoCalls, ReactiveDecorator::getDecoration);
         if (statementContexts.isEmpty()) {
             return empty();
         }
-        return Observable.unsafeCreate(subscription -> {
+        return Mono.create(subscription -> {
             ConnectionScheduler connectionScheduler = transactionExecutor.getConnectionScheduler(statementContexts);
-            connectionScheduler.schedule(subscription::onError, connection -> {
+            connectionScheduler.schedule(subscription::error, connection -> {
                 transactionExecutor.executeTransaction(statementContexts, connection);
-                subscription.onCompleted();
+                subscription.success();
             });
         });
     }
 
     @Override
-    public <T> Observable<Void> executeTransaction(Observable<T>... daoCalls) {
+    public <T> Mono<Void> executeTransaction(Publisher<T>... daoCalls) {
         return executeTransaction(asList(daoCalls));
     }
 }

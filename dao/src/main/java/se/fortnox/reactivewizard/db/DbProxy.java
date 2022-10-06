@@ -1,6 +1,10 @@
 package se.fortnox.reactivewizard.db;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import se.fortnox.reactivewizard.db.config.DatabaseConfig;
@@ -24,11 +28,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 import static java.text.MessageFormat.format;
-import static se.fortnox.reactivewizard.util.FluxRxConverter.converterFromFlux;
 
 @Singleton
 public class DbProxy implements InvocationHandler {
 
+    private static final Logger LOG = LoggerFactory.getLogger(DbProxy.class);
     private static final TypeReference<Object[]> OBJECT_ARRAY_TYPE_REFERENCE = new TypeReference<>() {
     };
     private final DbStatementFactoryFactory dbStatementFactoryFactory;
@@ -113,6 +117,7 @@ public class DbProxy implements InvocationHandler {
                 // Need to get the actual interface method in order to get updated annotations
                 method = ReflectionUtil.getRedefinedMethod(method);
             }
+
             DbStatementFactory statementFactory = dbStatementFactoryFactory.createStatementFactory(method);
             PagingOutput pagingOutput = new PagingOutput(method);
             reactiveStatementFactory = new ReactiveStatementFactory(
@@ -120,10 +125,27 @@ public class DbProxy implements InvocationHandler {
                     pagingOutput,
                     createMetrics(method),
                     databaseConfig,
-                    converterFromFlux(method.getReturnType()));
+                    converterFromFlux(method),
+                    method);
             statementFactories.put(method, reactiveStatementFactory);
         }
+
         return reactiveStatementFactory.create(args, connectionScheduler);
+    }
+
+    private static Function<Flux, Object> converterFromFlux(Method method) {
+        Class<?> returnType = method.getReturnType();
+
+        if (Flux.class.isAssignableFrom(returnType)) {
+            return flux -> flux;
+        } else if (Mono.class.isAssignableFrom(returnType)) {
+            return Mono::from;
+        } else {
+            throw new IllegalArgumentException(String.format("DAO method %s::%s must return a Flux or Mono. Found %s",
+                method.getDeclaringClass().getName(),
+                method.getName(),
+                method.getReturnType().getName()));
+        }
     }
 
     private PublisherMetrics createMetrics(Method method) {

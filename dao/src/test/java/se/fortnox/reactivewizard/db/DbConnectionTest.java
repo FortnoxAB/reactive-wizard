@@ -1,7 +1,7 @@
 package se.fortnox.reactivewizard.db;
 
 import org.junit.Test;
-import rx.Observable;
+import reactor.core.publisher.Flux;
 import se.fortnox.reactivewizard.db.config.DatabaseConfig;
 
 import java.sql.SQLException;
@@ -17,7 +17,7 @@ public class DbConnectionTest {
 
 	    DbProxy dbProxy = new DbProxy(new DatabaseConfig(), mockDb.getConnectionProvider());
         TestDao daoMock = dbProxy.create(TestDao.class);
-        daoMock.list().map(s -> daoMock.list()).toBlocking().single();
+        daoMock.list().map(s -> daoMock.list()).blockLast();
 
         mockDb.verifyConnectionsUsed(1);
         verify(mockDb.getPreparedStatement()).close();
@@ -25,6 +25,6 @@ public class DbConnectionTest {
 
     interface TestDao {
         @Query("SELECT * FROM table")
-        Observable<String> list();
+        Flux<String> list();
     }
 }
