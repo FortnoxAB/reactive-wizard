@@ -12,10 +12,8 @@ updates:
     reviewers:
       - "FortnoxAB/PlatMap"
       - "flowertwig"
-      - "rassmate"
       - "jepp3"
-      - "j-holmstrom"
       - "softqwewasd"
     ignore:
       - dependency-name: "com.fasterxml.jackson:jackson-bom"
-        versions: ["2.13.2.20220324", "2.13.2.20220328"]
+        versions: ["2.13.2.20220324", "2.13.2.20220328", "2.13.4.20221013"]
