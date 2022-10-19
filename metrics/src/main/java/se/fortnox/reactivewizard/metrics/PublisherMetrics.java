@@ -16,7 +16,7 @@ public class PublisherMetrics {
     private static final Consumer<Long> NOOP     = whatever -> {
     };
 
-    private Timer timer;
+    private final Timer timer;
 
     private PublisherMetrics(String name) {
         this.timer = REGISTRY.timer(name);
@@ -39,6 +39,6 @@ public class PublisherMetrics {
     }
 
     public <T> Publisher<T> measure(Publisher<T> publisher, Consumer<Long> callback) {
-        return new MetricsOperator<T>(publisher, timer, callback);
+        return new MetricsOperator<>(publisher, timer, callback);
     }
 }

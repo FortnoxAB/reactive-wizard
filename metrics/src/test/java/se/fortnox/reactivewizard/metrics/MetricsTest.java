@@ -1,18 +1,19 @@
 package se.fortnox.reactivewizard.metrics;
 
 import org.junit.Test;
-import rx.Observable;
+import reactor.core.publisher.Flux;
+import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class MetricsTest {
 
     @Test
-    public void shouldMeasureObservable() {
+    public void shouldMeasureFlux() {
         String metricName = "test1";
-        Observable<Integer> measuredObservable = Metrics.get(metricName)
-            .measure(Observable.just(1));
-        measuredObservable.subscribe();
+        Flux<Integer> measuredFlux = Metrics.get(metricName)
+            .measure(Flux.just(1));
+        measuredFlux.subscribe();
 
         assertThat(Metrics.registry().getNames()).contains(metricName);
         assertThat(Metrics.registry().getTimers().get(metricName).getCount()).isEqualTo(1);
@@ -21,36 +22,34 @@ public class MetricsTest {
     @Test
     public void shouldStopMeasuringOnError() {
         String metricName = "test2";
-        Observable<Integer> measuredObservable = Metrics.get(metricName)
-            .measure(Observable.error(new Exception()));
-        measuredObservable.test()
-            .assertError(Exception.class)
-            .awaitTerminalEvent();
+        Flux<Integer> measuredFlux = Metrics.get(metricName)
+            .measure(Flux.error(new Exception()));
+        StepVerifier.create(measuredFlux).verifyError(Exception.class);
 
         assertThat(Metrics.registry().getNames()).contains(metricName);
         assertThat(Metrics.registry().getTimers().get(metricName).getCount()).isEqualTo(1);
     }
 
     @Test
-    public void shouldHandleNullObservables() {
+    public void shouldHandleNullFluxes() {
         String metricName = "test3";
-        Observable<Integer> measuredObservable = Metrics.get(metricName)
+        Flux<Integer> measuredFlux = Metrics.get(metricName)
             .measure(null);
 
-        assertThat(measuredObservable).isNull();
+        assertThat(measuredFlux).isNull();
     }
 
     @Test
     public void shouldHandleMultipleCallsToMeasure() {
         String              metricName          = "test4";
         Metrics             metrics             = Metrics.get(metricName);
-        Observable<Integer> measuredObservable1 = metrics.measure(Observable.just(1));
-        Observable<Integer> measuredObservable2 = metrics.measure(Observable.just(1));
-        measuredObservable1.subscribe();
-        measuredObservable1.subscribe();
-        measuredObservable1.subscribe();
-        measuredObservable2.subscribe();
-        measuredObservable2.subscribe();
+        Flux<Integer> measuredFlux1 = metrics.measure(Flux.just(1));
+        Flux<Integer> measuredFlux2 = metrics.measure(Flux.just(1));
+        measuredFlux1.subscribe();
+        measuredFlux1.subscribe();
+        measuredFlux1.subscribe();
+        measuredFlux2.subscribe();
+        measuredFlux2.subscribe();
 
         assertThat(Metrics.registry().getNames()).contains(metricName);
         assertThat(Metrics.registry().getTimers().get(metricName).getCount()).isEqualTo(5);

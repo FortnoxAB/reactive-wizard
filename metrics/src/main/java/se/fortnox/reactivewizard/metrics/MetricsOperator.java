@@ -4,6 +4,7 @@ import com.codahale.metrics.Timer;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.util.annotation.NonNull;
 
 import java.util.function.Consumer;
 
@@ -28,8 +29,9 @@ public class MetricsOperator<T> implements Publisher<T> {
     }
 
     private Subscriber<T> createSubscriber(Subscriber<? super T> target, Timer timer) {
-        return new Subscriber<T>() {
+        return new Subscriber<>() {
             private Timer.Context context;
+
             @Override
             public void onSubscribe(Subscription subscription) {
                 context = timer.time();
@@ -37,10 +39,8 @@ public class MetricsOperator<T> implements Publisher<T> {
             }
 
             @Override
-            public void onNext(T next) {
-                if (next != null) {
-                    target.onNext(next);
-                }
+            public void onNext(@NonNull T next) {
+                target.onNext(next);
             }
 
             @Override

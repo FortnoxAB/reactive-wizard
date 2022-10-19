@@ -3,10 +3,11 @@ package se.fortnox.reactivewizard.metrics;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import com.codahale.metrics.Timer.Context;
-import rx.Observable;
-import rx.Subscriber;
+import reactor.core.publisher.Flux;
 
 import java.util.function.LongConsumer;
+
+import static java.util.Objects.isNull;
 
 /**
  * Wrapper of Dropwizard metrics framework for use with observers.
@@ -31,47 +32,29 @@ public class Metrics {
         return new Metrics(name);
     }
 
-    public <T> Observable<T> measure(Observable<T> observable) {
-        return measure(observable, NOOP);
+    public <T> Flux<T> measure(Flux<T> anyFlux) {
+        return measure(anyFlux, NOOP);
     }
 
     /**
-     * Measure execution time of an Observable.
-     * @param observable the Observable
-     * @param callback the callback
-     * @param <T> the type of observable
-     * @return an Observable with measure applied
+     * Measure execution time of Flux.
+     * @param anyFlux the flux
+     * @param consumer the callback
+     * @param <T> The type parameter of the returned flux
+     * @return Flux that is measuring the time until termination
      */
-    public <T> Observable<T> measure(Observable<T> observable, LongConsumer callback) {
-        if (observable == null) {
+    public <T> Flux<T> measure(Flux<T> anyFlux, LongConsumer consumer) {
+        if (isNull(anyFlux)) {
             return null;
         }
-        return observable.lift(subscriber -> {
+
+        return Flux.defer(() -> {
             Context context = timer.time();
-            return new Subscriber<T>(subscriber) {
-                @Override
-                public void onCompleted() {
-                    callback.accept(context.stop() / NANOSECONDS_PER_MILLISECOND);
-                    if (!subscriber.isUnsubscribed()) {
-                        subscriber.onCompleted();
-                    }
-                }
-
-                @Override
-                public void onError(Throwable throwable) {
-                    callback.accept(context.stop() / NANOSECONDS_PER_MILLISECOND);
-                    if (!subscriber.isUnsubscribed()) {
-                        subscriber.onError(throwable);
-                    }
-                }
-
-                @Override
-                public void onNext(T type) {
-                    if (!subscriber.isUnsubscribed()) {
-                        subscriber.onNext(type);
-                    }
-                }
-            };
+            return anyFlux.doOnTerminate(() -> consumer.accept(getElapsedTime(context)));
         });
+    }
+
+    private long getElapsedTime(Context context) {
+        return context.stop() / NANOSECONDS_PER_MILLISECOND;
     }
 }
