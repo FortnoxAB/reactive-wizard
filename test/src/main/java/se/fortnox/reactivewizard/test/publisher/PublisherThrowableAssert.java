@@ -1,23 +1,24 @@
-package se.fortnox.reactivewizard.test.observable;
+package se.fortnox.reactivewizard.test.publisher;
 
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.ThrowableAssertAlternative;
 import org.assertj.core.api.ThrowableTypeAssert;
-import rx.Observable;
+import org.reactivestreams.Publisher;
+import reactor.core.publisher.Flux;
 
 /**
- * Assertion class checking {@link Throwable} type for Observable.
+ * Assertion class checking {@link Throwable} type for Publisher.
  *
  * @param <T> type of throwable to be thrown.
  */
-public class ObservableThrowableAssert<T extends Throwable> extends ThrowableTypeAssert<T> {
+public class PublisherThrowableAssert<T extends Throwable> extends ThrowableTypeAssert<T> {
 
     /**
      * Default constructor.
      *
      * @param throwableType class representing the target (expected) exception.
      */
-    public ObservableThrowableAssert(Class<? extends T> throwableType) {
+    public PublisherThrowableAssert(Class<? extends T> throwableType) {
         super(throwableType);
     }
 
@@ -25,11 +26,11 @@ public class ObservableThrowableAssert<T extends Throwable> extends ThrowableTyp
      * Assert one onError signal with the given subclass of a Throwable as type
      * and allow to chain assertions on the thrown exception.
      *
-     * @param errorEmittingObservable Observable emitting the error with exception of expected type
+     * @param errorEmittingPublisher Publisher emitting the error with exception of expected type
      * @return return a {@link ThrowableAssertAlternative}.
      */
-    public ThrowableAssertAlternative<? extends T> isEmittedBy(Observable<?> errorEmittingObservable) {
+    public ThrowableAssertAlternative<? extends T> isEmittedBy(Publisher<?> errorEmittingPublisher) {
         return Assertions.assertThatExceptionOfType(expectedThrowableType)
-            .isThrownBy(() -> errorEmittingObservable.toBlocking().first());
+            .isThrownBy(() -> Flux.from(errorEmittingPublisher).blockLast());
     }
 }
