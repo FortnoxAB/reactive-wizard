@@ -15,7 +15,7 @@ import java.util.function.Function;
 class TransactionExecutor {
 
     private static final String WRONG_TYPE_ERROR =
-        "All parameters to createTransaction need to be of type Observable, Single, Flux or Mono coming from a Dao-class, i.e. decorated. Statement was %s.";
+        "All parameters to createTransaction needs to be Publishers coming from a Dao-class, i.e. decorated. Statement was %s.";
 
     /**
      * Creates a Transaction based on a Collection of StatementContexts.
@@ -48,7 +48,7 @@ class TransactionExecutor {
      * Extracts a list of StatementContext from the provided dao calls.
      * @param daoCalls the list of dao calls to fetch StatementContext from
      * @param getDecoration a function extracting the decoration from the type in the daoCalls iterable.
-     * @param <T> A reactive type Observable, Single, Flux or Mono
+     * @param <T> Flux or Mono
      *
      * @return a list of statement contexts.
      */
@@ -81,7 +81,7 @@ class TransactionExecutor {
             .map(StatementContext::getConnectionScheduler)
             .filter(ConnectionScheduler::hasConnectionProvider)
             .findFirst()
-            .orElseThrow(() -> new TransactionExecutionException("No DaoObservable with a valid connection provider was found"));
+            .orElseThrow(() -> new TransactionExecutionException("No Publisher with a valid connection provider was found"));
     }
 
     static class TransactionExecutionException extends RuntimeException {

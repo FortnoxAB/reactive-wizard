@@ -71,11 +71,11 @@ public class DaoTransactionsTest {
         executeTransactionObs.block();
 
         db.verifyConnectionsUsed(1);
-        verify(db.getConnection(), times(1)).setAutoCommit(false);
-        verify(db.getConnection(), times(1)).commit();
+        verify(db.getConnection()).setAutoCommit(false);
+        verify(db.getConnection()).commit();
         verify(db.getConnection(), times(2)).prepareStatement("select * from test");
         verify(db.getConnection(), timeout(500)).setAutoCommit(true);
-        verify(db.getConnection(), times(1)).close();
+        verify(db.getConnection()).close();
         verify(db.getPreparedStatement(), times(2)).close();
         verify(db.getResultSet(), times(2)).close();
     }
@@ -85,11 +85,11 @@ public class DaoTransactionsTest {
         daoTransactions.executeTransaction(dao.find(), dao.find()).block();
 
         db.verifyConnectionsUsed(1);
-        verify(db.getConnection(), times(1)).setAutoCommit(false);
-        verify(db.getConnection(), times(1)).commit();
+        verify(db.getConnection()).setAutoCommit(false);
+        verify(db.getConnection()).commit();
         verify(db.getConnection(), times(2)).prepareStatement("select * from test");
         verify(db.getConnection(), timeout(500)).setAutoCommit(true);
-        verify(db.getConnection(), times(1)).close();
+        verify(db.getConnection()).close();
         verify(db.getPreparedStatement(), times(2)).close();
         verify(db.getResultSet(), times(2)).close();
     }
@@ -106,11 +106,11 @@ public class DaoTransactionsTest {
         daoTransactions.executeTransaction(finds).block();
 
         db.verifyConnectionsUsed(1);
-        verify(db.getConnection(), times(1)).setAutoCommit(false);
-        verify(db.getConnection(), times(1)).commit();
+        verify(db.getConnection()).setAutoCommit(false);
+        verify(db.getConnection()).commit();
         verify(db.getConnection(), times(finds.size())).prepareStatement("select * from test");
         verify(db.getConnection(), timeout(500)).setAutoCommit(true);
-        verify(db.getConnection(), times(1)).close();
+        verify(db.getConnection()).close();
         verify(db.getPreparedStatement(), times(finds.size())).close();
         verify(db.getResultSet(), times(finds.size())).close();
     }
@@ -121,23 +121,23 @@ public class DaoTransactionsTest {
                 .thenReturn(new int[]{1, 1});
 
         final boolean[] cbExecuted = {false, false, false, false};
-        Mono<Integer> daoObsWithCb = dao.updateSuccess();
+        Mono<Integer> daoMonoWithCb = dao.updateSuccess();
 
-        Optional<StatementContext> decoration = ReactiveDecorator.getDecoration(daoObsWithCb);
+        Optional<StatementContext> decoration = ReactiveDecorator.getDecoration(daoMonoWithCb);
         assertThat(decoration).isPresent();
 
         decoration.get().onTransactionCompleted(() -> cbExecuted[0] = true);
 
-        daoObsWithCb = ReactiveDecorator.keepDecoration(daoObsWithCb, obs -> obs.doOnSuccess((value) -> cbExecuted[1] = true)
+        daoMonoWithCb = ReactiveDecorator.keepDecoration(daoMonoWithCb, obs -> obs.doOnSuccess((value) -> cbExecuted[1] = true)
                 .doOnSubscribe((s) -> cbExecuted[2] = true)
                 .doOnTerminate(() -> cbExecuted[3] = true));
 
         Mono<Integer> updateSuccess = dao.updateSuccess();
-        daoTransactions.executeTransaction(updateSuccess, daoObsWithCb).block();
+        daoTransactions.executeTransaction(updateSuccess, daoMonoWithCb).block();
 
         assertThat(cbExecuted[0]).isTrue();
 
-        // The Observable is actually never subscribed on in a transaction, so those will remain false
+        // The Mono is actually never subscribed on in a transaction, so those will remain false
         assertThat(cbExecuted[1]).isFalse();
         assertThat(cbExecuted[2]).isFalse();
         assertThat(cbExecuted[3]).isFalse();
@@ -161,7 +161,7 @@ public class DaoTransactionsTest {
     }
 
     @Test
-    public void subscribingToDaoObservableWillResultInTwoCallsToQuery() throws SQLException {
+    public void subscribingToDaoPublisherWillResultInTwoCallsToQuery() throws SQLException {
         Mono<GeneratedKey<Long>> update1 = dao.updateSuccessResultSet();
         Mono<GeneratedKey<Long>> update2 = dao.updateSuccessResultSet();
 
@@ -174,8 +174,8 @@ public class DaoTransactionsTest {
         update2.block();
 
         db.verifyConnectionsUsed(2);
-        verify(db.getConnection(), times(1)).setAutoCommit(false);
-        verify(db.getConnection(), times(1)).commit();
+        verify(db.getConnection()).setAutoCommit(false);
+        verify(db.getConnection()).commit();
         verify(db.getConnection(), times(3)).prepareStatement("update foo set key=val", 1);
         verify(db.getConnection(), timeout(500).times(2)).setAutoCommit(true);
         verify(db.getConnection(), times(2)).close();
@@ -219,12 +219,12 @@ public class DaoTransactionsTest {
         assertThat(failed.get()).isEqualTo(1);
 
         db.verifyConnectionsUsed(1);
-        verify(db.getConnection(), times(1)).setAutoCommit(false);
-        verify(db.getConnection(), times(1)).rollback();
+        verify(db.getConnection()).setAutoCommit(false);
+        verify(db.getConnection()).rollback();
         verify(db.getConnection()).prepareStatement("update foo set key=val");
         verify(db.getConnection()).prepareStatement("update foo set other_key=val");
         verify(db.getConnection(), timeout(500)).setAutoCommit(true);
-        verify(db.getConnection(), times(1)).close();
+        verify(db.getConnection()).close();
         verify(db.getPreparedStatement(), times(2)).close();
     }
 
@@ -320,8 +320,8 @@ public class DaoTransactionsTest {
 
         Connection conn = db.getConnection();
         verify(conn, never()).rollback();
-        verify(conn, times(1)).commit();
-        verify(conn, times(1)).setAutoCommit(false);
+        verify(conn).commit();
+        verify(conn).setAutoCommit(false);
         verify(conn, times(3)).setAutoCommit(true);
         verify(conn, times(3)).close();
     }
@@ -355,7 +355,7 @@ public class DaoTransactionsTest {
 
         assertThatExceptionOfType(RuntimeException.class)
             .isThrownBy(() -> daoTransactions.executeTransaction((Publisher<Object>) null))
-            .withMessageStartingWith("All parameters to createTransaction need to be of type Observable, Single, Flux or Mono coming from a Dao-class, i.e. decorated. Statement was");
+            .withMessageStartingWith("All parameters to createTransaction needs to be Publishers coming from a Dao-class, i.e. decorated. Statement was");
     }
 
     @Test
@@ -385,18 +385,18 @@ public class DaoTransactionsTest {
 
         List<Flux<String>> transaction = new ArrayList<>();
         transaction.add(find1);
-        Mono<Void> transactionObservable = daoTransactions.executeTransaction(transaction.stream().map(fluxString -> (Publisher<String>)fluxString).toList());
+        Mono<Void> transactionMono = daoTransactions.executeTransaction(transaction.stream().map(fluxString -> (Publisher<String>)fluxString).toList());
 
         transaction.add(dao.find2());
-        transactionObservable.block();
+        transactionMono.block();
 
         db.verifyConnectionsUsed(1);
-        verify(db.getConnection(), times(1)).setAutoCommit(false);
-        verify(db.getConnection(), times(1)).commit();
-        verify(db.getConnection(), times(1)).prepareStatement("select * from test");
+        verify(db.getConnection()).setAutoCommit(false);
+        verify(db.getConnection()).commit();
+        verify(db.getConnection()).prepareStatement("select * from test");
         verify(db.getConnection(), timeout(500)).setAutoCommit(true);
-        verify(db.getConnection(), times(1)).close();
-        verify(db.getPreparedStatement(), times(1)).close();
+        verify(db.getConnection()).close();
+        verify(db.getPreparedStatement()).close();
     }
 
     @Test
@@ -431,7 +431,7 @@ public class DaoTransactionsTest {
     }
 
     @Test
-    public void shouldUseSecondConnectionAndSchedulerIfFirstObservableHasNoConnectionProvider() throws SQLException {
+    public void shouldUseSecondConnectionAndSchedulerIfFirstPublisherHasNoConnectionProvider() throws SQLException {
         MockDb secondDb = new MockDb();
         ConnectionProvider otherConnectionProvider = secondDb.getConnectionProvider();
 
@@ -452,7 +452,7 @@ public class DaoTransactionsTest {
 
         assertThatExceptionOfType(RuntimeException.class)
                 .isThrownBy(() -> daoTransactions.executeTransaction(daoWithoutConnectionProvider.updateSuccess()).block())
-                .withMessage("No DaoObservable with a valid connection provider was found");
+                .withMessage("No Publisher with a valid connection provider was found");
     }
 
     interface TestDao {

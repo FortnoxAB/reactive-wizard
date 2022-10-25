@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.inject.Injector;
 import org.assertj.core.api.ThrowableAssertAlternative;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import reactor.core.Exceptions;
 import reactor.core.publisher.Flux;
@@ -15,7 +14,6 @@ import reactor.test.StepVerifier;
 import se.fortnox.reactivewizard.config.TestInjector;
 import se.fortnox.reactivewizard.db.config.DatabaseConfig;
 import se.fortnox.reactivewizard.json.JsonSerializerFactory;
-import se.fortnox.reactivewizard.test.LoggingVerifier;
 import se.fortnox.reactivewizard.util.DebugUtil;
 
 import java.sql.SQLException;
@@ -46,9 +44,6 @@ public class DbProxyTest {
 
     MockDb mockDb;
     DbProxyTestDao dbProxyTestDao;
-
-    @Rule
-    public LoggingVerifier loggingVerifier = new LoggingVerifier(DbProxy.class);
 
     @Test
     public void shouldReturnDataFromDbForQueryWhenReturningMono() throws SQLException {
@@ -82,10 +77,9 @@ public class DbProxyTest {
         StepVerifier.create(dbProxyTestDao.selectMultipleWithMono())
             .verifyErrorMessage("se.fortnox.reactivewizard.db::selectMultipleWithMono returning a Mono received more " +
                 "than one result from the database");
-        Thread.sleep(1000);
-        verify(mockDb.getConnection()).close();
-        verify(mockDb.getResultSet()).close();
-        verify(mockDb.getPreparedStatement()).close();
+        verify(mockDb.getConnection(), timeout(1000)).close();
+        verify(mockDb.getResultSet(), timeout(1000)).close();
+        verify(mockDb.getPreparedStatement(), timeout(1000)).close();
     }
 
     @Test
@@ -111,22 +105,22 @@ public class DbProxyTest {
     public void shouldSignalNextAndCompleteWhenSuccessfullyClosedConnectionOnMonoReturnType() throws SQLException {
         mockDb.addRowColumn(1, 1, "sql_val", String.class, "myname");
         StepVerifier.create(dbProxyTestDao.select("myname")).expectNextCount(1).verifyComplete();
-        verify(mockDb.getPreparedStatement()).close();
-        verify(mockDb.getResultSet()).close();
-        verify(mockDb.getConnection()).close();
+        verify(mockDb.getPreparedStatement(), timeout(1000)).close();
+        verify(mockDb.getResultSet(), timeout(1000)).close();
+        verify(mockDb.getConnection(), timeout(1000)).close();
     }
 
     @Test
     public void shouldThrowExceptionWhenDirectlySelectingNullValues() throws SQLException {
         mockDb.addRowColumn(1, 1, "sql_val", String.class, null);
         StepVerifier.create(dbProxyTestDao.selectSpecificColumn("mykey"))
-                .expectErrorSatisfies((throwable -> {
-                    Throwable throwableToAssert = throwable;
-                    if (DebugUtil.IS_DEBUG) {
-                        throwableToAssert = throwable.getCause();
-                    }
-                    assertThat(throwableToAssert)
-                        .isInstanceOf(NullPointerException.class);
+            .expectErrorSatisfies((throwable -> {
+                Throwable throwableToAssert = throwable;
+                if (DebugUtil.IS_DEBUG) {
+                    throwableToAssert = throwable.getCause();
+                }
+                assertThat(throwableToAssert)
+                    .isInstanceOf(NullPointerException.class);
 
                 assertThat(throwableToAssert.getMessage())
                     .isEqualTo("""
@@ -426,7 +420,7 @@ public class DbProxyTest {
         mockDb.addUpdatedRowId(1L);
         doThrow(new SQLException("close")).when(mockDb.getResultSet()).close();
         Flux<GeneratedKey<Long>> insertFlux = dbProxyTestDao.insert()
-                .flatMap(o -> Mono.error(new RuntimeException("next")));
+            .flatMap(o -> Mono.error(new RuntimeException("next")));
         insertAndAssertError(insertFlux, "next");
 
         // Throws in resource specification
@@ -498,7 +492,7 @@ public class DbProxyTest {
     public void shouldPassIfUpdateReturnsZeroAffectedRowsAndQueryAllowsZeroUpdates() throws SQLException {
         mockDb.setUpdatedRows(0);
         assertThatNoException()
-                .isThrownBy(() -> dbProxyTestDao.updateAllowingZeroAffectedRows("mykey", "myval").block());
+            .isThrownBy(() -> dbProxyTestDao.updateAllowingZeroAffectedRows("mykey", "myval").block());
     }
 
     @Test
@@ -538,9 +532,9 @@ public class DbProxyTest {
 
     private void assertMockDbClosed() {
         try {
-            verify(mockDb.getConnection()).close();
-            verify(mockDb.getPreparedStatement()).close();
-            verify(mockDb.getResultSet()).close();
+            verify(mockDb.getConnection(), timeout(1000)).close();
+            verify(mockDb.getPreparedStatement(), timeout(1000)).close();
+            verify(mockDb.getResultSet(), timeout(1000)).close();
         } catch (SQLException e) {
             fail("assertMockDbClosed failed", e);
         }

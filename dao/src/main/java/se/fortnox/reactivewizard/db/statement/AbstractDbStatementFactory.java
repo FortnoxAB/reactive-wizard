@@ -1,6 +1,7 @@
 package se.fortnox.reactivewizard.db.statement;
 
 import reactor.core.publisher.FluxSink;
+import reactor.core.publisher.MonoSink;
 import se.fortnox.reactivewizard.db.query.ParameterizedQuery;
 
 import java.sql.Connection;
@@ -15,13 +16,20 @@ public abstract class AbstractDbStatementFactory implements DbStatementFactory {
     }
 
     protected abstract void executeStatement(Connection connection, Object[] args, FluxSink<?> fluxSink)
-            throws SQLException;
+        throws SQLException;
+
+    protected abstract void executeStatement(Connection connection, Object[] args, MonoSink<?> monoSink)
+        throws SQLException;
 
     protected PreparedStatement batch(Connection connection, PreparedStatement preparedStatement, Object[] args) throws SQLException {
         throw new UnsupportedOperationException();
     }
 
     protected void batchExecuted(int count, FluxSink<?> fluxSink) throws SQLException {
+        throw new UnsupportedOperationException();
+    }
+
+    protected void batchExecuted(int count, MonoSink<?> monoSink) {
         throw new UnsupportedOperationException();
     }
 
@@ -39,6 +47,7 @@ public abstract class AbstractDbStatementFactory implements DbStatementFactory {
         private final Object[] args;
         private final ParameterizedQuery parameterizedQuery;
         private FluxSink<?> fluxSink;
+        private MonoSink<?> monoSink;
 
         private StatementImpl(Object[] args, ParameterizedQuery parameterizedQuery) {
             this.args = args;
@@ -47,7 +56,11 @@ public abstract class AbstractDbStatementFactory implements DbStatementFactory {
 
         @Override
         public void execute(Connection connection) throws SQLException {
-            executeStatement(connection, args, fluxSink);
+            if (fluxSink != null) {
+                executeStatement(connection, args, fluxSink);
+            } else {
+                executeStatement(connection, args, monoSink);
+            }
         }
 
         @Override
@@ -57,7 +70,12 @@ public abstract class AbstractDbStatementFactory implements DbStatementFactory {
 
         @Override
         public void batchExecuted(int count) throws SQLException {
-            AbstractDbStatementFactory.this.batchExecuted(count, fluxSink);
+            if (fluxSink != null) {
+                AbstractDbStatementFactory.this.batchExecuted(count, fluxSink);
+            }
+            if (monoSink != null) {
+                AbstractDbStatementFactory.this.batchExecuted(count, monoSink);
+            }
         }
 
         @Override
@@ -73,6 +91,10 @@ public abstract class AbstractDbStatementFactory implements DbStatementFactory {
             if (fluxSink != null) {
                 fluxSink.complete();
             }
+            if (monoSink != null) {
+                // Should already be completed, but calling again is ok.
+                monoSink.success();
+            }
         }
 
         @Override
@@ -80,11 +102,26 @@ public abstract class AbstractDbStatementFactory implements DbStatementFactory {
             if (fluxSink != null) {
                 fluxSink.error(throwable);
             }
+            if (monoSink != null) {
+                monoSink.error(throwable);
+            }
+
         }
 
         @Override
         public void setFluxSink(FluxSink<?> fluxSink) {
+            if (monoSink != null) {
+                throw new UnsupportedOperationException("Cannot set FluxSink if MonoSink is set");
+            }
             this.fluxSink = fluxSink;
+        }
+
+        @Override
+        public void setMonoSink(MonoSink<?> monoSink) {
+            if (fluxSink != null) {
+                throw new UnsupportedOperationException("Cannot set MonoSink if FluxSink is set");
+            }
+            this.monoSink = monoSink;
         }
     }
 

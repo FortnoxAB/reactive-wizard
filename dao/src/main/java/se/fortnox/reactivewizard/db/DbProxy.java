@@ -1,8 +1,7 @@
 package se.fortnox.reactivewizard.db;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
@@ -32,7 +31,6 @@ import static java.text.MessageFormat.format;
 @Singleton
 public class DbProxy implements InvocationHandler {
 
-    private static final Logger LOG = LoggerFactory.getLogger(DbProxy.class);
     private static final TypeReference<Object[]> OBJECT_ARRAY_TYPE_REFERENCE = new TypeReference<>() {
     };
     private final DbStatementFactoryFactory dbStatementFactoryFactory;
@@ -125,7 +123,7 @@ public class DbProxy implements InvocationHandler {
                     pagingOutput,
                     createMetrics(method),
                     databaseConfig,
-                    converterFromFlux(method),
+                    converterFromPublisher(method),
                     method);
             statementFactories.put(method, reactiveStatementFactory);
         }
@@ -133,7 +131,7 @@ public class DbProxy implements InvocationHandler {
         return reactiveStatementFactory.create(args, connectionScheduler);
     }
 
-    private static Function<Flux, Object> converterFromFlux(Method method) {
+    private static Function<Publisher, Object> converterFromPublisher(Method method) {
         Class<?> returnType = method.getReturnType();
 
         if (Flux.class.isAssignableFrom(returnType)) {

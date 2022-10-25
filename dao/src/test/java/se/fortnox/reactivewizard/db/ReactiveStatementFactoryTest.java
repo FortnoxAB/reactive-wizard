@@ -8,6 +8,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
+import reactor.core.publisher.MonoSink;
 import reactor.core.scheduler.Scheduler;
 import se.fortnox.reactivewizard.db.config.DatabaseConfig;
 import se.fortnox.reactivewizard.db.paging.PagingOutput;
@@ -19,9 +20,9 @@ import se.fortnox.reactivewizard.metrics.PublisherMetrics;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 
+import static org.junit.platform.commons.util.ReflectionUtils.getRequiredMethod;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -47,13 +48,14 @@ public class ReactiveStatementFactoryTest {
     @Before
     public void setUp() {
         when(pagingOutput.apply(any(), any())).then(invocationOnMock -> invocationOnMock.getArgument(0,
-                Flux.class));
+            Flux.class));
         when(scheduler.createWorker()).thenReturn(worker);
         when(worker.schedule(any())).then(invocationOnMock -> {
             invocationOnMock.getArgument(0, Runnable.class).run();
             return mock(Disposable.class);
         });
         when(dbStatementFactory.create(any())).then(invocationOnMock -> new Statement() {
+            private MonoSink monoSink;
             private FluxSink fluxSink;
 
             @Override
@@ -91,16 +93,26 @@ public class ReactiveStatementFactoryTest {
                 this.fluxSink = fluxSink;
             }
 
+            @Override
+            public void setMonoSink(MonoSink monoSink) {
+                this.monoSink = monoSink;
+            }
+
         });
 
-        statementFactory = new ReactiveStatementFactory(dbStatementFactory, pagingOutput, PublisherMetrics.get("test"), databaseConfig, o -> o, null);
+        statementFactory = new ReactiveStatementFactory(dbStatementFactory, pagingOutput, PublisherMetrics.get("test"), databaseConfig, o -> o, getRequiredMethod(TestDao.class, "select"));
     }
 
     @Test
     public void shouldReleaseSchedulerWorkers() {
         Flux<Object> stmt = (Flux<Object>) statementFactory.create(new Object[0], new ConnectionScheduler(() -> mock(Connection.class), scheduler));
         stmt.blockFirst();
-        verify(scheduler, times(1)).createWorker();
+        verify(scheduler).createWorker();
         verify(worker).dispose();
+    }
+
+    private interface TestDao {
+        @Query("SELECT * FROM foo")
+        Flux<String> select();
     }
 }
