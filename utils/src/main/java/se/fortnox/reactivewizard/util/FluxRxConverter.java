@@ -8,20 +8,27 @@ import rx.Single;
 
 import java.util.function.Function;
 
+import static java.util.Objects.requireNonNull;
+
 public class FluxRxConverter {
 
+    public static final String OBSERVABLE_NULL_ERROR = "Observable to convert must not be null";
+
     public static <T> Flux<T> observableToFlux(Observable<T> result) {
+        requireNonNull(result, OBSERVABLE_NULL_ERROR);
         return Flux.from(RxReactiveStreams.toPublisher(result));
     }
 
     public static <T> Mono<T> observableToMono(Observable<T> result) {
+        requireNonNull(result, OBSERVABLE_NULL_ERROR);
         return Mono.from(RxReactiveStreams.toPublisher(result));
     }
 
     /**
      * Create converter from a reactive type to Flux.
+     *
      * @param returnType the return type
-     * @param <T> the type of Flux
+     * @param <T>        the type of Flux
      * @return the converter or null if unable to create converter
      */
     public static <T> Function<Object, Flux<T>> converterToFlux(Class<?> returnType) {
@@ -31,7 +38,7 @@ public class FluxRxConverter {
                 if (result == null) {
                     return Flux.empty();
                 }
-                return (Flux<T>)result;
+                return (Flux<T>) result;
             };
 
         } else if (Mono.class.isAssignableFrom(returnType)) {
@@ -40,7 +47,7 @@ public class FluxRxConverter {
                     return Flux.empty();
                 }
                 Flux<T> flux = ((Mono<T>) result).flux();
-                return ReactiveDecorator.getDecoration((Mono)result)
+                return ReactiveDecorator.getDecoration((Mono) result)
                     .map(state -> ReactiveDecorator.decorated(flux, state))
                     .orElse(flux);
             };
@@ -50,7 +57,7 @@ public class FluxRxConverter {
                     return Flux.empty();
                 }
                 Flux<T> flux = observableToFlux((Observable<T>) result);
-                return ReactiveDecorator.getDecoration((Observable<?>)result)
+                return ReactiveDecorator.getDecoration((Observable<?>) result)
                     .map(state -> ReactiveDecorator.decorated(flux, state))
                     .orElse(flux);
             };
@@ -61,7 +68,7 @@ public class FluxRxConverter {
                 }
 
                 Flux<T> flux = Flux.from(RxReactiveStreams.toPublisher((Single<T>) result));
-                return ReactiveDecorator.getDecoration((Single<?>)result)
+                return ReactiveDecorator.getDecoration((Single<?>) result)
                     .map(state -> ReactiveDecorator.decorated(flux, state))
                     .orElse(flux);
             };
@@ -72,18 +79,19 @@ public class FluxRxConverter {
 
     /**
      * Create converter from Flux to a reactive type.
+     *
      * @param returnType the return type
      * @return the converter
      */
     public static Function<Flux, Object> converterFromFlux(Class<?> returnType) {
         if (Observable.class.isAssignableFrom(returnType)) {
-            return (flux) -> RxReactiveStreams.toObservable(flux);
+            return RxReactiveStreams::toObservable;
         } else if (Single.class.isAssignableFrom(returnType)) {
-            return (flux) -> RxReactiveStreams.toSingle(flux);
+            return RxReactiveStreams::toSingle;
         } else if (Flux.class.isAssignableFrom(returnType)) {
-            return (flux) -> flux;
+            return flux -> flux;
         } else if (Mono.class.isAssignableFrom(returnType)) {
-            return (flux) -> Mono.from(flux);
+            return Mono::from;
         } else {
             throw new IllegalArgumentException("Only Observable/Single and Flux/Mono return types are implemented for converters");
         }
@@ -91,14 +99,15 @@ public class FluxRxConverter {
 
     /**
      * Determine if a Class is of a reactive type that can be handled by this class.
+     *
      * @param returnType the type to check
      * @return whether the type is reactive
      */
     public static boolean isReactiveType(Class<?> returnType) {
         return Observable.class.isAssignableFrom(returnType)
-                || Single.class.isAssignableFrom(returnType)
-                || Flux.class.isAssignableFrom(returnType)
-                || Mono.class.isAssignableFrom(returnType);
+            || Single.class.isAssignableFrom(returnType)
+            || Flux.class.isAssignableFrom(returnType)
+            || Mono.class.isAssignableFrom(returnType);
     }
 
     public static boolean isSingleType(Class<?> returnType) {
@@ -107,6 +116,7 @@ public class FluxRxConverter {
 
     /**
      * Create a converter from Observable to a reactive type.
+     *
      * @param targetReactiveType class of reactive type
      * @return the converter
      */
@@ -121,5 +131,8 @@ public class FluxRxConverter {
             return FluxRxConverter::observableToMono;
         }
         return null;
+    }
+
+    private FluxRxConverter() {
     }
 }
