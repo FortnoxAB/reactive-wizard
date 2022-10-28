@@ -1,6 +1,6 @@
 package se.fortnox.reactivewizard.util;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoOperator;
@@ -12,14 +12,15 @@ import java.util.List;
 
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
-public class FluxRxConverterTest {
+class FluxRxConverterTest {
 
     List<String> nbrs = asList("1", "2");
     String nbrSingle = "3";
 
     @Test
-    public void testConverterToFlux() {
+    void testConverterToFlux() {
         assertFluxNumbers(FluxRxConverter.<String>converterToFlux(Observable.class).apply(Observable.from(nbrs)));
         assertFluxNumbersSingle(FluxRxConverter.<String>converterToFlux(Single.class).apply(Single.just(nbrSingle)));
         assertFluxNumbers(FluxRxConverter.<String>converterToFlux(Flux.class).apply(Flux.fromIterable(nbrs)));
@@ -28,7 +29,7 @@ public class FluxRxConverterTest {
     }
 
     @Test
-    public void testConverterFromObservable() {
+    void testConverterFromObservable() {
         Observable<String> observableResult = (Observable<String>) FluxRxConverter.converterFromObservable(Observable.class).apply(Observable.from(nbrs));
         assertThat(observableResult.toList().toBlocking().single()).isEqualTo(nbrs);
 
@@ -46,7 +47,7 @@ public class FluxRxConverterTest {
     }
 
     @Test
-    public void testConverterFromFlux() {
+    void testConverterFromFlux() {
         Observable<String> observableResult = (Observable<String>) FluxRxConverter.converterFromFlux(Observable.class).apply(Flux.fromIterable(nbrs));
         assertThat(observableResult.toList().toBlocking().single()).isEqualTo(nbrs);
 
@@ -61,7 +62,7 @@ public class FluxRxConverterTest {
     }
 
     @Test
-    public void testIsReactiveType() {
+    void testIsReactiveType() {
         assertThat(FluxRxConverter.isReactiveType(Observable.class)).isTrue();
         assertThat(FluxRxConverter.isReactiveType(Subject.class)).isTrue();
 
@@ -80,6 +81,20 @@ public class FluxRxConverterTest {
         assertThat(FluxRxConverter.isSingleType(Single.class)).isTrue();
         // From a convention for correct json responses, Observable is treated as a "SingleType" even though it is not
         assertThat(FluxRxConverter.isSingleType(Observable.class)).isTrue();
+    }
+
+    @Test
+    void shouldThrowNPEIfObservableIsNullWhenConvertingToFlux() {
+        assertThatExceptionOfType(NullPointerException.class)
+            .isThrownBy(() -> FluxRxConverter.observableToFlux(null))
+            .withMessage("Observable to convert must not be null");
+    }
+
+    @Test
+    void shouldThrowNPEIfObservableIsNullWhenConvertingToMono() {
+        assertThatExceptionOfType(NullPointerException.class)
+            .isThrownBy(() -> FluxRxConverter.observableToMono(null))
+            .withMessage("Observable to convert must not be null");
     }
 
     private void assertFluxNumbersSingle(Flux<String> flux) {
