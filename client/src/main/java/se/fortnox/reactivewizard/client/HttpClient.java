@@ -96,9 +96,9 @@ public class HttpClient implements InvocationHandler {
     private final   RequestLogger                                     requestLogger;
     private final   Map<Class<?>, List<HttpClient.BeanParamProperty>> beanParamCache = new ConcurrentHashMap<>();
     private final   Map<Method, JaxRsMeta>                            jaxRsMetaMap   = new ConcurrentHashMap<>();
-    private         int                                               timeout        = 10;
-    private         TemporalUnit                                      timeoutUnit    = ChronoUnit.SECONDS;
+    private         TemporalUnit                                      timeoutUnit    = ChronoUnit.MILLIS;
     private final   Duration                                          retryDuration;
+    private         int                                               timeout;
 
     @Inject
     public HttpClient(HttpClientConfig config,
@@ -119,6 +119,7 @@ public class HttpClient implements InvocationHandler {
         collector            = new ByteBufCollector(config.getMaxResponseSize());
         this.preRequestHooks = preRequestHooks;
         this.retryDuration   = Duration.ofMillis(config.getRetryDelayMs());
+        this.timeout         = config.getReadTimeoutMs();
     }
 
     public HttpClient(HttpClientConfig config) {
