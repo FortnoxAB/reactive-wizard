@@ -34,27 +34,43 @@ public class LiquibaseAutoBindModule implements AutoBindModule {
 
     @Override
     public void preBind() {
-        if (startCommand.startsWith("db-")) {
-            LiquibaseMigrate liquibaseMigrate = liquibaseMigrateProvider.get();
-            try {
-                if (startCommand.startsWith("db-drop")) {
-                    try {
-                        liquibaseMigrate.drop();
-                    } catch (Exception e) {
-                        LOG.warn("Can't drop db. Will proceed.", e);
-                    }
-                }
+        if (!startCommand.startsWith("db-")) {
+            return;
+        }
 
-                if (startCommand.contains("migrate")) {
-                    liquibaseMigrate.run();
-                }
-            } catch (Exception e) {
-                throw new RuntimeException(e);
+        LiquibaseMigrate liquibaseMigrate = liquibaseMigrateProvider.get();
+        try {
+            if (startCommand.startsWith("db-drop")) {
+                drop(liquibaseMigrate);
+            } else if (startCommand.startsWith("db-rollback")) {
+                rollback(liquibaseMigrate);
             }
 
-            if (!startCommand.endsWith("-run")) {
-                liquibaseMigrate.exit();
+            if (startCommand.contains("migrate")) {
+                liquibaseMigrate.run();
             }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        if (!startCommand.endsWith("-run")) {
+            liquibaseMigrate.exit();
+        }
+    }
+
+    private static void drop(LiquibaseMigrate liquibaseMigrate) {
+        try {
+            liquibaseMigrate.drop();
+        } catch (Exception e) {
+            LOG.warn("Can't drop db. Will proceed.", e);
+        }
+    }
+
+    private static void rollback(LiquibaseMigrate liquibaseMigrate) {
+        try {
+            liquibaseMigrate.rollback();
+        } catch (Exception e) {
+            LOG.warn("Can't rollback migration. Will proceed.", e);
         }
     }
 

@@ -56,6 +56,15 @@ public class LiquibaseAutoBindModuleTest {
     }
 
     @Test
+    public void shouldJustRollback() throws LiquibaseException {
+        LiquibaseMigrate liquibaseMigrateMock = getInjectedLiquibaseMock("db-rollback", "config.yml");
+
+        verify(liquibaseMigrateMock, atLeastOnce()).rollback();
+        verify(liquibaseMigrateMock, never()).run();
+        verify(liquibaseMigrateMock, atLeastOnce()).exit();
+    }
+
+    @Test
     public void shouldContinueRunningAfterDropThrowsException() throws LiquibaseException {
         LiquibaseMigrate liquibaseMigrateMock = mock(LiquibaseMigrate.class);
         doThrow(new DatabaseException()).when(liquibaseMigrateMock).drop();

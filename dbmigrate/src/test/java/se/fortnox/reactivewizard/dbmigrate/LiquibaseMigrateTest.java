@@ -43,6 +43,17 @@ public class LiquibaseMigrateTest {
     }
 
     @Test
+    public void shouldRollback() throws LiquibaseException, SQLException {
+        liquibaseMigrate.run();
+        liquibaseMigrate.rollback();
+        try (Connection connection = getConnection(liquibaseConfig)) {
+            ResultSet resultSet = connection.createStatement().executeQuery("select * from TESTSCHEMA.test");
+            assertThat(resultSet.next()).isFalse();
+        }
+
+    }
+
+    @Test
     public void shouldForceDropAllTables() throws LiquibaseException, SQLException {
         liquibaseMigrate.run();
         simulateLock(liquibaseConfig);

@@ -16,5 +16,10 @@
         <sql>
             INSERT INTO test (test) VALUES (4);
         </sql>
+        <rollback>
+            <sql>
+                DELETE FROM test WHERE test = 4;
+            </sql>
+        </rollback>
     </changeSet>
 </databaseChangeLog>
