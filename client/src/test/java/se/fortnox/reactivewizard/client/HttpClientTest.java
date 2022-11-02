@@ -1442,7 +1442,7 @@ public class HttpClientTest {
         DisposableServer server    = startServer(INTERNAL_SERVER_ERROR, "\"NOT OK\"", r -> callCount.incrementAndGet());
         try {
             HttpClientConfig config = new HttpClientConfig("localhost:" + server.port());
-            config.setReadTimeoutMs(100);
+            config.setReadTimeoutMs(500);
             TestResource resource = getHttpProxy(config);
             resource.postHello().toBlocking().singleOrDefault(null);
             Assert.fail("Expected exception");
