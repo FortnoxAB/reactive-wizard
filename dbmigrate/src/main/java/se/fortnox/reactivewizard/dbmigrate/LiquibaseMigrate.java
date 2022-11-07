@@ -137,6 +137,17 @@ public class LiquibaseMigrate {
         }
     }
 
+    /**
+     * Rollback to latest changeset in all migration files.
+     *
+     * @throws LiquibaseException on error
+     */
+    public void rollback() throws LiquibaseException {
+        for (Liquibase liquibase : liquibaseList) {
+            liquibase.rollback(1, null);
+        }
+    }
+
     void exit() {
         System.exit(0);
     }
