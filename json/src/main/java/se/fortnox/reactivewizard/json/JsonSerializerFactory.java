@@ -21,9 +21,11 @@ public class JsonSerializerFactory {
     private final ObjectMapper mapper;
 
     @Inject
-    public JsonSerializerFactory(ObjectMapper mapper) {
-        this.mapper = mapper.setSerializerFactory(mapper.getSerializerFactory()
-            .withSerializerModifier(new LambdaSerializerModifier()));
+    public JsonSerializerFactory(ObjectMapper mapper, JsonConfig jsonConfig) {
+        this.mapper = jsonConfig.isUseLambdaSerializerModifier()
+            ? mapper.setSerializerFactory(mapper.getSerializerFactory()
+                .withSerializerModifier(new LambdaSerializerModifier()))
+            : mapper;
     }
 
     public JsonSerializerFactory() {
@@ -32,7 +34,7 @@ public class JsonSerializerFactory {
             .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
             .defaultDateFormat(new StdDateFormat().withColonInTimeZone(false)) // Preserve behavior prior to Jackson 2.11
-            .build());
+            .build(), new JsonConfig());
     }
 
     public <T> Function<T, String> createStringSerializer(TypeReference<T> paramType) {

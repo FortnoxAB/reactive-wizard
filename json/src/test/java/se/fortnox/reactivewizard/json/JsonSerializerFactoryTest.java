@@ -1,6 +1,8 @@
 package se.fortnox.reactivewizard.json;
 
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
 
 import java.lang.reflect.Method;
@@ -14,7 +16,12 @@ import static org.assertj.core.api.Assertions.fail;
 
 public class JsonSerializerFactoryTest {
 
-	private JsonSerializerFactory   serializerFactory = new JsonSerializerFactory();
+	private JsonSerializerFactory serializerFactory = new JsonSerializerFactory();
+	private JsonConfig jsonConfigWithoutLambdaModifier = new JsonConfig();
+	{
+		jsonConfigWithoutLambdaModifier.setUseLambdaSerializerModifier(false);
+	}
+	private JsonSerializerFactory serializerFactoryWithoutLambdaModifier = new JsonSerializerFactory(new ObjectMapper(), jsonConfigWithoutLambdaModifier);
 
 	@Test
 	public void shouldSerializeUsingProtectedProp() {
@@ -77,6 +84,14 @@ public class JsonSerializerFactoryTest {
 		assertThat(serializeList.apply(methodReturningListOfString())).isEqualTo("[\"a\",\"b\"]");
 	}
 
+	@Test
+	public void shouldSerializeUnwrapped() {
+		var unwrappedEntity = new UnwrappedEntity();
+		unwrappedEntity.setEntity(new Entity());
+		var serializer = serializerFactoryWithoutLambdaModifier.createStringSerializer(UnwrappedEntity.class);
+		assertThat(serializer.apply(unwrappedEntity)).isEqualTo("{\"value\":null}");
+	}
+
 	private List<String> methodReturningListOfString() {
 		return asList("a", "b");
 	}
@@ -89,6 +104,31 @@ public class JsonSerializerFactoryTest {
 		}
 
 		public void setValue(int value) {
+			this.value = value;
+		}
+	}
+
+	private static class UnwrappedEntity {
+		@JsonUnwrapped
+		private Entity entity;
+
+		public Entity getEntity() {
+			return entity;
+		}
+
+		public void setEntity(Entity entity) {
+			this.entity = entity;
+		}
+	}
+
+	private static class Entity {
+		private String value;
+
+		public String getValue() {
+			return value;
+		}
+
+		public void setValue(String value) {
 			this.value = value;
 		}
 	}
