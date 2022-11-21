@@ -11,6 +11,7 @@ import org.junit.Test;
 import se.fortnox.reactivewizard.binding.AutoBindModules;
 import se.fortnox.reactivewizard.config.ConfigFactory;
 import se.fortnox.reactivewizard.config.TestInjector;
+import se.fortnox.reactivewizard.json.JsonConfig;
 import se.fortnox.reactivewizard.server.ServerConfig;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -135,6 +136,10 @@ public class LiquibaseAutoBindModuleTest {
                 }};
                 when(configFactory.get(ServerConfig.class)).thenReturn(serverConfig);
                 bind(ServerConfig.class).toInstance(serverConfig);
+
+                JsonConfig jsonConfig = new JsonConfig();
+                when(configFactory.get(JsonConfig.class)).thenReturn(jsonConfig);
+                bind(JsonConfig.class).toInstance(jsonConfig);
 
                 LiquibaseConfig liquibaseConfig = new LiquibaseConfig();
                 liquibaseConfig.setUrl("jdbc:h2:mem:test");
