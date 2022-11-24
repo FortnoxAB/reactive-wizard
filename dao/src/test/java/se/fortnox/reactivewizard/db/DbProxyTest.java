@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.inject.Injector;
 import org.junit.Before;
 import org.junit.Test;
+import reactor.core.Exceptions;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
@@ -38,7 +39,6 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static reactor.core.Exceptions.isOverflow;
 
 public class DbProxyTest {
 
@@ -60,26 +60,26 @@ public class DbProxyTest {
     public void shouldThrowExceptionWhenDirectlySelectingNullValues() throws SQLException {
         mockDb.addRowColumn(1, 1, "sql_val", String.class, null);
         StepVerifier.create(dbProxyTestDao.selectSpecificColumn("mykey"))
-                .expectErrorSatisfies((throwable -> {
-                    Throwable throwableToAssert = throwable;
-                    if(DebugUtil.IS_DEBUG) {
-                        throwableToAssert = throwable.getCause();
-                    }
-                    assertThat(throwableToAssert)
-                        .isInstanceOf(NullPointerException.class);
+            .expectErrorSatisfies((throwable -> {
+                Throwable throwableToAssert = throwable;
+                if (DebugUtil.IS_DEBUG) {
+                    throwableToAssert = throwable.getCause();
+                }
+                assertThat(throwableToAssert)
+                    .isInstanceOf(NullPointerException.class);
 
-                    assertThat(throwableToAssert.getMessage())
-                        .isEqualTo("""
-                            One or more of the values returned in the resultset of the following query was null:
-                            select sql_val from table where key=:key
-                              
-                            Project Reactor does not allow emitting null values in a stream. Wrap the return value from the dao interface
-                            in a 'wrapper' to solve the issue.
-                            Example: 
-                            record Wrapper(String nullableValue) {};
-                                """);
-                }))
-                .verify();
+                assertThat(throwableToAssert.getMessage())
+                    .isEqualTo("""
+                        One or more of the values returned in the resultset of the following query was null:
+                        select sql_val from table where key=:key
+                          
+                        Project Reactor does not allow emitting null values in a stream. Wrap the return value from the dao interface
+                        in a 'wrapper' to solve the issue.
+                        Example: 
+                        record Wrapper(String nullableValue) {};
+                            """);
+            }))
+            .verify();
 
         mockDb.verifySelect("select sql_val from table where key=?", "mykey");
         verify(mockDb.getPreparedStatement()).close();
@@ -352,7 +352,7 @@ public class DbProxyTest {
         setup();
         mockDb.addUpdatedRowId(1L);
         Observable<GeneratedKey<Long>> resultsetError = dbProxyTestDao.insert()
-                .concatMap(o -> Observable.error(new RuntimeException("next")));
+            .concatMap(o -> Observable.error(new RuntimeException("next")));
         insertAndAssertError(resultsetError, "next");
 
         // Throws on close
@@ -366,7 +366,7 @@ public class DbProxyTest {
         mockDb.addUpdatedRowId(1L);
         doThrow(new SQLException("close")).when(mockDb.getResultSet()).close();
         Flux<GeneratedKey<Long>> r = dbProxyTestDao.insertFlux()
-                .concatMap(o -> Flux.error(new RuntimeException("next")));
+            .concatMap(o -> Flux.error(new RuntimeException("next")));
         insertAndAssertError(r, "next");
 
         // Throws in resource specification
@@ -435,18 +435,18 @@ public class DbProxyTest {
 
     private void insertAndAssertError(Flux<?> insert, String message) {
         assertThatExceptionOfType(Exception.class)
-                .isThrownBy(insert::blockLast)
-                .satisfies(exception -> {
-                    Throwable selfOrCause = Optional.ofNullable(exception.getCause()).orElse(exception);
-                    assertThat(selfOrCause.getMessage()).contains(message);
-                });
+            .isThrownBy(insert::blockLast)
+            .satisfies(exception -> {
+                Throwable selfOrCause = Optional.ofNullable(exception.getCause()).orElse(exception);
+                assertThat(selfOrCause.getMessage()).contains(message);
+            });
     }
 
     @Test
     public void shouldPassIfUpdateReturnsZeroAffectedRowsAndQueryAllowsZeroUpdates() throws SQLException {
         mockDb.setUpdatedRows(0);
         assertThatNoException()
-                .isThrownBy(() -> dbProxyTestDao.updateAllowingZeroAffectedRows("mykey", "myval").toBlocking().singleOrDefault(null));
+            .isThrownBy(() -> dbProxyTestDao.updateAllowingZeroAffectedRows("mykey", "myval").toBlocking().singleOrDefault(null));
     }
 
     @Test
@@ -495,23 +495,19 @@ public class DbProxyTest {
     public void shouldReturnErrorOnFullBuffer() throws SQLException {
         mockDb.setRowCount(MockDb.INFINITE);
         mockDb.addRowColumn(-1, 1, "name", String.class, "row2");
-        StepVerifier.create(
-                        dbProxyTestDao.selectFlux("mykey")
-                                .concatMap(o -> Flux.just(o).delayElements(ofSeconds(5)))
-                )
-                .verifyErrorSatisfies(throwable -> {
-                    assertThat(isOverflow(throwable))
-                            .isTrue();
-                });
+        StepVerifier.create(dbProxyTestDao.selectFlux("mykey"), 1) // subscribe and request one
+            .thenAwait(ofSeconds(5)) // wait for the buffer to fill up
+            .thenRequest(100000) // request the whole buffer (ReactiveStatementFactory.RECORD_BUFFER_SIZE)
+            .expectNextCount(100001)
+            .verifyErrorMatches(Exceptions::isOverflow);
     }
 
     @Before
     public void setup() {
         mockDb = new MockDb();
         ConnectionProvider connectionProvider = mockDb.getConnectionProvider();
-        Injector injector = TestInjector.create(binder -> {
-            binder.bind(ConnectionProvider.class).toInstance(connectionProvider);
-        });
+        Injector injector = TestInjector.create(binder ->
+            binder.bind(ConnectionProvider.class).toInstance(connectionProvider));
         dbProxyTestDao = injector.getInstance(DbProxyTestDao.class);
     }
 }
