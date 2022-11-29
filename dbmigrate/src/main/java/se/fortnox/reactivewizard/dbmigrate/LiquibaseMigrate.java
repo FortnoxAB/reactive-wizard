@@ -15,12 +15,12 @@ import liquibase.executor.ExecutorService;
 import liquibase.ext.TimeoutLockService;
 import liquibase.lockservice.LockServiceFactory;
 import liquibase.resource.ClassLoaderResourceAccessor;
-import liquibase.resource.InputStreamList;
+import liquibase.resource.Resource;
+import liquibase.resource.URIResource;
 import se.fortnox.reactivewizard.db.DbDriver;
 
 import javax.inject.Inject;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -56,9 +56,7 @@ public class LiquibaseMigrate {
         while (resources.hasMoreElements()) {
             URL url = resources.nextElement();
             String file = url.toExternalForm();
-            int jarFileSep = file.lastIndexOf('!');
-            String loggedFileName = file.substring(jarFileSep + 1);
-            Liquibase liquibase = new Liquibase(loggedFileName, new UrlAwareClassLoaderResourceAccessor(file), conn);
+            Liquibase liquibase = new Liquibase(file, new UrlAwareClassLoaderResourceAccessor(file), conn);
             liquibase.getDatabase().setDefaultSchemaName(liquibaseConfig.getSchema());
 
             liquibaseList.add(liquibase);
@@ -152,7 +150,7 @@ public class LiquibaseMigrate {
         System.exit(0);
     }
 
-    class UrlAwareClassLoaderResourceAccessor extends ClassLoaderResourceAccessor {
+    static class UrlAwareClassLoaderResourceAccessor extends ClassLoaderResourceAccessor {
         private final String realFileName;
 
         public UrlAwareClassLoaderResourceAccessor(String realFileName) {
@@ -160,26 +158,22 @@ public class LiquibaseMigrate {
         }
 
         @Override
-        public InputStreamList openStreams(String relativeTo, String path) throws IOException {
+        public Resource get(String path) throws IOException {
             if (realFileName.endsWith(path)) {
                 path = realFileName;
             }
 
             if (path.startsWith("file:") || path.startsWith("jar:file:")) {
                 URL url = new URL(path);
-                InputStream resourceAsStream = url.openStream();
-                InputStreamList inputStreamList = new InputStreamList();
                 URI uri;
                 try {
                     uri = url.toURI();
                 } catch (URISyntaxException e) {
                     throw new RuntimeException(e);
                 }
-                inputStreamList.add(uri, resourceAsStream);
-
-                return inputStreamList;
+                return new URIResource(path, uri);
             }
-            return super.openStreams(relativeTo, path);
+            return super.get(path);
         }
     }
 }
