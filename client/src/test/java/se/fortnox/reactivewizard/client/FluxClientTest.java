@@ -1,16 +1,20 @@
 package se.fortnox.reactivewizard.client;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
+import org.apache.logging.log4j.Level;
+import org.junit.Rule;
 import org.junit.Test;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.netty.DisposableServer;
 import reactor.netty.http.server.HttpServer;
+import reactor.test.StepVerifier;
 import rx.Observable;
 import se.fortnox.reactivewizard.ExceptionHandler;
 import se.fortnox.reactivewizard.jaxrs.JaxRsRequestHandler;
 import se.fortnox.reactivewizard.jaxrs.JaxRsResourceFactory;
 import se.fortnox.reactivewizard.jaxrs.WebException;
+import se.fortnox.reactivewizard.test.LoggingVerifier;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -24,6 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static java.util.Arrays.asList;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static javax.ws.rs.core.MediaType.TEXT_HTML;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.Mockito.*;
@@ -32,6 +37,9 @@ public class FluxClientTest {
     FluxResource fluxServerResource = mock(FluxResource.class);
     ObservableResource observableServerResource = mock(ObservableResource.class);
     JaxRsRequestHandler handler = new JaxRsRequestHandler(new Object[]{fluxServerResource}, new JaxRsResourceFactory(), new ExceptionHandler(), false);
+
+    @Rule
+    public LoggingVerifier loggingVerifier = new LoggingVerifier(HttpClient.class);
 
     @Test
     public void shouldDecodeJsonArrayOfStringsAsFlux() throws URISyntaxException {
@@ -273,6 +281,55 @@ public class FluxClientTest {
         }
     }
 
+    @Test
+    public void shouldOverrideContentTypeWhenProducesAnnotationIsPresent() throws URISyntaxException {
+        DisposableServer server = HttpServer.create().handle((req, resp) -> {
+            resp.header(CONTENT_TYPE, TEXT_HTML);
+            return resp.sendString(Flux.just("""
+                [{
+                    "someString": "Hello world!"
+                }]
+                """));
+        }).bindNow();
+
+        try {
+            FluxResource fluxClientResource = client(server);
+
+            StepVerifier.create(fluxClientResource.entitiesWithOverridingJsonContentType())
+                .assertNext(entity -> assertThat(entity.getSomeString()).isEqualTo("Hello world!"))
+                .verifyComplete();
+
+            loggingVerifier.verify(Level.WARN, "Content-Type text/html does not match the Content-Type " +
+                "application/json when parsing response stream from " +
+                "se.fortnox.reactivewizard.client.FluxClientTest.FluxResource::entitiesWithOverridingJsonContentType, " +
+                "continuing with Content-Type application/json");
+        } finally {
+            server.disposeNow();
+        }
+    }
+
+    @Test
+    public void shouldByteDecodeWhenContentTypeIsNotJSONAndProducesAnnotationIsNotPresent() throws URISyntaxException {
+        DisposableServer server = HttpServer.create().handle((req, resp) -> {
+            resp.header(CONTENT_TYPE, TEXT_HTML);
+            return resp.sendString(Flux.just("""
+                [{
+                    "someString": "Hello world!"
+                }]
+                """));
+        }).bindNow();
+
+        try {
+            FluxResource fluxClientResource = client(server);
+
+            StepVerifier.create(fluxClientResource.arrayOfEntities().cast(Object.class))
+                .assertNext(object -> assertThat(object).isInstanceOf(byte[].class))
+                .verifyComplete();
+
+        } finally {
+            server.disposeNow();
+        }
+    }
 
     @Test
     public void shouldFailForNonJsonButJsonHeader() throws URISyntaxException {
@@ -328,6 +385,12 @@ public class FluxClientTest {
         @Path("bytes")
         @Produces(MediaType.APPLICATION_OCTET_STREAM)
         Flux<byte[]> fluxByteArray();
+
+        @GET
+        @Path("/as_json")
+        @Produces(APPLICATION_JSON)
+        Flux<Entity> entitiesWithOverridingJsonContentType();
+
     }
 
     @Path("/")

@@ -301,7 +301,21 @@ public class HttpClient implements InvocationHandler {
     }
 
     protected Flux<Object> parseResponseStream(Method method, RwHttpClientResponse response) {
-        if (response.getHttpClientResponse().responseHeaders().get(CONTENT_TYPE).equals(APPLICATION_JSON)) {
+        String contentType = response.getHttpClientResponse().responseHeaders().get(CONTENT_TYPE);
+
+        // Override response content-type if resource method is annotated with a non-empty @Produces
+        JaxRsMeta jaxRsMeta = new JaxRsMeta(method);
+        String overridingContentType = jaxRsMeta.getProduces();
+        if (!isNullOrEmpty(overridingContentType) && jaxRsMeta.isProducesAnnotationPresent()) {
+            if (!overridingContentType.equals(contentType)) {
+                LOG.warn("Content-Type {} does not match the Content-Type {} when parsing response stream from {}::{}, continuing with Content-Type {}",
+                    contentType, overridingContentType, method.getDeclaringClass().getCanonicalName(), method.getName(), overridingContentType);
+            }
+            contentType = overridingContentType;
+        }
+
+
+        if (contentType.equals(APPLICATION_JSON)) {
             JsonArrayDeserializer deserializer = new JsonArrayDeserializer(objectMapper, method);
             return response.getContent().asByteArray().concatMap(deserializer::process);
         } else {
