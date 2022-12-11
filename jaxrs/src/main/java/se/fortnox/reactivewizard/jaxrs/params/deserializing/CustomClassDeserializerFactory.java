@@ -6,6 +6,10 @@ import java.lang.reflect.Modifier;
 import java.util.Arrays;
 
 class CustomClassDeserializerFactory {
+
+    private CustomClassDeserializerFactory() {
+    }
+
     @Nullable
     public static <T> Deserializer<T> createOrNull(Class<T> cls) {
         var methods = cls.getMethods();

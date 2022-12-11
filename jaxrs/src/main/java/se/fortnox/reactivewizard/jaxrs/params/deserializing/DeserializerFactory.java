@@ -19,6 +19,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
 
+import static java.util.Map.entry;
+
 /**
  * Creates deserializers from Strings to a given type.
  */
@@ -31,23 +33,21 @@ public class DeserializerFactory {
     public DeserializerFactory(Provider<DateFormat> dateFormatProvider, JsonDeserializerFactory jsonDeserializerFactory) {
         this.jsonDeserializerFactory = jsonDeserializerFactory;
 
-        stringDeserializers = new HashMap<>() {
-            {
-                put(Boolean.class, new BooleanDeserializer());
-                put(boolean.class, new BooleanNotNullDeserializer());
-                put(int.class, new IntegerNotNullDeserializer());
-                put(long.class, new LongNotNullDeserializer());
-                put(double.class, new DoubleNotNullDeserializer());
-                put(Integer.class, new IntegerDeserializer());
-                put(Long.class, new LongDeserializer());
-                put(Double.class, new DoubleDeserializer());
-                put(String.class, (val) -> val);
-                put(UUID.class, new UUIDDeserializer());
-                put(Date.class, new DateDeserializer(dateFormatProvider));
-                put(LocalDate.class, new LocalDateDeserializer());
-                put(LocalTime.class, new LocalTimeDeserializer());
-            }
-        };
+        stringDeserializers = new HashMap<>(Map.ofEntries(
+            entry(Boolean.class, new BooleanDeserializer()),
+            entry(boolean.class, new BooleanNotNullDeserializer()),
+            entry(int.class, new IntegerNotNullDeserializer()),
+            entry(long.class, new LongNotNullDeserializer()),
+            entry(double.class, new DoubleNotNullDeserializer()),
+            entry(Integer.class, new IntegerDeserializer()),
+            entry(Long.class, new LongDeserializer()),
+            entry(Double.class, new DoubleDeserializer()),
+            entry(String.class, (val) -> val),
+            entry(UUID.class, new UUIDDeserializer()),
+            entry(Date.class, new DateDeserializer(dateFormatProvider)),
+            entry(LocalDate.class, new LocalDateDeserializer()),
+            entry(LocalTime.class, new LocalTimeDeserializer())
+        ));
     }
 
     public DeserializerFactory() {
@@ -103,7 +103,7 @@ public class DeserializerFactory {
             return new EnumDeserializer(paramCls);
         }
 
-        var customClassDeserializer = (Deserializer<T>)CustomClassDeserializerFactory.createOrNull(paramCls);
+        var customClassDeserializer = CustomClassDeserializerFactory.createOrNull(paramCls);
         if (customClassDeserializer != null) {
             stringDeserializers.put(paramCls, customClassDeserializer);
 
