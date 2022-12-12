@@ -66,14 +66,8 @@ public class DeserializerFactory {
         var paramCls = ReflectionUtil.getRawType(paramType.getType());
 
         if (List.class.isAssignableFrom(paramCls)) {
-            var          elementCls = ReflectionUtil.getGenericParameter(paramType.getType());
-            Deserializer elementDeserializer;
-
-            if (elementCls.isEnum()) {
-                elementDeserializer = new EnumDeserializer(elementCls);
-            } else {
-                elementDeserializer = getClassDeserializer(elementCls);
-            }
+            var elementCls          = ReflectionUtil.getGenericParameter(paramType.getType());
+            var elementDeserializer = getClassDeserializer(elementCls);
 
             return new ListDeserializer(elementDeserializer);
         }

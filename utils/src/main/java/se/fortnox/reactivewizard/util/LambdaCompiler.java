@@ -12,7 +12,7 @@ import java.util.function.Supplier;
 public class LambdaCompiler {
     static boolean useLambdas = "true".equals(System.getProperty("useLambdas", "true"));
 
-    static <T> Supplier<T> compileLambdaSupplier(MethodHandles.Lookup lookup, MethodHandle methodHandle) throws Throwable {
+    public static <T> Supplier<T> compileLambdaSupplier(MethodHandles.Lookup lookup, MethodHandle methodHandle) throws Throwable {
         if (!useLambdas) {
             return () -> {
                 try {
@@ -33,7 +33,7 @@ public class LambdaCompiler {
         return (Supplier<T>)callSite.getTarget().invoke();
     }
 
-    static <I,T> BiConsumer<I,T> compileLambdaBiConsumer(MethodHandles.Lookup lookup, MethodHandle methodHandle) throws Throwable {
+    public static <I,T> BiConsumer<I,T> compileLambdaBiConsumer(MethodHandles.Lookup lookup, MethodHandle methodHandle) throws Throwable {
         if (!useLambdas) {
             return (instance, arg) -> {
                 try {
@@ -54,7 +54,7 @@ public class LambdaCompiler {
         return (BiConsumer<I,T>) callSite.getTarget().invoke();
     }
 
-    static <I,T> Function<I, T> compileLambdaFunction(MethodHandles.Lookup lookup, MethodHandle methodHandle) throws Throwable {
+    public static <I,T> Function<I, T> compileLambdaFunction(MethodHandles.Lookup lookup, MethodHandle methodHandle) throws Throwable {
         if (!useLambdas) {
             return (instance) -> {
                 try {
