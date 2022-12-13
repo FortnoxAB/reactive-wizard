@@ -1,6 +1,5 @@
 package se.fortnox.reactivewizard.jaxrs;
 
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -20,6 +19,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 class JaxRsMetaTest {
+    private static final boolean PRODUCES_ANNOTATION_PRESENT = true;
+    private static final boolean PRODUCES_ANNOTATION_NOT_PRESENT = false;
 
     @ParameterizedTest
     @MethodSource("classesAndInterfaces")
@@ -34,7 +35,7 @@ class JaxRsMetaTest {
     void producesAnnotation(String methodName, boolean isAnnotationPresent, String annotationValue) throws NoSuchMethodException {
         JaxRsMeta jaxRsMeta = new JaxRsMeta(ResourceInterface.class.getMethod(methodName));
         assertThat(jaxRsMeta.isProducesAnnotationPresent()).isEqualTo(isAnnotationPresent);
-        Assertions.assertThat(jaxRsMeta.getProduces()).isEqualTo(annotationValue);
+        assertThat(jaxRsMeta.getProduces()).isEqualTo(annotationValue);
     }
 
     @Test
@@ -52,10 +53,10 @@ class JaxRsMetaTest {
 
     private static Stream<Arguments> resourceMethods() {
         return Stream.of(
-            arguments("hello", false, "application/json"),
-            arguments("someHtml", true, "text/html"),
-            arguments("someJson", true, "application/json"),
-            arguments("defaultContent", true, "*/*")
+            arguments("hello", PRODUCES_ANNOTATION_NOT_PRESENT, "application/json"),
+            arguments("someHtml", PRODUCES_ANNOTATION_PRESENT, "text/html"),
+            arguments("someJson", PRODUCES_ANNOTATION_PRESENT, "application/json"),
+            arguments("defaultContent", PRODUCES_ANNOTATION_PRESENT, "*/*")
         );
     }
 

@@ -300,7 +300,7 @@ public class HttpClient implements InvocationHandler {
             .flatMap(stringContent -> this.deserialize(method, stringContent)));
     }
 
-    protected Flux<Object> parseResponseStream(Method method, RwHttpClientResponse response) {
+    private String resolveContentType(Method method, RwHttpClientResponse response) {
         String contentType = response.getHttpClientResponse().responseHeaders().get(CONTENT_TYPE);
 
         // Override response content-type if resource method is annotated with a non-empty @Produces
@@ -314,6 +314,11 @@ public class HttpClient implements InvocationHandler {
             contentType = overridingContentType;
         }
 
+        return contentType;
+    }
+
+    protected Flux<Object> parseResponseStream(Method method, RwHttpClientResponse response) {
+        String contentType = resolveContentType(method, response);
 
         if (contentType.equals(APPLICATION_JSON)) {
             JsonArrayDeserializer deserializer = new JsonArrayDeserializer(objectMapper, method);
