@@ -16,10 +16,11 @@ import java.lang.reflect.Method;
 import java.util.Optional;
 
 public class JaxRsMeta {
-    private HttpMethod method     = null;
-    private Path       methodPath = null;
-    private String     produces   = MediaType.APPLICATION_JSON;
-    private Consumes   consumes   = null;
+    private HttpMethod method                      = null;
+    private Path       methodPath                  = null;
+    private String     produces                    = MediaType.APPLICATION_JSON;
+    private boolean    isProducesAnnotationPresent = false;
+    private Consumes   consumes                    = null;
     private String fullPath;
 
     public JaxRsMeta(Method method) {
@@ -39,6 +40,7 @@ public class JaxRsMeta {
             } else if (annotation instanceof DELETE) {
                 this.method = HttpMethod.DELETE;
             } else if (annotation instanceof Produces) {
+                isProducesAnnotationPresent = true;
                 String[] types = ((Produces)annotation).value();
                 if (types != null && types.length != 0) {
                     produces = types[0];
@@ -141,4 +143,7 @@ public class JaxRsMeta {
         return Optional.empty();
     }
 
+    public boolean isProducesAnnotationPresent() {
+        return isProducesAnnotationPresent;
+    }
 }
