@@ -1,5 +1,5 @@
 ## Reactive Wizard
-The Reactive Wizard project makes it easy to build performant and scalable web applications that harness the power of Rx and Netty (i.e., RxJava and Netty).
+The Reactive Wizard project makes it easy to build performant and scalable web applications that harness the power of Project Reactor and Netty.
 
 [![Build Status](https://travis-ci.org/FortnoxAB/reactive-wizard.svg?branch=master)](https://travis-ci.org/FortnoxAB/reactive-wizard)
 
@@ -14,7 +14,7 @@ public class HelloWorldResource {
     }
 
     @GET
-    public Observable<String> greeting() {
+    public Mono<String> greeting() {
         return just("Hello world!");
     }
 }
@@ -24,7 +24,7 @@ public class HelloWorldResource {
 Using a standard web technology (like Spring/Dropwizard/Servlets) with blocking code means that your system is
 using thread-per-request, which means that it will not scale well. The problem is not so much with a high
 request-per-second but rather about when some external resource (database/external service) is slow. When
-that happens, you will quickly get a thread starvation and then it's game over. With blocking code, restarting
+that happens, you will quickly get a thread starvation, and then it's game over. With blocking code, restarting
 the server would just give you seconds of uptime if the external resource is still slow or offline.
 
 It is safe to say that blocking I/O is not optimal in terms of taking advantage of available processing power.
@@ -34,12 +34,11 @@ to complete. On the other hand, non-blocking I/O (or asynchronous I/O) permits p
 I/O operations complete, which translates to less idle system resources and more throughput. Non-blocking I/O
 is supported out of the box in Reactive Wizard via Netty.
 
-A natural fit for this type of I/O is Reactive Extensions (Rx). Rx lets you compose non-blocking and
-event-based applications using the Observer pattern. An existing Rx adaptor for Netty, called Reactor, is used
-to power Reactive Wizard. 
+A natural fit for this type of I/O is Project Reactor, which lets you compose non-blocking and
+event-based applications using the Flux/Mono patterns. 
 
 We think that building non-blocking web applications with the above technologies should be easy. That is why
-Reactive Wizard support JAX-RS annotations on class methods returning Rx observables. Scroll down a bit more
+Reactive Wizard supports JAX-RS annotations on class methods returning Flux/Mono. Scroll down a bit more
 for an example!
 
 ## Hello world example
@@ -87,13 +86,13 @@ Create a new class in your project and name it _HelloWorldResource_ in the packa
 ```java
 package foo.bar;
 
-import rx.Observable;
+import reactor.core.publisher.Mono;
 
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 
-import static rx.Observable.just;
+import static reactor.core.publisher.Mono.just;
 
 @Path("/helloworld")
 public class HelloWorldResource {
@@ -103,7 +102,7 @@ public class HelloWorldResource {
     }
 
     @GET
-    public Observable<String> greeting() {
+    public Mono<String> greeting() {
         return just("Hello world!");
     }
 }
@@ -111,7 +110,7 @@ public class HelloWorldResource {
 ```
 
 ### 3. Create fatjar
-All needed code to run the application is now in place, but we can make things even more easy to deploy by packaging everything into a fatjar. This means that all jar files - including dependencies - are placed in a single jar file that we can execute. Somewhere under the _project_ element in pom.xml, paste the following into that file. This instructs Maven to build a fatjar for you.
+All needed code to run the application is now in place, but we can make things even easier to deploy by packaging everything into a fatjar. This means that all jar files - including dependencies - are placed in a single jar file that we can execute. Somewhere under the _project_ element in pom.xml, paste the following into that file. This instructs Maven to build a fatjar for you.
 
 ```xml
     <build>
@@ -165,7 +164,7 @@ This concludes the hello world example.
 
 ## Defining your API separate from your implementation
 
-You don't have to do this, but it's quite nice if you're building micro services and want to easily make calls between services.
+You don't have to do this, but it's quite nice if you're building microservices and want to easily make calls between services.
 
 Create one maven module "api" and one "impl", and separate your JAX-RS annotations from your logic:
 
@@ -174,7 +173,7 @@ Create one maven module "api" and one "impl", and separate your JAX-RS annotatio
 @Path("/helloworld")
 public interface HelloWorldResource {
     @GET
-    Observable<String> greeting(@QueryParam("name") String name);
+    Mono<String> greeting(@QueryParam("name") String name);
 }
 ```
 
@@ -187,7 +186,7 @@ public class HelloWorldResourceImpl implements HelloWorldResource {
     }
 
     @Override
-    public Observable<String> greeting(String name) {
+    public Mono<String> greeting(String name) {
         return just(format("Hello %s!", name));
     }
 }
@@ -215,7 +214,7 @@ public class AnotherResourceImpl implements AnotherResource {
     }
 
     @Override
-    public Observable<String> doStuff() {
+    public Mono<String> doStuff() {
         return helloWorldResource.greeting("AnotherService");
     }
 }
@@ -231,14 +230,14 @@ Wtf?! How is that possible? We have not defined that HelloWorldResource should h
 
 ## Binding. Magic.
 
-We believe that less code means less errors. So the usually needed code for binding interfaces to it's
-implementations has been removed. When the system starts it will automatically bind all resource implementations
-to the webserver. All JAX-RS interfaces that lacks an implementation are assumed to be remote, and are bound to
+We believe that less code means less errors. So the usually needed code for binding interfaces to its
+implementations has been removed. When the system starts, it will automatically bind all resource implementations
+to the webserver. All JAX-RS interfaces that lack an implementation are assumed to be remote, and are bound to
 our http client. That means:
 
-1. You are not aware of if an injected interface has a local or remote implementation (and thus not wether it
+1. You are not aware of if an injected interface has a local or remote implementation (and thus not whether it
 will be called directly or via http).
-2. You can choose late in your development process to dsitribute the system over multiple machines (containers)
+2. You can choose late in your development process to distribute the system over multiple machines (containers)
 or co-locate multiple services in one binary, by just creating a fat-jar of multiple services, resulting in calls
 becoming local instead of remote.
 3. You can mock stuff really easily in your tests, because everything that is injected is an interface.
@@ -255,10 +254,10 @@ But we have more magic up our sleeves...
 ```java
 public interface UnicornDAO {
     @Query("SELECT name, age FROM unicorn")
-    Observable<Unicorn> selectAllUnicorns();
+    Flux<Unicorn> selectAllUnicorns();
 
     @Update("INSERT INTO unicorn (name, age) VALUES (:unicorn.name, :unicorn.age)")
-    Observable<Integer> insertUnicorn(Unicorn unicorn);
+    Mono<Integer> insertUnicorn(Unicorn unicorn);
 }
 ```
 And then just inject that interface:
@@ -272,8 +271,8 @@ public class ResourceUsingDatabaseImpl implements ResourceUsingDatabase {
     }
 
     @Override
-    public Observable<List<Unicorn>> getAllUnicorns() {
-        return unicornDAO.selectAllUnicorns().toList();
+    public Flux<Unicorn> getAllUnicorns() {
+        return unicornDAO.selectAllUnicorns();
     }
 }
 ```
@@ -320,17 +319,17 @@ You create and run a transaction like this:
 ```java
 public class ResourceUsingDatabaseImpl implements ResourceUsingDatabase {
     private final UnicornDAO unicornDAO;
-    private final DaoTransactions daoTransactions;
+    private final DaoTransactionsFlux daoTransactions;
 
     @Inject
-    public ResourceUsingDatabaseImpl(UnicornDAO unicornDAO, DaoTransactions daoTransactions) {
+    public ResourceUsingDatabaseImpl(UnicornDAO unicornDAO, DaoTransactionsFlux daoTransactions) {
         this.unicornDAO = unicornDAO;
         this.daoTransactions = daoTransactions;
     }
 
     @Override
-    public Observable<Void> createSomeUnicorns() {
-        List<Observable<Integer>> transaction = new ArrayList<>();
+    public Mono<Void> createSomeUnicorns() {
+        List<Mono<Void>> transaction = new ArrayList<>();
         transaction.add(unicornDAO.insertUnicorn(new Unicorn(){{
             setName("Rainbow");
             setAge(7);
@@ -339,7 +338,7 @@ public class ResourceUsingDatabaseImpl implements ResourceUsingDatabase {
             setName("Sky");
             setAge(9);
         }}));
-        return daoTransactions.executetransaction(transaction);
+        return daoTransactions.executeTransaction(transaction);
     }
 }
 ```
@@ -385,27 +384,22 @@ public class MyCustomConfig {
 }
 ```
 
-Just inject that class wherever it is needed and it will be populated from your configuration file.
+Just inject that class wherever it is needed, and it will be populated from your configuration file.
 
 ## Logging
 
-We use slf4j, which means that you can choose logging framework. We use log4j:
+We use slf4j, which means that you can choose logging framework, e.g. log4j:
 ```xml
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-log4j12</artifactId>
-            <version>${slf4j.version}</version>
-        </dependency>
+<dependency>
+    <groupId>org.apache.logging.log4j</groupId>
+    <artifactId>log4j-slf4j-impl</artifactId>
+    <version>${log4j.version}</version>
+</dependency>
 ```
 
 ## Don'ts
-- NEVER ever call .toBlocking() in any code that is not a test. Since you have as many threads as you have cores, you will get thread starvation in no time. If you feel the urge to call .toBlocking() you need to go and sharpen your Rx skills instead.
+- NEVER ever call .block*() in any code that is not a test. Since you have as many threads as you have cores, you will get thread starvation in no time. If you feel the urge to call .block*() you need to go and sharpen your Project Reactor skills instead.
 - NEVER use external libraries that blocks the code (by reading from disk or network or doing other blocking operations). If you need to use such code it must be running in a separate thread pool.
-
-## What's coming
-
-- Admin endpoints for metrics, health and other stuff
-- Kafka events
 
 ## Licence
 MIT
