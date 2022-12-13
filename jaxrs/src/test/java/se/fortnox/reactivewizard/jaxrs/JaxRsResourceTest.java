@@ -34,6 +34,7 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static io.netty.handler.codec.http.HttpResponseStatus.BAD_REQUEST;
 import static java.util.Arrays.asList;
@@ -166,7 +167,30 @@ class JaxRsResourceTest {
 
         assertThat(body(get(service, "/test/acceptsEnum?myarg=")))
             .isEqualTo("\"Enum: null\"");
+    }
 
+    @Test
+    void shouldSupportCustomClassesAsQueryParams() {
+        assertThat(body(get(service, "/test/acceptsCustomClass/valueOf?myarg=the-custom-value")))
+            .isEqualTo("\"the-custom-value\"");
+
+        assertThat(body(get(service, "/test/acceptsCustomClass/fromString?myarg=the-custom-value")))
+            .isEqualTo("\"the-custom-value\"");
+
+        assertThat(body(get(service, "/test/acceptsCustomClass/constructor?myarg=the-custom-value")))
+            .isEqualTo("\"the-custom-value\"");
+    }
+
+    @Test
+    void shouldSupportCustomClassesAsNullableQueryParams() {
+        assertThat(body(get(service, "/test/acceptsCustomClass/valueOf")))
+            .isEqualTo("\"null\"");
+
+        assertThat(body(get(service, "/test/acceptsCustomClass/fromString")))
+            .isEqualTo("\"null\"");
+
+        assertThat(body(get(service, "/test/acceptsCustomClass/constructor")))
+            .isEqualTo("\"null\"");
     }
 
     @Test
@@ -188,7 +212,18 @@ class JaxRsResourceTest {
 
         assertThat(body(get(service, "/test/acceptsEnum/ONE")))
             .isEqualTo("\"Enum: ONE\"");
+    }
 
+    @Test
+    void shouldSupportCustomClassesAsPathParams() {
+        assertThat(body(get(service, "/test/acceptsCustomClass/valueOf/the-custom-value")))
+            .isEqualTo("\"the-custom-value\"");
+
+        assertThat(body(get(service, "/test/acceptsCustomClass/fromString/the-custom-value")))
+            .isEqualTo("\"the-custom-value\"");
+
+        assertThat(body(get(service, "/test/acceptsCustomClass/constructor/the-custom-value")))
+            .isEqualTo("\"the-custom-value\"");
     }
 
     @Test
@@ -242,42 +277,76 @@ class JaxRsResourceTest {
     }
 
     @Test
+    void shouldSupportCustomClassesAsFormParams() {
+        assertThat(body(post(service, "/test/acceptsPostCustomClass/valueOf", "myarg=the-custom-value")))
+            .isEqualTo("\"the-custom-value\"");
+
+        assertThat(body(post(service, "/test/acceptsPostCustomClass/fromString", "myarg=the-custom-value")))
+            .isEqualTo("\"the-custom-value\"");
+
+        assertThat(body(post(service, "/test/acceptsPostCustomClass/constructor", "myarg=the-custom-value")))
+            .isEqualTo("\"the-custom-value\"");
+    }
+
+    @Test
+    void shouldSupportCustomClassesAsNullableFormParams() {
+        assertThat(body(post(service, "/test/acceptsPostCustomClass/valueOf", "")))
+            .isEqualTo("\"null\"");
+
+        assertThat(body(post(service, "/test/acceptsPostCustomClass/fromString", "")))
+            .isEqualTo("\"null\"");
+
+        assertThat(body(post(service, "/test/acceptsPostCustomClass/constructor", "")))
+            .isEqualTo("\"null\"");
+    }
+
+    @Test
     void shouldSupportSimpleHeaderParamTypes() {
-        assertThat(body(JaxRsTestUtil.getWithHeaders(service,
-            "/test/acceptsHeaderString",
-            new HashMap<>() {
-                {
-                    put("myHeader", asList("accepts"));
-                }
-            }
+        assertThat(body(JaxRsTestUtil.getWithHeaders(service, "/test/acceptsHeaderString",
+            Map.of("myHeader", List.of("accepts"))
         ))).isEqualTo("\"header: accepts\"");
 
-        assertThat(body(JaxRsTestUtil.getWithHeaders(service,
-            "/test/acceptsHeaderInteger",
-            new HashMap<>() {
-                {
-                    put("myHeader", asList("4"));
-                }
-            }
+        assertThat(body(JaxRsTestUtil.getWithHeaders(service, "/test/acceptsHeaderInteger",
+            Map.of("myHeader", List.of("4"))
         ))).isEqualTo("\"header: 4\"");
+
         assertThat(body(JaxRsTestUtil.getWithHeaders(service, "/test/acceptsHeaderEnum",
-            new HashMap<>() {
-                {
-                    put("myHeader", asList("ONE"));
-                }
-            }
+            Map.of("myHeader", List.of("ONE"))
         ))).isEqualTo("\"header: ONE\"");
     }
 
     @Test
+    void shouldSupportCustomClassesAsHeaderParams() {
+        assertThat(body(JaxRsTestUtil.getWithHeaders(service, "/test/acceptsHeaderCustomClass/valueOf",
+            Map.of("myHeader", List.of("the-custom-value"))
+        ))).isEqualTo("\"the-custom-value\"");
+
+
+        assertThat(body(JaxRsTestUtil.getWithHeaders(service, "/test/acceptsHeaderCustomClass/fromString",
+            Map.of("myHeader", List.of("the-custom-value"))
+        ))).isEqualTo("\"the-custom-value\"");
+
+        assertThat(body(JaxRsTestUtil.getWithHeaders(service, "/test/acceptsHeaderCustomClass/constructor",
+            Map.of("myHeader", List.of("the-custom-value"))
+        ))).isEqualTo("\"the-custom-value\"");
+    }
+
+    @Test
+    void shouldSupportCustomClassesAsNullableHeaderParams() {
+        assertThat(body(JaxRsTestUtil.getWithHeaders(service, "/test/acceptsHeaderCustomClass/valueOf", Map.of())))
+            .isEqualTo("\"null\"");
+
+        assertThat(body(JaxRsTestUtil.getWithHeaders(service, "/test/acceptsHeaderCustomClass/fromString", Map.of())))
+            .isEqualTo("\"null\"");
+
+        assertThat(body(JaxRsTestUtil.getWithHeaders(service, "/test/acceptsHeaderCustomClass/constructor", Map.of())))
+            .isEqualTo("\"null\"");
+    }
+
+    @Test
     void shouldSupportMissingHeaderParams() {
-        assertThat(body(JaxRsTestUtil.getWithHeaders(service,
-            "/test/acceptsHeaderString",
-            new HashMap<String, List<String>>() {
-                {
-                    put("dummy", asList("accepts"));
-                }
-            }
+        assertThat(body(JaxRsTestUtil.getWithHeaders(service, "/test/acceptsHeaderString",
+            Map.of("dummy", List.of("accepts"))
         ))).isEqualTo("\"header: null\"");
     }
 
@@ -659,6 +728,33 @@ class JaxRsResourceTest {
     }
 
     @Test
+    void shouldResolveCustomClassesAsCookieParam() {
+        assertThat(body(getWithHeaders(service, "/test/acceptsCookieParamCustomClass/valueOf",
+            Map.of("Cookie", List.of("myarg=the-custom-value"))
+        ))).isEqualTo("\"the-custom-value\"");
+
+        assertThat(body(getWithHeaders(service, "/test/acceptsCookieParamCustomClass/fromString",
+            Map.of("Cookie", List.of("myarg=the-custom-value"))
+        ))).isEqualTo("\"the-custom-value\"");
+
+        assertThat(body(getWithHeaders(service, "/test/acceptsCookieParamCustomClass/constructor",
+            Map.of("Cookie", List.of("myarg=the-custom-value"))
+        ))).isEqualTo("\"the-custom-value\"");
+    }
+
+    @Test
+    void shouldResolveCustomClassesAsNullableCookieParam() {
+        assertThat(body(getWithHeaders(service, "/test/acceptsCookieParamCustomClass/valueOf", Map.of())))
+            .isEqualTo("\"null\"");
+
+        assertThat(body(getWithHeaders(service, "/test/acceptsCookieParamCustomClass/fromString", Map.of())))
+            .isEqualTo("\"null\"");
+
+        assertThat(body(getWithHeaders(service, "/test/acceptsCookieParamCustomClass/constructor", Map.of())))
+            .isEqualTo("\"null\"");
+    }
+
+    @Test
     void shouldAcceptBodyForPut() {
         assertThat(body(put(service, "/test/acceptBodyPut", "{\"name\":\"test\"}"))).isEqualTo("{\"name\":\"test\",\"age\":0,\"items\":null}");
     }
@@ -726,6 +822,16 @@ class JaxRsResourceTest {
     @Test
     void shouldAcceptQueryParamListWithEnumValues() {
         assertThat(get(service, "/test/acceptsQueryListWithEnum?EnumList=ONE,TWO,THREE").getOutp()).isEqualTo("3");
+    }
+
+    @Test
+    void shouldAcceptQueryParamListWithCustomClasses() {
+        assertThat(get(service, "/test/acceptsQueryListWithCustomClasses?list=ONE,TWO,THREE").getOutp()).isEqualTo("\"ONETWOTHREE\"");
+    }
+
+    @Test
+    void shouldAcceptQueryParamArrayWithCustomClasses() {
+        assertThat(get(service, "/test/acceptsQueryArrayWithCustomClasses?array=ONE,TWO,THREE").getOutp()).isEqualTo("\"ONETWOTHREE\"");
     }
 
     @Test
@@ -874,6 +980,18 @@ class JaxRsResourceTest {
         @GET
         Observable<String> acceptsEnum(@QueryParam("myarg") TestEnum myarg);
 
+        @Path("acceptsCustomClass/valueOf")
+        @GET
+        Observable<String> acceptsCustomClassQueryParamWithValueOf(@QueryParam("myarg") CustomParamWithValueOf myarg);
+
+        @Path("acceptsCustomClass/fromString")
+        @GET
+        Observable<String> acceptsCustomClassQueryParamWithFromString(@QueryParam("myarg") CustomParamWithFromString myarg);
+
+        @Path("acceptsCustomClass/constructor")
+        @GET
+        Observable<String> acceptsCustomClassQueryParamWithConstructor(@QueryParam("myarg") CustomParamWithConstructor myarg);
+
         @Path("defaultQuery")
         @GET
         Observable<String> acceptDefaultQueryParam(@QueryParam("myarg") @DefaultValue("5") int myarg);
@@ -909,6 +1027,18 @@ class JaxRsResourceTest {
         @Path("acceptsSlashVar/{myarg:.*}")
         @GET
         Observable<String> acceptsSlashVar(@PathParam("myarg") String myarg);
+
+        @Path("acceptsCustomClass/valueOf/{myarg}")
+        @GET
+        Observable<String> acceptsCustomClassPathParamWithValueOf(@PathParam("myarg") CustomParamWithValueOf myarg);
+
+        @Path("acceptsCustomClass/fromString/{myarg}")
+        @GET
+        Observable<String> acceptsCustomClassPathParamWithFromString(@PathParam("myarg") CustomParamWithFromString myarg);
+
+        @Path("acceptsCustomClass/constructor/{myarg}")
+        @GET
+        Observable<String> acceptsCustomClassPathParamWithConstructor(@PathParam("myarg") CustomParamWithConstructor myarg);
 
         @Path("acceptsPostString")
         @POST
@@ -954,6 +1084,18 @@ class JaxRsResourceTest {
         @POST
         Observable<String> acceptsPostNotNullDouble(@FormParam("myDouble") double myarg);
 
+        @Path("acceptsPostCustomClass/valueOf")
+        @POST
+        Observable<String> acceptsPostCustomClassWithValueOf(@FormParam("myarg") CustomParamWithValueOf myarg);
+
+        @Path("acceptsPostCustomClass/fromString")
+        @POST
+        Observable<String> acceptsPostCustomClassWithFromString(@FormParam("myarg") CustomParamWithFromString myarg);
+
+        @Path("acceptsPostCustomClass/constructor")
+        @POST
+        Observable<String> acceptsPostCustomClassWithConstructor(@FormParam("myarg") CustomParamWithConstructor myarg);
+
         @Path("acceptsDefaultForm")
         @POST
         Observable<String> acceptsDefaultFormParam(@FormParam("myarg") @DefaultValue("5") int myarg);
@@ -969,6 +1111,18 @@ class JaxRsResourceTest {
         @Path("acceptsHeaderEnum")
         @GET
         Observable<String> acceptsHeaderEnum(@HeaderParam("myHeader") TestEnum myHeader);
+
+        @Path("acceptsHeaderCustomClass/valueOf")
+        @GET
+        Observable<String> acceptsHeaderCustomClassWithValueOf(@HeaderParam("myHeader") CustomParamWithValueOf myHeader);
+
+        @Path("acceptsHeaderCustomClass/fromString")
+        @GET
+        Observable<String> acceptsHeaderCustomClassWithFromString(@HeaderParam("myHeader") CustomParamWithFromString myHeader);
+
+        @Path("acceptsHeaderCustomClass/constructor")
+        @GET
+        Observable<String> acceptsHeaderCustomClassWithConstructor(@HeaderParam("myHeader") CustomParamWithConstructor myHeader);
 
         @Path("acceptsDefaultHeader")
         @GET
@@ -1050,6 +1204,18 @@ class JaxRsResourceTest {
         @GET
         Observable<String> acceptsCookieParam(@CookieParam("fnox_session") String cookie);
 
+        @Path("acceptsCookieParamCustomClass/valueOf")
+        @GET
+        Observable<String> acceptsCookieParamCustomClassesWithValueOf(@CookieParam("myarg") CustomParamWithValueOf myarg);
+
+        @Path("acceptsCookieParamCustomClass/fromString")
+        @GET
+        Observable<String> acceptsCookieParamCustomClassesWithFromString(@CookieParam("myarg") CustomParamWithValueOf myarg);
+
+        @Path("acceptsCookieParamCustomClass/constructor")
+        @GET
+        Observable<String> acceptsCookieParamCustomClassesWithConstructor(@CookieParam("myarg") CustomParamWithValueOf myarg);
+
         @Path("acceptsDefaultCookie")
         @GET
         Observable<String> acceptsDefaultCookieParam(@CookieParam("myCookie") @DefaultValue("5") int myCookie);
@@ -1105,6 +1271,14 @@ class JaxRsResourceTest {
         @Path("acceptsQueryListWithEnum")
         @GET
         Observable<Integer> acceptsQueryListWithEnum(@QueryParam("EnumList") List<TestEnum> enums);
+
+        @Path("acceptsQueryListWithCustomClasses")
+        @GET
+        Observable<String> acceptsQueryListWithCustomClasses(@QueryParam("list") List<CustomParamWithValueOf> objects);
+
+        @Path("acceptsQueryArrayWithCustomClasses")
+        @GET
+        Observable<String> acceptsQueryArrayWithCustomClasses(@QueryParam("array") CustomParamWithValueOf[] objects);
 
         @Path("shouldIgnoreHeadersAnnotationOnInterface")
         @GET
@@ -1168,6 +1342,21 @@ class JaxRsResourceTest {
         @Override
         public Observable<String> acceptsEnum(TestEnum myarg) {
             return just("Enum: " + myarg);
+        }
+
+        @Override
+        public Observable<String> acceptsCustomClassQueryParamWithValueOf(CustomParamWithValueOf myarg) {
+            return just(myarg != null ? myarg.value : "null");
+        }
+
+        @Override
+        public Observable<String> acceptsCustomClassQueryParamWithFromString(CustomParamWithFromString myarg) {
+            return just(myarg != null ? myarg.value : "null");
+        }
+
+        @Override
+        public Observable<String> acceptsCustomClassQueryParamWithConstructor(CustomParamWithConstructor myarg) {
+            return just(myarg != null ? myarg.value : "null");
         }
 
         @Override
@@ -1271,6 +1460,21 @@ class JaxRsResourceTest {
         }
 
         @Override
+        public Observable<String> acceptsHeaderCustomClassWithValueOf(CustomParamWithValueOf myHeader) {
+            return just(myHeader != null ? myHeader.value : "null");
+        }
+
+        @Override
+        public Observable<String> acceptsHeaderCustomClassWithFromString(CustomParamWithFromString myHeader) {
+            return just(myHeader != null  ? myHeader.value : "null");
+        }
+
+        @Override
+        public Observable<String> acceptsHeaderCustomClassWithConstructor(CustomParamWithConstructor myHeader) {
+            return just(myHeader != null  ? myHeader.value : "null");
+        }
+
+        @Override
         public Observable<String> acceptsDefaultHeaderParam(int myHeader) {
             return just("Default: " + myHeader);
         }
@@ -1351,6 +1555,21 @@ class JaxRsResourceTest {
         }
 
         @Override
+        public Observable<String> acceptsCookieParamCustomClassesWithValueOf(CustomParamWithValueOf myarg) {
+            return just(myarg != null ? myarg.value : "null");
+        }
+
+        @Override
+        public Observable<String> acceptsCookieParamCustomClassesWithFromString(CustomParamWithValueOf myarg) {
+            return just(myarg != null ? myarg.value : "null");
+        }
+
+        @Override
+        public Observable<String> acceptsCookieParamCustomClassesWithConstructor(CustomParamWithValueOf myarg) {
+            return just(myarg != null ? myarg.value : "null");
+        }
+
+        @Override
         public Observable<String> acceptsDefaultCookieParam(int myCookie) {
             return just("Default: " + myCookie);
         }
@@ -1428,6 +1647,16 @@ class JaxRsResourceTest {
         }
 
         @Override
+        public Observable<String> acceptsQueryListWithCustomClasses(List<CustomParamWithValueOf> objects) {
+            return just(objects.stream().map(it -> it.value).collect(Collectors.joining()));
+        }
+
+        @Override
+        public Observable<String> acceptsQueryArrayWithCustomClasses(CustomParamWithValueOf[] objects) {
+            return just(Arrays.stream(objects).map(it -> it.value).collect(Collectors.joining()));
+        }
+
+        @Override
         public Observable<String> ignoresHeaderAnnotationOnInterface() {
             return just("");
         }
@@ -1459,6 +1688,21 @@ class JaxRsResourceTest {
         }
 
         @Override
+        public Observable<String> acceptsCustomClassPathParamWithValueOf(CustomParamWithValueOf myarg) {
+            return just(myarg != null ? myarg.value : "null");
+        }
+
+        @Override
+        public Observable<String> acceptsCustomClassPathParamWithFromString(CustomParamWithFromString myarg) {
+            return just(myarg != null ? myarg.value : "null");
+        }
+
+        @Override
+        public Observable<String> acceptsCustomClassPathParamWithConstructor(CustomParamWithConstructor myarg) {
+            return just(myarg != null ? myarg.value : "null");
+        }
+
+        @Override
         public Observable<String> acceptsDouble(Double myarg) {
             return just("Double: " + myarg);
         }
@@ -1471,6 +1715,21 @@ class JaxRsResourceTest {
         @Override
         public Observable<String> acceptsPostNotNullDouble(double myarg) {
             return just("double: " + myarg);
+        }
+
+        @Override
+        public Observable<String> acceptsPostCustomClassWithValueOf(CustomParamWithValueOf myarg) {
+            return just(myarg != null ? myarg.value : "null");
+        }
+
+        @Override
+        public Observable<String> acceptsPostCustomClassWithFromString(CustomParamWithFromString myarg) {
+            return just(myarg != null ? myarg.value : "null");
+        }
+
+        @Override
+        public Observable<String> acceptsPostCustomClassWithConstructor(CustomParamWithConstructor myarg) {
+            return just(myarg != null ? myarg.value : "null");
         }
 
         @Override
@@ -1538,6 +1797,42 @@ class JaxRsResourceTest {
         }
     }
 
+    public static class CustomParamWithValueOf {
+
+        public final String value;
+
+        private CustomParamWithValueOf(String value) {
+            this.value = value;
+        }
+
+        @SuppressWarnings("unused")
+        public static CustomParamWithValueOf valueOf(String value) {
+            return new CustomParamWithValueOf(value);
+        }
+    }
+
+    public static class CustomParamWithFromString {
+
+        public final String value;
+
+        private CustomParamWithFromString(String value) {
+            this.value = value;
+        }
+
+        @SuppressWarnings("unused")
+        public static CustomParamWithFromString fromString(String value) {
+            return new CustomParamWithFromString(value);
+        }
+    }
+
+    public static class CustomParamWithConstructor {
+
+        public final String value;
+
+        public CustomParamWithConstructor(String value) {
+            this.value = value;
+        }
+    }
 }
 
 interface Foo {
