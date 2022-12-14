@@ -2,8 +2,11 @@ package se.fortnox.reactivewizard.client;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
 import org.apache.logging.log4j.Level;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.netty.DisposableServer;
@@ -15,6 +18,7 @@ import se.fortnox.reactivewizard.jaxrs.JaxRsRequestHandler;
 import se.fortnox.reactivewizard.jaxrs.JaxRsResourceFactory;
 import se.fortnox.reactivewizard.jaxrs.WebException;
 import se.fortnox.reactivewizard.test.LoggingVerifier;
+import se.fortnox.reactivewizard.test.LoggingVerifierExtension;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -31,18 +35,28 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.MediaType.TEXT_HTML;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-public class FluxClientTest {
-    FluxResource fluxServerResource = mock(FluxResource.class);
-    ObservableResource observableServerResource = mock(ObservableResource.class);
-    JaxRsRequestHandler handler = new JaxRsRequestHandler(new Object[]{fluxServerResource}, new JaxRsResourceFactory(), new ExceptionHandler(), false);
+@ExtendWith({MockitoExtension.class, LoggingVerifierExtension.class})
+class FluxClientTest {
+    @Mock
+    FluxResource fluxServerResource;
 
-    @Rule
+    @Mock
+    ObservableResource observableServerResource;
+
+    JaxRsRequestHandler handler;
+
     public LoggingVerifier loggingVerifier = new LoggingVerifier(HttpClient.class);
 
+    @BeforeEach
+    void setup() {
+        handler = new JaxRsRequestHandler(new Object[]{fluxServerResource}, new JaxRsResourceFactory(), new ExceptionHandler(), false);
+    }
+
     @Test
-    public void shouldDecodeJsonArrayOfStringsAsFlux() throws URISyntaxException {
+    void shouldDecodeJsonArrayOfStringsAsFlux() throws URISyntaxException {
         DisposableServer server = HttpServer.create().handle(handler).bindNow();
         when(fluxServerResource.arrayOfStrings()).thenReturn(Flux.just("a", "b"));
 
@@ -59,7 +73,7 @@ public class FluxClientTest {
     }
 
     @Test
-    public void shouldDecodeJsonArrayOfEntitiesAsFlux() throws URISyntaxException {
+    void shouldDecodeJsonArrayOfEntitiesAsFlux() throws URISyntaxException {
         DisposableServer server = HttpServer.create().handle(handler).bindNow();
         when(fluxServerResource.arrayOfEntities()).thenReturn(Flux.just(new Entity(), new Entity(), new Entity()));
 
@@ -76,7 +90,7 @@ public class FluxClientTest {
     }
 
     @Test
-    public void shouldDecodeJsonArrayAsFluxInOneChunk() throws URISyntaxException {
+    void shouldDecodeJsonArrayAsFluxInOneChunk() throws URISyntaxException {
         handler = new JaxRsRequestHandler(new Object[]{observableServerResource}, new JaxRsResourceFactory(), new ExceptionHandler(), false);
         DisposableServer server = HttpServer.create().handle(handler).bindNow();
         when(observableServerResource.arrayOfStrings()).thenReturn(Observable.just("a", "b").toList());
@@ -93,8 +107,8 @@ public class FluxClientTest {
     }
 
     @Test
-    public void shouldDecodeJsonArrayAsFluxInMultipleChunks() throws URISyntaxException {
-        DisposableServer server = HttpServer.create().handle((req, resp)->{
+    void shouldDecodeJsonArrayAsFluxInMultipleChunks() throws URISyntaxException {
+        DisposableServer server = HttpServer.create().handle((req, resp) -> {
             resp.header(CONTENT_TYPE, APPLICATION_JSON);
             return resp.sendString(Flux.just(
                 "[   \t",
@@ -117,7 +131,7 @@ public class FluxClientTest {
 
 
     @Test
-    public void shouldDecodeNestedJsonArraysAsFlux() throws URISyntaxException {
+    void shouldDecodeNestedJsonArraysAsFlux() throws URISyntaxException {
         DisposableServer server = HttpServer.create().handle(handler).bindNow();
         when(fluxServerResource.arrayOfArray()).thenReturn(Flux.just(asList("a", "b")).repeat(1));
 
@@ -134,8 +148,8 @@ public class FluxClientTest {
     }
 
     @Test
-    public void shouldDecodeNestedJsonArraysAsFluxInMultipleChunks() throws URISyntaxException {
-        DisposableServer server = HttpServer.create().handle((req, resp)->{
+    void shouldDecodeNestedJsonArraysAsFluxInMultipleChunks() throws URISyntaxException {
+        DisposableServer server = HttpServer.create().handle((req, resp) -> {
             resp.header(CONTENT_TYPE, APPLICATION_JSON);
             return resp.sendString(Flux.just(
                 "[   \t",
@@ -158,8 +172,8 @@ public class FluxClientTest {
     }
 
     @Test
-    public void shouldDecodeJsonObjectAsMonoInMultipleChunks() throws URISyntaxException {
-        DisposableServer server = HttpServer.create().handle((req, resp)->{
+    void shouldDecodeJsonObjectAsMonoInMultipleChunks() throws URISyntaxException {
+        DisposableServer server = HttpServer.create().handle((req, resp) -> {
             resp.header(CONTENT_TYPE, APPLICATION_JSON);
             return resp.sendString(Flux.just(
                 "{\"some",
@@ -179,10 +193,10 @@ public class FluxClientTest {
     }
 
     @Test
-    public void shouldSupportBackpressure() throws URISyntaxException {
+    void shouldSupportBackpressure() throws URISyntaxException {
         DisposableServer server = HttpServer.create().handle(handler).bindNow();
         AtomicInteger emitted = new AtomicInteger();
-        when(fluxServerResource.arrayOfStrings()).thenReturn(Flux.just("aaaaaa").repeat(10000).doOnNext(value->emitted.incrementAndGet()));
+        when(fluxServerResource.arrayOfStrings()).thenReturn(Flux.just("aaaaaa").repeat(10000).doOnNext(value -> emitted.incrementAndGet()));
 
         try {
             FluxResource fluxClientResource = client(server);
@@ -199,10 +213,10 @@ public class FluxClientTest {
     }
 
     @Test
-    public void shouldSupportGettingResponseHeadersFromFlux() throws URISyntaxException {
+    void shouldSupportGettingResponseHeadersFromFlux() throws URISyntaxException {
         DisposableServer server = HttpServer.create().handle(handler).bindNow();
         AtomicInteger subscriptions = new AtomicInteger();
-        Flux<String> resultToReturn = Flux.just("a", "b").doOnSubscribe(s->subscriptions.incrementAndGet());
+        Flux<String> resultToReturn = Flux.just("a", "b").doOnSubscribe(s -> subscriptions.incrementAndGet());
         when(fluxServerResource.arrayOfStrings()).thenReturn(resultToReturn);
 
         try {
@@ -227,7 +241,7 @@ public class FluxClientTest {
     }
 
     @Test
-    public void shouldSupportGettingResponseHeadersFromMono() throws URISyntaxException {
+    void shouldSupportGettingResponseHeadersFromMono() throws URISyntaxException {
         DisposableServer server = HttpServer.create().handle(handler).bindNow();
         when(fluxServerResource.monoString()).thenReturn(Mono.just("hej"));
 
@@ -246,7 +260,7 @@ public class FluxClientTest {
     }
 
     @Test
-    public void shouldSupportByteArrayResponsesAsJson() throws URISyntaxException {
+    void shouldSupportByteArrayResponsesAsJson() throws URISyntaxException {
         DisposableServer server = HttpServer.create().handle(handler).bindNow();
         when(fluxServerResource.fluxByteArrayAsJson()).thenReturn(Flux.just("abc".getBytes(), "def".getBytes()));
 
@@ -264,7 +278,7 @@ public class FluxClientTest {
     }
 
     @Test
-    public void shouldSupportByteArrayResponses() throws URISyntaxException {
+    void shouldSupportByteArrayResponses() throws URISyntaxException {
         DisposableServer server = HttpServer.create().handle(handler).bindNow();
         when(fluxServerResource.fluxByteArray()).thenReturn(Flux.just("abc".getBytes(), "def".getBytes()));
 
@@ -332,7 +346,7 @@ public class FluxClientTest {
     }
 
     @Test
-    public void shouldFailForNonJsonButJsonHeader() throws URISyntaxException {
+    void shouldFailForNonJsonButJsonHeader() throws URISyntaxException {
         DisposableServer server = HttpServer.create().handle((req, resp) -> {
             resp.header(CONTENT_TYPE, APPLICATION_JSON);
             return resp.sendString(Flux.just("abc"));
@@ -341,14 +355,14 @@ public class FluxClientTest {
         try {
             FluxResource fluxClientResource = client(server);
             Flux<byte[]> result = fluxClientResource.fluxByteArrayAsJson();
-            assertThatExceptionOfType(WebException.class).isThrownBy(()->result.collectList().block());
+            assertThatExceptionOfType(WebException.class).isThrownBy(() -> result.collectList().block());
         } finally {
             server.disposeNow();
         }
     }
 
     private FluxResource client(DisposableServer server) throws URISyntaxException {
-        HttpClientConfig config = new HttpClientConfig("http://localhost:"+server.port());
+        HttpClientConfig config = new HttpClientConfig("http://localhost:" + server.port());
         config.setReadTimeoutMs(1000000);
         HttpClient client = new HttpClient(config);
         client.setTimeout(10, ChronoUnit.MINUTES);

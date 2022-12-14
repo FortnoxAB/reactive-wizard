@@ -11,7 +11,7 @@
 
     <name>Reactive Wizard</name>
     <description>The Reactive Wizard project makes it easy to build performant and scalable web
-        applications that harness the power of Rx and Netty (i.e., RxJava and Netty).
+        applications that harness the power of Project Reactor.
     </description>
     <url>https://github.com/FortnoxAB/reactive-wizard</url>
 
@@ -113,9 +113,9 @@
         <rxjava-reactive-streams.version>1.2.1</rxjava-reactive-streams.version>
         <jakarta.el.version>4.0.2</jakarta.el.version>
         <javax.ws.rs-api.version>2.1.1</javax.ws.rs-api.version>
-        <reactive-streams.version>1.0.4</reactive-streams.version>
         <maven-deploy-plugin.version>3.0.0</maven-deploy-plugin.version>
-	    <byte-buddy.version>1.12.19</byte-buddy.version>
+        <byte-buddy.version>1.12.19</byte-buddy.version>
+        <mockito-junit-jupiter.version>4.9.0</mockito-junit-jupiter.version>
 
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         <sonar.organization>fortnoxab</sonar.organization>
@@ -327,18 +327,17 @@
                 <version>${junit.version}</version>
             </dependency>
 
-	    <dependency>
-		    <groupId>net.bytebuddy</groupId>
-		    <artifactId>byte-buddy</artifactId>
-		    <version>${byte-buddy.version}</version>
-	    </dependency>
+            <dependency>
+                <groupId>net.bytebuddy</groupId>
+                <artifactId>byte-buddy</artifactId>
+                <version>${byte-buddy.version}</version>
+            </dependency>
 
             <dependency>
                 <groupId>com.h2database</groupId>
                 <artifactId>h2</artifactId>
                 <version>${h2.version}</version>
             </dependency>
-
 
             <dependency>
                 <groupId>org.yaml</groupId>
@@ -449,11 +448,10 @@
                 </exclusions>
             </dependency>
 
-            <!--Remove when no longer needed for requireUpperBoundDeps-->
             <dependency>
-                <groupId>org.reactivestreams</groupId>
-                <artifactId>reactive-streams</artifactId>
-                <version>${reactive-streams.version}</version>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-junit-jupiter</artifactId>
+                <version>${mockito-junit-jupiter.version}</version>
             </dependency>
         </dependencies>
 
