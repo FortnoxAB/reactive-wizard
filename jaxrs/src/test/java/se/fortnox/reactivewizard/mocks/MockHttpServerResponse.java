@@ -20,6 +20,7 @@ import reactor.netty.http.websocket.WebsocketOutbound;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.net.SocketAddress;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -228,6 +229,36 @@ public class MockHttpServerResponse implements HttpServerResponse {
 
     @Override
     public Map<CharSequence, List<Cookie>> allCookies() {
+        return null;
+    }
+
+    @Override
+    public SocketAddress hostAddress() {
+        return null;
+    }
+
+    @Override
+    public SocketAddress connectionHostAddress() {
+        return null;
+    }
+
+    @Override
+    public SocketAddress remoteAddress() {
+        return null;
+    }
+
+    @Override
+    public SocketAddress connectionRemoteAddress() {
+        return null;
+    }
+
+    @Override
+    public String scheme() {
+        return null;
+    }
+
+    @Override
+    public String connectionScheme() {
         return null;
     }
 }
