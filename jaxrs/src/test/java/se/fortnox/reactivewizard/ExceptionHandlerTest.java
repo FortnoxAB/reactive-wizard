@@ -19,6 +19,7 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.file.FileSystemException;
 import java.nio.file.NoSuchFileException;
 import java.util.Map;
+import java.util.concurrent.CancellationException;
 
 import static io.netty.handler.codec.http.HttpResponseStatus.BAD_GATEWAY;
 import static io.netty.handler.codec.http.HttpResponseStatus.BAD_REQUEST;
@@ -100,7 +101,7 @@ class ExceptionHandlerTest {
                     }
                     return super.getHeaderValue(header);
                 }
-            });
+            }, null);
     }
 
     @Test
@@ -124,11 +125,29 @@ class ExceptionHandlerTest {
     @Test
     void shouldLogClosedChannelExceptionAtDebugLevel() {
         Level originalLevel = LoggingMockUtil.setLevel(ExceptionHandler.class, DEBUG);
+        ClosedChannelException closedChannelException = new ClosedChannelException();
         try {
             assertLog(new MockHttpServerRequest("/path"),
-                new ClosedChannelException(),
+                closedChannelException,
                 DEBUG,
-                "Inbound connection has been closed: GET /path");
+                "Inbound connection has been closed: GET /path",
+                closedChannelException);
+        } finally {
+            LoggingMockUtil.setLevel(ExceptionHandler.class, originalLevel);
+        }
+    }
+
+    @Test
+    void shouldLogCancellationExceptionAtDebugLevel() {
+        Level originalLevel = LoggingMockUtil.setLevel(ExceptionHandler.class, DEBUG);
+        CancellationException cancellationException = new CancellationException();
+        try {
+            assertLog(new MockHttpServerRequest("/path"),
+                cancellationException,
+                DEBUG,
+                "Inbound connection has been closed: GET /path",
+                cancellationException
+            );
         } finally {
             LoggingMockUtil.setLevel(ExceptionHandler.class, originalLevel);
         }
@@ -201,10 +220,14 @@ class ExceptionHandlerTest {
     }
 
     private void assertLog(HttpServerRequest request, Exception exception, Level expectedLevel, String expectedLog) {
-        this.assertLog(request, exception, expectedLevel, expectedLog, new ExceptionHandler());
+        this.assertLog(request, exception, expectedLevel, expectedLog, new ExceptionHandler(), null);
     }
 
-    private void assertLog(HttpServerRequest request, Exception exception, Level expectedLevel, String expectedLog, ExceptionHandler exceptionHandler) {
+    private void assertLog(HttpServerRequest request, Exception exception, Level expectedLevel, String expectedLog, Exception expectedLoggedException) {
+        this.assertLog(request, exception, expectedLevel, expectedLog, new ExceptionHandler(), expectedLoggedException);
+    }
+
+    private void assertLog(HttpServerRequest request, Exception exception, Level expectedLevel, String expectedLog, ExceptionHandler exceptionHandler, Exception expectedLoggedException) {
         HttpServerResponse response = new MockHttpServerResponse();
         exceptionHandler.handleException(request, response, exception);
 
@@ -216,7 +239,12 @@ class ExceptionHandlerTest {
 
         loggingVerifier.assertThatLogs()
             .anySatisfy(event -> {
-                assertThat(event.getLevel()).isEqualTo(expectedLevel);
+                assertThat(event.getLevel())
+                    .isEqualTo(expectedLevel);
+                if (expectedLoggedException != null) {
+                    assertThat(event.getThrown())
+                        .isEqualTo(expectedLoggedException);
+                }
                 if (!expectedLog.equals("*")) {
                     assertThat(event.getMessage().getFormattedMessage()).matches(regex);
                 }

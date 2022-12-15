@@ -3,11 +3,9 @@ package se.fortnox.reactivewizard;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.handler.codec.http.HttpMethod;
-import io.netty.handler.codec.http.HttpResponseStatus;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.netty.channel.AbortedException;
 import reactor.netty.http.server.HttpServerRequest;
@@ -19,17 +17,24 @@ import se.fortnox.reactivewizard.jaxrs.WebException;
 import se.fortnox.reactivewizard.json.InvalidJsonException;
 
 import javax.inject.Inject;
-import javax.ws.rs.core.MediaType;
 import java.nio.channels.ClosedChannelException;
 import java.nio.file.FileSystemException;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CancellationException;
+
+import static io.netty.handler.codec.http.HttpResponseStatus.BAD_REQUEST;
+import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
+import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static reactor.core.publisher.Flux.empty;
 
 /**
  * Handles exceptions and writes errors to the response and the log.
  */
 public class ExceptionHandler {
     private static final Logger LOG = LoggerFactory.getLogger(ExceptionHandler.class);
+    private static final String INBOUND_CONNECTION_CLOSED = "Inbound connection has been closed: {} {}";
     private final ObjectMapper mapper;
     private final RequestLogger requestLogger;
 
@@ -63,18 +68,21 @@ public class ExceptionHandler {
 
         WebException webException;
         if (throwable instanceof FileSystemException) {
-            webException = new WebException(HttpResponseStatus.NOT_FOUND);
+            webException = new WebException(NOT_FOUND);
         } else if (throwable instanceof InvalidJsonException) {
-            webException = new WebException(HttpResponseStatus.BAD_REQUEST, "invalidjson", throwable.getMessage());
+            webException = new WebException(BAD_REQUEST, "invalidjson", throwable.getMessage());
         } else if (throwable instanceof WebException we) {
             webException = we;
-        } else if (throwable instanceof ClosedChannelException || throwable instanceof AbortedException) {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Inbound connection has been closed: {} {}", request.method(), request.uri(), throwable);
-            }
-            return Flux.empty();
+        } else if (throwable instanceof ClosedChannelException || throwable instanceof AbortedException || throwable instanceof CancellationException) {
+            LOG.atDebug()
+                .setMessage(INBOUND_CONNECTION_CLOSED)
+                .addArgument(request::method)
+                .addArgument(request::uri)
+                .setCause(throwable)
+                .log();
+            return empty();
         } else {
-            webException = new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR, throwable);
+            webException = new WebException(INTERNAL_SERVER_ERROR, throwable);
         }
 
         logException(request, webException);
@@ -83,10 +91,10 @@ public class ExceptionHandler {
         if (HttpMethod.HEAD.equals(request.method())) {
             response.addHeader("Content-Length", "0");
         } else {
-            response = response.addHeader("Content-Type", MediaType.APPLICATION_JSON);
+            response = response.addHeader("Content-Type", APPLICATION_JSON);
             return response.sendString(Mono.just(json(webException)));
         }
-        return Flux.empty();
+        return empty();
     }
 
     private String json(WebException webException) {
