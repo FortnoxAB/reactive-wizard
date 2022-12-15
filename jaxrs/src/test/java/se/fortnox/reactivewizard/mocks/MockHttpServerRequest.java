@@ -17,6 +17,7 @@ import reactor.netty.http.server.HttpServerRequest;
 
 import javax.annotation.Nullable;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -120,7 +121,17 @@ public class MockHttpServerRequest implements HttpServerRequest {
     }
 
     @Override
+    public SocketAddress connectionHostAddress() {
+        return null;
+    }
+
+    @Override
     public InetSocketAddress remoteAddress() {
+        return null;
+    }
+
+    @Override
+    public SocketAddress connectionRemoteAddress() {
         return null;
     }
 
@@ -131,6 +142,11 @@ public class MockHttpServerRequest implements HttpServerRequest {
 
     @Override
     public String scheme() {
+        return null;
+    }
+
+    @Override
+    public String connectionScheme() {
         return null;
     }
 
