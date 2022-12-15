@@ -4,11 +4,14 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.Appender;
 import org.apache.logging.log4j.core.LogEvent;
+import org.assertj.core.api.ListAssert;
 import org.junit.rules.ExternalResource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
+import org.mockito.exceptions.verification.WantedButNotInvoked;
 import org.mockito.verification.VerificationMode;
 
+import java.util.List;
 import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -88,11 +91,7 @@ public class LoggingVerifier extends ExternalResource {
      * @param logEventAsserter the log event asserter
      */
     public void verify(VerificationMode verificationMode, Level level, Consumer<LogEvent> logEventAsserter) {
-        ArgumentCaptor<LogEvent> argumentCaptor = ArgumentCaptor.forClass(LogEvent.class);
-
-        Mockito.verify(appender, verificationMode).append(argumentCaptor.capture());
-
-        assertThat(argumentCaptor.getAllValues())
+        assertThat(getLogEvents(verificationMode))
             .anySatisfy(logEvent -> {
                 assertThat(logEvent.getLevel()).isEqualTo(level);
                 logEventAsserter.accept(logEvent);
@@ -106,5 +105,27 @@ public class LoggingVerifier extends ExternalResource {
      */
     public Appender getMockedAppender() {
         return appender;
+    }
+
+    /**
+     * Returns a ListAssert of LogEvents that can be used for further assertions using AssertJ.
+     *
+     * @return a ListAssert of LogEvents
+     */
+    public ListAssert<LogEvent> assertThatLogs() {
+        List<LogEvent> logEvents;
+        try {
+            logEvents = getLogEvents(atLeastOnce());
+        } catch (WantedButNotInvoked wantedButNotInvoked) {
+            logEvents = List.of();
+        }
+        return assertThat(logEvents);
+    }
+
+    private List<LogEvent> getLogEvents(VerificationMode verificationMode) {
+        ArgumentCaptor<LogEvent> argumentCaptor = ArgumentCaptor.forClass(LogEvent.class);
+        Mockito.verify(appender, verificationMode)
+            .append(argumentCaptor.capture());
+        return argumentCaptor.getAllValues();
     }
 }

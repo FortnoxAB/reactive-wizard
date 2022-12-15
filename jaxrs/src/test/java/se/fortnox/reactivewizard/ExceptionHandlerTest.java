@@ -1,10 +1,9 @@
 package se.fortnox.reactivewizard;
 
 import io.netty.handler.codec.http.HttpMethod;
-import io.netty.handler.codec.http.HttpResponseStatus;
 import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.core.Appender;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import reactor.netty.http.server.HttpServerRequest;
 import reactor.netty.http.server.HttpServerResponse;
 import rx.exceptions.CompositeException;
@@ -13,59 +12,87 @@ import se.fortnox.reactivewizard.jaxrs.WebException;
 import se.fortnox.reactivewizard.mocks.MockHttpServerRequest;
 import se.fortnox.reactivewizard.mocks.MockHttpServerResponse;
 import se.fortnox.reactivewizard.test.LoggingMockUtil;
+import se.fortnox.reactivewizard.test.LoggingVerifier;
+import se.fortnox.reactivewizard.test.LoggingVerifierExtension;
 
 import java.nio.channels.ClosedChannelException;
 import java.nio.file.FileSystemException;
 import java.nio.file.NoSuchFileException;
 import java.util.Map;
 
+import static io.netty.handler.codec.http.HttpResponseStatus.BAD_GATEWAY;
+import static io.netty.handler.codec.http.HttpResponseStatus.BAD_REQUEST;
+import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
+import static org.apache.logging.log4j.Level.DEBUG;
+import static org.apache.logging.log4j.Level.ERROR;
+import static org.apache.logging.log4j.Level.WARN;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.verify;
-import static se.fortnox.reactivewizard.test.TestUtil.matches;
 
-public class ExceptionHandlerTest {
+@ExtendWith(LoggingVerifierExtension.class)
+class ExceptionHandlerTest {
+
+    LoggingVerifier loggingVerifier = new LoggingVerifier(ExceptionHandler.class);
+
     @Test
-    public void shouldLogHeadersForErrors() {
+    void shouldLogHeadersForErrors() {
         MockHttpServerRequest request = new MockHttpServerRequest("/path");
         request.requestHeaders().add("X-DBID", "5678");
-        String expectedLog = "500 Internal Server Error\n\tCause: runtime exception\n" +
-            "\tResponse: {\"id\":\"*\",\"error\":\"internal\"}\n\tRequest: GET /path headers: X-DBID=5678 ";
-        assertLog(request, new RuntimeException("runtime exception"), Level.ERROR, expectedLog);
+        String expectedLog = """
+            500 Internal Server Error
+            \tCause: runtime exception
+            \tResponse: {"id":"*","error":"internal"}
+            \tRequest: GET /path headers: X-DBID=5678\s""";
+        assertLog(request, new RuntimeException("runtime exception"), ERROR, expectedLog);
     }
 
     @Test
-    public void shouldLogHeadersForWarnings() {
+    void shouldLogHeadersForWarnings() {
         MockHttpServerRequest request = new MockHttpServerRequest("/path");
         request.requestHeaders().add("X-DBID", "5678");
+        String expectedLog = """
+            400 Bad Request
+            \tCause: -
+            \tResponse: {"id":"*","error":"badrequest"}
+            \tRequest: GET /path headers: X-DBID=5678\s""";
         assertLog(request,
-            new WebException(HttpResponseStatus.BAD_REQUEST),
-            Level.WARN,
-            "400 Bad Request\n\tCause: -\n\tResponse: {\"id\":\"*\",\"error\":\"badrequest\"}\n\tRequest: GET /path headers: X-DBID=5678 ");
+            new WebException(BAD_REQUEST),
+            WARN,
+            expectedLog);
     }
 
     @Test
-    public void shouldRedactSensitiveHeaders(){
+    void shouldRedactSensitiveHeaders() {
         MockHttpServerRequest request = new MockHttpServerRequest("/path");
         request.requestHeaders()
             .add("Authorization", "secret")
             .add("OtherHeader", "notasecret");
+        String expectedLog = """
+            400 Bad Request
+            \tCause: -
+            \tResponse: {"id":"*","error":"badrequest"}
+            \tRequest: GET /path headers: Authorization=REDACTED OtherHeader=notasecret\s""";
         assertLog(request,
-            new WebException(HttpResponseStatus.BAD_REQUEST),
-            Level.WARN,
-            "400 Bad Request\n\tCause: -\n\tResponse: {\"id\":\"*\",\"error\":\"badrequest\"}\n\tRequest: GET /path headers: Authorization=REDACTED OtherHeader=notasecret ");
+            new WebException(BAD_REQUEST),
+            WARN,
+            expectedLog);
     }
 
     @Test
-    public void shouldRedactSensitiveHeadersSpecified(){
+    void shouldRedactSensitiveHeadersSpecified() {
 
         MockHttpServerRequest request = new MockHttpServerRequest("/path");
         request.requestHeaders()
             .add("Authorization", "secret")
             .add("OtherHeader", "notasecret");
+        String expectedLog = """
+            400 Bad Request
+            \tCause: -
+            \tResponse: {"id":"*","error":"badrequest"}
+            \tRequest: GET /path headers: Authorization=REDACTED OtherHeader=REDACTED\s""";
         assertLog(request,
-            new WebException(HttpResponseStatus.BAD_REQUEST),
-            Level.WARN,
-            "400 Bad Request\n\tCause: -\n\tResponse: {\"id\":\"*\",\"error\":\"badrequest\"}\n\tRequest: GET /path headers: Authorization=REDACTED OtherHeader=REDACTED ", new ExceptionHandler() {
+            new WebException(BAD_REQUEST),
+            WARN,
+            expectedLog, new ExceptionHandler() {
                 @Override
                 protected String getHeaderValue(Map.Entry<String, String> header) {
                     if (header != null && header.getKey().equalsIgnoreCase("OtherHeader")) {
@@ -77,29 +104,30 @@ public class ExceptionHandlerTest {
     }
 
     @Test
-    public void shouldLog404AsDebug() {
-        Level originalLevel = LoggingMockUtil.setLevel(ExceptionHandler.class, Level.DEBUG);
+    void shouldLog404AsDebug() {
+        Level originalLevel = LoggingMockUtil.setLevel(ExceptionHandler.class, DEBUG);
         try {
             MockHttpServerRequest request = new MockHttpServerRequest("/path");
-            String expectedLog = "404 Not Found\n" +
-                "\tCause: -\n" +
-                "\tResponse: {\"id\":\"*\",\"error\":\"notfound\"}\n" +
-                "\tRequest: GET /path headers: ";
+            String expectedLog = """
+                404 Not Found
+                \tCause: -
+                \tResponse: {"id":"*","error":"notfound"}
+                \tRequest: GET /path headers:\s""";
 
-            assertLog(request, new NoSuchFileException(""), Level.DEBUG, expectedLog);
-            assertLog(request, new FileSystemException(""), Level.DEBUG, expectedLog);
+            assertLog(request, new NoSuchFileException(""), DEBUG, expectedLog);
+            assertLog(request, new FileSystemException(""), DEBUG, expectedLog);
         } finally {
             LoggingMockUtil.setLevel(ExceptionHandler.class, originalLevel);
         }
     }
 
     @Test
-    public void shouldLogClosedChannelExceptionAtDebugLevel() {
-        Level originalLevel = LoggingMockUtil.setLevel(ExceptionHandler.class, Level.DEBUG);
+    void shouldLogClosedChannelExceptionAtDebugLevel() {
+        Level originalLevel = LoggingMockUtil.setLevel(ExceptionHandler.class, DEBUG);
         try {
             assertLog(new MockHttpServerRequest("/path"),
                 new ClosedChannelException(),
-                Level.DEBUG,
+                DEBUG,
                 "Inbound connection has been closed: GET /path");
         } finally {
             LoggingMockUtil.setLevel(ExceptionHandler.class, originalLevel);
@@ -107,51 +135,53 @@ public class ExceptionHandlerTest {
     }
 
     @Test
-    public void shouldReturnLastExceptionOfCompositeException() {
-        WebException firstException = new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR).withLogLevel(org.slf4j.event.Level.DEBUG);
-        WebException secondException = new WebException(HttpResponseStatus.BAD_GATEWAY).withLogLevel(org.slf4j.event.Level.WARN);
+    void shouldReturnLastExceptionOfCompositeException() {
+        WebException firstException = new WebException(INTERNAL_SERVER_ERROR).withLogLevel(org.slf4j.event.Level.DEBUG);
+        WebException secondException = new WebException(BAD_GATEWAY).withLogLevel(org.slf4j.event.Level.WARN);
 
         CompositeException compositeException = new CompositeException(firstException, secondException);
 
-        String expectedLog = "502 Bad Gateway\n" +
-            "\tCause: -\n" +
-            "\tResponse: {\"id\":\"*\",\"error\":\"badgateway\"}\n" +
-            "\tRequest: GET /path headers: ";
+        String expectedLog = """
+            502 Bad Gateway
+            \tCause: -
+            \tResponse: {"id":"*","error":"badgateway"}
+            \tRequest: GET /path headers:\s""";
 
-        assertLog(new MockHttpServerRequest("/path"), compositeException, Level.WARN, expectedLog);
+        assertLog(new MockHttpServerRequest("/path"), compositeException, WARN, expectedLog);
     }
 
     @Test
-    public void shouldReturnCauseOfOnErrorThrowable() {
-        WebException cause = new WebException(HttpResponseStatus.BAD_GATEWAY).withLogLevel(org.slf4j.event.Level.WARN);
+    void shouldReturnCauseOfOnErrorThrowable() {
+        WebException cause = new WebException(BAD_GATEWAY).withLogLevel(org.slf4j.event.Level.WARN);
 
         OnErrorThrowable onErrorThrowable = OnErrorThrowable.from(cause);
 
-        String expectedLog = "502 Bad Gateway\n" +
-            "\tCause: -\n" +
-            "\tResponse: {\"id\":\"*\",\"error\":\"badgateway\"}\n" +
-            "\tRequest: GET /path headers: ";
+        String expectedLog = """
+            502 Bad Gateway
+            \tCause: -
+            \tResponse: {"id":"*","error":"badgateway"}
+            \tRequest: GET /path headers:\s""";
 
-        assertLog(new MockHttpServerRequest("/path"), onErrorThrowable, Level.WARN, expectedLog);
+        assertLog(new MockHttpServerRequest("/path"), onErrorThrowable, WARN, expectedLog);
     }
 
     @Test
-    public void shouldSetLogLevelFromWebException() {
-        Level originalLevel = LoggingMockUtil.setLevel(ExceptionHandler.class, Level.DEBUG);
+    void shouldSetLogLevelFromWebException() {
+        Level originalLevel = LoggingMockUtil.setLevel(ExceptionHandler.class, DEBUG);
         try {
-            WebException cause = new WebException(HttpResponseStatus.BAD_GATEWAY);
+            WebException cause = new WebException(BAD_GATEWAY);
 
             cause.setLogLevel(org.slf4j.event.Level.WARN);
-            assertLog(new MockHttpServerRequest("/path"), cause, Level.WARN, "*");
+            assertLog(new MockHttpServerRequest("/path"), cause, WARN, "*");
 
             cause.setLogLevel(org.slf4j.event.Level.DEBUG);
-            assertLog(new MockHttpServerRequest("/path"), cause, Level.DEBUG, "*");
+            assertLog(new MockHttpServerRequest("/path"), cause, DEBUG, "*");
 
             cause.setLogLevel(org.slf4j.event.Level.ERROR);
-            assertLog(new MockHttpServerRequest("/path"), cause, Level.ERROR, "*");
+            assertLog(new MockHttpServerRequest("/path"), cause, ERROR, "*");
 
             cause.setLogLevel(org.slf4j.event.Level.TRACE);
-            assertLog(new MockHttpServerRequest("/path"), cause, Level.DEBUG, "*");
+            assertLog(new MockHttpServerRequest("/path"), cause, DEBUG, "*");
 
             cause.setLogLevel(org.slf4j.event.Level.INFO);
             assertLog(new MockHttpServerRequest("/path"), cause, Level.INFO, "*");
@@ -161,10 +191,10 @@ public class ExceptionHandlerTest {
     }
 
     @Test
-    public void shouldSetContentLengthZeroFromHEAD() {
-        MockHttpServerRequest       request   = new MockHttpServerRequest("/path", HttpMethod.HEAD);
-        HttpServerResponse          response  = new MockHttpServerResponse();
-        WebException                exception = new WebException(HttpResponseStatus.BAD_GATEWAY);
+    void shouldSetContentLengthZeroFromHEAD() {
+        MockHttpServerRequest request = new MockHttpServerRequest("/path", HttpMethod.HEAD);
+        HttpServerResponse response = new MockHttpServerResponse();
+        WebException exception = new WebException(BAD_GATEWAY);
         new ExceptionHandler().handleException(request, response, exception);
 
         assertThat(response.responseHeaders().get("Content-Length")).isEqualTo("0");
@@ -175,23 +205,21 @@ public class ExceptionHandlerTest {
     }
 
     private void assertLog(HttpServerRequest request, Exception exception, Level expectedLevel, String expectedLog, ExceptionHandler exceptionHandler) {
-        Appender mockAppender = LoggingMockUtil.createMockedLogAppender(ExceptionHandler.class);
-
         HttpServerResponse response = new MockHttpServerResponse();
         exceptionHandler.handleException(request, response, exception);
 
         String regex = expectedLog.replaceAll("\\*", ".*")
             .replaceAll("\\[", "\\\\[")
-            .replaceAll("\\]", "\\\\]")
+            .replaceAll("]", "\\\\]")
             .replaceAll("\\{", "\\\\{")
-            .replaceAll("\\}", "\\\\}");
+            .replaceAll("}", "\\\\}");
 
-        verify(mockAppender).append(matches(event -> {
-            assertThat(event.getLevel()).isEqualTo(expectedLevel);
-            if (!expectedLog.equals("*")) {
-                assertThat(event.getMessage().getFormattedMessage()).matches(regex);
-            }
-        }));
-        LoggingMockUtil.destroyMockedAppender(ExceptionHandler.class);
+        loggingVerifier.assertThatLogs()
+            .anySatisfy(event -> {
+                assertThat(event.getLevel()).isEqualTo(expectedLevel);
+                if (!expectedLog.equals("*")) {
+                    assertThat(event.getMessage().getFormattedMessage()).matches(regex);
+                }
+            });
     }
 }
