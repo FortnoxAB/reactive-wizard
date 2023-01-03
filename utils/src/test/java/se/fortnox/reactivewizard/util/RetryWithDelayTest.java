@@ -1,82 +1,59 @@
 package se.fortnox.reactivewizard.util;
 
 import org.junit.Test;
-import rx.Observable;
-import se.fortnox.reactivewizard.util.rx.RetryWithDelay;
+import org.reactivestreams.Publisher;
+import reactor.core.publisher.Flux;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static reactor.core.publisher.Flux.from;
+import static reactor.test.StepVerifier.create;
+import static se.fortnox.reactivewizard.util.rx.RetryWithDelay.retryWithDelay;
 
 public class RetryWithDelayTest {
 
-    private Observable<Integer> getRetryObservable() {
-        RetryInterface retryInterface = mock(RetryInterface.class);
-        when(retryInterface.retry()).thenThrow(new RuntimeException()).thenReturn(1);
-
-        Observable<Integer> integerObservable = Observable.create(subscriber -> {
-            try {
-                subscriber.onNext(retryInterface.retry());
-                subscriber.onCompleted();
-            } catch (Exception e) {
-                subscriber.onError(e);
+    private Publisher<Integer> getRetryPublisher() {
+        AtomicInteger atomicInteger = new AtomicInteger(0);
+        return Flux.create(fluxSink -> {
+            if (atomicInteger.getAndIncrement() == 0) {
+                fluxSink.error(new RuntimeException());
+                return;
             }
-        });
 
-        return integerObservable;
+            fluxSink.next(1);
+            fluxSink.complete();
+        });
     }
 
     @Test
     public void shouldRetryWithPredicate() {
-        Observable<Integer> retryObservable = getRetryObservable();
+        Publisher<Integer> retryPublisher = from(getRetryPublisher())
+            .retryWhen(retryWithDelay(1, 1, throwable -> true));
 
-        Integer returnValue = retryObservable.retryWhen(new RetryWithDelay(1, 1, throwable -> true)).toBlocking().first();
-        assertThat(returnValue).isEqualTo(1);
-    }
-
-    @Test
-    public void shouldRetryWithoutPredicate() {
-        Observable<Integer> retryObservable = getRetryObservable();
-
-        Integer returnValue = retryObservable.retryWhen(new RetryWithDelay(1, 1)).toBlocking().first();
-        assertThat(returnValue).isEqualTo(1);
+        create(retryPublisher).expectNextCount(1).verifyComplete();
     }
 
     @Test
     public void shouldNotRetryWithPredicate() {
-        Observable<Integer> retryObservable = getRetryObservable();
+        Publisher<Integer> retryPublisher = from(getRetryPublisher())
+            .retryWhen(retryWithDelay(1, 1, throwable -> false));
 
-        Exception exception = null;
-        try {
-            retryObservable.retryWhen(new RetryWithDelay(1, 1, throwable -> false)).toBlocking().first();
-        } catch (Exception e) {
-            exception = e;
-        }
-        assertThat(exception).isNotNull();
+        create(retryPublisher).verifyError();
     }
 
     @Test
     public void shouldRetryForCertainError() {
-        Observable<Integer> retryObservable = getRetryObservable();
+        Publisher<Integer> retryPublisher = from(getRetryPublisher())
+            .retryWhen(retryWithDelay(1, 1, RuntimeException.class));
 
-        Integer returnValue = retryObservable.retryWhen(new RetryWithDelay(1, 1, RuntimeException.class)).toBlocking().first();
-        assertThat(returnValue).isEqualTo(1);
+        create(retryPublisher).expectNextCount(1).verifyComplete();
     }
 
     @Test
     public void shouldNotRetryForCertainError() {
-        Observable<Integer> retryObservable = getRetryObservable();
+        Publisher<Integer> retryPublisher = from(getRetryPublisher())
+            .retryWhen(retryWithDelay(1, 1, NumberFormatException.class));
 
-        Exception exception = null;
-        try {
-            retryObservable.retryWhen(new RetryWithDelay(1, 1, NumberFormatException.class)).toBlocking().first();
-        } catch (Exception e) {
-            exception = e;
-        }
-        assertThat(exception).isNotNull();
+        create(retryPublisher).verifyError();
     }
 
-    interface RetryInterface {
-        int retry();
-    }
 }

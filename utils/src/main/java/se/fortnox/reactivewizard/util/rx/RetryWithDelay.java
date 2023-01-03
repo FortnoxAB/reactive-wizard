@@ -1,48 +1,44 @@
 package se.fortnox.reactivewizard.util.rx;
 
-import rx.Observable;
-import rx.functions.Func1;
+import reactor.util.retry.Retry;
 
-import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
-public class RetryWithDelay implements Func1<Observable<? extends Throwable>, Observable<?>> {
+import static java.time.Duration.ofMillis;
+import static reactor.util.retry.Retry.fixedDelay;
 
-    private final int                          maxRetries;
-    private final int                          retryDelayMillis;
-    private final Predicate<? super Throwable> predicate;
-    private       int                          retryCount;
+public class RetryWithDelay {
 
-    public RetryWithDelay(int maxRetries, int retryDelayMillis, final Class<? extends Throwable> exceptionType) {
-        this(maxRetries, retryDelayMillis, throwable -> {
-            return exceptionType == null || exceptionType.isAssignableFrom(throwable.getClass());
-        });
+    private RetryWithDelay() {
     }
 
-    public RetryWithDelay(int maxRetries, int retryDelayMillis, final Predicate<? super Throwable> predicate) {
-        this.maxRetries = maxRetries;
-        this.retryDelayMillis = retryDelayMillis;
-        this.predicate = predicate;
-        this.retryCount = 0;
+    /**
+     * A wrapper method around RetrySpec.
+     * Retries if exceptionType is null or matches the propagated exception,
+     * otherwise it continues to propagate the error.
+     * @param maxRetries maximum number of retries
+     * @param retryDelayMillis retry delay in milliseconds
+     * @param exceptionType exception type to check against
+     * @return Retry strategy that retries only if exceptionType is null or matches the propagated exception.
+     */
+    public static Retry retryWithDelay(int maxRetries, int retryDelayMillis, final Class<? extends Throwable> exceptionType) {
+        return retryWithDelay(
+            maxRetries,
+            retryDelayMillis,
+            throwable -> exceptionType == null || exceptionType.isAssignableFrom(throwable.getClass())
+        );
     }
 
-    public RetryWithDelay(int maxRetries, int retryDelayMillis) {
-        this.maxRetries = maxRetries;
-        this.retryDelayMillis = retryDelayMillis;
-        this.predicate = null;
-        this.retryCount = 0;
+    /**
+     * A wrapper method around RetrySpec.
+     * Retries if prediate returns true given the propagated exception.
+     * @param maxRetries maximum number of retries
+     * @param retryDelayMillis retry delay in millseconds
+     * @param predicate predicate that decides to retry or not
+     * @return Retry strategy that retries only if predicate returns true given the propagated exception.
+     */
+    public static Retry retryWithDelay(int maxRetries, int retryDelayMillis, final Predicate<? super Throwable> predicate) {
+        return fixedDelay(maxRetries, ofMillis(retryDelayMillis)).filter(predicate);
     }
 
-    @Override
-    public Observable<?> call(Observable<? extends Throwable> attempts) {
-        return attempts.flatMap(throwable -> {
-            if (++retryCount <= maxRetries && (predicate == null || predicate.test(throwable))) {
-                int delay = retryDelayMillis * retryCount;
-                return Observable.timer(delay, TimeUnit.MILLISECONDS);
-            }
-
-            // Max retries hit. Just pass the error along.
-            return Observable.error(throwable);
-        });
-    }
 }
