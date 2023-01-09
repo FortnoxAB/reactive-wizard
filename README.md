@@ -49,8 +49,8 @@ Create a new Maven project and add Reactive Wizard to the dependencies section o
 
 ```xml
     <properties>
-        <slf4j.version>1.7.22</slf4j.version>
-        <reactivewizard.version>1.0.27</reactivewizard.version>
+        <log4j.version>2.19.0</log4j.version>
+        <reactivewizard.version>14.21.0</reactivewizard.version>
     </properties>
     <dependencies>
         <dependency>
@@ -74,9 +74,9 @@ Create a new Maven project and add Reactive Wizard to the dependencies section o
             <version>${reactivewizard.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-log4j12</artifactId>
-            <version>${slf4j.version}</version>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-slf4j-impl</artifactId>
+            <version>${log4j.version}</version>
         </dependency>
     </dependencies>
 ```
