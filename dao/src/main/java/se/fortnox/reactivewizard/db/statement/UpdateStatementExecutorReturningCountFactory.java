@@ -19,6 +19,7 @@ public class UpdateStatementExecutorReturningCountFactory extends AbstractUpdate
         try (PreparedStatement statement = parameterizedQuery.createStatement(connection, args)) {
             parameterizedQuery.addParameters(args, statement);
             executed(statement.executeUpdate(), fluxSink);
+            StatementDebug.log(statement);
         }
     }
 

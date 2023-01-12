@@ -1,16 +1,13 @@
 package se.fortnox.reactivewizard.db.statement;
 
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import se.fortnox.reactivewizard.db.deserializing.DbResultSetDeserializer;
 import se.fortnox.reactivewizard.db.query.ParameterizedQuery;
 
-import java.lang.reflect.Type;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Optional;
 
 public class SelectStatementFactory extends AbstractDbStatementFactory {
     private final DbResultSetDeserializer deserializer;
@@ -45,6 +42,7 @@ public class SelectStatementFactory extends AbstractDbStatementFactory {
                     }
                 }
             }
+            StatementDebug.log(statement);
         }
     }
 

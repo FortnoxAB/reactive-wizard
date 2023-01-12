@@ -35,6 +35,7 @@ public class UpdateStatementReturningGeneratedKeyFactory extends AbstractUpdateS
                     }
                 }
             }
+            StatementDebug.log(statement);
         }
     }
 }
