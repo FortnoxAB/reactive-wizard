@@ -80,7 +80,7 @@
         <hikaricp.version>5.0.1</hikaricp.version>
         <slf4j.version>2.0.6</slf4j.version>
         <junit.version>4.13.2</junit.version>
-        <junit5.version>5.9.1</junit5.version>
+        <junit5.version>5.9.2</junit5.version>
         <h2.version>2.1.214</h2.version>
         <snakeyaml.version>1.33</snakeyaml.version>
         <hibernate-validator.version>8.0.0.Final</hibernate-validator.version>
