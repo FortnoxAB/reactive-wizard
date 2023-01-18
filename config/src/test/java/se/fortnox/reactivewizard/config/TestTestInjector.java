@@ -6,6 +6,7 @@ import com.google.inject.name.Names;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mockingDetails;
 
 public class TestTestInjector {
 
@@ -13,20 +14,22 @@ public class TestTestInjector {
     @Test
     public void testCreateWithOutConfigFile() {
         Injector injector = TestInjector.create();
-        assertThat(injector.getInstance(ConfigFactory.class).getClass().getName()).isNotEqualTo(ConfigFactory.class.getName());
+        assertThat(mockingDetails(injector.getInstance(ConfigFactory.class)).isMock())
+            .isTrue();
 
         String[] args = injector.getInstance(Key.get(String[].class, Names.named("args")));
-        assertThat(args.length).isEqualTo(0);
+        assertThat(args).isEmpty();
     }
 
     @Test
     public void testCreateWithConfigFile() {
         Injector injector = TestInjector.create("src/test/resources/testconfig.yml");
         assertThat(injector.getInstance(ConfigAutoBindModule.class).getClass().getName()).isEqualToIgnoringCase(ConfigAutoBindModule.class.getName());
-        assertThat(injector.getInstance(ConfigFactory.class).getClass().getName()).isEqualTo(ConfigFactory.class.getName());
+        assertThat(mockingDetails(injector.getInstance(ConfigFactory.class)).isMock())
+            .isFalse();
 
         String[] args = injector.getInstance(Key.get(String[].class, Names.named("args")));
-        assertThat(args.length).isEqualTo(1);
+        assertThat(args.length).isOne();
         assertThat(args[0]).isEqualTo("src/test/resources/testconfig.yml");
     }
 }

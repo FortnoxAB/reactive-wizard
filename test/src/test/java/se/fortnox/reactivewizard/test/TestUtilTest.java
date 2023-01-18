@@ -32,28 +32,29 @@ public class TestUtilTest {
             fail("Expected ComparisonFailure, but none was thrown");
         } catch (AssertionFailedError assertionFailedError) {
             assertThat(assertionFailedError.getActual().getStringRepresentation()).isEqualTo("""
-                    testClass.doNothing(
-                        "unexpected"
-                    );
-                    """);
+                testClass.doNothing(
+                    "unexpected"
+                );
+                """);
             assertThat(assertionFailedError.getExpected().getStringRepresentation()).isEqualTo("""
-                   testClass.doNothing(\n\s\s\s\s
-                   expected: "expected"
-                    but was: "unexpected"
-                   );""");
+                testClass.doNothing(\n\s\s\s\s
+                expected: "expected"
+                 but was: "unexpected"
+                );""");
             assertThat(assertionFailedError.getMessage()).isEqualTo("""
 
-                   Argument(s) are different! Wanted:
-                   testClass.doNothing(\n\s\s\s\s
-                   expected: "expected"
-                    but was: "unexpected"
-                   );
-                   -> at se.fortnox.reactivewizard.test.TestUtilTest.testMatchesFailure(TestUtilTest.java:31)
-                   Actual invocations have different arguments:
-                   testClass.doNothing(
-                       "unexpected"
-                   );
-                   -> at se.fortnox.reactivewizard.test.TestUtilTest.testMatchesFailure(TestUtilTest.java:28)
+                Argument(s) are different! Wanted:
+                testClass.doNothing(
+                   \s
+                expected: "expected"
+                 but was: "unexpected"
+                );
+                -> at se.fortnox.reactivewizard.test.TestUtilTest$TestClass.doNothing(TestUtilTest.java:94)
+                Actual invocations have different arguments:
+                testClass.doNothing(
+                    "unexpected"
+                );
+                -> at se.fortnox.reactivewizard.test.TestUtilTest.testMatchesFailure(TestUtilTest.java:28)
                    """);
         }
     }
