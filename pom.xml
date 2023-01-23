@@ -102,7 +102,7 @@
         <maven-source-plugin.version>3.2.1</maven-source-plugin.version>
         <maven-jxr-plugin.version>3.3.0</maven-jxr-plugin.version>
         <maven-javadoc-plugin.version>3.4.1</maven-javadoc-plugin.version>
-        <maven-checkstyle-plugin.version>3.2.0</maven-checkstyle-plugin.version>
+        <maven-checkstyle-plugin.version>3.2.1</maven-checkstyle-plugin.version>
         <maven-jar-plugin.version>3.3.0</maven-jar-plugin.version>
         <checkstyle.version>10.6.0</checkstyle.version>
         <liquibase-core.version>4.16.1</liquibase-core.version>
