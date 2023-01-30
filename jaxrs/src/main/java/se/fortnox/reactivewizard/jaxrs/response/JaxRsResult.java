@@ -12,6 +12,7 @@ import rx.functions.Func1;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
 
 import static javax.ws.rs.core.HttpHeaders.CONTENT_LENGTH;
 
@@ -23,12 +24,12 @@ public class JaxRsResult<T> {
     protected static final byte[]       EMPTY_RESPONSE      = new byte[0];
     protected static final Mono<byte[]> EMPTY_RESPONSE_MONO = Mono.just(EMPTY_RESPONSE);
 
-    protected final Func1<Flux<T>, Flux<byte[]>>    serializer;
+    protected final Function<Flux<T>, Flux<byte[]>>    serializer;
     protected final Map<String, String> headers = new HashMap<>();
     protected       Flux<T>             output;
     protected       HttpResponseStatus  responseStatus;
 
-    public JaxRsResult(Flux<T> output, HttpResponseStatus responseStatus, Func1<Flux<T>, Flux<byte[]>> serializer, Map<String, String> headers) {
+    public JaxRsResult(Flux<T> output, HttpResponseStatus responseStatus, Function<Flux<T>, Flux<byte[]>> serializer, Map<String, String> headers) {
         this.output = output;
         this.responseStatus = responseStatus;
         this.serializer     = serializer;
@@ -69,7 +70,7 @@ public class JaxRsResult<T> {
      */
     public Publisher<Void> write(HttpServerResponse response) {
         AtomicBoolean headersWritten = new AtomicBoolean();
-        return serializer.call(output)
+        return serializer.apply(output)
             .switchIfEmpty(Flux.defer(() -> {
                 if (responseStatus.codeClass() == HttpStatusClass.SUCCESS) {
                     responseStatus = HttpResponseStatus.NO_CONTENT;

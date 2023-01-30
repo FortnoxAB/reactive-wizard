@@ -6,11 +6,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.databind.type.CollectionType;
 import com.fasterxml.jackson.databind.util.StdDateFormat;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.lang.reflect.Type;
+import java.util.List;
 import java.util.function.Function;
 
 /**
@@ -81,6 +83,11 @@ public class JsonSerializerFactory {
                 throw new InvalidJsonException(e);
             }
         };
+    }
+
+    public <T> Function<List<T>, byte[]> createListToByteSerializer(Class<T> paramType) {
+        CollectionType listType = mapper.getTypeFactory().constructCollectionType(List.class, paramType);
+        return createByteSerializer(mapper.writerFor(listType));
     }
 
 }

@@ -14,8 +14,10 @@ import reactor.netty.http.server.HttpServer;
 import reactor.test.StepVerifier;
 import rx.Observable;
 import se.fortnox.reactivewizard.ExceptionHandler;
+import se.fortnox.reactivewizard.jaxrs.JaxRsRequest;
 import se.fortnox.reactivewizard.jaxrs.JaxRsRequestHandler;
 import se.fortnox.reactivewizard.jaxrs.JaxRsResourceFactory;
+import se.fortnox.reactivewizard.jaxrs.Stream;
 import se.fortnox.reactivewizard.jaxrs.WebException;
 import se.fortnox.reactivewizard.test.LoggingVerifier;
 import se.fortnox.reactivewizard.test.LoggingVerifierExtension;
@@ -47,6 +49,8 @@ class FluxClientTest {
     ObservableResource observableServerResource;
 
     JaxRsRequestHandler handler;
+
+    JaxRsRequestHandler failingHandler;
 
     public LoggingVerifier loggingVerifier = new LoggingVerifier(HttpClient.class);
 
@@ -204,9 +208,9 @@ class FluxClientTest {
             List<String> result = fluxClientResource.arrayOfStrings().take(2).collectList().block();
             assertThat(result).hasSize(2);
 
-            // It seems to become 152 requests all the time, but the important part is that it will avoid emitting all
+            // It seems to become 193 requests all the time, but the important part is that it will avoid emitting all
             // 10000 strings, so if this fails in the future we could change it to ensure that is less than 1000 or so
-            assertThat(emitted.get()).isLessThanOrEqualTo(152);
+            assertThat(emitted.get()).isLessThanOrEqualTo(193);
         } finally {
             server.disposeNow();
         }
@@ -323,7 +327,7 @@ class FluxClientTest {
     }
 
     @Test
-    public void shouldByteDecodeWhenContentTypeIsNotJSONAndProducesAnnotationIsNotPresent() throws URISyntaxException {
+    void shouldByteDecodeWhenContentTypeIsNotJSONAndProducesAnnotationIsNotPresent() throws URISyntaxException {
         DisposableServer server = HttpServer.create().handle((req, resp) -> {
             resp.header(CONTENT_TYPE, TEXT_HTML);
             return resp.sendString(Flux.just("""
@@ -361,6 +365,205 @@ class FluxClientTest {
         }
     }
 
+    @Test
+    void shouldDecodeJsonArrayOfStringsAsFluxWhenNonStreamingFlux() throws URISyntaxException {
+        DisposableServer server = HttpServer.create().handle(handler).bindNow();
+        when(fluxServerResource.arrayOfStringsNonStream()).thenReturn(Flux.just("a", "b"));
+
+        try {
+            FluxResource fluxClientResource = client(server);
+
+            List<String> result = fluxClientResource.arrayOfStringsNonStream().collectList().block();
+            assertThat(result).hasSize(2);
+            assertThat(result.get(0)).isEqualTo("a");
+            assertThat(result.get(1)).isEqualTo("b");
+        } finally {
+            server.disposeNow();
+        }
+    }
+
+    @Test
+    void shouldDecodeJsonArrayOfEntitiesAsFluxWhenNonStreamingFlux() throws URISyntaxException {
+        DisposableServer server = HttpServer.create().handle(handler).bindNow();
+        when(fluxServerResource.arrayOfEntitiesNonStream()).thenReturn(Flux.just(new Entity(), new Entity(), new Entity()));
+
+        try {
+            FluxResource fluxClientResource = client(server);
+
+            List<Entity> entitiesResult = fluxClientResource.arrayOfEntitiesNonStream().collectList().block();
+            assertThat(entitiesResult).hasSize(3);
+            assertThat(entitiesResult.get(0).getSomeDouble()).isEqualTo(3.1415d);
+
+        } finally {
+            server.disposeNow();
+        }
+    }
+
+    @Test
+    void shouldDecodeJsonArrayAsFluxInMultipleChunksWhenNonStreamFlux() throws URISyntaxException {
+        DisposableServer server = HttpServer.create().handle((req, resp) -> {
+            resp.header(CONTENT_TYPE, APPLICATION_JSON);
+            return resp.sendString(Flux.just(
+                "[   \t",
+                "\"",
+                "a\"\r\n\r\n,",
+                "\"b",
+                "\"]"));
+        }).bindNow();
+
+        try {
+            FluxResource fluxClientResource = client(server);
+            List<String> result = fluxClientResource.arrayOfStringsNonStream().collectList().block();
+            assertThat(result).hasSize(2);
+            assertThat(result.get(0)).isEqualTo("a");
+            assertThat(result.get(1)).isEqualTo("b");
+        } finally {
+            server.disposeNow();
+        }
+    }
+
+    @Test
+    void shouldDecodeNestedJsonArraysAsFluxWhenNonStreamingFlux() throws URISyntaxException {
+        DisposableServer server = HttpServer.create().handle(handler).bindNow();
+        when(fluxServerResource.arrayOfArrayNonStream()).thenReturn(Flux.just(asList("a", "b")).repeat(1));
+
+        try {
+            FluxResource fluxClientResource = client(server);
+            List<List<String>> result = fluxClientResource.arrayOfArrayNonStream().collectList().block();
+            assertThat(result).hasSize(2);
+            assertThat(result.get(0)).hasSize(2);
+            assertThat(result.get(0).get(0)).isEqualTo("a");
+            assertThat(result.get(0).get(1)).isEqualTo("b");
+        } finally {
+            server.disposeNow();
+        }
+    }
+
+    @Test
+    void shouldDecodeNestedJsonArraysAsFluxInMultipleChunksStreamWhenEndpointIsNonStreamingFlux() throws URISyntaxException {
+        DisposableServer server = HttpServer.create().handle((req, resp) -> {
+            resp.header(CONTENT_TYPE, APPLICATION_JSON);
+            return resp.sendString(Flux.just(
+                "[   \t",
+                "[\"",
+                "a\"\r\n\r\n,",
+                "\"b",
+                "\"]]"));
+        }).bindNow();
+
+        try {
+            FluxResource fluxClientResource = client(server);
+            List<List<String>> result = fluxClientResource.arrayOfArrayNonStream().collectList().block();
+            assertThat(result).hasSize(1);
+            assertThat(result.get(0)).hasSize(2);
+            assertThat(result.get(0).get(0)).isEqualTo("a");
+            assertThat(result.get(0).get(1)).isEqualTo("b");
+        } finally {
+            server.disposeNow();
+        }
+    }
+    @Test
+    void shouldNotSupportBackpressureStreamWhenResourceMethodIsNonStreamingFlux() throws URISyntaxException {
+        DisposableServer server = HttpServer.create().handle(handler).bindNow();
+        AtomicInteger emitted = new AtomicInteger();
+        when(fluxServerResource.arrayOfStringsNonStream()).thenReturn(Flux.just("aaaaaa").repeat(10000).doOnNext(value -> emitted.incrementAndGet()));
+
+        try {
+            FluxResource fluxClientResource = client(server);
+
+            List<String> result = fluxClientResource.arrayOfStringsNonStream().take(2).collectList().block();
+            assertThat(result).hasSize(2);
+            assertThat(emitted.get()).isGreaterThan(10000);
+        } finally {
+            server.disposeNow();
+        }
+    }
+
+    @Test
+    void shouldSupportGettingResponseHeadersFromFluxWhenResourceMethodIsNonStreamingFlux() throws URISyntaxException {
+        DisposableServer server = HttpServer.create().handle(handler).bindNow();
+        AtomicInteger subscriptions = new AtomicInteger();
+        Flux<String> resultToReturn = Flux.just("a", "b").doOnSubscribe(s -> subscriptions.incrementAndGet());
+        when(fluxServerResource.arrayOfStringsNonStream()).thenReturn(resultToReturn);
+
+        try {
+            FluxResource fluxClientResource = client(server);
+
+            Flux<String> result = fluxClientResource.arrayOfStringsNonStream();
+            Mono<Response<Flux<String>>> fullResponse = HttpClient.getFullResponse(result);
+            Response<Flux<String>> awaitedResponse = fullResponse.block();
+            assertThat(awaitedResponse.getStatus()).isEqualTo(HttpResponseStatus.OK);
+            assertThat(awaitedResponse.getHeaders()).isNotEmpty();
+
+            List<String> bodyResult = awaitedResponse.getBody().collectList().block();
+            assertThat(bodyResult).hasSize(2);
+            assertThat(bodyResult.get(0)).isEqualTo("a");
+
+            verify(fluxServerResource).arrayOfStringsNonStream();
+
+            assertThat(subscriptions.get()).isEqualTo(1);
+        } finally {
+            server.disposeNow();
+        }
+    }
+
+    @Test
+    void shouldSupportByteArrayResponsesAsJsonStreamWhenResourceMethodIsNonStreamingFlux() throws URISyntaxException {
+        DisposableServer server = HttpServer.create().handle(handler).bindNow();
+        when(fluxServerResource.fluxByteArrayAsJsonNonStream()).thenReturn(Flux.just("abc".getBytes(), "def".getBytes()));
+
+        try {
+            FluxResource fluxClientResource = client(server);
+
+            Flux<byte[]> result = fluxClientResource.fluxByteArrayAsJsonNonStream();
+            List<byte[]> byteArrays = result.collectList().block();
+            assertThat(byteArrays).hasSize(2);
+            assertThat(new String(byteArrays.get(0))).isEqualTo("abc");
+            assertThat(new String(byteArrays.get(1))).isEqualTo("def");
+        } finally {
+            server.disposeNow();
+        }
+    }
+
+    @Test
+    void shouldByteDecodeWhenContentTypeIsNotJSONAndProducesAnnotationIsNotPresentAndResourceMethodIsNonStreamingFlux() throws URISyntaxException {
+        DisposableServer server = HttpServer.create().handle((req, resp) -> {
+            resp.header(CONTENT_TYPE, TEXT_HTML);
+            return resp.sendString(Flux.just("""
+                [{
+                    "someString": "Hello world!"
+                }]
+                """));
+        }).bindNow();
+
+        try {
+            FluxResource fluxClientResource = client(server);
+
+            StepVerifier.create(fluxClientResource.arrayOfEntitiesNonStream().cast(Object.class))
+                .assertNext(object -> assertThat(object).isInstanceOf(byte[].class))
+                .verifyComplete();
+
+        } finally {
+            server.disposeNow();
+        }
+    }
+
+    @Test
+    void shouldFailForNonJsonButJsonHeaderWhenNonStreamingFlux() throws URISyntaxException {
+        DisposableServer server = HttpServer.create().handle((req, resp) -> {
+            resp.header(CONTENT_TYPE, APPLICATION_JSON);
+            return resp.sendString(Flux.just("abc"));
+        }).bindNow();
+
+        try {
+            FluxResource fluxClientResource = client(server);
+            Flux<byte[]> result = fluxClientResource.fluxByteArrayAsJsonNonStream();
+            assertThatExceptionOfType(WebException.class).isThrownBy(() -> result.collectList().block());
+        } finally {
+            server.disposeNow();
+        }
+    }
+
     private FluxResource client(DisposableServer server) throws URISyntaxException {
         HttpClientConfig config = new HttpClientConfig("http://localhost:" + server.port());
         config.setReadTimeoutMs(1000000);
@@ -373,18 +576,22 @@ class FluxClientTest {
     interface FluxResource {
         @GET
         @Path("strings")
+        @Stream
         Flux<String> arrayOfStrings();
 
         @GET
         @Path("arraysofarray")
+        @Stream
         Flux<List<String>> arrayOfArray();
 
         @GET
         @Path("entities")
+        @Stream
         Flux<Entity> arrayOfEntities();
 
         @GET
         @Path("string")
+        @Stream
         Mono<String> monoString();
 
         @GET
@@ -393,17 +600,43 @@ class FluxClientTest {
 
         @GET
         @Path("bytesJson")
+        @Stream
         Flux<byte[]> fluxByteArrayAsJson();
 
         @GET
         @Path("bytes")
         @Produces(MediaType.APPLICATION_OCTET_STREAM)
+        @Stream
         Flux<byte[]> fluxByteArray();
 
         @GET
         @Path("/as_json")
         @Produces(APPLICATION_JSON)
+        @Stream
         Flux<Entity> entitiesWithOverridingJsonContentType();
+
+        /* WITHOUT STREAM */
+
+        @GET
+        @Path("nonstream/strings")
+        Flux<String> arrayOfStringsNonStream();
+
+        @GET
+        @Path("nonstream/arraysofarray")
+        Flux<List<String>> arrayOfArrayNonStream();
+
+        @GET
+        @Path("nonstream/entities")
+        Flux<Entity> arrayOfEntitiesNonStream();
+
+        @GET
+        @Path("nonstream/bytesJson")
+        Flux<byte[]> fluxByteArrayAsJsonNonStream();
+
+        @GET
+        @Path("/as_json")
+        @Produces(APPLICATION_JSON)
+        Flux<Entity> entitiesWithOverridingJsonContentTypeNonStream();
 
     }
 

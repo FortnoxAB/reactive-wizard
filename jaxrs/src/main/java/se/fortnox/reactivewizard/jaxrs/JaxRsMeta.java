@@ -23,6 +23,8 @@ public class JaxRsMeta {
     private Consumes   consumes                    = null;
     private String fullPath;
 
+    private Stream.Type streamType;
+
     public JaxRsMeta(Method method) {
         this(method, null);
     }
@@ -49,6 +51,8 @@ public class JaxRsMeta {
                 consumes = (Consumes)annotation;
             } else if (annotation instanceof Path) {
                 methodPath = (Path)annotation;
+            } else if (annotation instanceof Stream annotationStream) {
+                this.streamType = annotationStream.value();
             }
         }
         if (classPath == null) {
@@ -105,6 +109,10 @@ public class JaxRsMeta {
 
     public HttpMethod getHttpMethod() {
         return method;
+    }
+
+    public Stream.Type getStreamType() {
+        return streamType;
     }
 
     public void setMethod(HttpMethod method) {

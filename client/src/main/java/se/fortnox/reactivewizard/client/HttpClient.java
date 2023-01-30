@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.google.common.collect.Sets;
+import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.timeout.ReadTimeoutException;
 import org.slf4j.Logger;
@@ -22,6 +23,7 @@ import se.fortnox.reactivewizard.jaxrs.ByteBufCollector;
 import se.fortnox.reactivewizard.jaxrs.FieldError;
 import se.fortnox.reactivewizard.jaxrs.JaxRsMeta;
 import se.fortnox.reactivewizard.jaxrs.RequestLogger;
+import se.fortnox.reactivewizard.jaxrs.Stream;
 import se.fortnox.reactivewizard.jaxrs.WebException;
 import se.fortnox.reactivewizard.metrics.HealthRecorder;
 import se.fortnox.reactivewizard.metrics.PublisherMetrics;
@@ -68,6 +70,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static io.netty.handler.codec.http.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.netty.handler.codec.http.HttpMethod.POST;
 import static io.netty.handler.codec.http.HttpResponseStatus.GATEWAY_TIMEOUT;
 import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
@@ -320,7 +323,7 @@ public class HttpClient implements InvocationHandler {
     protected Flux<Object> parseResponseStream(Method method, RwHttpClientResponse response) {
         String contentType = resolveContentType(method, response);
 
-        if (contentType.equals(APPLICATION_JSON)) {
+        if (APPLICATION_JSON.equals(contentType)) {
             JsonArrayDeserializer deserializer = new JsonArrayDeserializer(objectMapper, method);
             return response.getContent().asByteArray().concatMap(deserializer::process);
         } else {

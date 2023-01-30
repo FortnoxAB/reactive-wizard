@@ -1,75 +1,194 @@
 package se.fortnox.reactivewizard.jaxrs;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
-import org.junit.Test;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.netty.DisposableServer;
 import reactor.netty.http.client.HttpClient;
 import reactor.netty.http.client.HttpClientResponse;
 import reactor.netty.http.server.HttpServer;
+import reactor.test.StepVerifier;
 import se.fortnox.reactivewizard.ExceptionHandler;
+import se.fortnox.reactivewizard.jaxrs.response.JaxRsResultFactoryFactory;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+
+import static io.netty.handler.codec.http.HttpResponseStatus.PAYMENT_REQUIRED;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class FluxResourceTest {
-    ByteBufCollector byteBufCollector = new ByteBufCollector();
+class FluxResourceTest {
     FluxResource fluxResource = mock(FluxResource.class);
     JaxRsRequestHandler handler = new JaxRsRequestHandler(new Object[]{fluxResource}, new JaxRsResourceFactory(), new ExceptionHandler(), false);
-    HttpClient httpClient = HttpClient.create();
 
     @Test
-    public void shouldReturnJsonArrayForFlux() {
+    void shouldReturnJsonArrayForFlux() {
         when(fluxResource.arrayOfStrings()).thenReturn(Flux.just("a", "b"));
-        assertResponse("/flux/strings", "[\"a\",\"b\"]");
+        FluxResourceAsserter.from(handler).sendRequest("/flux/strings")
+            .assertResponse("[\"a\",\"b\"]")
+            .close();
     }
 
     @Test
-    public void shouldReturnEmptyArray() {
+    void shouldReturnEmptyArray() {
         when(fluxResource.arrayOfStrings()).thenReturn(Flux.empty());
-        assertResponse("/flux/strings", "[]");
+        FluxResourceAsserter.from(handler).sendRequest("/flux/strings").assertResponse("[]").close();
     }
 
     @Test
-    public void shouldReturnError() {
-        when(fluxResource.arrayOfStrings()).thenReturn(Flux.error(new WebException(HttpResponseStatus.PAYMENT_REQUIRED, "error")));
-
-        DisposableServer server = HttpServer.create().handle(handler).bindNow();
-        try {
-            HttpClientResponse response = httpClient.get()
-                .uri("http://localhost:" + server.port() + "/flux/strings").response()
-                .block();
-
-            assertThat(response.status()).isEqualTo(HttpResponseStatus.PAYMENT_REQUIRED);
-        } finally {
-            server.disposeNow();
-        }
+    void shouldReturnError() {
+        when(fluxResource.arrayOfStrings()).thenReturn(Flux.error(new WebException(PAYMENT_REQUIRED, "error")));
+        FluxResourceAsserter.from(handler).sendRequest("/flux/strings").assertStatus(PAYMENT_REQUIRED).close();
     }
 
     @Test
-    public void shouldReturnJsonObjectForMono() {
+    void shouldFailToBindResourceWhenNonStreamingOctetStreamResourceMethodPresent() {
+        FailingResource failingResource = new FailingResourceImpl();
+        Supplier<JaxRsRequestHandler> failingResoureeRequestHandlerSupplier = () -> new JaxRsRequestHandler(
+            new Object[]{failingResource},
+            new JaxRsResourceFactory(),
+            new ExceptionHandler(),
+            false);
+
+        Assertions.assertThatThrownBy(failingResoureeRequestHandlerSupplier::get)
+            .isInstanceOf(JaxRsResultFactoryFactory.ResultFactoryException.class)
+            .hasMessage("Failed to create a result factory for non-streamable FailingResourceImpl::nonStreamingOctetStream. " +
+                "Annotate this method with @Stream to resolve the problem.");
+    }
+
+    @Test
+    void shouldReturnJsonObjectForMono() {
         when(fluxResource.monoString()).thenReturn(Mono.just("a"));
-        assertResponse("/flux/string", "\"a\"");
+        FluxResourceAsserter.from(handler)
+            .sendRequest("/flux/string")
+            .assertResponse("\"a\"")
+            .close();
     }
 
-    private void assertResponse(String path, String expectedResponse) {
-        DisposableServer server = HttpServer.create().handle(handler).bindNow();
-        try {
-            String response = byteBufCollector.collectString(httpClient.get()
-                .uri("http://localhost:" + server.port() + path)
-                .responseContent())
-                .block();
+    @Test
+    void shouldStreamJsonArrayWhenStreamAnnotationIsPresent() {
+        when(fluxResource.jsonArrayStreamOfTestEntities()).thenReturn(Flux.just(new TestEntity("Hello"), new TestEntity("World")));
+        FluxResourceAsserter.from(handler)
+            .sendRequest("/flux/json-array-stream-of-test-entities")
+            .assertHeaderValue("Transfer-Encoding", "chunked")
+            .assertResponse("[{\"value\":\"Hello\"},{\"value\":\"World\"}]")
+            .close();
+    }
 
-            assertThat(response).isEqualTo(expectedResponse);
-        } finally {
+    @Test
+    void shouldStreamConcatenatedJsonObjectsWhenStreamAnnotationWithCoJsonIsPresent() {
+        when(fluxResource.concatenatedJsonObjectsStreamOfTestEntities())
+            .thenReturn(Flux.just(new TestEntity("Hello"), new TestEntity("World")));
+
+        FluxResourceAsserter.from(handler)
+            .sendRequest("/flux/concatenated-json-objects-stream-of-test-entities")
+            .assertHeaderValue("Transfer-Encoding", "chunked")
+            .assertHeaderValue("Content-Type", "application/json")
+            .assertResponse("{\"value\":\"Hello\"}{\"value\":\"World\"}")
+            .close();
+    }
+
+    @Test
+    void shouldNotStreamWhenStreamAnnotationIsNotPresent() {
+        when(fluxResource.nonStreamingTestEntities()).thenReturn(Flux.just(new TestEntity("Hello"), new TestEntity("World")));
+        FluxResourceAsserter.from(handler)
+            .sendRequest("/flux/non-streaming-test-entities")
+            .assertHeaderValue("Transfer-Encoding", headerValue ->
+                Assertions.assertThat(headerValue).isNotEqualTo("chunked"))
+            .assertResponse("[{\"value\":\"Hello\"},{\"value\":\"World\"}]")
+            .close();
+    }
+
+    @Test
+    void shouldStreamConcatenatedJsonStringsWhenStreamAnnotationWithCoJsonIsPresent() {
+        when(fluxResource.concatenatedJsonObjectsStreamOfStrings()).thenReturn(Flux.just("Hello", "World"));
+        FluxResourceAsserter.from(handler)
+            .sendRequest("/flux/concatenated-json-objects-stream-of-strings")
+            .assertResponse("\"Hello\"\"World\"")
+            .close();
+    }
+
+    @Test
+    void shouldStreamConcatenatedStringsWhenStreamAnnotationWithCoJsonAndPlainTextIsPresent() {
+        when(fluxResource.concatenatedJsonObjectsOfStringsWithTextPlainContentType())
+            .thenReturn(Flux.just("Hello", "World"));
+
+        FluxResourceAsserter.from(handler)
+            .sendRequest("/flux/concatenated-json-objects-of-strings-with-text-plain-content-type")
+            .assertResponse("HelloWorld")
+            .close();
+    }
+
+    static class FluxResourceAsserter {
+        private final DisposableServer server;
+        private final ByteBufCollector byteBufCollector;
+
+        private final HttpClient httpClient;
+
+        private HttpClient.ResponseReceiver<?> responseReceiver;
+
+        protected FluxResourceAsserter(JaxRsRequestHandler jaxRsRequestHandler, ByteBufCollector byteBufCollector, HttpClient httpClient) {
+            server = HttpServer.create().handle(jaxRsRequestHandler).bindNow();
+            this.byteBufCollector = byteBufCollector;
+            this.httpClient = httpClient;
+        }
+
+        public static FluxResourceAsserter from(JaxRsRequestHandler jaxRsRequestHandler) {
+            return new FluxResourceAsserter(jaxRsRequestHandler, new ByteBufCollector(), HttpClient.create());
+        }
+
+        public FluxResourceAsserter sendRequest(String path) {
+            this.responseReceiver = httpClient.get().uri("http://localhost:" + server.port() + path);
+            return this;
+        }
+
+        public FluxResourceAsserter assertResponse(String expectedResponse) {
+            Mono<String> response = byteBufCollector.collectString(responseReceiver.responseContent());
+            StepVerifier.create(response).expectNext(expectedResponse).verifyComplete();
+            return this;
+        }
+
+        public FluxResourceAsserter assertStatus(HttpResponseStatus httpResponseStatus) {
+            Mono<HttpResponseStatus> responseStatus = responseReceiver.response().map(HttpClientResponse::status);
+            StepVerifier.create(responseStatus).expectNext(httpResponseStatus).verifyComplete();
+            return this;
+        }
+
+        public FluxResourceAsserter assertHeaderValue(String header, String value) {
+            Mono<String> headerValue = responseReceiver.response()
+                .map(HttpClientResponse::responseHeaders)
+                .map(httpHeaders -> httpHeaders.get(header))
+                .onErrorResume(throwable -> Mono.just(""));
+
+            StepVerifier.create(headerValue).expectNext(value).verifyComplete();
+            return this;
+        }
+
+        public FluxResourceAsserter assertHeaderValue(String header, Consumer<String> asserter) {
+            Mono<String> headerValue = responseReceiver.response()
+                .map(HttpClientResponse::responseHeaders)
+                .map(httpHeaders -> httpHeaders.get(header))
+                .onErrorResume(throwable -> Mono.just(""));
+
+            StepVerifier.create(headerValue).assertNext(asserter).verifyComplete();
+            return this;
+        }
+
+        public void close() {
             server.disposeNow();
         }
+
     }
+
+
 
     @Path("/flux")
     interface FluxResource {
@@ -80,5 +199,61 @@ public class FluxResourceTest {
         @GET
         @Path("string")
         Mono<String> monoString();
+
+        @GET
+        @Path("non-streaming-test-entities")
+        Flux<TestEntity> nonStreamingTestEntities();
+
+        @GET
+        @Stream
+        @Path("json-array-stream-of-test-entities")
+        Flux<TestEntity> jsonArrayStreamOfTestEntities();
+
+
+        @GET
+        @Stream(Stream.Type.CONCATENATED_JSON_OBJECTS)
+        @Path("concatenated-json-objects-stream-of-test-entities")
+        Flux<TestEntity> concatenatedJsonObjectsStreamOfTestEntities();
+
+        @GET
+        @Stream(Stream.Type.CONCATENATED_JSON_OBJECTS)
+        @Path("concatenated-json-objects-stream-of-strings")
+        Flux<String> concatenatedJsonObjectsStreamOfStrings();
+
+        @GET
+        @Stream(Stream.Type.CONCATENATED_JSON_OBJECTS)
+        @Path("concatenated-json-objects-of-strings-with-text-plain-content-type")
+        @Produces(MediaType.TEXT_PLAIN)
+        Flux<String> concatenatedJsonObjectsOfStringsWithTextPlainContentType();
+    }
+
+    @Path("/failing-resource-flux")
+    interface FailingResource {
+        @GET
+        @Produces("application/octet-stream")
+        Flux<byte[]> nonStreamingOctetStream();
+    }
+
+    static class FailingResourceImpl implements FailingResource {
+        @Override
+        public Flux<byte[]> nonStreamingOctetStream() {
+            return Flux.empty();
+        }
+    }
+
+    public static class TestEntity {
+        private String value;
+
+        public TestEntity(String value) {
+            this.value = value;
+        }
+
+        public String getValue() {
+            return value;
+        }
+
+        public void setValue(String value) {
+            this.value = value;
+        }
     }
 }
