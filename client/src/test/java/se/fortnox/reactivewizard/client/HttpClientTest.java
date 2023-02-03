@@ -1677,7 +1677,7 @@ public class HttpClientTest {
             resource.sendXml(new Pojo()).toBlocking().lastOrDefault(null);
             fail("expected exception");
         } catch (IllegalArgumentException e) {
-            assertThat(e).hasMessage("When content type is not application/json the body param must be String or byte[], but was class se.fortnox.reactivewizard.client.HttpClientTest$Pojo");
+            assertThat(e).hasMessage("When content type is not application/json the body param must be String, byte[] or Publisher<? extends byte[]>, but was class se.fortnox.reactivewizard.client.HttpClientTest$Pojo");
         }
 
         server.disposeNow();

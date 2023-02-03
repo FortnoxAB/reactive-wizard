@@ -1,6 +1,7 @@
 package se.fortnox.reactivewizard.client;
 
 import io.netty.handler.codec.http.HttpMethod;
+import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
 
 import java.net.InetSocketAddress;
@@ -16,14 +17,16 @@ import static javax.ws.rs.core.HttpHeaders.CONTENT_LENGTH;
  * calls.
  */
 public class RequestBuilder {
+    private static final Charset charset = Charset.forName("UTF-8");
 
-    private static final Charset             charset = Charset.forName("UTF-8");
-    private              InetSocketAddress   serverInfo;
-    private              HttpMethod          method;
-    private              String              key;
-    private              Map<String, String> headers = new HashMap<>();
-    private              String              uri;
-    private              byte[]              content;
+    private final HttpMethod          method;
+    private final String              key;
+    private final Map<String, String> headers = new HashMap<>();
+
+    private InetSocketAddress           serverInfo;
+    private String                      uri;
+    private Publisher<? extends byte[]> content;
+    private Integer                     contentLength;
 
     public RequestBuilder(InetSocketAddress serverInfo, HttpMethod method, String key) {
         this.serverInfo = serverInfo;
@@ -48,14 +51,14 @@ public class RequestBuilder {
                         entries.set(stringStringEntry.getKey(), stringStringEntry.getValue());
                     }
 
-                    if (requestBuilder.getContent() != null) {
-                        entries.set(CONTENT_LENGTH, this.getContent().length);
+                    if (requestBuilder.hasContent() && requestBuilder.getContentLength() != null) {
+                        entries.set(CONTENT_LENGTH, requestBuilder.getContentLength());
                     }
                 })
                 .request(requestBuilder.getHttpMethod())
                 .uri(requestBuilder.getFullUrl())
                 .send((httpClientRequest, nettyOutbound)
-                    -> nettyOutbound.sendByteArray(this.getContent() != null ? Mono.just(this.getContent()) : Mono.empty()))
+                    -> nettyOutbound.sendByteArray(requestBuilder.getContent() != null ? requestBuilder.getContent() : Mono.empty()))
                 .responseConnection((httpClientResponse, connection)
                     -> Mono.just(new RwHttpClientResponse(httpClientResponse, connection.inbound().receive()))));
     }
@@ -110,6 +113,11 @@ public class RequestBuilder {
     }
 
     public void setContent(byte[] content) {
+        this.content = Mono.just(content);
+        this.contentLength = content.length;
+    }
+
+    public void setContent(Publisher<? extends byte[]> content) {
         this.content = content;
     }
 
@@ -130,7 +138,15 @@ public class RequestBuilder {
         uri += prefix + key + "=" + value;
     }
 
-    protected byte[] getContent() {
+    protected Publisher<? extends byte[]> getContent() {
         return content;
+    }
+
+    protected void setContentLength(Integer contentLength) {
+        this.contentLength = contentLength;
+    }
+
+    protected Integer getContentLength() {
+        return contentLength;
     }
 }
