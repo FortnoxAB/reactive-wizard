@@ -5,9 +5,14 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.PreparedStatement;
 
+import static java.lang.Boolean.parseBoolean;
+import static java.lang.System.getProperty;
+import static java.lang.System.getenv;
+
 public class StatementDebug {
     private static final Logger LOG = LoggerFactory.getLogger(StatementDebug.class);
-    static boolean ENABLE_STATEMENT_DEBUG = Boolean.parseBoolean(System.getenv("dao.debug"));
+    private static final boolean ENABLE_STATEMENT_DEBUG = parseBoolean(getProperty("dao.debug"))
+        && "dev".equals(getenv("ENV_CONTEXT"));
 
     private StatementDebug() {
     }
