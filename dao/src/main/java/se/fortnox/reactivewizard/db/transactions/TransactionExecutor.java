@@ -8,12 +8,14 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 /**
  * class with helper methods used when executing stuff inside a database transaction.
  */
 class TransactionExecutor {
+
+    private static final String WRONG_TYPE_ERROR =
+        "All parameters to createTransaction need to be of type Observable, Single, Flux or Mono coming from a Dao-class, i.e. decorated. Statement was %s.";
 
     /**
      * Creates a Transaction based on a Collection of StatementContexts.
@@ -56,9 +58,8 @@ class TransactionExecutor {
         for (T statement : daoCalls) {
             Optional<StatementContext> statementContext = getDecoration.apply(statement);
             if (statementContext.isEmpty()) {
-                String statementString  = statement == null ? "null" : statement.getClass().toString();
-                String exceptionMessage = "All parameters to createTransaction needs to be observables coming from a Dao-class. Statement was %s.";
-                throw new RuntimeException(String.format(exceptionMessage, statementString));
+                String statementString = statement == null ? "null" : statement.getClass().toString();
+                throw new RuntimeException(String.format(WRONG_TYPE_ERROR, statementString));
             }
             daoStatementContexts.add(statementContext.get());
         }
