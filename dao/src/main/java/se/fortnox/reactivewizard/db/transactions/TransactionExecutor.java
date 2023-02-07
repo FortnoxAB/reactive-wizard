@@ -50,7 +50,7 @@ class TransactionExecutor {
      * @param getDecoration a function extracting the decoration from the type in the daoCalls iterable.
      * @param <T> A reactive type Observable, Single, Flux or Mono
      *
-     * @return a list of statment contexts.
+     * @return a list of statement contexts.
      */
     <T> List<StatementContext> getStatementContexts(Iterable<T> daoCalls, Function<T, Optional<StatementContext>> getDecoration) {
         List<StatementContext> daoStatementContexts = new ArrayList<>();
@@ -59,7 +59,7 @@ class TransactionExecutor {
             Optional<StatementContext> statementContext = getDecoration.apply(statement);
             if (statementContext.isEmpty()) {
                 String statementString = statement == null ? "null" : statement.getClass().toString();
-                throw new RuntimeException(String.format(WRONG_TYPE_ERROR, statementString));
+                throw new TransactionExecutionException(String.format(WRONG_TYPE_ERROR, statementString));
             }
             daoStatementContexts.add(statementContext.get());
         }
@@ -81,7 +81,12 @@ class TransactionExecutor {
             .map(StatementContext::getConnectionScheduler)
             .filter(ConnectionScheduler::hasConnectionProvider)
             .findFirst()
-            .orElseThrow(() -> new RuntimeException("No DaoObservable with a valid connection provider was found"));
+            .orElseThrow(() -> new TransactionExecutionException("No DaoObservable with a valid connection provider was found"));
     }
 
+    static class TransactionExecutionException extends RuntimeException {
+        public TransactionExecutionException(String message) {
+            super(message);
+        }
+    }
 }
