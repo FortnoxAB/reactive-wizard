@@ -14,18 +14,41 @@ public class FluxRxConverter {
 
     public static final String OBSERVABLE_NULL_ERROR = "Observable to convert must not be null";
 
-    public static <T> Flux<T> observableToFlux(Observable<T> result) {
-        requireNonNull(result, OBSERVABLE_NULL_ERROR);
-        return Flux.from(RxReactiveStreams.toPublisher(result));
-    }
-
-    public static <T> Mono<T> observableToMono(Observable<T> result) {
-        requireNonNull(result, OBSERVABLE_NULL_ERROR);
-        return Mono.from(RxReactiveStreams.toPublisher(result));
+    /**
+     * <p>Convert Observable to Flux.</p>
+     * <p>Note that this method:</p>
+     * <ul>
+     *     <li>Does not preserve any decoration present on the Observable. For that purpose, use {@link #converterToFlux(Class)}.</li>
+     * </ul>
+     *
+     * @param observable the Observable to convert
+     * @param <T>        type of the Observable
+     * @return the converted Flux
+     */
+    public static <T> Flux<T> observableToFlux(Observable<T> observable) {
+        requireNonNull(observable, OBSERVABLE_NULL_ERROR);
+        return Flux.from(RxReactiveStreams.toPublisher(observable));
     }
 
     /**
-     * Create converter from a reactive type to Flux.
+     * <p>Convert Observable to Mono.</p>
+     * <p>Note that this method:</p>
+     * <ul>
+     *     <li>Does not preserve any decoration present on the Observable.</li>
+     *     <li>Will only keep the first (or none, if empty) value emitted by the source Observable.</li>
+     * </ul>
+     *
+     * @param observable the Observable to convert
+     * @param <T>        type of the Observable
+     * @return the converted Mono
+     */
+    public static <T> Mono<T> observableToMono(Observable<T> observable) {
+        requireNonNull(observable, OBSERVABLE_NULL_ERROR);
+        return Mono.from(RxReactiveStreams.toPublisher(observable));
+    }
+
+    /**
+     * Create converter from a reactive type to Flux, keeping any decoration present in the source object.
      *
      * @param returnType the return type
      * @param <T>        the type of Flux
