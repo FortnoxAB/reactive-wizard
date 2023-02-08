@@ -158,6 +158,68 @@ public class StreamingDataTest {
     }
 
     @Test
+    public void shouldStreamConcatenatedJsonObjectsWhenObservableStream() throws SQLException {
+        MockDb mockDb = new MockDb();
+        StreamingDao streamingDao = mockDb.mockDao(10, StreamingDao.class);
+        CollectionOptions collectionOptions = new CollectionOptions();
+
+        StreamingResource streamingResource = new StreamingResourceImpl(streamingDao, collectionOptions);
+        DisposableServer server   = testServer(streamingResource).getServer();
+
+        try {
+            HttpClient client = HttpClient.create().port(server.port());
+
+            String content = client.get().uri("/stream/my-entities").responseContent().aggregate().asString().block();
+            assertThat(content).isEqualTo("{\"value\":\"Hello\"}{\"value\":\"World\"}");
+        } finally {
+            server.disposeNow();
+        }
+    }
+
+    @Test
+    public void shouldHaveChunkedTransferEncodingWhenObservableStream() throws SQLException {
+
+        MockDb mockDb = new MockDb();
+        StreamingDao streamingDao = mockDb.mockDao(10, StreamingDao.class);
+        CollectionOptions collectionOptions = new CollectionOptions();
+
+        StreamingResource streamingResource = new StreamingResourceImpl(streamingDao, collectionOptions);
+        DisposableServer server   = testServer(streamingResource).getServer();
+
+        try {
+            HttpClient client = HttpClient.create().port(server.port());
+
+            String content = client.get().uri("/stream/my-entities").response()
+                .map(httpClientResponse -> httpClientResponse.responseHeaders().get("Transfer-Encoding"))
+                .block();
+
+            assertThat(content).isEqualTo("chunked");
+        } finally {
+            server.disposeNow();
+        }
+    }
+
+    @Test
+    public void shouldStreamConcatenatedJsonStringsWhenObservableStream() throws SQLException {
+
+        MockDb mockDb = new MockDb();
+        StreamingDao streamingDao = mockDb.mockDao(10, StreamingDao.class);
+        CollectionOptions collectionOptions = new CollectionOptions();
+
+        StreamingResource streamingResource = new StreamingResourceImpl(streamingDao, collectionOptions);
+        DisposableServer server   = testServer(streamingResource).getServer();
+
+        try {
+            HttpClient client = HttpClient.create().port(server.port());
+
+            String content = client.get().uri("/stream/json-strings").responseContent().aggregate().asString().block();
+            assertThat(content).isEqualTo("\"Hello\"\"World\"");
+        } finally {
+            server.disposeNow();
+        }
+    }
+
+    @Test
     public void shouldSignalLastRecordIfEmptyResponse() throws SQLException {
 
         MockDb mockDb = new MockDb();
@@ -181,6 +243,7 @@ public class StreamingDataTest {
         }
     }
 
+
     /**
      * Here the implementing class has annotated its method with stream. That should work
      */
@@ -188,6 +251,7 @@ public class StreamingDataTest {
     interface StreamingResource {
         @GET
         @Produces(MediaType.TEXT_PLAIN)
+        @Stream
         Observable<String> streamOfStrings();
 
         @GET
@@ -204,6 +268,15 @@ public class StreamingDataTest {
         @Produces(MediaType.TEXT_PLAIN)
         @Path("paging")
         Flux<String> streamWithPaging(@QueryParam("limit") String limit);
+
+        @GET
+        @Path("/my-entities")
+        Observable<MyEntity> getMyEntities();
+
+        @GET
+        @Path("/json-strings")
+        Observable<String> getJsonStrings();
+
     }
 
     interface StreamingDao {
@@ -253,11 +326,24 @@ public class StreamingDataTest {
         }
 
         @Override
+        @Stream
         public Flux<String> streamWithPaging(String limit) {
             collectionOptions.setLimit(Integer.parseInt(limit));
             return streamingDao.getData("test", collectionOptions).map(s -> {
                 return String.valueOf(s);
             });
+        }
+
+        @Override
+        @Stream
+        public Observable<MyEntity> getMyEntities() {
+            return Observable.just(new MyEntity("Hello"), new MyEntity("World"));
+        }
+
+        @Override
+        @Stream
+        public Observable<String> getJsonStrings() {
+            return Observable.just("Hello", "World");
         }
     }
 
@@ -266,6 +352,25 @@ public class StreamingDataTest {
         @Override
         public Observable<String> noStreamOfStrings() {
             return just("a", "b");
+        }
+    }
+
+    public class MyEntity {
+        public String value;
+
+        public MyEntity() {
+        }
+
+        public MyEntity(String value) {
+            this.value = value;
+        }
+
+        public String getValue() {
+            return value;
+        }
+
+        public void setString(String value) {
+            this.value = value;
         }
     }
 }

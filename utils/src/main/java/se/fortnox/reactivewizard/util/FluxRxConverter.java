@@ -137,6 +137,10 @@ public class FluxRxConverter {
         return !Flux.class.isAssignableFrom(returnType);
     }
 
+    public static boolean isFlux(Class<?> returnType) {
+        return Flux.class.isAssignableFrom(returnType);
+    }
+
     /**
      * Create a converter from Observable to a reactive type.
      *

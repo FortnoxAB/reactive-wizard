@@ -4,12 +4,12 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.netty.http.server.HttpServerResponse;
-import rx.functions.Func1;
 
 import java.util.Map;
+import java.util.function.Function;
 
 public class JaxRsStreamingResult<T> extends JaxRsResult<T> {
-    public JaxRsStreamingResult(Flux<T> output, HttpResponseStatus responseStatus, Func1<Flux<T>, Flux<byte[]>> serializer, Map<String, String> headers) {
+    public JaxRsStreamingResult(Flux<T> output, HttpResponseStatus responseStatus, Function<Flux<T>, Flux<byte[]>> serializer, Map<String, String> headers) {
         super(output, responseStatus, serializer, headers);
     }
 
@@ -21,7 +21,7 @@ public class JaxRsStreamingResult<T> extends JaxRsResult<T> {
             }
             response.status(responseStatus);
             headers.forEach(response::addHeader);
-            return response.sendByteArray(serializer.call(outputBuffered));
+            return response.sendByteArray(serializer.apply(outputBuffered));
         });
     }
 }
