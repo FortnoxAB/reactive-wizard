@@ -4,11 +4,13 @@ import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoOperator;
+import reactor.test.StepVerifier;
 import rx.Observable;
 import rx.Single;
 import rx.subjects.Subject;
 
 import java.util.List;
+import java.util.function.Function;
 
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -95,6 +97,34 @@ class FluxRxConverterTest {
         assertThatExceptionOfType(NullPointerException.class)
             .isThrownBy(() -> FluxRxConverter.observableToMono(null))
             .withMessage("Observable to convert must not be null");
+    }
+
+    @Test
+    void shouldKeepDecorationWhenConvertingFromObservableToFlux() {
+        String value = "yo!";
+        int decoration = 123;
+        Observable<String> decoratedObservable = ReactiveDecorator.decorated(Observable.just(value), decoration);
+        Function<Object, Flux<String>> converter = FluxRxConverter.converterToFlux(Observable.class);
+
+        Flux<String> conversionResult = converter.apply(decoratedObservable);
+
+        StepVerifier.create(conversionResult)
+            .expectNext(value)
+            .verifyComplete();
+        assertThat(ReactiveDecorator.getDecoration(conversionResult))
+            .hasValue(decoration);
+    }
+
+    @Test
+    void shouldBeAbleToConvertObservableWithMoreThanOneItemToMono() {
+        List<String> values = List.of("one", "two");
+        Observable<String> observable = Observable.from(values);
+
+        Mono<String> conversionResult = FluxRxConverter.observableToMono(observable);
+
+        StepVerifier.create(conversionResult)
+            .expectNext(values.get(0))
+            .verifyComplete();
     }
 
     private void assertFluxNumbersSingle(Flux<String> flux) {

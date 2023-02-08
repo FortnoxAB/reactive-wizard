@@ -3,7 +3,6 @@ package se.fortnox.reactivewizard.db;
 import org.assertj.core.api.Fail;
 import org.junit.Test;
 import org.mockito.InOrder;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.scheduler.VirtualTimeScheduler;
@@ -373,12 +372,9 @@ public class DaoTransactionsTest {
             Fail.fail("Unexpected exception when testing transactions with empty and nulls");
         }
 
-        try {
-            daoTransactions.executeTransaction((Observable<Object>) null);
-            fail("Expected exception");
-        } catch (RuntimeException e) {
-            assertThat(e.getMessage()).startsWith("All parameters to createTransaction needs to be observables coming from a Dao-class");
-        }
+        assertThatExceptionOfType(RuntimeException.class)
+            .isThrownBy(() -> daoTransactions.executeTransaction((Observable<Object>) null))
+            .withMessageStartingWith("All parameters to createTransaction need to be of type Observable, Single, Flux or Mono coming from a Dao-class, i.e. decorated. Statement was");
     }
 
     @Test
