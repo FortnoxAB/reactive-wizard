@@ -11,8 +11,10 @@ import static java.lang.System.getenv;
 
 public class StatementDebug {
     private static final Logger LOG = LoggerFactory.getLogger(StatementDebug.class);
+    private static final String ENV_CONTEXT = "ENV_CONTEXT";
+
     private static final boolean ENABLE_STATEMENT_DEBUG = parseBoolean(getProperty("dao.debug"))
-        && "dev".equals(getenv("ENV_CONTEXT"));
+        && ("dev".equals(getenv(ENV_CONTEXT)) || "local".equals(getenv(ENV_CONTEXT)));
 
     private StatementDebug() {
     }
@@ -25,7 +27,10 @@ public class StatementDebug {
      */
     public static void log(PreparedStatement statement) {
         if (ENABLE_STATEMENT_DEBUG) {
-            LOG.info("Executed statement: {}", statement);
+            String[] statementParts = statement.toString().split("wrapping", 2);
+            if (statementParts.length == 2) {
+                LOG.info(statementParts[1]);
+            }
         }
     }
 
