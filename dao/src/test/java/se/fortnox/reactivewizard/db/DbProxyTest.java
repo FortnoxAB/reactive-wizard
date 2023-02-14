@@ -162,11 +162,11 @@ public class DbProxyTest {
     }
 
     @Test
-    public void shouldReturnDataFromDbForQueryWithFlux() throws SQLException {
+    public void shouldReturnDataFromDbForQueryWithFlux() throws SQLException, InterruptedException {
         mockDb.addRowColumn(1, 1, "sql_val", String.class, "myname");
         assertThat(dbProxyTestDao.select("mykey").block().getSqlVal()).isEqualTo("myname");
         mockDb.verifySelect("select * from table where key=?", "mykey");
-
+        Thread.sleep(1000);
         verify(mockDb.getPreparedStatement()).close();
         verify(mockDb.getResultSet()).close();
         verify(mockDb.getConnection()).close();
