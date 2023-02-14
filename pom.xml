@@ -113,7 +113,7 @@
         <rxjava-reactive-streams.version>1.2.1</rxjava-reactive-streams.version>
         <jakarta.el.version>4.0.2</jakarta.el.version>
         <javax.ws.rs-api.version>2.1.1</javax.ws.rs-api.version>
-        <maven-deploy-plugin.version>3.0.0</maven-deploy-plugin.version>
+        <maven-deploy-plugin.version>3.1.0</maven-deploy-plugin.version>
         <byte-buddy.version>1.13.0</byte-buddy.version>
 
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
