@@ -6,6 +6,7 @@ import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.netty.http.server.HttpServerResponse;
+import rx.functions.Action0;
 import rx.functions.Action1;
 import rx.functions.Func1;
 
@@ -47,6 +48,11 @@ public class JaxRsResult<T> {
 
     public JaxRsResult<T> doOnOutput(Action1<T> action) {
         output = output.doOnNext(action::call);
+        return this;
+    }
+
+    public JaxRsResult<T> doFinally(Action0 action) {
+        output = output.doOnComplete(action::call);
         return this;
     }
 
