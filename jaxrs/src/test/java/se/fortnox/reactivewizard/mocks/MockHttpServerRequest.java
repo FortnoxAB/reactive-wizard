@@ -18,6 +18,7 @@ import reactor.netty.http.server.HttpServerRequest;
 import javax.annotation.Nullable;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -138,6 +139,16 @@ public class MockHttpServerRequest implements HttpServerRequest {
     @Override
     public HttpHeaders requestHeaders() {
         return headers;
+    }
+
+    @Override
+    public String protocol() {
+        return null;
+    }
+
+    @Override
+    public ZonedDateTime timestamp() {
+        return null;
     }
 
     @Override
