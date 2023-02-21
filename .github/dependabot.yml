@@ -10,7 +10,6 @@ updates:
     schedule:
       interval: "daily"
     reviewers:
-      - "FortnoxAB/PlatMap"
       - "flowertwig"
       - "jepp3"
       - "softqwewasd"
