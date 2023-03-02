@@ -11,6 +11,7 @@ import com.google.common.collect.Sets;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.timeout.ReadTimeoutException;
+import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
@@ -441,9 +442,13 @@ public class HttpClient implements InvocationHandler {
                         } else if (value instanceof byte[] bytes) {
                             requestBuilder.setContent(bytes);
                             return;
+                        } else if (value instanceof Publisher publisher) {
+                            requestBuilder.setContent(publisher);
+                            return;
                         }
                         throw new IllegalArgumentException("When content type is not " + APPLICATION_JSON
-                            + " the body param must be String or byte[], but was " + value.getClass());
+                            + " the body param must be String, byte[] or Publisher<? extends byte[]>, but was "
+                            + value.getClass());
                     }
                     return;
                 } catch (JsonProcessingException e) {
