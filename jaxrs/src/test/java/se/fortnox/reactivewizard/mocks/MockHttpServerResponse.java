@@ -261,4 +261,14 @@ public class MockHttpServerResponse implements HttpServerResponse {
     public String connectionScheme() {
         return null;
     }
+
+    @Override
+    public String hostName() {
+        return null;
+    }
+
+    @Override
+    public int hostPort() {
+        return 0;
+    }
 }

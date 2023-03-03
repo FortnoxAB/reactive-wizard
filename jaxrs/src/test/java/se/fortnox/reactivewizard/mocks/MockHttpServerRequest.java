@@ -162,6 +162,16 @@ public class MockHttpServerRequest implements HttpServerRequest {
     }
 
     @Override
+    public String hostName() {
+        return null;
+    }
+
+    @Override
+    public int hostPort() {
+        return 0;
+    }
+
+    @Override
     public Map<CharSequence, Set<Cookie>> cookies() {
         if (cookies == null) {
             this.cookies = new HashMap<>(Cookies.newServerRequestHolder(requestHeaders(), ServerCookieDecoder.LAX).getCachedCookies());
