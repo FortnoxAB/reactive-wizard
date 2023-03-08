@@ -17,6 +17,7 @@ public class LiquibaseMigrateProviderTest {
 
         when(liquibaseConfig.getUrl()).thenReturn("jdbc:h2:mem:test");
         when(liquibaseConfig.getMigrationsFile()).thenReturn("migrations.xml");
+        when(liquibaseConfig.getSchema()).thenReturn(null);
 
         ConfigFactory configFactory = mock(ConfigFactory.class);
         when(configFactory.get(LiquibaseConfig.class)).thenReturn(liquibaseConfig);

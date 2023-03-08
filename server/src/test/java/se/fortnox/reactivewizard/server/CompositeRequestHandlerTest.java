@@ -21,7 +21,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class CompositeRequestHandlerTest {
@@ -83,6 +86,7 @@ public class CompositeRequestHandlerTest {
 
     @Test
     public void exceptionHandlerShallBeInvokedWhenNoRequestHandlerIsGiven() {
+        when(response.status()).thenReturn(null);
         when(exceptionHandler.handleException(any(), any(), any())).thenReturn(Flux.empty());
 
         Flux.from(compositeRequestHandler.apply(request, response)).count().block();
