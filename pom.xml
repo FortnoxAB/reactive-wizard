@@ -106,7 +106,7 @@
         <maven-jar-plugin.version>3.3.0</maven-jar-plugin.version>
         <checkstyle.version>10.9.2</checkstyle.version>
         <liquibase-core.version>4.16.1</liquibase-core.version>
-        <liquibase-slf4j.version>4.1.0</liquibase-slf4j.version>
+        <liquibase-slf4j.version>5.0.0</liquibase-slf4j.version>
         <javax.inject.version>1</javax.inject.version>
         <metrics-core.version>4.2.18</metrics-core.version>
         <awaitility.version>4.2.0</awaitility.version>
