@@ -53,6 +53,7 @@ import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import java.io.ByteArrayOutputStream;
@@ -566,10 +567,40 @@ public class HttpClientTest {
     }
 
     @Test
+    public void shouldSupportBeanParamWithFormParam() throws Exception {
+        DisposableServer server = HttpServer.create().host("localhost").port(0).handle((request, response) -> {
+            Mono<String> content = request.receive().aggregate().asString();
+            return response.sendString(content);
+        }).bindNow();
+
+        TestResource resource = getHttpProxy(server.port());
+        TestResource.SomeRecord someRecord = new TestResource.SomeRecord("", "", "abc");
+        Response<String> stringResponse = HttpClient.getFullResponse(resource.sendWithFormParam(someRecord))
+            .toBlocking().singleOrDefault(null);
+
+        assertThat(stringResponse.getBody()).isEqualTo("formParam1=abc");
+
+    }
+
+    @Test
+    public void shouldSupportBeanParamWithFormParamOnly() throws Exception {
+        DisposableServer server = HttpServer.create().host("localhost").port(0).handle((request, response) -> {
+            Mono<String> content = request.receive().aggregate().asString();
+            return response.sendString(content);
+        }).bindNow();
+
+        TestResource resource = getHttpProxy(server.port());
+        Response<String> stringResponse = HttpClient.getFullResponse(resource.sendWithFormParamOnly("abc"))
+            .toBlocking().singleOrDefault(null);
+
+        assertThat(stringResponse.getBody()).isEqualTo("formParam1=abc");
+
+    }
+    @Test
     public void shouldSupportBeanParamRecord() throws Exception {
         HttpClient client = new HttpClient(new HttpClientConfig("localhost"));
         Method     method = TestResource.class.getMethod("withBeanParamRecord", TestResource.SomeRecord.class);
-        TestResource.SomeRecord record = new TestResource.SomeRecord("value1", "value2");
+        TestResource.SomeRecord record = new TestResource.SomeRecord("value1", "value2", "a");
         String     path   = client.getPath(method, new Object[]{record}, new JaxRsMeta(method, null));
         assertThat(path).isEqualTo("/hello/beanParamRecord?param2=value2&param1=value1");
     }
@@ -580,6 +611,7 @@ public class HttpClientTest {
 
         TestResource resource = getHttpProxy(server.port());
         resource.getSingle().toBlocking().value();
+
 
         server.disposeNow();
     }
@@ -1376,7 +1408,7 @@ public class HttpClientTest {
 
         var resource = getHttpProxy(server.port());
 
-        var requestRecord = new TestResource.SomeRecord("value1", "value2");
+        var requestRecord = new TestResource.SomeRecord("value1", "value2", "");
 
         var responseRecord = resource.postRecord(requestRecord).toBlocking().singleOrDefault(null);
 
@@ -1712,7 +1744,8 @@ public class HttpClientTest {
 
         record SomeRecord(
             @QueryParam("param1") String param1,
-            @QueryParam("param2") String param2
+            @QueryParam("param2") String param2,
+            @FormParam("formParam1") String formParam1
         ) {
         }
 
@@ -1721,6 +1754,15 @@ public class HttpClientTest {
 
         @GET
         Observable<String> getHello();
+
+        @POST
+        @Path("/beanparamformparam/")
+        @Produces("application/x-www-form-urlencoded")
+        Observable<String> sendWithFormParam(@BeanParam SomeRecord someRecord);
+
+        @POST
+        @Path("formparamonly")
+        Observable<String> sendWithFormParamOnly(@FormParam("formParam1") String formParam1);
 
         @POST
         Observable<String> postHello();

@@ -865,6 +865,11 @@ class JaxRsResourceTest {
     }
 
     @Test
+    void helloWorldTest() {
+        assertThat(post(service, "/test/beanParamWithFormParam?name=foo&age=3&items=1,2&inherited=YES", "something=abc").getOutp()).isEqualTo("\"abc\"");
+    }
+
+    @Test
     void shouldGiveErrorWhenBodyIsNullString() {
         assertThat(post(service, "/test/applicationJson", "null").status()).isEqualTo(BAD_REQUEST);
         paramResolverFactoriesLoggingVerifier.verify(WARN, "Body deserializer returned null when deserializing body: 'null'");
@@ -1293,6 +1298,10 @@ class JaxRsResourceTest {
         @GET
         Observable<String> acceptsBeanParam(@BeanParam ParamEntity beanParam);
 
+        @Path("/beanParamWithFormParam")
+        @POST
+        Observable<String> getFormParamInBeamParam(@BeanParam ParamEntityRecord beanParam);
+
         @Path("acceptsBeanParamRecord")
         @GET
         Observable<String> acceptsBeanParamRecord(@BeanParam ParamEntityRecord beanParam);
@@ -1670,6 +1679,11 @@ class JaxRsResourceTest {
         @Override
         public Observable<String> acceptsBeanParam(ParamEntity beanParam) {
             return just(String.format("%s - %d %d", beanParam.getName(), beanParam.getAge(), beanParam.getItems().size()));
+        }
+
+        @Override
+        public Observable<String> getFormParamInBeamParam(ParamEntityRecord beanParam) {
+            return just(beanParam.something());
         }
 
         @Override
