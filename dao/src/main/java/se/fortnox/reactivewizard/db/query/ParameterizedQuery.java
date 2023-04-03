@@ -27,9 +27,12 @@ public class ParameterizedQuery {
     private final List<QueryPart> queryParts;
     private final String          sql;
 
+    private final String methodName;
+
     public ParameterizedQuery(String sql, Method method) throws SQLException {
         this.sql = sql;
         this.queryParts = createQueryParts(sql, method);
+        this.methodName =  String.format("%s::%s", method.getDeclaringClass().getPackage().getName(), method.getName());
     }
 
     private List<QueryPart> createQueryParts(String sqlInput, Method method) throws SQLException {
@@ -141,5 +144,9 @@ public class ParameterizedQuery {
     @Override
     public String toString() {
         return sql;
+    }
+
+    public String getMethodName() {
+        return methodName;
     }
 }

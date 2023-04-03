@@ -159,13 +159,10 @@ public class MockDb {
         if (connectionProvider != null) {
             throw new RuntimeException("getConnectionProvider called more than once");
         }
-        connectionProvider = new ConnectionProvider() {
-            @Override
-            public Connection get() {
-                connectionsUsed++;
-                initRs();
-                return con;
-            }
+        connectionProvider = () -> {
+            connectionsUsed++;
+            initRs();
+            return con;
         };
         return connectionProvider;
     }

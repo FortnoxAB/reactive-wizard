@@ -42,13 +42,16 @@ public class ServerModule implements AutoBindModule {
 
     @Override
     public void configure(Binder binder) {
-        Multibinder<RequestHandler> requestHandlers = Multibinder.newSetBinder(binder,
-                new TypeLiteral<RequestHandler>() { });
+        Multibinder<RequestHandler> requestHandlers = Multibinder.newSetBinder(
+            binder,
+            new TypeLiteral<RequestHandler>() { });
         requestHandlers.addBinding().to(JaxRsRequestHandler.class);
 
         Multibinder.newSetBinder(binder, TypeLiteral.get(ParamResolverFactory.class));
+
         Multibinder<ResultTransformerFactory> resultTransformers = Multibinder.newSetBinder(binder,
                 TypeLiteral.get(ResultTransformerFactory.class));
+
         resultTransformers.addBinding().to(NoContentTransformer.class);
         resultTransformers.addBinding().to(ResponseDecoratorTransformer.class);
         Multibinder.newSetBinder(binder, TypeLiteral.get(ParamResolver.class));

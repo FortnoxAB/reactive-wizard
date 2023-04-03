@@ -28,7 +28,7 @@ Allowing backpressure and having a slow subscriber will empty the connection poo
 
 Use `DaoTransactions` any time that you need to run more than one CUD-operation, not only for transactional benefits but also for performance. Running multiple single queries (even selects) should be done using concatMap instead of flatMap, as the concurrency would otherwise saturate the connectionpool and block other requests from reaching the database. Running queries with concat will be very fast even if they are not concurrent, as one single connection will be reused and the associated caches in the database backend will often benefit from this.
 
-Transactions in RW are special because they do not allow the developer to block the database-connection, they are "one-shot". Therefore, in order to design a parent-relation structure with foreign-keys, you need to either use UUIDs to generate all keys in code, allowing you to add all inserts to a single one-shot transaction, or if you need an ordered key, make a select to determine the next key and use the optimistic-locking pattern to let the database block concurrent insterts by failing on primary key conflict, which can be easily retried with Observables. 
+Transactions in RW are special because they do not allow the developer to block the database-connection, they are "one-shot". Therefore, in order to design a parent-relation structure with foreign-keys, you need to either use UUIDs to generate all keys in code, allowing you to add all inserts to a single one-shot transaction, or if you need an ordered key, make a select to determine the next key and use the optimistic-locking pattern to let the database block concurrent inserts by failing on primary key conflict, which can be easily retried. 
 
 
 

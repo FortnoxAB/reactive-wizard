@@ -1,6 +1,7 @@
 package se.fortnox.reactivewizard.db.statement;
 
 import reactor.core.publisher.FluxSink;
+import reactor.core.publisher.MonoSink;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -43,8 +44,17 @@ public interface Statement {
 
     /**
      * Set the FluxSink.
+     * Cannot be set if MonoSink is already set.
      *
      * @param fluxSink the FluxSink
      */
     void setFluxSink(FluxSink<?> fluxSink);
+
+    /**
+     * Set the MonoSink.
+     * Cannot be set if FluxSink is already set.
+     *
+     * @param monoSink the MonoSink
+     */
+    void setMonoSink(MonoSink<?> monoSink);
 }
