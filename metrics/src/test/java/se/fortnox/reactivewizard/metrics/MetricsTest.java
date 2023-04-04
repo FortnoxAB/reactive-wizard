@@ -1,7 +1,10 @@
 package se.fortnox.reactivewizard.metrics;
 
 import org.junit.Test;
+import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -34,7 +37,7 @@ public class MetricsTest {
     public void shouldHandleNullFluxes() {
         String metricName = "test3";
         Flux<Integer> measuredFlux = Metrics.get(metricName)
-            .measure(null);
+            .measure((Flux<Integer>)null);
 
         assertThat(measuredFlux).isNull();
     }
@@ -44,10 +47,10 @@ public class MetricsTest {
         String              metricName          = "test4";
         Metrics             metrics             = Metrics.get(metricName);
         Flux<Integer> measuredFlux1 = metrics.measure(Flux.just(1));
+        measuredFlux1.subscribe();
+        measuredFlux1.subscribe();
+        measuredFlux1.subscribe();
         Flux<Integer> measuredFlux2 = metrics.measure(Flux.just(1));
-        measuredFlux1.subscribe();
-        measuredFlux1.subscribe();
-        measuredFlux1.subscribe();
         measuredFlux2.subscribe();
         measuredFlux2.subscribe();
 

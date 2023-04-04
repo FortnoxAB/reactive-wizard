@@ -12,7 +12,7 @@ import se.fortnox.reactivewizard.db.statement.DbStatementFactory;
 import se.fortnox.reactivewizard.db.statement.DbStatementFactoryFactory;
 import se.fortnox.reactivewizard.db.transactions.ConnectionScheduler;
 import se.fortnox.reactivewizard.json.JsonSerializerFactory;
-import se.fortnox.reactivewizard.metrics.PublisherMetrics;
+import se.fortnox.reactivewizard.metrics.Metrics;
 import se.fortnox.reactivewizard.util.DebugUtil;
 import se.fortnox.reactivewizard.util.ReflectionUtil;
 
@@ -146,12 +146,12 @@ public class DbProxy implements InvocationHandler {
         }
     }
 
-    private PublisherMetrics createMetrics(Method method) {
+    private Metrics createMetrics(Method method) {
         String type = method.isAnnotationPresent(Query.class) ? "query" : "update";
         String metricsName = format(
                 "DAO_type:{0}_method:{1}.{2}_{3}",
                 type, method.getDeclaringClass().getName(), method.getName(), method.getParameterCount());
-        return PublisherMetrics.get(metricsName);
+        return Metrics.get(metricsName);
     }
 
     public DbProxy usingConnectionProvider(ConnectionProvider connectionProvider) {
