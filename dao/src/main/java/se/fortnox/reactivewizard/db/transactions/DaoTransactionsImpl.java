@@ -21,7 +21,7 @@ public class DaoTransactionsImpl implements DaoTransactions {
     }
 
     @Override
-    public <T> Mono<Void> executeTransaction(Iterable<? extends Publisher<T>> daoCalls) {
+    public Mono<Void> executeTransaction(Iterable<? extends Publisher<?>> daoCalls) {
         if (daoCalls == null) {
             return empty();
         }
@@ -39,7 +39,7 @@ public class DaoTransactionsImpl implements DaoTransactions {
     }
 
     @Override
-    public <T> Mono<Void> executeTransaction(Publisher<T>... daoCalls) {
+    public Mono<Void> executeTransaction(Publisher<?>... daoCalls) {
         return executeTransaction(asList(daoCalls));
     }
 }

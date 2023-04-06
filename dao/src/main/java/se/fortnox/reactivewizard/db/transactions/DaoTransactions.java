@@ -11,14 +11,14 @@ public interface DaoTransactions {
      * @param daoCalls dao calls to run as on single transaction
      * @return empty Flux
      */
-    <T> Mono<Void> executeTransaction(Iterable<? extends Publisher<T>> daoCalls);
+    Mono<Void> executeTransaction(Iterable<? extends Publisher<?>> daoCalls);
 
     /**
      * Creates and executes a transaction for the passed dao-calls.
      * The calls will be run in the order they are passed to this method.
      *
      * @param daoCalls dao calls to run as on single transaction
-     * @return  empty Flux
+     * @return empty Flux
      */
-    <T> Mono<Void> executeTransaction(Publisher<T>... daoCalls);
+    Mono<Void> executeTransaction(Publisher<?>... daoCalls);
 }
