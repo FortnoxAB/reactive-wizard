@@ -16,6 +16,7 @@ import jakarta.validation.constraints.NotNull;
 import java.text.ParseException;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
@@ -402,5 +403,32 @@ public class ValidationExamples {
     interface AcceptingService<T> {
         Observable<T> call(T input);
     }
-}
 
+    /**********************************************************************
+     * If you pass an iterable containing objects to be validated, they
+     * are all individually validated by default (just like with single
+     * objects) without the need to explicitly add the @Valid annotation
+     * to the parameter.
+     */
+    AcceptingService<Iterable<InputClass>> iterableValidationService = ValidatingProxy.create(
+        AcceptingService.class, service, new ValidatorUtil()
+    );
+
+    /**
+     * Creates an instance of the InputClass with a null value in a field
+     * annotated with the @NotNull annotation. Puts the invalid InputObject
+     * in a list and passes it to the service. The object is validated.
+     */
+    @Test
+    public void shouldValidateObjectsInIterables() {
+        assertValidationException(() -> iterableValidationService.call(List.of(new InputClass())),
+            "{'id':'.*','error':'validation','fields':[{'field':'name','error':'validation.notnull'}]}");
+        verify(service, times(0)).call(any());
+    }
+
+    @Test
+    public void shouldPassIterableIfNoErrorsWithin() {
+        iterableValidationService.call(List.of(new InputClass() {{ setName("some name"); }}));
+        verify(service, times(1)).call(any());
+    }
+}
