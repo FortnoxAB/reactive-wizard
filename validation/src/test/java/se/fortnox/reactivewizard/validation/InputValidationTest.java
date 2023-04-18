@@ -13,6 +13,7 @@ import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+
 import java.text.ParseException;
 import java.util.Date;
 import java.util.HashMap;
@@ -30,7 +31,7 @@ import static org.mockito.Mockito.verify;
  * The purpose of this document is to show you how you can do some simple and
  * some more advanced validation of your input.
  */
-public class ValidationExamples {
+public class InputValidationTest {
 
     /**
      * Create a class representing the input that should be validated
