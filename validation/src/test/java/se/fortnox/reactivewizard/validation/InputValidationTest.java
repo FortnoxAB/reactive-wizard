@@ -411,6 +411,13 @@ public class InputValidationTest {
      * objects) without the need to explicitly add the @Valid annotation
      * to the parameter.
      */
+
+    ValidAcceptingService<Iterable<InputClass>> annotatedService = mock(ValidAcceptingService.class);
+
+    ValidAcceptingService<Iterable<InputClass>> annotatedValidationService = ValidatingProxy.create(
+        ValidAcceptingService.class, annotatedService, new ValidatorUtil()
+    );
+
     AcceptingService<Iterable<InputClass>> iterableValidationService = ValidatingProxy.create(
         AcceptingService.class, service, new ValidatorUtil()
     );
@@ -431,5 +438,27 @@ public class InputValidationTest {
     public void shouldPassIterableIfNoErrorsWithin() {
         iterableValidationService.call(List.of(new InputClass() {{ setName("some name"); }}));
         verify(service, times(1)).call(any());
+    }
+
+    /**
+     * These test check that the default behavior also applies when you are
+     * explicit and annotate the iterable parameter with the @Valid
+     * Jakarta annotation
+     */
+    @Test
+    public void shouldStillValidateObjectsInAnnotatedIterables() {
+        assertValidationException(() -> annotatedValidationService.call(List.of(new InputClass())),
+            "{'id':'.*','error':'validation','fields':[{'field':'name','error':'validation.notnull'}]}");
+        verify(annotatedService, times(0)).call(any());
+    }
+
+    @Test
+    public void shouldPassValidIterableIfNoErrorsWithin() {
+        annotatedValidationService.call(List.of(new InputClass() {{ setName("some name"); }}));
+        verify(annotatedService, times(1)).call(any());
+    }
+
+    interface ValidAcceptingService<T> {
+        Observable<T> call(@Valid T input);
     }
 }
