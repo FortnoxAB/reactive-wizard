@@ -10,8 +10,10 @@ import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.ws.rs.core.MediaType;
 import java.lang.reflect.ParameterizedType;
+import java.math.BigDecimal;
 import java.text.DateFormat;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Date;
 import java.util.HashMap;
@@ -58,12 +60,14 @@ public class DeserializerFactory {
             entry(Integer.class, new IntegerDeserializer()),
             entry(Long.class, new LongDeserializer()),
             entry(Double.class, new DoubleDeserializer()),
+            entry(BigDecimal.class, new BigDecimalDeserializer()),
             entry(String.class, (val) -> val),
             entry(UUID.class, new UUIDDeserializer()),
             entry(Date.class, new DateDeserializer(dateFormatProvider)),
             entry(LocalDate.class, new LocalDateDeserializer()),
-            entry(LocalTime.class, new LocalTimeDeserializer())
-        ));
+            entry(LocalTime.class, new LocalTimeDeserializer()),
+            entry(LocalDateTime.class, new LocalDateTimeDeserializer())
+            ));
 
         customDeserializers.forEach(deserializer -> stringDeserializers.put(getAppliedClass(deserializer), deserializer));
     }
