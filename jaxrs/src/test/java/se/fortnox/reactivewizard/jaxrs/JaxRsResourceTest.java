@@ -15,6 +15,7 @@ import rx.Observable;
 import rx.Single;
 import se.fortnox.reactivewizard.jaxrs.params.*;
 import se.fortnox.reactivewizard.jaxrs.params.annotated.AnnotatedParamResolverFactories;
+import se.fortnox.reactivewizard.jaxrs.params.deserializing.Deserializer;
 import se.fortnox.reactivewizard.jaxrs.params.deserializing.DeserializerFactory;
 import se.fortnox.reactivewizard.jaxrs.response.JaxRsResult;
 import se.fortnox.reactivewizard.jaxrs.response.JaxRsResultFactoryFactory;
@@ -481,6 +482,8 @@ class JaxRsResourceTest {
                 bind(new TypeLiteral<Set<ParamResolver>>() {{
                 }}).toInstance(Collections.EMPTY_SET);
                 bind(new TypeLiteral<Set<ParamResolverFactory>>() {{
+                }}).toInstance(Collections.EMPTY_SET);
+                bind(new TypeLiteral<Set<Deserializer>>() {{
                 }}).toInstance(Collections.EMPTY_SET);
                 bind(ResultTransformerFactories.class).toInstance(new ResultTransformerFactories());
                 bind(ObjectMapper.class).toInstance(new ObjectMapper()
