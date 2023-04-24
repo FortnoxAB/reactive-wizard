@@ -9,13 +9,17 @@ import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.ws.rs.core.MediaType;
+import java.lang.reflect.ParameterizedType;
+import java.math.BigDecimal;
 import java.text.DateFormat;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 
@@ -23,14 +27,28 @@ import static java.util.Map.entry;
 
 /**
  * Creates deserializers from Strings to a given type.
+ * Custom deserializers can be provided by binding {@link Deserializer} instances as in the following example:
+ *
+ *  <pre>
+ *  private static class FooModule extends AbstractModule {
+ *    protected void configure() {
+ *      var multibinder = Multibinder.newSetBinder(binder(), Deserializer.class);
+ *
+ *      multibinder.addBinding().toInstance(new FooDeserializer());
+ *    }
+ *  }
+ *  </pre>
  */
 public class DeserializerFactory {
 
     private final JsonDeserializerFactory     jsonDeserializerFactory;
     private final Map<Class<?>, Deserializer<?>> stringDeserializers;
 
+    @SuppressWarnings("rawtypes")
     @Inject
-    public DeserializerFactory(Provider<DateFormat> dateFormatProvider, JsonDeserializerFactory jsonDeserializerFactory) {
+    public DeserializerFactory(Provider<DateFormat> dateFormatProvider,
+        JsonDeserializerFactory jsonDeserializerFactory,
+        Set<Deserializer> customDeserializers) {
         this.jsonDeserializerFactory = jsonDeserializerFactory;
 
         stringDeserializers = new HashMap<>(Map.ofEntries(
@@ -42,16 +60,25 @@ public class DeserializerFactory {
             entry(Integer.class, new IntegerDeserializer()),
             entry(Long.class, new LongDeserializer()),
             entry(Double.class, new DoubleDeserializer()),
+            entry(BigDecimal.class, new BigDecimalDeserializer()),
             entry(String.class, (val) -> val),
             entry(UUID.class, new UUIDDeserializer()),
             entry(Date.class, new DateDeserializer(dateFormatProvider)),
             entry(LocalDate.class, new LocalDateDeserializer()),
-            entry(LocalTime.class, new LocalTimeDeserializer())
-        ));
+            entry(LocalTime.class, new LocalTimeDeserializer()),
+            entry(LocalDateTime.class, new LocalDateTimeDeserializer())
+            ));
+
+        customDeserializers.forEach(deserializer -> stringDeserializers.put(getAppliedClass(deserializer), deserializer));
     }
 
     public DeserializerFactory() {
-        this(StdDateFormat::new, new JsonDeserializerFactory());
+        this(StdDateFormat::new, new JsonDeserializerFactory(), Set.of());
+    }
+
+    @SuppressWarnings("rawtypes")
+    private Class<?> getAppliedClass(Deserializer serializer) {
+        return (Class)((ParameterizedType)serializer.getClass().getGenericInterfaces()[0]).getActualTypeArguments()[0];
     }
 
     /**

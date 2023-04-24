@@ -14,6 +14,7 @@ import se.fortnox.reactivewizard.jaxrs.JaxRsRequestHandler;
 import se.fortnox.reactivewizard.jaxrs.JaxRsResourcesProvider;
 import se.fortnox.reactivewizard.jaxrs.params.ParamResolver;
 import se.fortnox.reactivewizard.jaxrs.params.ParamResolverFactory;
+import se.fortnox.reactivewizard.jaxrs.params.deserializing.Deserializer;
 import se.fortnox.reactivewizard.jaxrs.response.NoContentTransformer;
 import se.fortnox.reactivewizard.jaxrs.response.ResponseDecoratorTransformer;
 import se.fortnox.reactivewizard.jaxrs.response.ResultTransformerFactory;
@@ -47,6 +48,7 @@ public class ServerModule implements AutoBindModule {
             new TypeLiteral<RequestHandler>() { });
         requestHandlers.addBinding().to(JaxRsRequestHandler.class);
 
+        Multibinder.newSetBinder(binder, TypeLiteral.get(Deserializer.class));
         Multibinder.newSetBinder(binder, TypeLiteral.get(ParamResolverFactory.class));
 
         Multibinder<ResultTransformerFactory> resultTransformers = Multibinder.newSetBinder(binder,
