@@ -1,10 +1,11 @@
 package se.fortnox.reactivewizard.validation;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.lang.reflect.Method;
 import java.util.Set;
 
@@ -28,6 +29,13 @@ public class ValidatorUtil {
     }
 
     public void validate(Object obj) {
+        if (obj == null) {
+            return;
+        }
+        Class<?> cls = obj.getClass();
+        if (cls.isPrimitive() || cls.getName().startsWith("java.")) {
+            return;
+        }
         throwIfError(validator.validate(obj));
     }
 
@@ -40,11 +48,10 @@ public class ValidatorUtil {
     public void validateParameters(Object object, Method method, Object[] parameterValues) {
         throwIfError(validator.forExecutables().validateParameters(object, method, parameterValues));
         for (Object obj : parameterValues) {
-            if (obj != null) {
-                Class<?> cls = obj.getClass();
-                if (!cls.isPrimitive() && !cls.getName().startsWith("java.")) {
-                    validate(obj);
-                }
+            if (obj instanceof Iterable<?>) {
+                ((Iterable<?>) obj).forEach(this::validate);
+            } else {
+                validate(obj);
             }
         }
     }

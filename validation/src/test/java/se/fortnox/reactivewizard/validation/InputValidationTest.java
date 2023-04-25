@@ -13,9 +13,11 @@ import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+
 import java.text.ParseException;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
@@ -29,7 +31,7 @@ import static org.mockito.Mockito.verify;
  * The purpose of this document is to show you how you can do some simple and
  * some more advanced validation of your input.
  */
-public class ValidationExamples {
+public class InputValidationTest {
 
     /**
      * Create a class representing the input that should be validated
@@ -402,5 +404,61 @@ public class ValidationExamples {
     interface AcceptingService<T> {
         Observable<T> call(T input);
     }
-}
 
+    /**********************************************************************
+     * If you pass an iterable containing objects to be validated, they
+     * are all individually validated by default (just like with single
+     * objects) without the need to explicitly add the @Valid annotation
+     * to the parameter.
+     */
+
+    ValidAcceptingService<Iterable<InputClass>> annotatedService = mock(ValidAcceptingService.class);
+
+    ValidAcceptingService<Iterable<InputClass>> annotatedValidationService = ValidatingProxy.create(
+        ValidAcceptingService.class, annotatedService, new ValidatorUtil()
+    );
+
+    AcceptingService<Iterable<InputClass>> iterableValidationService = ValidatingProxy.create(
+        AcceptingService.class, service, new ValidatorUtil()
+    );
+
+    /**
+     * Creates an instance of the InputClass with a null value in a field
+     * annotated with the @NotNull annotation. Puts the invalid InputObject
+     * in a list and passes it to the service. The object is validated.
+     */
+    @Test
+    public void shouldValidateObjectsInIterables() {
+        assertValidationException(() -> iterableValidationService.call(List.of(new InputClass())),
+            "{'id':'.*','error':'validation','fields':[{'field':'name','error':'validation.notnull'}]}");
+        verify(service, times(0)).call(any());
+    }
+
+    @Test
+    public void shouldPassIterableIfNoErrorsWithin() {
+        iterableValidationService.call(List.of(new InputClass() {{ setName("some name"); }}));
+        verify(service, times(1)).call(any());
+    }
+
+    /**
+     * These test check that the default behavior also applies when you are
+     * explicit and annotate the iterable parameter with the @Valid
+     * Jakarta annotation
+     */
+    @Test
+    public void shouldStillValidateObjectsInAnnotatedIterables() {
+        assertValidationException(() -> annotatedValidationService.call(List.of(new InputClass())),
+            "{'id':'.*','error':'validation','fields':[{'field':'name','error':'validation.notnull'}]}");
+        verify(annotatedService, times(0)).call(any());
+    }
+
+    @Test
+    public void shouldPassValidIterableIfNoErrorsWithin() {
+        annotatedValidationService.call(List.of(new InputClass() {{ setName("some name"); }}));
+        verify(annotatedService, times(1)).call(any());
+    }
+
+    interface ValidAcceptingService<T> {
+        Observable<T> call(@Valid T input);
+    }
+}
