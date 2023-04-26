@@ -3,7 +3,7 @@ package se.fortnox.reactivewizard.validation;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
 import org.slf4j.event.Level;
-import rx.Observable;
+import reactor.core.publisher.Mono;
 import se.fortnox.reactivewizard.jaxrs.FieldError;
 import se.fortnox.reactivewizard.jaxrs.WebException;
 import se.fortnox.reactivewizard.jaxrs.Wrap;
@@ -248,7 +248,7 @@ public class InputValidationTest {
     }
 
     interface MyPeriodService {
-        Observable<Void> acceptsPeriod(PeriodPublic period);
+        Mono<Void> acceptsPeriod(PeriodPublic period);
     }
 
     /**
@@ -264,7 +264,7 @@ public class InputValidationTest {
 
     class MyPeriodServiceImpl implements MyPeriodService {
         @Override
-        public Observable<Void> acceptsPeriod(@Wrap(PeriodPrivate.class) PeriodPublic period) {
+        public Mono<Void> acceptsPeriod(@Wrap(PeriodPrivate.class) PeriodPublic period) {
             return null;
         }
     }
@@ -288,7 +288,7 @@ public class InputValidationTest {
      * validation error:
      */
     class MyValidatingService {
-        public Observable<Void> acceptsPeriod(Period period) {
+        public Mono<Void> acceptsPeriod(Period period) {
             Date startDateInDb = new Date(10);
             if (period.getStartDate().before(startDateInDb)) {
                 throw new WebException(new FieldError("startDate", "startdate.before.stored.date",
@@ -402,7 +402,7 @@ public class InputValidationTest {
 
     // And a service accepting the class.
     interface AcceptingService<T> {
-        Observable<T> call(T input);
+        Mono<T> call(T input);
     }
 
     /**********************************************************************
@@ -459,6 +459,6 @@ public class InputValidationTest {
     }
 
     interface ValidAcceptingService<T> {
-        Observable<T> call(@Valid T input);
+        Mono<T> call(@Valid T input);
     }
 }
