@@ -1,6 +1,5 @@
 package se.fortnox.reactivewizard.client;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
@@ -181,10 +180,8 @@ public class HttpClientTest {
     }
 
     private TestResource getHttpProxy(HttpClientConfig config) {
-        ObjectMapper mapper = new ObjectMapper().findAndRegisterModules()
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         requestLogger = new RequestLogger();
-        HttpClient client = new HttpClient(config, new ReactorRxClientProvider(config, healthRecorder), mapper, new RequestParameterSerializers(
+        HttpClient client = new HttpClient(config, new ReactorRxClientProvider(config, healthRecorder), new ObjectMapper(), new RequestParameterSerializers(
             Set.of(new SessionParameterSerializer())), Collections.emptySet(), requestLogger);
         return client.create(TestResource.class);
     }
@@ -1561,9 +1558,7 @@ public class HttpClientTest {
 
     private String generateLargeString(int sizeInMB) {
         char[] resp = new char[sizeInMB * 1024 * 1024];
-        for (int i = 0; i < resp.length; i++) {
-            resp[i] = 'a';
-        }
+        Arrays.fill(resp, 'a');
         resp[0] = '\"';
         resp[resp.length - 1] = '\"';
         return new String(resp);

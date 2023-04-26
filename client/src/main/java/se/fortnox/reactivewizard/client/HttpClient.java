@@ -1,6 +1,7 @@
 package se.fortnox.reactivewizard.client;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.StreamReadConstraints;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -86,6 +87,13 @@ public class HttpClient implements InvocationHandler {
     private static final Class BYTEARRAY_TYPE = (new byte[0]).getClass();
     private static final String COOKIE = "Cookie";
     private static final String QUOTE = "\"";
+    private static final String ERROR_CALLING_OTHER_SERVICE = """
+        Error calling other service:
+        \tResponse Status: %d
+        \tURL: %s
+        \tRequest Headers: %s
+        \tResponse Headers: %s
+        \tData: %s""";
 
     protected final InetSocketAddress serverInfo;
     protected final HttpClientConfig config;
@@ -114,6 +122,11 @@ public class HttpClient implements InvocationHandler {
         this.objectMapper = objectMapper;
         this.requestLogger = requestLogger;
         this.objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        var constraints = StreamReadConstraints.builder()
+            .maxStringLength(config.getMaxResponseSize())
+            .build();
+        this.objectMapper.getFactory()
+            .setStreamReadConstraints(constraints);
         this.requestParameterSerializers = requestParameterSerializers;
 
         serverInfo = new InetSocketAddress(config.getHost(), config.getPort());
@@ -489,12 +502,7 @@ public class HttpClient implements InvocationHandler {
         HttpResponseStatus status = response.getHttpClientResponse().status();
         if (status.code() >= 400) {
             return collector.collectString(response.getContent()).onErrorReturn("").map(data -> {
-                String message = format("Error calling other service:\n" +
-                        "\tResponse Status: %d\n" +
-                        "\tURL: %s\n" +
-                        "\tRequest Headers: %s\n" +
-                        "\tResponse Headers: %s\n" +
-                        "\tData: %s",
+                String message = format(ERROR_CALLING_OTHER_SERVICE,
                     status.code(),
                     request.getFullUrl(),
                     requestLogger.getHeaderValuesOrRedactClient(request.getHeaders()),
