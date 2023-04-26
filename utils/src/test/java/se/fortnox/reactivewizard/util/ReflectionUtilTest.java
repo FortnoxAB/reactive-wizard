@@ -8,6 +8,8 @@ import org.aopalliance.intercept.Joinpoint;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import rx.Observable;
 
 import javax.inject.Provider;
@@ -229,6 +231,24 @@ public class ReflectionUtilTest {
     }
 
     @Test
+    public void shouldFindFluxType() throws NoSuchMethodException {
+        Method resourceGet = TestResource.class.getMethod("fluxResourceGet", String.class, String.class);
+        assertThat(ReflectionUtil.getTypeOfObservable(resourceGet)).isEqualTo(String.class);
+
+        Method instanceMethod = TestResourceImpl.class.getMethod("fluxResourceGet", String.class, String.class);
+        assertThat(ReflectionUtil.getTypeOfObservable(instanceMethod)).isEqualTo(String.class);
+    }
+
+    @Test
+    public void shouldFindMonoType() throws NoSuchMethodException {
+        Method resourceGet = TestResource.class.getMethod("monoResourceGet", String.class, String.class);
+        assertThat(ReflectionUtil.getTypeOfObservable(resourceGet)).isEqualTo(String.class);
+
+        Method instanceMethod = TestResourceImpl.class.getMethod("monoResourceGet", String.class, String.class);
+        assertThat(ReflectionUtil.getTypeOfObservable(instanceMethod)).isEqualTo(String.class);
+    }
+
+    @Test
     public void shouldFailFindingObservableType() throws NoSuchMethodException {
         Method nonGenericReturnMethod = TestResource.class.getMethod("methodWithGenericParameter", List.class);
         try {
@@ -422,6 +442,12 @@ public class ReflectionUtilTest {
         @GET
         Observable<String> resourceGet(@QueryParam("name") String name, @HeaderParam("lang") String lang);
 
+        @GET
+        Flux<String> fluxResourceGet(@QueryParam("name") String name, @HeaderParam("lang") String lang);
+
+        @GET
+        Mono<String> monoResourceGet(@QueryParam("name") String name, @HeaderParam("lang") String lang);
+
         void methodWithGenericParameter(List<Integer> integerList);
 
         void methodWithMultiGenericParameter(Map<String,Integer> integerList);
@@ -433,6 +459,16 @@ public class ReflectionUtilTest {
 
         @Override
         public Observable<String> resourceGet(String name, String lang) {
+            return null;
+        }
+
+        @Override
+        public Flux<String> fluxResourceGet(String name, String lang) {
+            return null;
+        }
+
+        @Override
+        public Mono<String> monoResourceGet(String name, String lang) {
             return null;
         }
 

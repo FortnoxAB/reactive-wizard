@@ -38,7 +38,6 @@ import se.fortnox.reactivewizard.test.LoggingMockUtil;
 import se.fortnox.reactivewizard.test.LoggingVerifier;
 import se.fortnox.reactivewizard.test.TestUtil;
 import se.fortnox.reactivewizard.test.observable.ObservableAssertions;
-import se.fortnox.reactivewizard.util.rx.RetryWithDelay;
 
 import javax.net.ssl.SSLHandshakeException;
 import javax.ws.rs.BeanParam;
@@ -203,8 +202,6 @@ public class HttpClientTest {
     protected void withServer(Consumer<DisposableServer> serverConsumer) {
         final DisposableServer server = startServer(HttpResponseStatus.OK, "\"OK\"");
 
-        LoggingMockUtil.setLevel(RetryWithDelay.class, Level.OFF);
-
         try {
             serverConsumer.accept(server);
         } finally {
@@ -223,7 +220,7 @@ public class HttpClientTest {
                 config.setMaxConnections(1);
                 TestResource resource = getHttpProxy(config);
 
-                List<Observable<String>> results = new ArrayList<Observable<String>>();
+                List<Observable<String>> results = new ArrayList<>();
                 for (int i = 0; i < 10; i++) {
                     results.add(resource.getHello());
                 }
@@ -579,108 +576,6 @@ public class HttpClientTest {
 
         server.disposeNow();
     }
-
-    @Test
-    public void shouldReturnFullResponseFromObservable() {
-        DisposableServer server = startServer(HttpResponseStatus.OK, Mono.just("\"OK\""), httpServerRequest -> {
-        }, httpServerResponse -> {
-            httpServerResponse.addCookie(new DefaultCookie("cookieName", "cookieValue"));
-        });
-
-        TestResource resource = getHttpProxy(server.port());
-
-        Response<String> stringResponse = HttpClient.getFullResponse(resource.getHello())
-            .toBlocking().singleOrDefault(null);
-
-        assertThat(stringResponse).isNotNull();
-        assertThat(stringResponse.getBody()).isEqualTo("OK");
-        assertThat(stringResponse.getStatus()).isEqualTo(OK);
-
-        //Case sensitive when getting the entire map structure
-        assertThat(stringResponse.getHeaders().get("content-length")).isEqualTo("4");
-
-        //Case insensitive when fetching
-        assertThat(stringResponse.getHeader(CONTENT_LENGTH)).isEqualTo("4");
-
-        assertThat(stringResponse.getCookie("cookieName")).hasSize(1);
-        assertThat(stringResponse.getCookie("cookieName").get(0)).isEqualTo("cookieValue");
-        assertThat(stringResponse.getCookie(null)).hasSize(0);
-        assertThat(stringResponse.getCookie("bogus")).hasSize(0);
-    }
-
-    @Test
-    public void shouldReturnFullResponseFromEmptyObservable() {
-        DisposableServer server = startServer(HttpResponseStatus.OK, Mono.just(""), httpServerRequest -> {
-        }, httpServerResponse -> {
-            httpServerResponse.addCookie(new DefaultCookie("cookieName", "cookieValue"));
-        });
-
-        TestResource resource = getHttpProxy(server.port());
-
-        Response<String> stringResponse = HttpClient.getFullResponse(resource.getHello())
-            .toBlocking().singleOrDefault(null);
-
-        assertThat(stringResponse).isNotNull();
-        assertThat(stringResponse.getBody()).isNull();
-        assertThat(stringResponse.getStatus()).isEqualTo(OK);
-    }
-
-    @Test
-    public void shouldWrapAndReturnNewFullResponseObservable() {
-        DisposableServer server = startServer(HttpResponseStatus.OK, "\"OK\"");
-
-        TestResource resource = getHttpProxy(server.port());
-
-        Observable<String> hello = resource.getHello();
-
-        Response<String> stringResponse = HttpClient.getFullResponse(hello).toBlocking().singleOrDefault(null);
-        assertThat(stringResponse).isNotNull();
-        assertThat(stringResponse.getBody()).isEqualTo("OK");
-        assertThat(stringResponse.getStatus()).isEqualTo(OK);
-
-        //Case sensitive when getting the entire map structure
-        assertThat(stringResponse.getHeaders().get("content-length")).isEqualTo("4");
-
-        //Case insensitive when fetching
-        assertThat(stringResponse.getHeader(CONTENT_LENGTH)).isEqualTo("4");
-    }
-
-    @Test
-    public void shouldReturnFullResponseFromSingle() {
-        DisposableServer server = startServer(HttpResponseStatus.OK, "\"OK\"");
-
-        TestResource resource = getHttpProxy(server.port());
-
-        Response<String> stringResponse = HttpClient.getFullResponse(resource.getSingle())
-            .toBlocking().value();
-
-        assertThat(stringResponse).isNotNull();
-        assertThat(stringResponse.getBody()).isEqualTo("OK");
-        assertThat(stringResponse.getStatus()).isEqualTo(OK);
-        assertThat(stringResponse.getHeaders().get("content-length")).isEqualTo("4");
-    }
-
-    @Test
-    @SuppressWarnings("unchecked")
-    public void shouldWrapAndReturnNewFullResponseSingle() {
-        DisposableServer server = startServer(HttpResponseStatus.OK, "\"OK\"");
-
-        TestResource resource = getHttpProxy(server.port());
-
-        Single<String> hello = resource.getSingle();
-
-        Response<String> stringResponse = HttpClient.getFullResponse(hello).toBlocking().value();
-        assertThat(stringResponse).isNotNull();
-        assertThat(stringResponse.getBody()).isEqualTo("OK");
-        assertThat(stringResponse.getStatus()).isEqualTo(OK);
-
-        //Case sensitive when getting the entire map structure
-        assertThat(stringResponse.getHeaders().get("content-length")).isEqualTo("4");
-
-        //Case insensitive when fetching
-        assertThat(stringResponse.getHeader(CONTENT_LENGTH)).isEqualTo("4");
-    }
-
 
     @Test
     public void shouldHandleLargeResponses() {

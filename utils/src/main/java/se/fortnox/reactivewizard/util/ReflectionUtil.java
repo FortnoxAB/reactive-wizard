@@ -29,9 +29,9 @@ public class ReflectionUtil {
     private static final String CGLIB_CLASS_SEPARATOR = "$$";
 
     /**
-     * Get the type of Observable from method.
+     * Get the type of Observable/Mono/Flux from method.
      * @param method the method
-     * @return the type of Observable
+     * @return the type of Observable/Mono/Flux
      */
     public static Type getTypeOfObservable(Method method) {
         Type type = method.getGenericReturnType();

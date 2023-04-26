@@ -126,6 +126,9 @@ public class FluxRxConverter {
      * @param returnType the type to check
      * @return whether the type is reactive
      */
+    // NOTE-TO-SELF: Must still check against Observable and Single since it is used in
+    //               HttpClient which may cause issues to services that depend on APIs
+    //               that are still using Observables :)
     public static boolean isReactiveType(Class<?> returnType) {
         return Observable.class.isAssignableFrom(returnType)
             || Single.class.isAssignableFrom(returnType)
