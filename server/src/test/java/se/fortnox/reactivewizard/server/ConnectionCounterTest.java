@@ -1,8 +1,9 @@
 package se.fortnox.reactivewizard.server;
 
 import org.junit.Test;
-import rx.Observable;
+import reactor.core.publisher.Mono;
 
+import java.time.Duration;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -64,10 +65,10 @@ public class ConnectionCounterTest {
     }
 
     private void delayed(Runnable function) {
-        Observable.fromCallable(() -> {
+        Mono.fromCallable(() -> {
             function.run();
             return true;
-        }).delaySubscription(500, TimeUnit.MILLISECONDS).subscribe();
+        }).delaySubscription(Duration.ofMillis(500)).subscribe();
     }
 
 }
