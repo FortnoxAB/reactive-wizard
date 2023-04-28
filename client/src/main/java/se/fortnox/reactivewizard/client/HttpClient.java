@@ -1,6 +1,7 @@
 package se.fortnox.reactivewizard.client;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.StreamReadConstraints;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -8,7 +9,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.google.common.collect.Sets;
-import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.timeout.ReadTimeoutException;
 import org.reactivestreams.Publisher;
@@ -24,7 +24,6 @@ import se.fortnox.reactivewizard.jaxrs.ByteBufCollector;
 import se.fortnox.reactivewizard.jaxrs.FieldError;
 import se.fortnox.reactivewizard.jaxrs.JaxRsMeta;
 import se.fortnox.reactivewizard.jaxrs.RequestLogger;
-import se.fortnox.reactivewizard.jaxrs.Stream;
 import se.fortnox.reactivewizard.jaxrs.WebException;
 import se.fortnox.reactivewizard.metrics.HealthRecorder;
 import se.fortnox.reactivewizard.metrics.PublisherMetrics;
@@ -71,7 +70,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import static io.netty.handler.codec.http.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.netty.handler.codec.http.HttpMethod.POST;
 import static io.netty.handler.codec.http.HttpResponseStatus.GATEWAY_TIMEOUT;
 import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
@@ -85,24 +83,31 @@ import static reactor.core.Exceptions.isRetryExhausted;
 import static reactor.core.publisher.Mono.just;
 
 public class HttpClient implements InvocationHandler {
-    private static final Logger LOG            = LoggerFactory.getLogger(HttpClient.class);
-    private static final Class  BYTEARRAY_TYPE = (new byte[0]).getClass();
+    private static final Logger LOG = LoggerFactory.getLogger(HttpClient.class);
+    private static final Class BYTEARRAY_TYPE = (new byte[0]).getClass();
     private static final String COOKIE = "Cookie";
-    private static final String QUOTE  = "\"";
+    private static final String QUOTE = "\"";
+    private static final String ERROR_CALLING_OTHER_SERVICE = """
+        Error calling other service:
+        \tResponse Status: %d
+        \tURL: %s
+        \tRequest Headers: %s
+        \tResponse Headers: %s
+        \tData: %s""";
 
-    protected final InetSocketAddress                                 serverInfo;
-    protected final HttpClientConfig                                  config;
-    private final   ByteBufCollector                                  collector;
-    private final   RequestParameterSerializers                       requestParameterSerializers;
-    private final   Set<PreRequestHook>                               preRequestHooks;
-    private final   ReactorRxClientProvider                           clientProvider;
-    private final   ObjectMapper                                      objectMapper;
-    private final   RequestLogger                                     requestLogger;
-    private final   Map<Class<?>, List<HttpClient.BeanParamProperty>> beanParamCache = new ConcurrentHashMap<>();
-    private final   Map<Method, JaxRsMeta>                            jaxRsMetaMap   = new ConcurrentHashMap<>();
-    private         int                                               timeout        = 10;
-    private         TemporalUnit                                      timeoutUnit    = ChronoUnit.SECONDS;
-    private final   Duration                                          retryDuration;
+    protected final InetSocketAddress serverInfo;
+    protected final HttpClientConfig config;
+    private final ByteBufCollector collector;
+    private final RequestParameterSerializers requestParameterSerializers;
+    private final Set<PreRequestHook> preRequestHooks;
+    private final ReactorRxClientProvider clientProvider;
+    private final ObjectMapper objectMapper;
+    private final RequestLogger requestLogger;
+    private final Map<Class<?>, List<HttpClient.BeanParamProperty>> beanParamCache = new ConcurrentHashMap<>();
+    private final Map<Method, JaxRsMeta> jaxRsMetaMap = new ConcurrentHashMap<>();
+    private int timeout = 10;
+    private TemporalUnit timeoutUnit = ChronoUnit.SECONDS;
+    private final Duration retryDuration;
 
     @Inject
     public HttpClient(HttpClientConfig config,
@@ -112,17 +117,22 @@ public class HttpClient implements InvocationHandler {
                       Set<PreRequestHook> preRequestHooks,
                       RequestLogger requestLogger
     ) {
-        this.config         = config;
+        this.config = config;
         this.clientProvider = clientProvider;
-        this.objectMapper   = objectMapper;
+        this.objectMapper = objectMapper;
         this.requestLogger = requestLogger;
         this.objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        var constraints = StreamReadConstraints.builder()
+            .maxStringLength(config.getMaxResponseSize())
+            .build();
+        this.objectMapper.getFactory()
+            .setStreamReadConstraints(constraints);
         this.requestParameterSerializers = requestParameterSerializers;
 
-        serverInfo           = new InetSocketAddress(config.getHost(), config.getPort());
-        collector            = new ByteBufCollector(config.getMaxResponseSize());
+        serverInfo = new InetSocketAddress(config.getHost(), config.getPort());
+        collector = new ByteBufCollector(config.getMaxResponseSize());
         this.preRequestHooks = preRequestHooks;
-        this.retryDuration   = Duration.ofMillis(config.getRetryDelayMs());
+        this.retryDuration = Duration.ofMillis(config.getRetryDelayMs());
     }
 
     public HttpClient(HttpClientConfig config) {
@@ -135,7 +145,7 @@ public class HttpClient implements InvocationHandler {
     }
 
     public void setTimeout(int timeout, ChronoUnit timeoutUnit) {
-        this.timeout     = timeout;
+        this.timeout = timeout;
         this.timeoutUnit = timeoutUnit;
     }
 
@@ -162,7 +172,7 @@ public class HttpClient implements InvocationHandler {
 
     @SuppressWarnings("unchecked")
     public <T> T create(Class<T> jaxRsInterface) {
-        return (T)Proxy.newProxyInstance(jaxRsInterface.getClassLoader(), new Class[]{jaxRsInterface}, this);
+        return (T) Proxy.newProxyInstance(jaxRsInterface.getClassLoader(), new Class[]{jaxRsInterface}, this);
     }
 
     @Override
@@ -367,12 +377,13 @@ public class HttpClient implements InvocationHandler {
 
     /**
      * Create basic auth string based on config.
+     *
      * @return the auth string
      */
     private String createBasicAuthString() {
-        Charset charset     = StandardCharsets.ISO_8859_1;
-        String  authString  = config.getBasicAuth().getUsername() + ":" + config.getBasicAuth().getPassword();
-        byte[]  encodedAuth = Base64.getEncoder().encode(authString.getBytes(charset));
+        Charset charset = StandardCharsets.ISO_8859_1;
+        String authString = config.getBasicAuth().getUsername() + ":" + config.getBasicAuth().getPassword();
+        byte[] encodedAuth = Base64.getEncoder().encode(authString.getBytes(charset));
         return "Basic " + new String(encodedAuth);
     }
 
@@ -416,9 +427,9 @@ public class HttpClient implements InvocationHandler {
         if (!requestBuilder.canHaveBody() || requestBuilder.hasContent()) {
             return;
         }
-        Class<?>[]     types       = method.getParameterTypes();
+        Class<?>[] types = method.getParameterTypes();
         Annotation[][] annotations = method.getParameterAnnotations();
-        StringBuilder  output      = new StringBuilder();
+        StringBuilder output = new StringBuilder();
         for (int i = 0; i < types.length; i++) {
             Object value = arguments[i];
             if (value == null) {
@@ -491,12 +502,7 @@ public class HttpClient implements InvocationHandler {
         HttpResponseStatus status = response.getHttpClientResponse().status();
         if (status.code() >= 400) {
             return collector.collectString(response.getContent()).onErrorReturn("").map(data -> {
-                String message = format("Error calling other service:\n" +
-                        "\tResponse Status: %d\n" +
-                        "\tURL: %s\n" +
-                        "\tRequest Headers: %s\n" +
-                        "\tResponse Headers: %s\n" +
-                        "\tData: %s",
+                String message = format(ERROR_CALLING_OTHER_SERVICE,
                     status.code(),
                     request.getFullUrl(),
                     requestLogger.getHeaderValuesOrRedactClient(request.getHeaders()),
@@ -574,7 +580,7 @@ public class HttpClient implements InvocationHandler {
     }
 
     private void setHeaderParams(RequestBuilder request, Method method, Object[] arguments) {
-        Class<?>[]     types       = method.getParameterTypes();
+        Class<?>[] types = method.getParameterTypes();
         Annotation[][] annotations = method.getParameterAnnotations();
         for (int i = 0; i < types.length; i++) {
             Object value = arguments[i];
@@ -586,7 +592,7 @@ public class HttpClient implements InvocationHandler {
                     request.addHeader(headerParam.value(), serialize(value));
                 } else if (annotation instanceof CookieParam cookieParam) {
                     final String currentCookieValue = request.getHeaders().get(COOKIE);
-                    final String cookiePart         = cookieParam.value() + "=" + serialize(value);
+                    final String cookiePart = cookieParam.value() + "=" + serialize(value);
                     if (currentCookieValue != null) {
                         request.addHeader(COOKIE, format("%s; %s", currentCookieValue, cookiePart));
                     } else {
@@ -616,9 +622,9 @@ public class HttpClient implements InvocationHandler {
         }
 
         try {
-            JavaType     javaType = TypeFactory.defaultInstance().constructType(type);
-            ObjectReader reader   = objectMapper.readerFor(javaType);
-            Object       value    = reader.readValue(string);
+            JavaType javaType = TypeFactory.defaultInstance().constructType(type);
+            ObjectReader reader = objectMapper.readerFor(javaType);
+            Object value = reader.readValue(string);
             return Mono.justOrEmpty(value);
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -640,9 +646,9 @@ public class HttpClient implements InvocationHandler {
     protected String getPath(Method method, Object[] arguments, JaxRsMeta meta) {
         String path = meta.getFullPath();
 
-        StringBuilder      query               = null;
-        Class<?>[]         types               = method.getParameterTypes();
-        List<Object>       args                = new ArrayList<>(asList(arguments));
+        StringBuilder query = null;
+        Class<?>[] types = method.getParameterTypes();
+        List<Object> args = new ArrayList<>(asList(arguments));
         List<Annotation[]> argumentAnnotations = new ArrayList<>(asList(method.getParameterAnnotations()));
         for (int i = 0; i < args.size(); i++) {
             Object value = args.get(i);
@@ -718,7 +724,7 @@ public class HttpClient implements InvocationHandler {
             return String.valueOf(date.getTime());
         }
         if (value.getClass().isArray()) {
-            value = asList((Object[])value);
+            value = asList((Object[]) value);
         }
         if (value instanceof List list) {
             StringBuilder stringBuilder = new StringBuilder();
@@ -739,9 +745,9 @@ public class HttpClient implements InvocationHandler {
     }
 
     public static class DetailedError extends Throwable {
-        private int          code;
-        private String       error;
-        private String       message;
+        private int code;
+        private String error;
+        private String message;
         private FieldError[] fields;
 
         public DetailedError() {
@@ -802,10 +808,10 @@ public class HttpClient implements InvocationHandler {
 
     private static class BeanParamProperty {
         final Function<Object, Object> getter;
-        final Annotation[]             annotations;
+        final Annotation[] annotations;
 
         public BeanParamProperty(Function<Object, Object> getter, Annotation[] annotations) {
-            this.getter      = getter;
+            this.getter = getter;
             this.annotations = annotations;
         }
     }
