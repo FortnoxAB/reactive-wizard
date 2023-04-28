@@ -1,12 +1,13 @@
 package se.fortnox.reactivewizard.helloworld;
 
-import rx.Observable;
+import reactor.core.publisher.Mono;
 
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 
-import static rx.Observable.just;
+import static reactor.core.publisher.Mono.just;
+
 
 @Path("/helloworld")
 public class HelloWorldResource {
@@ -16,7 +17,7 @@ public class HelloWorldResource {
     }
 
     @GET
-    public Observable<String> greeting() {
+    public Mono<String> greeting() {
         return just("Hello world!");
     }
 }
