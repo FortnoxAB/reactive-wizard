@@ -26,7 +26,7 @@ import se.fortnox.reactivewizard.jaxrs.JaxRsMeta;
 import se.fortnox.reactivewizard.jaxrs.RequestLogger;
 import se.fortnox.reactivewizard.jaxrs.WebException;
 import se.fortnox.reactivewizard.metrics.HealthRecorder;
-import se.fortnox.reactivewizard.metrics.PublisherMetrics;
+import se.fortnox.reactivewizard.metrics.Metrics;
 import se.fortnox.reactivewizard.util.FluxRxConverter;
 import se.fortnox.reactivewizard.util.JustMessageException;
 import se.fortnox.reactivewizard.util.ReactiveDecorator;
@@ -388,7 +388,7 @@ public class HttpClient implements InvocationHandler {
     }
 
     protected <T> Mono<T> measure(RequestBuilder fullRequest, Mono<T> output) {
-        return PublisherMetrics.get("OUT_res:" + fullRequest.getKey()).measure(output);
+        return Metrics.get("OUT_res:" + fullRequest.getKey()).measure(output);
     }
 
     protected Mono<Response<Flux<?>>> withRetry(RequestBuilder fullReq, Mono<Response<Flux<?>>> responseMono) {

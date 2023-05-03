@@ -15,7 +15,7 @@ import se.fortnox.reactivewizard.db.paging.PagingOutput;
 import se.fortnox.reactivewizard.db.statement.DbStatementFactory;
 import se.fortnox.reactivewizard.db.statement.Statement;
 import se.fortnox.reactivewizard.db.transactions.ConnectionScheduler;
-import se.fortnox.reactivewizard.metrics.PublisherMetrics;
+import se.fortnox.reactivewizard.metrics.Metrics;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -100,7 +100,7 @@ public class ReactiveStatementFactoryTest {
 
         });
 
-        statementFactory = new ReactiveStatementFactory(dbStatementFactory, pagingOutput, PublisherMetrics.get("test"), databaseConfig, o -> o, getRequiredMethod(TestDao.class, "select"));
+        statementFactory = new ReactiveStatementFactory(dbStatementFactory, pagingOutput, Metrics.get("test"), databaseConfig, o -> o, getRequiredMethod(TestDao.class, "select"));
     }
 
     @Test

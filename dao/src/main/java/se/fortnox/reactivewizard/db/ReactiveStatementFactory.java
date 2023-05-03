@@ -12,7 +12,7 @@ import se.fortnox.reactivewizard.db.statement.DbStatementFactory;
 import se.fortnox.reactivewizard.db.statement.Statement;
 import se.fortnox.reactivewizard.db.transactions.ConnectionScheduler;
 import se.fortnox.reactivewizard.db.transactions.StatementContext;
-import se.fortnox.reactivewizard.metrics.PublisherMetrics;
+import se.fortnox.reactivewizard.metrics.Metrics;
 import se.fortnox.reactivewizard.util.DebugUtil;
 
 import java.lang.reflect.Method;
@@ -31,21 +31,21 @@ public class ReactiveStatementFactory {
     private final DbStatementFactory statementFactory;
     private final PagingOutput pagingOutput;
     private final Function<Publisher, Object> resultConverter;
-    private final PublisherMetrics publisherMetrics;
+    private final Metrics metrics;
 
     private final DatabaseConfig config;
     private final boolean isReturnTypeMono;
 
     public ReactiveStatementFactory(
-        DbStatementFactory statementFactory,
-        PagingOutput pagingOutput,
-        PublisherMetrics publisherMetrics,
-        DatabaseConfig config,
-        Function<Publisher, Object> resultConverter,
-        Method method) {
+            DbStatementFactory statementFactory,
+            PagingOutput pagingOutput,
+            Metrics metrics,
+            DatabaseConfig config,
+            Function<Publisher, Object> resultConverter,
+            Method method) {
         this.statementFactory = statementFactory;
         this.pagingOutput = pagingOutput;
-        this.publisherMetrics = publisherMetrics;
+        this.metrics = metrics;
         this.config = config;
         this.resultConverter = resultConverter;
         isReturnTypeMono = Mono.class.isAssignableFrom(method.getReturnType());
@@ -110,7 +110,7 @@ public class ReactiveStatementFactory {
                     return Mono.error(queryFailure);
                 });
             }
-            resultMono = Mono.from(publisherMetrics.measure(resultMono, this::logSlowQuery));
+            resultMono = Mono.from(metrics.measure(resultMono, this::logSlowQuery));
             return decorated(resultConverter.apply(resultMono), statementContext);
         } else {
             Flux<Object> resultFlux = getResultFlux(statementContext);
@@ -122,7 +122,7 @@ public class ReactiveStatementFactory {
                 });
             }
             resultFlux = pagingOutput.apply(resultFlux, args);
-            resultFlux = Flux.from(publisherMetrics.measure(resultFlux, this::logSlowQuery));
+            resultFlux = Flux.from(metrics.measure(resultFlux, this::logSlowQuery));
             resultFlux = resultFlux.onBackpressureBuffer(RECORD_BUFFER_SIZE);
             return decorated(resultConverter.apply(resultFlux), statementContext);
         }

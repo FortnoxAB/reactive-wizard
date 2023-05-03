@@ -2,19 +2,21 @@ package se.fortnox.reactivewizard.metrics;
 
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
-import com.codahale.metrics.Timer.Context;
-import rx.Observable;
-import rx.Subscriber;
+import org.reactivestreams.Publisher;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.util.function.LongConsumer;
+
+import static java.util.Objects.isNull;
 
 /**
  * Wrapper of Dropwizard metrics framework for use with observers.
  */
 public class Metrics {
     private static final int            NANOSECONDS_PER_MILLISECOND = 1000000;
-    private static final MetricRegistry REGISTRY                    = new MetricRegistry();
-    private static final LongConsumer   NOOP                        = whatever -> {
+    private static final MetricRegistry REGISTRY = new MetricRegistry();
+    private static final LongConsumer NOOP     = whatever -> {
     };
 
     private final Timer timer;
@@ -23,55 +25,56 @@ public class Metrics {
         this.timer = REGISTRY.timer(name);
     }
 
-    public static MetricRegistry registry() {
-        return REGISTRY;
-    }
-
     public static Metrics get(String name) {
         return new Metrics(name);
     }
 
-    public <T> Observable<T> measure(Observable<T> observable) {
-        return measure(observable, NOOP);
+    public static MetricRegistry registry() {
+        return REGISTRY;
+    }
+
+    public <T> Publisher<T> measure(Publisher<T> publisher) {
+        return measure(publisher, NOOP);
+    }
+
+    public <T> Mono<T> measure(Mono<T> publisher) {
+        if (isNull(publisher)) {
+            return null;
+        }
+
+        return Mono.from(measure(publisher, NOOP));
+    }
+
+    public <T> Flux<T> measure(Flux<T> publisher) {
+        if (isNull(publisher)) {
+            return null;
+        }
+
+        return Flux.from(measure(publisher, NOOP));
     }
 
     /**
-     * Measure execution time of an Observable.
-     * @param observable the Observable
-     * @param callback the callback
-     * @param <T> the type of observable
-     * @return an Observable with measure applied
+     * Measure the execution time of the Publisher.
+     * @param publisher Publisher to measure execution time on.
+     * @param callback Callback given the execution time to run when publisher terminates.
+     * @param <T> any type parameter.
+     * @return Publisher that also measures its execution time.
      */
-    public <T> Observable<T> measure(Observable<T> observable, LongConsumer callback) {
-        if (observable == null) {
+    public <T> Publisher<T> measure(Publisher<T> publisher, LongConsumer callback) {
+        if (isNull(publisher)) {
             return null;
         }
-        return observable.lift(subscriber -> {
-            Context context = timer.time();
-            return new Subscriber<T>(subscriber) {
-                @Override
-                public void onCompleted() {
-                    callback.accept(context.stop() / NANOSECONDS_PER_MILLISECOND);
-                    if (!subscriber.isUnsubscribed()) {
-                        subscriber.onCompleted();
-                    }
-                }
 
-                @Override
-                public void onError(Throwable throwable) {
-                    callback.accept(context.stop() / NANOSECONDS_PER_MILLISECOND);
-                    if (!subscriber.isUnsubscribed()) {
-                        subscriber.onError(throwable);
-                    }
-                }
-
-                @Override
-                public void onNext(T type) {
-                    if (!subscriber.isUnsubscribed()) {
-                        subscriber.onNext(type);
-                    }
-                }
-            };
+        return Flux.defer(() -> {
+            Timer.Context context = timer.time();
+            if (publisher instanceof Mono<T>) {
+                return Mono.from(publisher).doOnTerminate(() -> callback.accept(getElapsedTime(context)));
+            }
+            return Flux.from(publisher).doOnTerminate(() -> callback.accept(getElapsedTime(context)));
         });
+    }
+
+    private long getElapsedTime(Timer.Context context) {
+        return context.stop() / NANOSECONDS_PER_MILLISECOND;
     }
 }
