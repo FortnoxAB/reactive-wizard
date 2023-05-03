@@ -6,7 +6,6 @@ import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
 import static java.util.Objects.isNull;
@@ -68,6 +67,9 @@ public class Metrics {
 
         return Flux.defer(() -> {
             Timer.Context context = timer.time();
+            if (publisher instanceof Mono<T>) {
+                return Mono.from(publisher).doOnTerminate(() -> callback.accept(getElapsedTime(context)));
+            }
             return Flux.from(publisher).doOnTerminate(() -> callback.accept(getElapsedTime(context)));
         });
     }
