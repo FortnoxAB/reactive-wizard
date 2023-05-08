@@ -94,7 +94,7 @@
         <reactiversecontexts.version>1.0.1</reactiversecontexts.version>
         <classgraph.version>4.8.157</classgraph.version>
 
-        <maven-gpg-plugin.version>3.0.1</maven-gpg-plugin.version>
+        <maven-gpg-plugin.version>3.1.0</maven-gpg-plugin.version>
         <surefire.version>3.0.0</surefire.version>
         <nexus-staging-maven-plugin.version>1.6.13</nexus-staging-maven-plugin.version>
         <maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
