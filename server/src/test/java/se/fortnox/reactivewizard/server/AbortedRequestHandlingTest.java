@@ -6,7 +6,6 @@ import org.apache.logging.log4j.core.Appender;
 import org.junit.Test;
 import reactor.core.publisher.Flux;
 import reactor.netty.http.client.HttpClient;
-import rx.Observable;
 import se.fortnox.reactivewizard.ExceptionHandler;
 import se.fortnox.reactivewizard.RequestHandler;
 import se.fortnox.reactivewizard.jaxrs.JaxRsRequestHandler;
@@ -24,11 +23,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
-import static rx.Observable.just;
+import static reactor.core.publisher.Flux.just;
 import static se.fortnox.reactivewizard.test.TestUtil.matches;
 
 /**
- * When client aborts the connection the server should still finish gracefully with only a debug-log as the result
+ * When client aborts the connection the server should still finish gracefully with only a debug-log as the result.
  */
 public class AbortedRequestHandlingTest {
     @Test
@@ -84,7 +83,7 @@ public class AbortedRequestHandlingTest {
     @Path("/")
     public class TestResourceImpl {
         @GET
-        public Observable<String> get() {
+        public Flux<String> get() {
             return just("");
         }
     }

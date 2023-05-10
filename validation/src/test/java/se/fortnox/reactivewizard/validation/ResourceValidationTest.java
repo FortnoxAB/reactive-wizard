@@ -2,7 +2,9 @@ package se.fortnox.reactivewizard.validation;
 
 import com.google.inject.Injector;
 import org.junit.Test;
-import rx.Observable;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 import se.fortnox.reactivewizard.config.TestInjector;
 import se.fortnox.reactivewizard.server.ServerConfig;
 
@@ -13,22 +15,19 @@ import javax.ws.rs.Path;
 import javax.ws.rs.QueryParam;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.fail;
-import static rx.Observable.just;
 
 public class ResourceValidationTest {
-    private Injector injector = TestInjector.create(binder -> {
-        binder.bind(ServerConfig.class).toInstance(new ServerConfig(){{
-            setEnabled(false);
-        }});
-    });
-    private ValidatedResource validatedResource = injector.getInstance(ValidatedResource.class);
+    private final Injector injector = TestInjector.create(binder -> binder.bind(ServerConfig.class).toInstance(new ServerConfig() {{
+        setEnabled(false);
+    }}));
+    private final ValidatedResource validatedResource = injector.getInstance(ValidatedResource.class);
 
     @Test
     public void shouldGiveErrorForBadResourceCall() {
         try {
-            validatedResource.acceptLong(10L).toBlocking().single();
+            validatedResource.fluxAcceptLong(10L).blockLast();
+            validatedResource.monoAcceptLong(10L).block();
             fail("expected exception");
         } catch (ValidationFailedException e) {
             assertThat(e.getFields()).hasSize(1);
@@ -38,14 +37,18 @@ public class ResourceValidationTest {
 
     @Test
     public void shouldSucceedForCorrectResourceCall() {
-        assertThatNoException()
-                .isThrownBy(() -> validatedResource.acceptLong(200L).toBlocking().single());
+        StepVerifier.create(Flux.merge(validatedResource.fluxAcceptLong(101L), validatedResource.monoAcceptLong(101L)))
+            .expectNextCount(2)
+            .verifyComplete();
     }
 
     @Path("/")
     interface ValidatedResource {
         @GET
-        Observable<String> acceptLong(@QueryParam("queryParamValue") @Min(100) Long value);
+        Flux<String> fluxAcceptLong(@QueryParam("queryParamValue") @Min(100) Long value);
+
+        @GET
+        Mono<String> monoAcceptLong(@QueryParam("queryParamValue") @Min(100) Long value);
     }
 
     public static class ValidatedResourceImpl implements ValidatedResource {
@@ -55,8 +58,13 @@ public class ResourceValidationTest {
         }
 
         @Override
-        public Observable<String> acceptLong(@Min(100) Long value) {
-            return just("hello");
+        public Flux<String> fluxAcceptLong(Long value) {
+            return Flux.just("hello");
+        }
+
+        @Override
+        public Mono<String> monoAcceptLong(Long value) {
+            return Mono.just("hello");
         }
     }
 }

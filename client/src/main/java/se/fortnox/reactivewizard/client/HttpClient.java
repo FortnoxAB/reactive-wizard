@@ -17,9 +17,6 @@ import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
-import rx.Observable;
-import rx.RxReactiveStreams;
-import rx.Single;
 import se.fortnox.reactivewizard.jaxrs.ByteBufCollector;
 import se.fortnox.reactivewizard.jaxrs.FieldError;
 import se.fortnox.reactivewizard.jaxrs.JaxRsMeta;
@@ -225,37 +222,6 @@ public class HttpClient implements InvocationHandler {
             .map(response::withBody)
             .switchIfEmpty(Mono.fromCallable(response::withNoBody))
         );
-    }
-
-    /**
-     * Should be used with an observable coming directly from another api-call to get access to metadata, such as status and headers
-     * from the response.
-     *
-     * @param source the source observable, must be observable returned from api call
-     * @param <T>    the type of data that should be returned in the call
-     * @return an observable that along with the data passes the response metadata
-     */
-    public static <T> Observable<Response<T>> getFullResponse(Observable<T> source) {
-        Optional<Mono<Response<Flux<T>>>> responseFlux = ReactiveDecorator.getDecoration(source);
-        if (!responseFlux.isPresent()) {
-            throw new IllegalArgumentException("Must be used with Observable returned from api call");
-        }
-        return RxReactiveStreams.toObservable(flattenResponse(responseFlux.get()));
-    }
-
-    /**
-     * Should be used with a Single coming directly from another api-call to get access to metadata, such as status and header.
-     *
-     * @param source the source observable, must be observable returned from api call
-     * @param <T>    the type of data that should be returned in the call
-     * @return an observable that along with the data passes the response object from netty
-     */
-    public static <T> Single<Response<T>> getFullResponse(Single<T> source) {
-        Optional<Mono<Response<Flux<T>>>> responseFlux = ReactiveDecorator.getDecoration(source);
-        if (!responseFlux.isPresent()) {
-            throw new IllegalArgumentException("Must be used with Single returned from api call");
-        }
-        return RxReactiveStreams.toSingle(flattenResponse(responseFlux.get()));
     }
 
     /**

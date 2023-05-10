@@ -3,8 +3,8 @@ Provide non implemented @Path-annotated java interfaces with a default implement
 This enables subsystems to be able to @Inject these interfaces without implementation.
 
 # How
-The java interface methods must return a reactive publisher like `Observable` or `Single` and be typed with the expected body structure.
-E.g. if you expect a String the return type of your interface must be `Observable<String>`
+The java interface methods must return a reactive publisher like `Flux` or `Mono` and be typed with the expected body structure.
+E.g. if you expect a String the return type of your interface must be `Flux<String>`
 
 The server that the standard http calls are directed to is configured through the httpClient configuration in your configuration file.
 See `HttpClientConfig` for configurable properties with url being the minimum requirement like this:
