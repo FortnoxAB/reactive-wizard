@@ -12,12 +12,12 @@ import liquibase.lockservice.DatabaseChangeLogLock;
 import liquibase.lockservice.StandardLockService;
 import liquibase.logging.Logger;
 import liquibase.statement.core.UpdateStatement;
-import rx.functions.Func0;
 
 import java.sql.Timestamp;
 import java.text.DateFormat;
 import java.util.Date;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 
 /**
  * Will force release any locks older than the configured changeLogLockWaitTimeInMinutes to avoid crash loops due to
@@ -33,7 +33,7 @@ public class TimeoutLockService extends StandardLockService {
     private Thread lockRenewalThread;
     private final long lockRenewalInterval;
 
-    private static Func0<Database> createRenewalConnectionCreator;
+    private static Supplier<Database> createRenewalConnectionCreator;
 
     public TimeoutLockService() {
         this(DEFAULT_LOCK_RENEWAL_INTERVAL);
@@ -132,7 +132,7 @@ public class TimeoutLockService extends StandardLockService {
 
     private synchronized void renewLock() throws DatabaseException {
         if (SHOULD_RENEW_LOCK.get() && hasChangeLogLock()) {
-            Database renewalDatabase = createRenewalConnectionCreator.call();
+            Database renewalDatabase = createRenewalConnectionCreator.get();
             try {
                 ExecutorService executorService = Scope.getCurrentScope().getSingleton(ExecutorService.class);
                 Executor executor = executorService.getExecutor("jdbc", renewalDatabase);
@@ -159,7 +159,7 @@ public class TimeoutLockService extends StandardLockService {
         }
     }
 
-    public static void setRenewalConnectionCreator(Func0<Database> createRenewalConnectionCreator) {
+    public static void setRenewalConnectionCreator(Supplier<Database> createRenewalConnectionCreator) {
         TimeoutLockService.createRenewalConnectionCreator = createRenewalConnectionCreator;
     }
 }

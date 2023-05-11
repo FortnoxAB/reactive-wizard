@@ -10,7 +10,6 @@ import reactor.netty.DisposableServer;
 import reactor.netty.http.server.HttpServer;
 import reactor.netty.http.server.HttpServerRequest;
 import reactor.netty.http.server.HttpServerResponse;
-import rx.functions.Action0;
 import se.fortnox.reactivewizard.RequestHandler;
 import se.fortnox.reactivewizard.server.modifiers.NoContentFixConfigurer;
 import se.fortnox.reactivewizard.server.modifiers.RequestSizesConfigurer;
@@ -19,7 +18,6 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -195,9 +193,9 @@ public class RwServer extends Thread {
         LOG.info("Shutdown dependency completed, continue...");
     }
 
-    static int measureElapsedSeconds(Action0 function) {
+    static int measureElapsedSeconds(Runnable function) {
         Instant start = Instant.now();
-        function.call();
+        function.run();
         Instant finish = Instant.now();
         return (int) Duration.between(start, finish).getSeconds();
     }
