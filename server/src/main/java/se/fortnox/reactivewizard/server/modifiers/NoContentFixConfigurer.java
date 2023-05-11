@@ -10,7 +10,7 @@ public class NoContentFixConfigurer implements ReactorServerConfigurer {
     public HttpServer configure(HttpServer httpServer) {
         return httpServer.doOnChannelInit((connectionObserver, channel, socketAddress) -> {
             NoContentFixConfigurator noContentFixConfigurator = new NoContentFixConfigurator();
-            noContentFixConfigurator.call(channel.pipeline());
+            noContentFixConfigurator.accept(channel.pipeline());
         });
     }
 }

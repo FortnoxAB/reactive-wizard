@@ -6,7 +6,8 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
 import io.netty.handler.codec.http.DefaultHttpResponse;
 import io.netty.handler.codec.http.HttpResponseStatus;
-import rx.functions.Action1;
+
+import java.util.function.Consumer;
 
 import static reactor.netty.NettyPipeline.HttpTrafficHandler;
 
@@ -17,10 +18,10 @@ import static reactor.netty.NettyPipeline.HttpTrafficHandler;
  * by the inclusion of a Content-Length or Transfer-Encoding header field in the request's message-headers.", which
  * suggests that the inclusion of the header implies a body, which makes "Content-Length: 0" an invalid header.
  */
-public class NoContentFixConfigurator implements Action1<ChannelPipeline> {
+public class NoContentFixConfigurator implements Consumer<ChannelPipeline> {
 
     @Override
-    public void call(ChannelPipeline pipeline) {
+    public void accept(ChannelPipeline pipeline) {
         pipeline.addBefore(HttpTrafficHandler, "NoContentFix", new NoContentBodyFix());
     }
 
@@ -30,8 +31,7 @@ public class NoContentFixConfigurator implements Action1<ChannelPipeline> {
     public static class NoContentBodyFix extends ChannelOutboundHandlerAdapter {
         @Override
         public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
-            if (msg instanceof DefaultHttpResponse) {
-                DefaultHttpResponse response = (DefaultHttpResponse) msg;
+            if (msg instanceof DefaultHttpResponse response) {
                 boolean isEmptyBody = "0".equals(response.headers().get("Content-Length"));
                 if (isEmptyBody) {
                     response.headers().remove("Content-Length");
