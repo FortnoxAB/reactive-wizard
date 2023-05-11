@@ -15,7 +15,7 @@ public class ResponseDecoratorTransformer implements ResultTransformerFactory {
 
     @Override
     public Integer getPrio() {
-        // Because this transformer depends on the type of Observable returned, it needs to run first
+        // Because this transformer depends on the type of Flux/Mono returned, it needs to run first
         return 0;
     }
 }

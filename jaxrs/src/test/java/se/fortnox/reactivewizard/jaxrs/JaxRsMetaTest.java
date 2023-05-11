@@ -5,7 +5,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import reactor.core.publisher.Flux;
-import rx.Observable;
+import reactor.core.publisher.Mono;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -33,7 +33,13 @@ class JaxRsMetaTest {
     @ParameterizedTest
     @MethodSource("resourceMethods")
     void producesAnnotation(String methodName, boolean isAnnotationPresent, String annotationValue) throws NoSuchMethodException {
+        // On the interface of the resource
         JaxRsMeta jaxRsMeta = new JaxRsMeta(ResourceInterface.class.getMethod(methodName));
+        assertThat(jaxRsMeta.isProducesAnnotationPresent()).isEqualTo(isAnnotationPresent);
+        assertThat(jaxRsMeta.getProduces()).isEqualTo(annotationValue);
+
+        // On the implementation of a resource without interface
+        jaxRsMeta = new JaxRsMeta(ResourceImplementation.class.getMethod(methodName));
         assertThat(jaxRsMeta.isProducesAnnotationPresent()).isEqualTo(isAnnotationPresent);
         assertThat(jaxRsMeta.getProduces()).isEqualTo(annotationValue);
     }
@@ -63,7 +69,7 @@ class JaxRsMetaTest {
     @Path("/test")
     interface ResourceInterface {
         @GET
-        Observable<String> hello();
+        Mono<String> hello();
 
         @GET
         @Produces(TEXT_HTML)
@@ -81,7 +87,7 @@ class JaxRsMetaTest {
     static class ResourceImplementingInterface implements ResourceInterface {
 
         @Override
-        public Observable<String> hello() {
+        public Mono<String> hello() {
             return null;
         }
 
@@ -104,8 +110,26 @@ class JaxRsMetaTest {
     @Path("/test")
     static class ResourceImplementation {
         @GET
-        public Observable<String> hello(){
+        public Mono<String> hello() {
             return null;
+        }
+
+        @GET
+        @Produces(TEXT_HTML)
+        public Flux<String> someHtml() {
+            return null;
+        }
+
+        @GET
+        @Produces(APPLICATION_JSON)
+        public Flux<String> someJson() {
+            return null;
+        }
+
+        @GET
+        @Produces
+        public Flux<String> defaultContent() {
+            return Flux.empty();
         }
     }
 

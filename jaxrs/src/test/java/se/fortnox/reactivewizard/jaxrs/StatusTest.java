@@ -7,18 +7,24 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import reactor.core.publisher.Flux;
-import rx.Observable;
+import reactor.core.publisher.Mono;
 import se.fortnox.reactivewizard.ExceptionHandler;
 import se.fortnox.reactivewizard.jaxrs.response.ResponseDecorator;
 import se.fortnox.reactivewizard.mocks.MockHttpServerRequest;
 import se.fortnox.reactivewizard.mocks.MockHttpServerResponse;
 
-import javax.ws.rs.*;
 
+import javax.ws.rs.DELETE;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static rx.Observable.just;
+import static reactor.core.publisher.Mono.just;
 
 public class StatusTest {
 
@@ -170,132 +176,132 @@ public class StatusTest {
     public interface TestresourceInterface {
         @Path("get")
         @GET
-        Observable<String> get();
+        Mono<String> get();
 
         @Path("put")
         @PUT
-        Observable<String> put();
+        Mono<String> put();
 
         @Path("post")
         @POST
-        Observable<String> post();
+        Mono<String> post();
 
         @Path("patch")
         @PATCH
-        Observable<String> patch();
+        Mono<String> patch();
 
         @Path("postWithQueryAndBody")
         @POST
-        Observable<String> postWithQueryAndBody(@QueryParam("validInt") Integer validatedInt, ParamEntity param);
+        Mono<String> postWithQueryAndBody(@QueryParam("validInt") Integer validatedInt, ParamEntity param);
 
         @Path("delete")
         @DELETE
-        Observable<Void> delete();
+        Mono<Void> delete();
 
         @Path("post-custom")
         @POST
         @SuccessStatus(200)
-        Observable<String> postCustom();
+        Mono<String> postCustom();
 
         @Path("get-content-disposition")
         @GET
-        Observable<String> getContentDisposition();
+        Mono<String> getContentDisposition();
 
         @Path("empty-redirect")
         @POST
-        Observable<Void> emptyRedirect();
+        Mono<Void> emptyRedirect();
 
         @Path("empty-client-error")
         @POST
-        Observable<Void> emptyClientError();
+        Mono<Void> emptyClientError();
 
         @Path("empty-server-error")
         @POST
-        Observable<Void> emptyServerError();
+        Mono<Void> emptyServerError();
 
         @Path("empty-byte-array-body")
         @Produces("application/octet-stream")
         @GET
-        Observable<byte[]> emptyByteArrayBody();
+        Flux<byte[]> emptyByteArrayBody();
 
         @Path("empty-string-body")
         @Produces("text/plain")
         @GET
-        Observable<String> emptyStringBody();
+        Mono<String> emptyStringBody();
     }
 
     static class TestResourceImpl implements TestresourceInterface {
 
         @Override
-        public Observable<String> get() {
+        public Mono<String> get() {
             return just("get");
         }
 
         @Override
-        public Observable<String> put() {
+        public Mono<String> put() {
             return just("put");
         }
 
         @Override
-        public Observable<String> post() {
+        public Mono<String> post() {
             return just("post");
         }
 
         @Override
-        public Observable<String> patch() {
+        public Mono<String> patch() {
             return just("patch");
         }
 
         @Override
-        public Observable<Void> delete() {
-            return Observable.empty();
+        public Mono<Void> delete() {
+            return Mono.empty();
         }
 
         @Override
-        public Observable<String> postCustom() {
+        public Mono<String> postCustom() {
             return just("post-custom");
         }
 
         @Override
-        public Observable<String> postWithQueryAndBody(Integer validatedInt, ParamEntity param) {
+        public Mono<String> postWithQueryAndBody(Integer validatedInt, ParamEntity param) {
             return just("post ok");
         }
 
         @Override
         @Headers({"Content-Disposition: attachment; filename=\"export.csv\"", "test:test"})
-        public Observable<String> getContentDisposition() {
+        public Mono<String> getContentDisposition() {
             return just("content-disposition-ok");
         }
 
         @Override
-        public Observable<Void> emptyRedirect() {
-            return ResponseDecorator.of(Observable.<Void>empty())
+        public Mono<Void> emptyRedirect() {
+            return ResponseDecorator.of(Mono.<Void>empty())
                 .withStatus(HttpResponseStatus.SEE_OTHER)
                 .withHeader("Location", "/somewhere-else")
                 .build();
         }
 
         @Override
-        public Observable<Void> emptyClientError() {
-            return ResponseDecorator.of(Observable.<Void>empty())
+        public Mono<Void> emptyClientError() {
+            return ResponseDecorator.of(Mono.<Void>empty())
                 .withStatus(HttpResponseStatus.GONE)
                 .build();
         }
 
         @Override
-        public Observable<Void> emptyServerError() {
-            return ResponseDecorator.of(Observable.<Void>empty())
+        public Mono<Void> emptyServerError() {
+            return ResponseDecorator.of(Mono.<Void>empty())
                 .withStatus(HttpResponseStatus.SERVICE_UNAVAILABLE)
                 .build();
         }
 
         @Override
-        public Observable<byte[]> emptyByteArrayBody() {
-            return just(new byte[0]);
+        public Flux<byte[]> emptyByteArrayBody() {
+            return Flux.just(new byte[0]);
         }
 
         @Override
-        public Observable<String> emptyStringBody() {
+        public Mono<String> emptyStringBody() {
             return just("");
         }
     }

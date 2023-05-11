@@ -6,12 +6,14 @@ import reactor.core.publisher.Mono;
 import rx.Observable;
 import rx.Single;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ReactiveDecoratorTest {
     Object decoration = new Object();
+
 
     @Test
     public void canGetDecorationFromDecoratedObservable() {

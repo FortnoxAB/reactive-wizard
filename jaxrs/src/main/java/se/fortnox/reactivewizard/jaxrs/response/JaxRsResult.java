@@ -6,14 +6,13 @@ import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.netty.http.server.HttpServerResponse;
-import rx.functions.Action0;
-import rx.functions.Action1;
-import rx.functions.Func1;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 import static javax.ws.rs.core.HttpHeaders.CONTENT_LENGTH;
 
@@ -46,13 +45,13 @@ public class JaxRsResult<T> {
         return this;
     }
 
-    public JaxRsResult<T> doOnOutput(Action1<T> action) {
-        output = output.doOnNext(action::call);
+    public JaxRsResult<T> doOnOutput(Consumer<T> consumer) {
+        output = output.doOnNext(consumer);
         return this;
     }
 
-    public JaxRsResult<T> doFinally(Action0 action) {
-        output = output.doOnComplete(action::call);
+    public JaxRsResult<T> doFinally(Runnable runnable) {
+        output = output.doOnComplete(runnable);
         return this;
     }
 
@@ -64,8 +63,8 @@ public class JaxRsResult<T> {
         return this;
     }
 
-    public JaxRsResult<T> map(Func1<Flux<T>, Flux<T>> mapFunction) {
-        output = mapFunction.call(output);
+    public JaxRsResult<T> map(UnaryOperator<Flux<T>> mapFunction) {
+        output = mapFunction.apply(output);
         return this;
     }
 

@@ -1,9 +1,11 @@
 package se.fortnox.reactivewizard.jaxrs.response;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
+import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 import reactor.core.publisher.Flux;
-import rx.Observable;
-import rx.Observer;
+import reactor.core.publisher.Mono;
 import se.fortnox.reactivewizard.util.ReactiveDecorator;
 
 import javax.annotation.Nonnull;
@@ -20,8 +22,8 @@ import java.util.concurrent.atomic.AtomicReference;
 public class ResponseDecorator {
 
     /**
-     * Use this to wrap your Observable with some headers. This must be the last decoration before returning from your
-     * resource. Any Observable operator applied after this will remove the headers.
+     * Use this to wrap your Mono with some headers. This must be the last decoration before returning from your
+     * resource. Any Mono operator applied after this will remove the headers.
      *
      * @param value   is the response
      * @param headers is your headers
@@ -29,16 +31,30 @@ public class ResponseDecorator {
      * @return the value, decorated with headers.
      */
     @Nonnull
-    public static <T> Observable<T> withHeaders(@Nonnull Observable<T> value, @Nonnull Map<String, String> headers) {
+    public static <T> Mono<T> withHeaders(@Nonnull Mono<T> value, @Nonnull Map<String, String> headers) {
         return ResponseDecorator.of(value).withHeaders(headers).build();
     }
 
     /**
-     * Creates a DecoratedResponseBuilder for the supplied Observable.
+     * Use this to wrap your Flux with some headers. This must be the last decoration before returning from your
+     * resource. Any Flux operator applied after this will remove the headers.
+     *
+     * @param value   is the response
+     * @param headers is your headers
+     * @param <T>     is the type of value
+     * @return the value, decorated with headers.
+     */
+    @Nonnull
+    public static <T> Flux<T> withHeaders(@Nonnull Flux<T> value, @Nonnull Map<String, String> headers) {
+        return ResponseDecorator.of(value).withHeaders(headers).build();
+    }
+
+    /**
+     * Creates a DecoratedResponseBuilder for the supplied Flux/Mono.
      * <p>
      * Use {@link DecoratedResponseBuilder#withHeaders} and {@link DecoratedResponseBuilder#withStatus} to decorate
      * your response.
-     * Use {@link DecoratedResponseBuilder#build} to create the decorated Observable.
+     * Use {@link DecoratedResponseBuilder#build} to create the decorated Flux/Mono.
      * <p>
      * This must be the last decoration before returning from your resource.
      * Any Observable operator applied after this will remove the headers.
@@ -56,7 +72,7 @@ public class ResponseDecorator {
      * @return DecoratedResponseBuilder&lt;T&gt;
      */
     @Nonnull
-    public static <T> DecoratedResponseBuilder<T> of(@Nonnull T value) {
+    public static <T extends Publisher<?>> DecoratedResponseBuilder<T> of(@Nonnull T value) {
         return new DecoratedResponseBuilder<>(value);
     }
 
@@ -66,43 +82,36 @@ public class ResponseDecorator {
         if (decorations.isPresent()) {
             Object object = decorations.get();
 
-            if (object instanceof ResponseDecorations) {
-                ResponseDecorations responseDecorations = (ResponseDecorations)object;
-
+            if (object instanceof ResponseDecorations responseDecorations) {
                 responseDecorations.applyOn(result);
 
-                ApplyDecorationsOnEmit<T> applyDecorations = new ApplyDecorationsOnEmit<>(responseDecorations, result);
+                DecorationsApplier<T> applyDecorations = new DecorationsApplier<>(responseDecorations, result);
 
                 return output
                     .doOnNext(applyDecorations::onNext)
-                    .doOnComplete(applyDecorations::onCompleted);
+                    .doOnComplete(applyDecorations::onComplete);
             }
         }
         return output;
+
     }
 
-    private static class ApplyDecorationsOnEmit<T> implements Observer<T> {
+    private static class DecorationsApplier<T> {
 
         private final AtomicBoolean hasApplied = new AtomicBoolean();
         private final ResponseDecorations decorations;
         private final JaxRsResult<T> result;
 
-        public ApplyDecorationsOnEmit(@Nonnull ResponseDecorations decorations, @Nonnull JaxRsResult<T> result) {
+        public DecorationsApplier(@Nonnull ResponseDecorations decorations, @Nonnull JaxRsResult<T> result) {
             this.decorations = decorations;
             this.result = result;
         }
 
-        @Override
-        public void onCompleted() {
+        public void onComplete() {
             applyDecorations();
         }
 
-        @Override
-        public void onError(@Nonnull Throwable exception) {
-        }
-
-        @Override
-        public void onNext(@Nonnull T record) {
+        public void onNext(@Nonnull T unusedParameter) {
             applyDecorations();
         }
 
@@ -113,7 +122,7 @@ public class ResponseDecorator {
         }
     }
 
-    public static class DecoratedResponseBuilder<T> {
+    public static class DecoratedResponseBuilder<T extends Publisher<?>> {
 
         private final T response;
         private final ResponseDecorations decorations = new ResponseDecorations();
@@ -174,9 +183,9 @@ public class ResponseDecorator {
         }
 
         /**
-         * Create the decorated response Observable.
+         * Create the decorated response Flux/Mono
          *
-         * @return ObservableWithHeaders&lt;T&gt;
+         * @return decorated response
          */
         @Nonnull
         public T build() {

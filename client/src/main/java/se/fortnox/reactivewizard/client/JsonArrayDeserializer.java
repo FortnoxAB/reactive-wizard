@@ -25,7 +25,7 @@ public class JsonArrayDeserializer {
     private int depth = -1;
 
     public JsonArrayDeserializer(ObjectMapper objectMapper, Method method) {
-        Type type = ReflectionUtil.getTypeOfObservable(method);
+        Type type = ReflectionUtil.getTypeOfFluxOrMono(method);
 
         JavaType javaType = TypeFactory.defaultInstance().constructType(type);
         reader   = objectMapper.readerFor(javaType);

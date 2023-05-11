@@ -224,35 +224,35 @@ public class ReflectionUtilTest {
     @Test
     public void shouldFindObservableType() throws NoSuchMethodException {
         Method resourceGet = TestResource.class.getMethod("resourceGet", String.class, String.class);
-        assertThat(ReflectionUtil.getTypeOfObservable(resourceGet)).isEqualTo(String.class);
+        assertThat(ReflectionUtil.getTypeOfFluxOrMono(resourceGet)).isEqualTo(String.class);
 
         Method instanceMethod = TestResourceImpl.class.getMethod("resourceGet", String.class, String.class);
-        assertThat(ReflectionUtil.getTypeOfObservable(instanceMethod)).isEqualTo(String.class);
+        assertThat(ReflectionUtil.getTypeOfFluxOrMono(instanceMethod)).isEqualTo(String.class);
     }
 
     @Test
     public void shouldFindFluxType() throws NoSuchMethodException {
         Method resourceGet = TestResource.class.getMethod("fluxResourceGet", String.class, String.class);
-        assertThat(ReflectionUtil.getTypeOfObservable(resourceGet)).isEqualTo(String.class);
+        assertThat(ReflectionUtil.getTypeOfFluxOrMono(resourceGet)).isEqualTo(String.class);
 
         Method instanceMethod = TestResourceImpl.class.getMethod("fluxResourceGet", String.class, String.class);
-        assertThat(ReflectionUtil.getTypeOfObservable(instanceMethod)).isEqualTo(String.class);
+        assertThat(ReflectionUtil.getTypeOfFluxOrMono(instanceMethod)).isEqualTo(String.class);
     }
 
     @Test
     public void shouldFindMonoType() throws NoSuchMethodException {
         Method resourceGet = TestResource.class.getMethod("monoResourceGet", String.class, String.class);
-        assertThat(ReflectionUtil.getTypeOfObservable(resourceGet)).isEqualTo(String.class);
+        assertThat(ReflectionUtil.getTypeOfFluxOrMono(resourceGet)).isEqualTo(String.class);
 
         Method instanceMethod = TestResourceImpl.class.getMethod("monoResourceGet", String.class, String.class);
-        assertThat(ReflectionUtil.getTypeOfObservable(instanceMethod)).isEqualTo(String.class);
+        assertThat(ReflectionUtil.getTypeOfFluxOrMono(instanceMethod)).isEqualTo(String.class);
     }
 
     @Test
     public void shouldFailFindingObservableType() throws NoSuchMethodException {
         Method nonGenericReturnMethod = TestResource.class.getMethod("methodWithGenericParameter", List.class);
         try {
-            ReflectionUtil.getTypeOfObservable(nonGenericReturnMethod);
+            ReflectionUtil.getTypeOfFluxOrMono(nonGenericReturnMethod);
             fail("expected exception");
         } catch (RuntimeException e) {
             assertThat(e.getMessage()).isEqualTo("method does not have a generic return type");
@@ -260,7 +260,7 @@ public class ReflectionUtilTest {
 
         Method nonObservableGenericReturnType = TestResource.class.getMethod("nonObservableGenericReturnType");
         try {
-            ReflectionUtil.getTypeOfObservable(nonObservableGenericReturnType);
+            ReflectionUtil.getTypeOfFluxOrMono(nonObservableGenericReturnType);
             fail("expected exception");
         } catch (RuntimeException e) {
             assertThat(e.getMessage()).isEqualTo("java.util.List<java.lang.String> is not a reactive type");
@@ -270,7 +270,7 @@ public class ReflectionUtilTest {
     @Test
     public void shouldFindObservableFromMockedType() throws NoSuchMethodException {
         Method instanceMethod = mock(TestResource.class).getClass().getMethod("resourceGet", String.class, String.class);
-        assertThat(ReflectionUtil.getTypeOfObservable(instanceMethod)).isEqualTo(String.class);
+        assertThat(ReflectionUtil.getTypeOfFluxOrMono(instanceMethod)).isEqualTo(String.class);
     }
 
     @Test

@@ -6,7 +6,6 @@ import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.netty.ByteBufFlux;
-import rx.Observable;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -30,12 +29,6 @@ public class ByteBufCollector {
      * @param input the input
      * @return the string
      */
-    public Observable<String> collectString(Observable<ByteBuf> input) {
-        return input
-            .collect(ByteArrayOutputStream::new, this::collectChunks)
-            .map(this::decodeBody);
-    }
-
     public Mono<String> collectString(ByteBufFlux input) {
         return input.collect(ByteArrayOutputStream::new, this::collectChunks)
             .map(this::decodeBody);

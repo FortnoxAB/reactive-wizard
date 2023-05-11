@@ -96,8 +96,8 @@ public class JaxRsResource<T> implements Comparable<JaxRsResource> {
     }
 
     private JaxRsResult<T> call(Object[] args) {
-        Flux<T> observableOutput = methodCaller.apply(args);
-        return resultFactory.create(observableOutput, args);
+        Flux<T> output = methodCaller.apply(args);
+        return resultFactory.create(output, args);
     }
 
     @SuppressWarnings("unchecked")

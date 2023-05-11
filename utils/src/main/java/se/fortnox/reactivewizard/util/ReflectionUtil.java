@@ -29,11 +29,11 @@ public class ReflectionUtil {
     private static final String CGLIB_CLASS_SEPARATOR = "$$";
 
     /**
-     * Get the type of Observable/Mono/Flux from method.
+     * Get the type of Flux/Mono from method.
      * @param method the method
-     * @return the type of Observable/Mono/Flux
+     * @return the type of Flux/Mono
      */
-    public static Type getTypeOfObservable(Method method) {
+    public static Type getTypeOfFluxOrMono(Method method) {
         Type type = method.getGenericReturnType();
         if (!(type instanceof ParameterizedType)) {
             method = getInterfaceMethod(method);

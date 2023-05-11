@@ -77,7 +77,7 @@ public class JaxRsResultFactory<T> {
     @SuppressWarnings("unchecked")
     private Class<T> getRawReturnType(Method method) {
         if (FluxRxConverter.isReactiveType(method.getReturnType())) {
-            return (Class<T>)ReflectionUtil.getRawType(ReflectionUtil.getTypeOfObservable(method));
+            return (Class<T>)ReflectionUtil.getRawType(ReflectionUtil.getTypeOfFluxOrMono(method));
         }
         return (Class<T>)method.getReturnType();
     }

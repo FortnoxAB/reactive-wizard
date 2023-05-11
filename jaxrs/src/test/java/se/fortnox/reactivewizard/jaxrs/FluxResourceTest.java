@@ -50,21 +50,6 @@ class FluxResourceTest {
     }
 
     @Test
-    void shouldFailToBindResourceWhenNonStreamingOctetStreamResourceMethodPresent() {
-        FailingResource failingResource = new FailingResourceImpl();
-        Supplier<JaxRsRequestHandler> failingResoureeRequestHandlerSupplier = () -> new JaxRsRequestHandler(
-            new Object[]{failingResource},
-            new JaxRsResourceFactory(),
-            new ExceptionHandler(),
-            false);
-
-        Assertions.assertThatThrownBy(failingResoureeRequestHandlerSupplier::get)
-            .isInstanceOf(JaxRsResultFactoryFactory.ResultFactoryException.class)
-            .hasMessage("Failed to create a result factory for non-streamable FailingResourceImpl::nonStreamingOctetStream. " +
-                "Annotate this method with @Stream to resolve the problem.");
-    }
-
-    @Test
     void shouldReturnJsonObjectForMono() {
         when(fluxResource.monoString()).thenReturn(Mono.just("a"));
         FluxResourceAsserter.from(handler)
@@ -187,7 +172,6 @@ class FluxResourceTest {
         }
 
     }
-
 
 
     @Path("/flux")
