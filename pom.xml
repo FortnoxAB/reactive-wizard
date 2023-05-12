@@ -87,7 +87,7 @@
         <jakarta.validation-api.version>3.0.2</jakarta.validation-api.version>
         <log4j.version>2.20.0</log4j.version>
 
-        <guice.version>5.1.0</guice.version>
+        <guice.version>7.0.0</guice.version>
         <assertj.version>3.24.2</assertj.version>
         <mockito.version>5.3.1</mockito.version>
         <jacoco.version>0.8.10</jacoco.version>
