@@ -13,7 +13,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * Handles incoming requests. If the request matches a resource an Observable which completes the request is returned.
+ * Handles incoming requests. If the request matches a resource a Flux or Mono which completes the request is returned.
  */
 @Singleton
 public class JaxRsRequestHandler implements RequestHandler {
@@ -61,7 +61,7 @@ public class JaxRsRequestHandler implements RequestHandler {
      *
      * @param request The incoming request
      * @param response The response that will be sent
-     * @return an Observable which will complete the request when subsribed, or null if no resource matches the request.
+     * @return a Flux/Mono which will complete the request when the Flux/Mono completes or errors, or null if no resource matches the request.
      */
     @Override
     public Publisher<Void> apply(HttpServerRequest request, HttpServerResponse response) {
@@ -76,7 +76,7 @@ public class JaxRsRequestHandler implements RequestHandler {
 
         long requestStartTime = System.currentTimeMillis();
 
-        Publisher<Void> resourceCall = null;
+        Publisher<Void> resourceCall;
 
         resourceCall = resource.call(jaxRsRequest)
             .flatMap(result -> Mono.from(writeResult(response, result)))

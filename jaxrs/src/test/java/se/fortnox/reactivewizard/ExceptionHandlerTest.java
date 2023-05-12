@@ -4,10 +4,9 @@ import io.netty.handler.codec.http.HttpMethod;
 import org.apache.logging.log4j.Level;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import reactor.core.Exceptions;
 import reactor.netty.http.server.HttpServerRequest;
 import reactor.netty.http.server.HttpServerResponse;
-import rx.exceptions.CompositeException;
-import rx.exceptions.OnErrorThrowable;
 import se.fortnox.reactivewizard.jaxrs.WebException;
 import se.fortnox.reactivewizard.mocks.MockHttpServerRequest;
 import se.fortnox.reactivewizard.mocks.MockHttpServerResponse;
@@ -157,8 +156,7 @@ class ExceptionHandlerTest {
     void shouldReturnLastExceptionOfCompositeException() {
         WebException firstException = new WebException(INTERNAL_SERVER_ERROR).withLogLevel(org.slf4j.event.Level.DEBUG);
         WebException secondException = new WebException(BAD_GATEWAY).withLogLevel(org.slf4j.event.Level.WARN);
-
-        CompositeException compositeException = new CompositeException(firstException, secondException);
+        Exception compositeException = Exceptions.multiple(firstException, secondException);
 
         String expectedLog = """
             502 Bad Gateway
@@ -173,7 +171,7 @@ class ExceptionHandlerTest {
     void shouldReturnCauseOfOnErrorThrowable() {
         WebException cause = new WebException(BAD_GATEWAY).withLogLevel(org.slf4j.event.Level.WARN);
 
-        OnErrorThrowable onErrorThrowable = OnErrorThrowable.from(cause);
+        Exception onErrorThrowable = (Exception) Exceptions.wrapSource(cause);
 
         String expectedLog = """
             502 Bad Gateway

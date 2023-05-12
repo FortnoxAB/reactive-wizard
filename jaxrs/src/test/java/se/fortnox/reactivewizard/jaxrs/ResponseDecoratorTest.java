@@ -3,7 +3,7 @@ package se.fortnox.reactivewizard.jaxrs;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import org.junit.Assert;
 import org.junit.Test;
-import rx.Observable;
+import reactor.core.publisher.Mono;
 import se.fortnox.reactivewizard.jaxrs.response.ResponseDecorator;
 import se.fortnox.reactivewizard.mocks.MockHttpServerResponse;
 import se.fortnox.reactivewizard.util.ReactiveDecorator;
@@ -16,8 +16,9 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static rx.Observable.defer;
-import static rx.Observable.just;
+import static reactor.core.publisher.Mono.defer;
+import static reactor.core.publisher.Mono.empty;
+import static reactor.core.publisher.Mono.just;
 
 public class ResponseDecoratorTest {
 
@@ -100,7 +101,7 @@ public class ResponseDecoratorTest {
     public static class ResourceWithHeaders {
         @GET
         @Path("headers")
-        public Observable<String> methodReturningHeaders() {
+        public Mono<String> methodReturningHeaders() {
             Map<String, String> headers = new HashMap<>();
             headers.put("custom_header", "value");
             return ResponseDecorator.withHeaders(just("body"), headers);
@@ -108,19 +109,19 @@ public class ResponseDecoratorTest {
 
         @GET
         @Path("headers/empty-body")
-        public Observable<Void> methodReturningWithHeadersWithEmptyBody() {
-            return ResponseDecorator.withHeaders(Observable.empty(), Map.of("custom_header", "value"));
+        public Mono<Void> methodReturningWithHeadersWithEmptyBody() {
+            return ResponseDecorator.withHeaders(empty(), Map.of("custom_header", "value"));
         }
 
         @GET
         @Path("atomicreference")
-        public Observable<String> methodReturningDecoratedWithAtomicReference() {
+        public Mono<String> methodReturningDecoratedWithAtomicReference() {
             return ReactiveDecorator.decorated(just(""), new AtomicReference<>());
         }
 
         @GET
         @Path("headers/deferred")
-        public Observable<String> methodReturningDeferredHeaders() {
+        public Mono<String> methodReturningDeferredHeaders() {
             Map<String, String> headers = new HashMap<>();
             return ResponseDecorator.withHeaders(defer(() -> {
                 headers.put("custom_header", "deferred");
@@ -130,7 +131,7 @@ public class ResponseDecoratorTest {
 
         @GET
         @Path("with-builder/headers")
-        public Observable<String> methodReturningHeadersWithBuilder() {
+        public Mono<String> methodReturningHeadersWithBuilder() {
             Map<String, String> headers = new HashMap<>();
             headers.put("custom_header", "value");
             return ResponseDecorator.of(just("body"))
@@ -141,15 +142,15 @@ public class ResponseDecoratorTest {
 
         @GET
         @Path("with-builder/headers/empty-body")
-        public Observable<Void> methodReturningWithHeadersWithEmptyBodyWithBuilder() {
-            return ResponseDecorator.of(Observable.<Void>empty())
+        public Mono<Void> methodReturningWithHeadersWithEmptyBodyWithBuilder() {
+            return ResponseDecorator.of(Mono.<Void>empty())
                 .withHeader("custom_header", "value")
                 .build();
         }
 
         @GET
         @Path("with-builder/headers/deferred")
-        public Observable<String> methodReturningDeferredHeadersWithBuilder() {
+        public Mono<String> methodReturningDeferredHeadersWithBuilder() {
             Map<String, String> headers = new HashMap<>();
             return ResponseDecorator.of(defer(() -> {
                     headers.put("custom_header", "deferred");
@@ -161,7 +162,7 @@ public class ResponseDecoratorTest {
 
         @GET
         @Path("with-builder/status")
-        public Observable<String> methodReturningStatusWithBuilder() {
+        public Mono<String> methodReturningStatusWithBuilder() {
             return ResponseDecorator.of(just("body"))
                 .withStatus(HttpResponseStatus.MOVED_PERMANENTLY)
                 .build();
@@ -169,15 +170,15 @@ public class ResponseDecoratorTest {
 
         @GET
         @Path("with-builder/status/empty")
-        public Observable<Void> methodReturningStatusWithEmptyBodyWithBuilder() {
-            return ResponseDecorator.of(Observable.<Void>empty())
+        public Mono<Void> methodReturningStatusWithEmptyBodyWithBuilder() {
+            return ResponseDecorator.of(Mono.<Void>empty())
                 .withStatus(HttpResponseStatus.MOVED_PERMANENTLY)
                 .build();
         }
 
         @GET
         @Path("with-builder/status/deferred")
-        public Observable<String> methodReturningDeferredStatusWithBuilder() {
+        public Mono<String> methodReturningDeferredStatusWithBuilder() {
             AtomicReference<HttpResponseStatus> status = new AtomicReference<>(HttpResponseStatus.OK);
             return ResponseDecorator.of(defer(() -> {
                     status.set(HttpResponseStatus.MOVED_PERMANENTLY);

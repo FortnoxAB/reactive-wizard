@@ -309,7 +309,7 @@ public class HttpClient implements InvocationHandler {
     }
 
     private boolean expectsByteArrayResponse(Method method) {
-        Type type = ReflectionUtil.getTypeOfObservable(method);
+        Type type = ReflectionUtil.getTypeOfFluxOrMono(method);
         return type.equals(BYTEARRAY_TYPE);
     }
 
@@ -577,7 +577,7 @@ public class HttpClient implements InvocationHandler {
         if (string == null || string.isEmpty()) {
             return Mono.empty();
         }
-        Type type = ReflectionUtil.getTypeOfObservable(method);
+        Type type = ReflectionUtil.getTypeOfFluxOrMono(method);
 
         if (Void.class.equals(type)) {
             return Mono.empty();

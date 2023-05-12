@@ -47,7 +47,7 @@ public class ParamResolvers {
     private Class<?> getResolverTargetClass(ParamResolver paramResolver) {
         try {
             Method method = paramResolver.getClass().getMethod("resolve", JaxRsRequest.class);
-            return ReflectionUtil.getRawType(ReflectionUtil.getTypeOfObservable(method));
+            return ReflectionUtil.getRawType(ReflectionUtil.getTypeOfFluxOrMono(method));
         } catch (NoSuchMethodException e) {
             throw new RuntimeException(e);
         }

@@ -27,7 +27,7 @@ public class DbStatementFactoryFactory {
      * @throws SQLException if there is an sql error
      */
     public DbStatementFactory createStatementFactory(Method method) throws SQLException {
-        Type     returnType = ReflectionUtil.getTypeOfObservable(method);
+        Type     returnType = ReflectionUtil.getTypeOfFluxOrMono(method);
         Class<?> cls        = ReflectionUtil.getRawType(returnType);
         for (Annotation annotation : method.getAnnotations()) {
             if (annotation instanceof Query) {

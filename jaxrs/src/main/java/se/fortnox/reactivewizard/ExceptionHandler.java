@@ -6,12 +6,9 @@ import io.netty.handler.codec.http.HttpMethod;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import reactor.core.publisher.Mono;
 import reactor.netty.channel.AbortedException;
 import reactor.netty.http.server.HttpServerRequest;
 import reactor.netty.http.server.HttpServerResponse;
-import rx.exceptions.CompositeException;
-import rx.exceptions.OnErrorThrowable;
 import se.fortnox.reactivewizard.jaxrs.RequestLogger;
 import se.fortnox.reactivewizard.jaxrs.WebException;
 import se.fortnox.reactivewizard.json.InvalidJsonException;
@@ -27,7 +24,11 @@ import static io.netty.handler.codec.http.HttpResponseStatus.BAD_REQUEST;
 import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static reactor.core.Exceptions.isMultiple;
+import static reactor.core.Exceptions.unwrap;
+import static reactor.core.Exceptions.unwrapMultiple;
 import static reactor.core.publisher.Flux.empty;
+import static reactor.core.publisher.Mono.justOrEmpty;
 
 /**
  * Handles exceptions and writes errors to the response and the log.
@@ -57,12 +58,10 @@ public class ExceptionHandler {
      * @return success or error
      */
     public Publisher<Void> handleException(HttpServerRequest request, HttpServerResponse response, Throwable throwable) {
-        if (throwable instanceof OnErrorThrowable) {
-            throwable = throwable.getCause();
-        }
+        throwable = unwrap(throwable);
 
-        if (throwable instanceof CompositeException compositeException) {
-            List<Throwable> exceptions = compositeException.getExceptions();
+        if (isMultiple(throwable)) {
+            List<Throwable> exceptions = unwrapMultiple(throwable);
             throwable = exceptions.get(exceptions.size() - 1);
         }
 
@@ -92,7 +91,7 @@ public class ExceptionHandler {
             response.addHeader("Content-Length", "0");
         } else {
             response = response.addHeader("Content-Type", APPLICATION_JSON);
-            return response.sendString(Mono.just(json(webException)));
+            return response.sendString(justOrEmpty(json(webException)));
         }
         return empty();
     }

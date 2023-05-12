@@ -11,8 +11,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import rx.Observable;
-import rx.Single;
 import se.fortnox.reactivewizard.jaxrs.params.*;
 import se.fortnox.reactivewizard.jaxrs.params.annotated.AnnotatedParamResolverFactories;
 import se.fortnox.reactivewizard.jaxrs.params.deserializing.Deserializer;
@@ -46,7 +44,7 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static rx.Observable.just;
+import static reactor.core.publisher.Mono.just;
 import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.*;
 
 @ExtendWith(LoggingVerifierExtension.class)
@@ -107,7 +105,7 @@ class JaxRsResourceTest {
         ParamResolver<Foo> fooResolver = new ParamResolver<Foo>() {
             @Override
             public Mono<Foo> resolve(JaxRsRequest request) {
-                return Mono.just(foo);
+                return just(foo);
             }
         };
 
@@ -578,7 +576,7 @@ class JaxRsResourceTest {
         class InvalidQueryParam {
             @POST
             @Consumes("application/whatever")
-            public Observable<String> acceptsComplexQueryParam(ParamEntity paramEntity) {
+            public Mono<String> acceptsComplexQueryParam(ParamEntity paramEntity) {
                 return null;
             }
         }
@@ -608,7 +606,7 @@ class JaxRsResourceTest {
         class InvalidQueryParam {
             @Path("acceptsComplexQueryParam")
             @GET
-            public Observable<String> acceptsComplexQueryParam(@QueryParam("paramEntity") ParamEntity paramEntity) {
+            public Mono<String> acceptsComplexQueryParam(@QueryParam("paramEntity") ParamEntity paramEntity) {
                 return null;
             }
         }
@@ -700,10 +698,8 @@ class JaxRsResourceTest {
     @Test
     void shouldMatchExactPathBeforePathparam() {
         SpecialResource service = new SpecialResource();
-        assertThat(body(get(service, "/special/single/frenberg"))).isEqualTo("\"frenberg\"");
-        assertThat(body(get(service, "/special/single/strings"))).isEqualTo("[\"string\",\"string\"]");
-        assertThat(body(get(service, "/special/observable/frenberg"))).isEqualTo("\"frenberg\"");
-        assertThat(body(get(service, "/special/observable/strings"))).isEqualTo("[\"string\",\"string\"]");
+        assertThat(body(get(service, "/special/frenberg"))).isEqualTo("\"frenberg\"");
+        assertThat(body(get(service, "/special/strings"))).isEqualTo("[\"string\",\"string\"]");
     }
 
     @Test
@@ -895,20 +891,20 @@ class JaxRsResourceTest {
     class Testresource {
         @Path("acceptsString")
         @GET
-        public Observable<String> acceptsString(@QueryParam("myarg") String myarg) {
+        public Mono<String> acceptsString(@QueryParam("myarg") String myarg) {
             return just("inp: " + myarg);
         }
 
         @Path("returnsNull")
         @GET
-        public Observable<String> returnsNull() {
+        public Mono<String> returnsNull() {
             return null;
         }
 
         @Path("serverSideAnnotationsOnClassAsResource")
         @GET
         @Headers("Content-Disposition: attachment; filename=auditlog.csv")
-        public Observable<String> shouldIgnoreHeaderAnnotation() {
+        public Mono<String> shouldIgnoreHeaderAnnotation() {
             return just("");
         }
     }
@@ -949,681 +945,681 @@ class JaxRsResourceTest {
     public interface TestresourceInterface {
         @Path("accepts")
         @GET
-        Observable<String> acceptsString(@QueryParam("myarg") String myarg);
+        Mono<String> acceptsString(@QueryParam("myarg") String myarg);
 
         @Path("acceptsBoolean")
         @GET
-        Observable<String> acceptsBoolean(@QueryParam("myarg") Boolean myarg);
+        Mono<String> acceptsBoolean(@QueryParam("myarg") Boolean myarg);
 
         @Path("acceptsInteger")
         @GET
-        Observable<String> acceptsInteger(@QueryParam("myarg") Integer myarg);
+        Mono<String> acceptsInteger(@QueryParam("myarg") Integer myarg);
 
         @Path("acceptsLong")
         @GET
-        Observable<String> acceptsLong(@QueryParam("myarg") Long myarg);
+        Mono<String> acceptsLong(@QueryParam("myarg") Long myarg);
 
         @Path("acceptsDouble")
         @GET
-        Observable<String> acceptsDouble(@QueryParam("myarg") Double myarg);
+        Mono<String> acceptsDouble(@QueryParam("myarg") Double myarg);
 
         @Path("acceptsDate")
         @GET
-        Observable<Date> acceptsDate(@QueryParam("myarg") Date myarg);
+        Mono<Date> acceptsDate(@QueryParam("myarg") Date myarg);
 
         @Path("acceptsLocalDate")
         @GET
-        Observable<LocalDateContainer> acceptsLocalDate(@QueryParam("myarg") LocalDate myarg);
+        Mono<LocalDateContainer> acceptsLocalDate(@QueryParam("myarg") LocalDate myarg);
 
         @Path("acceptsLocalTime")
         @GET
-        Observable<LocalTimeContainer> acceptsLocalTime(@QueryParam("myarg") LocalTime myarg);
+        Mono<LocalTimeContainer> acceptsLocalTime(@QueryParam("myarg") LocalTime myarg);
 
         @Path("acceptsEnum")
         @GET
-        Observable<String> acceptsEnum(@QueryParam("myarg") TestEnum myarg);
+        Mono<String> acceptsEnum(@QueryParam("myarg") TestEnum myarg);
 
         @Path("acceptsCustomClass/valueOf")
         @GET
-        Observable<String> acceptsCustomClassQueryParamWithValueOf(@QueryParam("myarg") CustomParamWithValueOf myarg);
+        Mono<String> acceptsCustomClassQueryParamWithValueOf(@QueryParam("myarg") CustomParamWithValueOf myarg);
 
         @Path("acceptsCustomClass/fromString")
         @GET
-        Observable<String> acceptsCustomClassQueryParamWithFromString(@QueryParam("myarg") CustomParamWithFromString myarg);
+        Mono<String> acceptsCustomClassQueryParamWithFromString(@QueryParam("myarg") CustomParamWithFromString myarg);
 
         @Path("acceptsCustomClass/constructor")
         @GET
-        Observable<String> acceptsCustomClassQueryParamWithConstructor(@QueryParam("myarg") CustomParamWithConstructor myarg);
+        Mono<String> acceptsCustomClassQueryParamWithConstructor(@QueryParam("myarg") CustomParamWithConstructor myarg);
 
         @Path("defaultQuery")
         @GET
-        Observable<String> acceptDefaultQueryParam(@QueryParam("myarg") @DefaultValue("5") int myarg);
+        Mono<String> acceptDefaultQueryParam(@QueryParam("myarg") @DefaultValue("5") int myarg);
 
         @Path("acceptsString/{myarg}")
         @GET
-        Observable<String> acceptsStringPath(@PathParam("myarg") String myarg);
+        Mono<String> acceptsStringPath(@PathParam("myarg") String myarg);
 
         @Path("acceptsBoolean/{myarg}")
         @GET
-        Observable<String> acceptsBooleanPath(@PathParam("myarg") Boolean myarg);
+        Mono<String> acceptsBooleanPath(@PathParam("myarg") Boolean myarg);
 
         @Path("acceptsInteger/{myarg}")
         @GET
-        Observable<String> acceptsIntegerPath(@PathParam("myarg") Integer myarg);
+        Mono<String> acceptsIntegerPath(@PathParam("myarg") Integer myarg);
 
         @Path("acceptsLong/{myarg}")
         @GET
-        Observable<String> acceptsLongPath(@PathParam("myarg") Long myarg);
+        Mono<String> acceptsLongPath(@PathParam("myarg") Long myarg);
 
         @Path("acceptsStrictLong/{myarg}")
         @GET
-        Observable<String> acceptsStrictLongPath(@PathParam("myarg") long myarg);
+        Mono<String> acceptsStrictLongPath(@PathParam("myarg") long myarg);
 
         @Path("acceptsDate/{myarg}")
         @GET
-        Observable<String> acceptsDatePath(@PathParam("myarg") Date myarg);
+        Mono<String> acceptsDatePath(@PathParam("myarg") Date myarg);
 
         @Path("acceptsEnum/{myarg}")
         @GET
-        Observable<String> acceptsEnumPath(@PathParam("myarg") TestEnum myarg);
+        Mono<String> acceptsEnumPath(@PathParam("myarg") TestEnum myarg);
 
         @Path("acceptsSlashVar/{myarg:.*}")
         @GET
-        Observable<String> acceptsSlashVar(@PathParam("myarg") String myarg);
+        Mono<String> acceptsSlashVar(@PathParam("myarg") String myarg);
 
         @Path("acceptsCustomClass/valueOf/{myarg}")
         @GET
-        Observable<String> acceptsCustomClassPathParamWithValueOf(@PathParam("myarg") CustomParamWithValueOf myarg);
+        Mono<String> acceptsCustomClassPathParamWithValueOf(@PathParam("myarg") CustomParamWithValueOf myarg);
 
         @Path("acceptsCustomClass/fromString/{myarg}")
         @GET
-        Observable<String> acceptsCustomClassPathParamWithFromString(@PathParam("myarg") CustomParamWithFromString myarg);
+        Mono<String> acceptsCustomClassPathParamWithFromString(@PathParam("myarg") CustomParamWithFromString myarg);
 
         @Path("acceptsCustomClass/constructor/{myarg}")
         @GET
-        Observable<String> acceptsCustomClassPathParamWithConstructor(@PathParam("myarg") CustomParamWithConstructor myarg);
+        Mono<String> acceptsCustomClassPathParamWithConstructor(@PathParam("myarg") CustomParamWithConstructor myarg);
 
         @Path("acceptsPostString")
         @POST
-        Observable<String> acceptsPostString(@FormParam("myString") String myarg);
+        Mono<String> acceptsPostString(@FormParam("myString") String myarg);
 
         @Path("acceptsPostBoolean")
         @POST
-        Observable<String> acceptsPostBoolean(@FormParam("myBoolean") Boolean myarg);
+        Mono<String> acceptsPostBoolean(@FormParam("myBoolean") Boolean myarg);
 
         @Path("acceptsPostInteger")
         @POST
-        Observable<String> acceptsPostInteger(@FormParam("myInteger") Integer myarg);
+        Mono<String> acceptsPostInteger(@FormParam("myInteger") Integer myarg);
 
         @Path("acceptsPostLong")
         @POST
-        Observable<String> acceptsPostLong(@FormParam("myLong") Long myarg);
+        Mono<String> acceptsPostLong(@FormParam("myLong") Long myarg);
 
         @Path("acceptsPostDouble")
         @POST
-        Observable<String> acceptsPostDouble(@FormParam("myDouble") Double myarg);
+        Mono<String> acceptsPostDouble(@FormParam("myDouble") Double myarg);
 
         @Path("acceptsPostDate")
         @POST
-        Observable<String> acceptsPostDate(@FormParam("myDate") Date myarg);
+        Mono<String> acceptsPostDate(@FormParam("myDate") Date myarg);
 
         @Path("acceptsPostEnum")
         @POST
-        Observable<String> acceptsPostEnum(@FormParam("myEnum") TestEnum myarg);
+        Mono<String> acceptsPostEnum(@FormParam("myEnum") TestEnum myarg);
 
         @Path("acceptsPostNotNullBool")
         @POST
-        Observable<String> acceptsPostNotNullBoolean(@FormParam("myBoolean") boolean myarg);
+        Mono<String> acceptsPostNotNullBoolean(@FormParam("myBoolean") boolean myarg);
 
         @Path("acceptsPostNotNullInt")
         @POST
-        Observable<String> acceptsPostNotNullInteger(@FormParam("myInteger") int myarg);
+        Mono<String> acceptsPostNotNullInteger(@FormParam("myInteger") int myarg);
 
         @Path("acceptsPostNotNullLong")
         @POST
-        Observable<String> acceptsPostNotNullLong(@FormParam("myLong") long myarg);
+        Mono<String> acceptsPostNotNullLong(@FormParam("myLong") long myarg);
 
         @Path("acceptsPostNotNullDouble")
         @POST
-        Observable<String> acceptsPostNotNullDouble(@FormParam("myDouble") double myarg);
+        Mono<String> acceptsPostNotNullDouble(@FormParam("myDouble") double myarg);
 
         @Path("acceptsPostCustomClass/valueOf")
         @POST
-        Observable<String> acceptsPostCustomClassWithValueOf(@FormParam("myarg") CustomParamWithValueOf myarg);
+        Mono<String> acceptsPostCustomClassWithValueOf(@FormParam("myarg") CustomParamWithValueOf myarg);
 
         @Path("acceptsPostCustomClass/fromString")
         @POST
-        Observable<String> acceptsPostCustomClassWithFromString(@FormParam("myarg") CustomParamWithFromString myarg);
+        Mono<String> acceptsPostCustomClassWithFromString(@FormParam("myarg") CustomParamWithFromString myarg);
 
         @Path("acceptsPostCustomClass/constructor")
         @POST
-        Observable<String> acceptsPostCustomClassWithConstructor(@FormParam("myarg") CustomParamWithConstructor myarg);
+        Mono<String> acceptsPostCustomClassWithConstructor(@FormParam("myarg") CustomParamWithConstructor myarg);
 
         @Path("acceptsDefaultForm")
         @POST
-        Observable<String> acceptsDefaultFormParam(@FormParam("myarg") @DefaultValue("5") int myarg);
+        Mono<String> acceptsDefaultFormParam(@FormParam("myarg") @DefaultValue("5") int myarg);
 
         @Path("acceptsHeaderString")
         @GET
-        Observable<String> acceptsHeader(@HeaderParam("myHeader") String myHeader);
+        Mono<String> acceptsHeader(@HeaderParam("myHeader") String myHeader);
 
         @Path("acceptsHeaderInteger")
         @GET
-        Observable<String> acceptsHeaderInteger(@HeaderParam("myHeader") Integer myHeader);
+        Mono<String> acceptsHeaderInteger(@HeaderParam("myHeader") Integer myHeader);
 
         @Path("acceptsHeaderEnum")
         @GET
-        Observable<String> acceptsHeaderEnum(@HeaderParam("myHeader") TestEnum myHeader);
+        Mono<String> acceptsHeaderEnum(@HeaderParam("myHeader") TestEnum myHeader);
 
         @Path("acceptsHeaderCustomClass/valueOf")
         @GET
-        Observable<String> acceptsHeaderCustomClassWithValueOf(@HeaderParam("myHeader") CustomParamWithValueOf myHeader);
+        Mono<String> acceptsHeaderCustomClassWithValueOf(@HeaderParam("myHeader") CustomParamWithValueOf myHeader);
 
         @Path("acceptsHeaderCustomClass/fromString")
         @GET
-        Observable<String> acceptsHeaderCustomClassWithFromString(@HeaderParam("myHeader") CustomParamWithFromString myHeader);
+        Mono<String> acceptsHeaderCustomClassWithFromString(@HeaderParam("myHeader") CustomParamWithFromString myHeader);
 
         @Path("acceptsHeaderCustomClass/constructor")
         @GET
-        Observable<String> acceptsHeaderCustomClassWithConstructor(@HeaderParam("myHeader") CustomParamWithConstructor myHeader);
+        Mono<String> acceptsHeaderCustomClassWithConstructor(@HeaderParam("myHeader") CustomParamWithConstructor myHeader);
 
         @Path("acceptsDefaultHeader")
         @GET
-        Observable<String> acceptsDefaultHeaderParam(@HeaderParam("myHeader") @DefaultValue("5") int myHeader);
+        Mono<String> acceptsDefaultHeaderParam(@HeaderParam("myHeader") @DefaultValue("5") int myHeader);
 
         @Path("overloadedMethod")
         @GET
-        Observable<String> overloadedMethod(@QueryParam("param1") String param1, @QueryParam("param2") String param2);
+        Mono<String> overloadedMethod(@QueryParam("param1") String param1, @QueryParam("param2") String param2);
 
         @Path("overloadedMethod")
         @GET
-        Observable<String> overloadedMethod(@QueryParam("param1") String param1);
+        Mono<String> overloadedMethod(@QueryParam("param1") String param1);
 
         @Path("overloadedMethod")
         @GET
-        Observable<String> overloadedMethod();
+        Mono<String> overloadedMethod();
 
         @GET
         @Path("throwInsufficientStorage")
-        Observable<String> throwInsufficientStorage();
+        Mono<String> throwInsufficientStorage();
 
         @GET
         @Path("throwRuntimeException")
-        Observable<String> throwRuntimeException();
+        Mono<String> throwRuntimeException();
 
         @GET
         @Path("throwException")
-        Observable<String> throwException();
+        Mono<String> throwException();
 
         @POST
         @Path("jsonParam")
-        Observable<String> jsonParam(ParamEntity paramEntity);
+        Mono<String> jsonParam(ParamEntity paramEntity);
 
         @POST
         @Path("textPlain")
         @Consumes(MediaType.TEXT_PLAIN)
-        Observable<String> textPlain(String input);
+        Mono<String> textPlain(String input);
 
         @POST
         @Path("applicationJson")
         @Consumes(MediaType.APPLICATION_JSON)
-        Observable<String> applicationJson(String input);
+        Mono<String> applicationJson(String input);
 
         @POST
         @Path("byteArray")
         @Consumes(MediaType.APPLICATION_OCTET_STREAM)
-        Observable<String> byteArray(byte[] input);
+        Mono<String> byteArray(byte[] input);
 
         @POST
         @Path("byteArrayAnyType")
         @Consumes("application/whatever")
-        Observable<String> byteArrayAnyType(byte[] input);
+        Mono<String> byteArrayAnyType(byte[] input);
 
         @GET
         @Path("acceptsUuid")
-        Observable<String> acceptsUuidQueryParam(@QueryParam("id") UUID id);
+        Mono<String> acceptsUuidQueryParam(@QueryParam("id") UUID id);
 
         @POST
         @Path("acceptsUuid")
-        Observable<String> acceptsUuidFormParam(@FormParam("id") UUID id);
+        Mono<String> acceptsUuidFormParam(@FormParam("id") UUID id);
 
         @GET
         @Path("acceptsUuid/{id}")
-        Observable<String> acceptsUuidPathParam(@PathParam("id") UUID id);
+        Mono<String> acceptsUuidPathParam(@PathParam("id") UUID id);
 
         @GET
         @Path("acceptsUuidHeader")
-        Observable<String> acceptsUuidHeader(@HeaderParam("id") UUID id);
+        Mono<String> acceptsUuidHeader(@HeaderParam("id") UUID id);
 
         @POST
         @Path("generic-param")
-        Observable<String> acceptsGenericParam(List<ParamEntity> list);
+        Mono<String> acceptsGenericParam(List<ParamEntity> list);
 
         @GET
         @Path("trailingSlash/")
-        Observable<String> acceptsTrailingSlash();
+        Mono<String> acceptsTrailingSlash();
 
         @Path("acceptsCookieParam")
         @GET
-        Observable<String> acceptsCookieParam(@CookieParam("fnox_session") String cookie);
+        Mono<String> acceptsCookieParam(@CookieParam("fnox_session") String cookie);
 
         @Path("acceptsCookieParamCustomClass/valueOf")
         @GET
-        Observable<String> acceptsCookieParamCustomClassesWithValueOf(@CookieParam("myarg") CustomParamWithValueOf myarg);
+        Mono<String> acceptsCookieParamCustomClassesWithValueOf(@CookieParam("myarg") CustomParamWithValueOf myarg);
 
         @Path("acceptsCookieParamCustomClass/fromString")
         @GET
-        Observable<String> acceptsCookieParamCustomClassesWithFromString(@CookieParam("myarg") CustomParamWithValueOf myarg);
+        Mono<String> acceptsCookieParamCustomClassesWithFromString(@CookieParam("myarg") CustomParamWithValueOf myarg);
 
         @Path("acceptsCookieParamCustomClass/constructor")
         @GET
-        Observable<String> acceptsCookieParamCustomClassesWithConstructor(@CookieParam("myarg") CustomParamWithValueOf myarg);
+        Mono<String> acceptsCookieParamCustomClassesWithConstructor(@CookieParam("myarg") CustomParamWithValueOf myarg);
 
         @Path("acceptsDefaultCookie")
         @GET
-        Observable<String> acceptsDefaultCookieParam(@CookieParam("myCookie") @DefaultValue("5") int myCookie);
+        Mono<String> acceptsDefaultCookieParam(@CookieParam("myCookie") @DefaultValue("5") int myCookie);
 
         @Path("acceptBodyGet")
         @GET
-        Observable<ParamEntity> acceptBodyGet(ParamEntity paramEntity);
+        Mono<ParamEntity> acceptBodyGet(ParamEntity paramEntity);
 
         @Path("acceptBodyPut")
         @PUT
-        Observable<ParamEntity> acceptBodyPut(ParamEntity paramEntity);
+        Mono<ParamEntity> acceptBodyPut(ParamEntity paramEntity);
 
         @Path("acceptBodyPutRecord")
         @PUT
-        Observable<ParamEntityRecord> acceptBodyPutRecord(ParamEntityRecord paramEntity);
+        Mono<ParamEntityRecord> acceptBodyPutRecord(ParamEntityRecord paramEntity);
 
         @Path("acceptBodyPost")
         @POST
-        Observable<ParamEntity> acceptBodyPost(ParamEntity paramEntity);
+        Mono<ParamEntity> acceptBodyPost(ParamEntity paramEntity);
 
         @Path("acceptBodyPostRecord")
         @POST
-        Observable<ParamEntityRecord> acceptBodyPostRecord(ParamEntityRecord paramEntity);
+        Mono<ParamEntityRecord> acceptBodyPostRecord(ParamEntityRecord paramEntity);
 
         @Path("acceptBodyPatch")
         @PATCH
-        Observable<ParamEntity> acceptBodyPatch(ParamEntity paramEntity);
+        Mono<ParamEntity> acceptBodyPatch(ParamEntity paramEntity);
 
         @Path("acceptBodyPatchRecord")
         @PATCH
-        Observable<ParamEntityRecord> acceptBodyPatchRecord(ParamEntityRecord paramEntity);
+        Mono<ParamEntityRecord> acceptBodyPatchRecord(ParamEntityRecord paramEntity);
 
         @Path("acceptBodyDelete")
         @DELETE
-        Observable<ParamEntity> acceptBodyDelete(ParamEntity paramEntity);
+        Mono<ParamEntity> acceptBodyDelete(ParamEntity paramEntity);
 
         @Path("acceptBodyDeleteRecord")
         @DELETE
-        Observable<ParamEntityRecord> acceptBodyDeleteRecord(ParamEntityRecord paramEntity);
+        Mono<ParamEntityRecord> acceptBodyDeleteRecord(ParamEntityRecord paramEntity);
 
         @Path("acceptsQueryList")
         @GET
-        Observable<Integer> acceptsQueryList(@QueryParam("Stringlist") List<String> strings,
+        Mono<Integer> acceptsQueryList(@QueryParam("Stringlist") List<String> strings,
                                              @QueryParam("Integerlist") List<Integer> integers
         );
 
         @Path("acceptsQueryArray")
         @GET
-        Observable<Integer> acceptsQueryArray(@QueryParam("Stringarray") String[] strings,
+        Mono<Integer> acceptsQueryArray(@QueryParam("Stringarray") String[] strings,
                                               @QueryParam("Integerarray") Integer[] integers
         );
 
         @Path("acceptsQueryListWithEnum")
         @GET
-        Observable<Integer> acceptsQueryListWithEnum(@QueryParam("EnumList") List<TestEnum> enums);
+        Mono<Integer> acceptsQueryListWithEnum(@QueryParam("EnumList") List<TestEnum> enums);
 
         @Path("acceptsQueryListWithCustomClasses")
         @GET
-        Observable<String> acceptsQueryListWithCustomClasses(@QueryParam("list") List<CustomParamWithValueOf> objects);
+        Mono<String> acceptsQueryListWithCustomClasses(@QueryParam("list") List<CustomParamWithValueOf> objects);
 
         @Path("acceptsQueryArrayWithCustomClasses")
         @GET
-        Observable<String> acceptsQueryArrayWithCustomClasses(@QueryParam("array") CustomParamWithValueOf[] objects);
+        Mono<String> acceptsQueryArrayWithCustomClasses(@QueryParam("array") CustomParamWithValueOf[] objects);
 
         @Path("shouldIgnoreHeadersAnnotationOnInterface")
         @GET
         @Headers("Content-Disposition: attachment; filename=test.csv")
-        Observable<String> ignoresHeaderAnnotationOnInterface();
+        Mono<String> ignoresHeaderAnnotationOnInterface();
 
         @Path("acceptsHeadersOnImplementation")
         @GET
-        Observable<String> acceptsHeadersOnImplementation();
+        Mono<String> acceptsHeadersOnImplementation();
 
         @Path("acceptsBeanParam")
         @GET
-        Observable<String> acceptsBeanParam(@BeanParam ParamEntity beanParam);
+        Mono<String> acceptsBeanParam(@BeanParam ParamEntity beanParam);
 
         @Path("acceptsBeanParamRecord")
         @GET
-        Observable<String> acceptsBeanParamRecord(@BeanParam ParamEntityRecord beanParam);
+        Mono<String> acceptsBeanParamRecord(@BeanParam ParamEntityRecord beanParam);
 
         @Path("acceptsBeanParamInherited")
         @GET
-        Observable<String> acceptsBeanParamInherited(@BeanParam InheritedParamEntity beanParam);
+        Mono<String> acceptsBeanParamInherited(@BeanParam InheritedParamEntity beanParam);
     }
 
     class TestresourceImpl implements TestresourceInterface {
 
         @Override
-        public Observable<String> acceptsString(String myarg) {
+        public Mono<String> acceptsString(String myarg) {
             return just("accepts from interface: " + myarg);
         }
 
         @Override
-        public Observable<String> acceptsBoolean(Boolean myarg) {
+        public Mono<String> acceptsBoolean(Boolean myarg) {
             return just("Boolean: " + myarg);
         }
 
         @Override
-        public Observable<String> acceptsInteger(Integer myarg) {
+        public Mono<String> acceptsInteger(Integer myarg) {
             return just("Integer: " + myarg);
         }
 
         @Override
-        public Observable<String> acceptsLong(Long myarg) {
+        public Mono<String> acceptsLong(Long myarg) {
             return just("Long: " + myarg);
         }
 
         @Override
-        public Observable<Date> acceptsDate(Date myarg) {
+        public Mono<Date> acceptsDate(Date myarg) {
             return just(myarg);
         }
 
         @Override
-        public Observable<LocalDateContainer> acceptsLocalDate(LocalDate myarg) {
+        public Mono<LocalDateContainer> acceptsLocalDate(LocalDate myarg) {
             return just(new LocalDateContainer(myarg));
         }
 
         @Override
-        public Observable<LocalTimeContainer> acceptsLocalTime(LocalTime myarg) {
+        public Mono<LocalTimeContainer> acceptsLocalTime(LocalTime myarg) {
             return just(new LocalTimeContainer(myarg));
         }
 
         @Override
-        public Observable<String> acceptsEnum(TestEnum myarg) {
+        public Mono<String> acceptsEnum(TestEnum myarg) {
             return just("Enum: " + myarg);
         }
 
         @Override
-        public Observable<String> acceptsCustomClassQueryParamWithValueOf(CustomParamWithValueOf myarg) {
+        public Mono<String> acceptsCustomClassQueryParamWithValueOf(CustomParamWithValueOf myarg) {
             return just(myarg != null ? myarg.value : "null");
         }
 
         @Override
-        public Observable<String> acceptsCustomClassQueryParamWithFromString(CustomParamWithFromString myarg) {
+        public Mono<String> acceptsCustomClassQueryParamWithFromString(CustomParamWithFromString myarg) {
             return just(myarg != null ? myarg.value : "null");
         }
 
         @Override
-        public Observable<String> acceptsCustomClassQueryParamWithConstructor(CustomParamWithConstructor myarg) {
+        public Mono<String> acceptsCustomClassQueryParamWithConstructor(CustomParamWithConstructor myarg) {
             return just(myarg != null ? myarg.value : "null");
         }
 
         @Override
-        public Observable<String> acceptDefaultQueryParam(int myarg) {
+        public Mono<String> acceptDefaultQueryParam(int myarg) {
             return just("Default: " + myarg);
         }
 
         @Override
-        public Observable<String> acceptsStringPath(String myarg) {
+        public Mono<String> acceptsStringPath(String myarg) {
             return just("String: " + myarg);
         }
 
         @Override
-        public Observable<String> acceptsBooleanPath(Boolean myarg) {
+        public Mono<String> acceptsBooleanPath(Boolean myarg) {
             return just("Boolean: " + myarg);
         }
 
         @Override
-        public Observable<String> acceptsIntegerPath(Integer myarg) {
+        public Mono<String> acceptsIntegerPath(Integer myarg) {
             return just("Integer: " + myarg);
         }
 
         @Override
-        public Observable<String> acceptsLongPath(Long myarg) {
+        public Mono<String> acceptsLongPath(Long myarg) {
             return just("Long: " + myarg);
         }
 
         @Override
-        public Observable<String> acceptsStrictLongPath(long myarg) {
+        public Mono<String> acceptsStrictLongPath(long myarg) {
             return just("long: " + myarg);
         }
 
         @Override
-        public Observable<String> acceptsDatePath(Date myarg) {
+        public Mono<String> acceptsDatePath(Date myarg) {
             return just("Date: " + myarg);
         }
 
         @Override
-        public Observable<String> acceptsEnumPath(TestEnum myarg) {
+        public Mono<String> acceptsEnumPath(TestEnum myarg) {
             return just("Enum: " + myarg);
         }
 
         @Override
-        public Observable<String> acceptsPostString(String myarg) {
+        public Mono<String> acceptsPostString(String myarg) {
             return just("String: " + myarg);
         }
 
         @Override
-        public Observable<String> acceptsPostBoolean(Boolean myarg) {
+        public Mono<String> acceptsPostBoolean(Boolean myarg) {
             return just("Boolean: " + myarg);
         }
 
         @Override
-        public Observable<String> acceptsPostInteger(Integer myarg) {
+        public Mono<String> acceptsPostInteger(Integer myarg) {
             return just("Integer: " + myarg);
         }
 
         @Override
-        public Observable<String> acceptsPostLong(Long myarg) {
+        public Mono<String> acceptsPostLong(Long myarg) {
             return just("Long: " + myarg);
         }
 
         @Override
-        public Observable<String> acceptsPostDate(Date myarg) {
+        public Mono<String> acceptsPostDate(Date myarg) {
             return just("Date: " + myarg);
         }
 
         @Override
-        public Observable<String> acceptsPostEnum(TestEnum myarg) {
+        public Mono<String> acceptsPostEnum(TestEnum myarg) {
             return just("Enum: " + myarg);
         }
 
         @Override
-        public Observable<String> acceptsPostNotNullBoolean(boolean myarg) {
+        public Mono<String> acceptsPostNotNullBoolean(boolean myarg) {
             return just("bool: " + myarg);
         }
 
         @Override
-        public Observable<String> acceptsPostNotNullInteger(int myarg) {
+        public Mono<String> acceptsPostNotNullInteger(int myarg) {
             return just("int: " + myarg);
         }
 
         @Override
-        public Observable<String> acceptsPostNotNullLong(long myarg) {
+        public Mono<String> acceptsPostNotNullLong(long myarg) {
             return just("long: " + myarg);
         }
 
         @Override
-        public Observable<String> acceptsHeader(String myHeader) {
+        public Mono<String> acceptsHeader(String myHeader) {
             return just("header: " + myHeader);
         }
 
         @Override
-        public Observable<String> acceptsHeaderInteger(Integer myHeader) {
+        public Mono<String> acceptsHeaderInteger(Integer myHeader) {
             return just("header: " + myHeader);
         }
 
         @Override
-        public Observable<String> acceptsHeaderEnum(TestEnum myHeader) {
+        public Mono<String> acceptsHeaderEnum(TestEnum myHeader) {
             return just("header: " + myHeader);
         }
 
         @Override
-        public Observable<String> acceptsHeaderCustomClassWithValueOf(CustomParamWithValueOf myHeader) {
+        public Mono<String> acceptsHeaderCustomClassWithValueOf(CustomParamWithValueOf myHeader) {
             return just(myHeader != null ? myHeader.value : "null");
         }
 
         @Override
-        public Observable<String> acceptsHeaderCustomClassWithFromString(CustomParamWithFromString myHeader) {
+        public Mono<String> acceptsHeaderCustomClassWithFromString(CustomParamWithFromString myHeader) {
             return just(myHeader != null  ? myHeader.value : "null");
         }
 
         @Override
-        public Observable<String> acceptsHeaderCustomClassWithConstructor(CustomParamWithConstructor myHeader) {
+        public Mono<String> acceptsHeaderCustomClassWithConstructor(CustomParamWithConstructor myHeader) {
             return just(myHeader != null  ? myHeader.value : "null");
         }
 
         @Override
-        public Observable<String> acceptsDefaultHeaderParam(int myHeader) {
+        public Mono<String> acceptsDefaultHeaderParam(int myHeader) {
             return just("Default: " + myHeader);
         }
 
         @Override
-        public Observable<String> throwInsufficientStorage() {
+        public Mono<String> throwInsufficientStorage() {
             throw new WebException(HttpResponseStatus.INSUFFICIENT_STORAGE);
         }
 
         @Override
-        public Observable<String> throwRuntimeException() {
+        public Mono<String> throwRuntimeException() {
             throw new RuntimeException();
         }
 
         @Override
-        public Observable<String> throwException() {
+        public Mono<String> throwException() {
             throw new AssertionError();
         }
 
         @Override
-        public Observable<String> jsonParam(ParamEntity paramEntity) {
+        public Mono<String> jsonParam(ParamEntity paramEntity) {
             return just("");
         }
 
         @Override
-        public Observable<String> textPlain(String input) {
+        public Mono<String> textPlain(String input) {
             return just(input);
         }
 
         @Override
-        public Observable<String> applicationJson(String input) {
+        public Mono<String> applicationJson(String input) {
             return just(input);
         }
 
         @Override
-        public Observable<String> byteArray(byte[] input) {
+        public Mono<String> byteArray(byte[] input) {
             return just(new String(input));
         }
 
         @Override
-        public Observable<String> byteArrayAnyType(byte[] input) {
+        public Mono<String> byteArrayAnyType(byte[] input) {
             return just(new String(input));
         }
 
         @Override
-        public Observable<String> acceptsUuidQueryParam(UUID id) {
+        public Mono<String> acceptsUuidQueryParam(UUID id) {
             return just("Id: " + (id != null ? id.toString() : null));
         }
 
         @Override
-        public Observable<String> acceptsUuidFormParam(UUID id) {
+        public Mono<String> acceptsUuidFormParam(UUID id) {
             return just("Id: " + id.toString());
         }
 
         @Override
-        public Observable<String> acceptsUuidPathParam(UUID id) {
+        public Mono<String> acceptsUuidPathParam(UUID id) {
             return just("Id: " + id.toString());
         }
 
         @Override
-        public Observable<String> acceptsUuidHeader(UUID id) {
+        public Mono<String> acceptsUuidHeader(UUID id) {
             return just("Id: " + id.toString());
         }
 
         @Override
-        public Observable<String> acceptsGenericParam(List<ParamEntity> list) {
+        public Mono<String> acceptsGenericParam(List<ParamEntity> list) {
             Object listItem = list.get(0);
             return just(listItem.getClass().getSimpleName());
         }
 
         @Override
-        public Observable<String> acceptsTrailingSlash() {
+        public Mono<String> acceptsTrailingSlash() {
             return just("OK");
         }
 
-        public Observable<String> acceptsCookieParam(String cookie) {
+        public Mono<String> acceptsCookieParam(String cookie) {
             return just(cookie);
         }
 
         @Override
-        public Observable<String> acceptsCookieParamCustomClassesWithValueOf(CustomParamWithValueOf myarg) {
+        public Mono<String> acceptsCookieParamCustomClassesWithValueOf(CustomParamWithValueOf myarg) {
             return just(myarg != null ? myarg.value : "null");
         }
 
         @Override
-        public Observable<String> acceptsCookieParamCustomClassesWithFromString(CustomParamWithValueOf myarg) {
+        public Mono<String> acceptsCookieParamCustomClassesWithFromString(CustomParamWithValueOf myarg) {
             return just(myarg != null ? myarg.value : "null");
         }
 
         @Override
-        public Observable<String> acceptsCookieParamCustomClassesWithConstructor(CustomParamWithValueOf myarg) {
+        public Mono<String> acceptsCookieParamCustomClassesWithConstructor(CustomParamWithValueOf myarg) {
             return just(myarg != null ? myarg.value : "null");
         }
 
         @Override
-        public Observable<String> acceptsDefaultCookieParam(int myCookie) {
+        public Mono<String> acceptsDefaultCookieParam(int myCookie) {
             return just("Default: " + myCookie);
         }
 
         @Override
-        public Observable<ParamEntity> acceptBodyGet(ParamEntity paramEntity) {
+        public Mono<ParamEntity> acceptBodyGet(ParamEntity paramEntity) {
             return just(paramEntity);
         }
 
         @Override
-        public Observable<ParamEntity> acceptBodyPut(ParamEntity paramEntity) {
+        public Mono<ParamEntity> acceptBodyPut(ParamEntity paramEntity) {
             return just(paramEntity);
         }
 
         @Override
-        public Observable<ParamEntityRecord> acceptBodyPutRecord(ParamEntityRecord paramEntity) {
+        public Mono<ParamEntityRecord> acceptBodyPutRecord(ParamEntityRecord paramEntity) {
             return just(paramEntity);
         }
 
         @Override
-        public Observable<ParamEntity> acceptBodyPost(ParamEntity paramEntity) {
+        public Mono<ParamEntity> acceptBodyPost(ParamEntity paramEntity) {
             return just(paramEntity);
         }
 
         @Override
-        public Observable<ParamEntityRecord> acceptBodyPostRecord(ParamEntityRecord paramEntity) {
+        public Mono<ParamEntityRecord> acceptBodyPostRecord(ParamEntityRecord paramEntity) {
             return just(paramEntity);
         }
 
         @Override
-        public Observable<ParamEntity> acceptBodyPatch(ParamEntity paramEntity) {
+        public Mono<ParamEntity> acceptBodyPatch(ParamEntity paramEntity) {
             return just(paramEntity);
         }
 
         @Override
-        public Observable<ParamEntityRecord> acceptBodyPatchRecord(ParamEntityRecord paramEntity) {
+        public Mono<ParamEntityRecord> acceptBodyPatchRecord(ParamEntityRecord paramEntity) {
             return just(paramEntity);
         }
 
         @Override
-        public Observable<ParamEntity> acceptBodyDelete(ParamEntity paramEntity) {
+        public Mono<ParamEntity> acceptBodyDelete(ParamEntity paramEntity) {
             return just(paramEntity);
         }
 
         @Override
-        public Observable<ParamEntityRecord> acceptBodyDeleteRecord(ParamEntityRecord paramEntity) {
+        public Mono<ParamEntityRecord> acceptBodyDeleteRecord(ParamEntityRecord paramEntity) {
             return just(paramEntity);
         }
 
         @Override
-        public Observable<Integer> acceptsQueryList(List<String> strings, List<Integer> integers) {
+        public Mono<Integer> acceptsQueryList(List<String> strings, List<Integer> integers) {
             if (strings != null) {
                 return just(strings.size());
             }
@@ -1634,7 +1630,7 @@ class JaxRsResourceTest {
         }
 
         @Override
-        public Observable<Integer> acceptsQueryArray(String[] strings, Integer[] integers) {
+        public Mono<Integer> acceptsQueryArray(String[] strings, Integer[] integers) {
             if (strings != null) {
                 return just(strings.length);
             }
@@ -1645,113 +1641,113 @@ class JaxRsResourceTest {
         }
 
         @Override
-        public Observable<Integer> acceptsQueryListWithEnum(List<TestEnum> enums) {
+        public Mono<Integer> acceptsQueryListWithEnum(List<TestEnum> enums) {
             return just(enums.size());
         }
 
         @Override
-        public Observable<String> acceptsQueryListWithCustomClasses(List<CustomParamWithValueOf> objects) {
+        public Mono<String> acceptsQueryListWithCustomClasses(List<CustomParamWithValueOf> objects) {
             return just(objects.stream().map(it -> it.value).collect(Collectors.joining()));
         }
 
         @Override
-        public Observable<String> acceptsQueryArrayWithCustomClasses(CustomParamWithValueOf[] objects) {
+        public Mono<String> acceptsQueryArrayWithCustomClasses(CustomParamWithValueOf[] objects) {
             return just(Arrays.stream(objects).map(it -> it.value).collect(Collectors.joining()));
         }
 
         @Override
-        public Observable<String> ignoresHeaderAnnotationOnInterface() {
+        public Mono<String> ignoresHeaderAnnotationOnInterface() {
             return just("");
         }
 
         @Override
         @Headers("Content-Disposition: attachment; filename=auditlog.csv")
-        public Observable<String> acceptsHeadersOnImplementation() {
+        public Mono<String> acceptsHeadersOnImplementation() {
             return just("");
         }
 
         @Override
-        public Observable<String> acceptsBeanParam(ParamEntity beanParam) {
+        public Mono<String> acceptsBeanParam(ParamEntity beanParam) {
             return just(String.format("%s - %d %d", beanParam.getName(), beanParam.getAge(), beanParam.getItems().size()));
         }
 
         @Override
-        public Observable<String> acceptsBeanParamRecord(ParamEntityRecord beanParam) {
+        public Mono<String> acceptsBeanParamRecord(ParamEntityRecord beanParam) {
             return just(beanParam.toString());
         }
 
         @Override
-        public Observable<String> acceptsBeanParamInherited(InheritedParamEntity beanParam) {
+        public Mono<String> acceptsBeanParamInherited(InheritedParamEntity beanParam) {
             return just(String.format("%s - %d %d - %s", beanParam.getName(), beanParam.getAge(), beanParam.getItems().size(), beanParam.getInherited()));
         }
 
         @Override
-        public Observable<String> acceptsSlashVar(String myarg) {
+        public Mono<String> acceptsSlashVar(String myarg) {
             return just("var: " + myarg);
         }
 
         @Override
-        public Observable<String> acceptsCustomClassPathParamWithValueOf(CustomParamWithValueOf myarg) {
+        public Mono<String> acceptsCustomClassPathParamWithValueOf(CustomParamWithValueOf myarg) {
             return just(myarg != null ? myarg.value : "null");
         }
 
         @Override
-        public Observable<String> acceptsCustomClassPathParamWithFromString(CustomParamWithFromString myarg) {
+        public Mono<String> acceptsCustomClassPathParamWithFromString(CustomParamWithFromString myarg) {
             return just(myarg != null ? myarg.value : "null");
         }
 
         @Override
-        public Observable<String> acceptsCustomClassPathParamWithConstructor(CustomParamWithConstructor myarg) {
+        public Mono<String> acceptsCustomClassPathParamWithConstructor(CustomParamWithConstructor myarg) {
             return just(myarg != null ? myarg.value : "null");
         }
 
         @Override
-        public Observable<String> acceptsDouble(Double myarg) {
+        public Mono<String> acceptsDouble(Double myarg) {
             return just("Double: " + myarg);
         }
 
         @Override
-        public Observable<String> acceptsPostDouble(Double myarg) {
+        public Mono<String> acceptsPostDouble(Double myarg) {
             return just("Double: " + myarg);
         }
 
         @Override
-        public Observable<String> acceptsPostNotNullDouble(double myarg) {
+        public Mono<String> acceptsPostNotNullDouble(double myarg) {
             return just("double: " + myarg);
         }
 
         @Override
-        public Observable<String> acceptsPostCustomClassWithValueOf(CustomParamWithValueOf myarg) {
+        public Mono<String> acceptsPostCustomClassWithValueOf(CustomParamWithValueOf myarg) {
             return just(myarg != null ? myarg.value : "null");
         }
 
         @Override
-        public Observable<String> acceptsPostCustomClassWithFromString(CustomParamWithFromString myarg) {
+        public Mono<String> acceptsPostCustomClassWithFromString(CustomParamWithFromString myarg) {
             return just(myarg != null ? myarg.value : "null");
         }
 
         @Override
-        public Observable<String> acceptsPostCustomClassWithConstructor(CustomParamWithConstructor myarg) {
+        public Mono<String> acceptsPostCustomClassWithConstructor(CustomParamWithConstructor myarg) {
             return just(myarg != null ? myarg.value : "null");
         }
 
         @Override
-        public Observable<String> acceptsDefaultFormParam(int myarg) {
+        public Mono<String> acceptsDefaultFormParam(int myarg) {
             return just("Default: " + myarg);
         }
 
         @Override
-        public Observable<String> overloadedMethod(String param1, String param2) {
-            return Observable.just("Param1: " + param1 + ", Param2: " + param2);
+        public Mono<String> overloadedMethod(String param1, String param2) {
+            return just("Param1: " + param1 + ", Param2: " + param2);
         }
 
         @Override
-        public Observable<String> overloadedMethod(String param1) {
-            return Observable.just("Param1: " + param1);
+        public Mono<String> overloadedMethod(String param1) {
+            return just("Param1: " + param1);
         }
 
         @Override
-        public Observable<String> overloadedMethod() {
+        public Mono<String> overloadedMethod() {
             return null;
         }
     }
@@ -1759,35 +1755,24 @@ class JaxRsResourceTest {
     @Path("/test/accepts/res")
     class FooTest {
         @GET
-        public Observable<String> test(Foo foo) {
+        public Mono<String> test(Foo foo) {
             return just("foo: " + foo.getStr());
         }
     }
 
     @Path("special")
     class SpecialResource {
-        @GET
-        @Path("single/{string}")
-        public Single<String> getStringSingle(@PathParam("string") String string) {
-            return Single.just(string);
-        }
 
         @GET
-        @Path("single/strings")
-        public Single<List<String>> getStringsSingle() {
-            return Single.just(asList("string", "string"));
-        }
-
-        @GET
-        @Path("observable/{string}")
-        public Observable<String> getStringObservable(@PathParam("string") String string) {
+        @Path("/{string}")
+        public Mono<String> getString(@PathParam("string") String string) {
             return just(string);
         }
 
         @GET
-        @Path("observable/strings")
-        public Observable<List<String>> getStringsObservable() {
-            return just(asList("string", "string"));
+        @Path("/strings")
+        public Flux<String> getStrings() {
+            return Flux.just("string", "string");
         }
     }
 
@@ -1795,7 +1780,7 @@ class JaxRsResourceTest {
     class DefaultPathParamResource {
         @GET
         @Path("param/{path}")
-        public Observable<String> defaultPath(@PathParam("path") @DefaultValue("defaultPath") String path) {
+        public Mono<String> defaultPath(@PathParam("path") @DefaultValue("defaultPath") String path) {
             return just("");
         }
     }

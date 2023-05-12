@@ -5,7 +5,6 @@ import reactor.core.publisher.Flux;
 import reactor.netty.DisposableServer;
 import reactor.netty.http.client.HttpClient;
 import reactor.netty.http.client.HttpClientResponse;
-import rx.Observable;
 import se.fortnox.reactivewizard.CollectionOptions;
 import se.fortnox.reactivewizard.db.MockDb;
 import se.fortnox.reactivewizard.db.Query;
@@ -21,14 +20,13 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static rx.Observable.just;
 import static se.fortnox.reactivewizard.jaxrs.response.ResponseDecorator.withHeaders;
 import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.testServer;
 
 public class StreamingDataTest {
 
-    private StreamingResource   streamingResource = new StreamingResourceImpl(null, null);
-    private NoStreamingResource noStreamingResource = new NoStreamingResourceImpl();
+    private final StreamingResource   streamingResource = new StreamingResourceImpl(null, null);
+    private final NoStreamingResource noStreamingResource = new NoStreamingResourceImpl();
 
     @Test
     public void testStreamingWithRealServer() {
@@ -36,7 +34,7 @@ public class StreamingDataTest {
         DisposableServer      server   = testServer(streamingResource, noStreamingResource).getServer();
         HttpClient            client   = HttpClient.create().port(server.port());
         final AtomicReference<HttpClientResponse>    response = new AtomicReference<>();
-        List<String> strings = client.get().uri("/stream").response((resp, body)->{
+        List<String> strings = client.get().uri("/stream").response((resp, body) -> {
             response.set(resp);
             return body.asString();
         }).collectList().block();
@@ -45,22 +43,24 @@ public class StreamingDataTest {
         assertThat(strings.get(0)).isEqualTo("a");
         assertThat(strings.get(1)).isEqualTo("b");
         assertThat(response.get().responseHeaders().get("Content-Type")).isEqualTo(MediaType.TEXT_PLAIN);
+        assertThat(response.get().responseHeaders().get("Transfer-Encoding")).isEqualTo("chunked");
 
         //When not streaming the response will finish after first string emission
-        strings = client.get().uri("/nostream").response((resp, body)->{
+        strings = client.get().uri("/nostream").response((resp, body) -> {
             response.set(resp);
             return body.asString();
         }).collectList().block();
 
         assertThat(strings).hasSize(1);
-        assertThat(strings.get(0)).isEqualTo("a");
+        assertThat(strings.get(0)).isEqualTo("ab");
         assertThat(response.get().responseHeaders().get("Content-Type")).isEqualTo(MediaType.TEXT_PLAIN);
+        assertThat(response.get().responseHeaders().get("Transfer-Encoding")).isNotEqualTo("chunked");
 
         //But at the end of the day
         ByteBufCollector collector = new ByteBufCollector();
         HttpClient httpClient = HttpClient.create().baseUrl("http://localhost:" + server.port());
         assertThat(collector.collectString(httpClient.get().uri("/stream").responseContent()).block()).isEqualTo("ab");
-        assertThat(collector.collectString(httpClient.get().uri("/nostream").responseContent()).block()).isEqualTo("a");
+        assertThat(collector.collectString(httpClient.get().uri("/nostream").responseContent()).block()).isEqualTo("ab");
     }
 
     @Test
@@ -69,7 +69,7 @@ public class StreamingDataTest {
         try {
             HttpClient client = HttpClient.create().port(server.port());
             final AtomicReference<HttpClientResponse> response = new AtomicReference<>();
-            List<String> strings = client.get().uri("/stream/withHeaders").response((resp, body)->{
+            List<String> strings = client.get().uri("/stream/withHeaders").response((resp, body) -> {
                 response.set(resp);
                 return body.asString();
             }).collectList().block();
@@ -96,7 +96,7 @@ public class StreamingDataTest {
         try {
             HttpClient client = HttpClient.create().port(server.port());
             final AtomicReference<HttpClientResponse> response = new AtomicReference<>();
-            List<String> strings = client.get().uri("/stream/paging?limit=5").response((resp, body)->{
+            List<String> strings = client.get().uri("/stream/paging?limit=5").response((resp, body) -> {
                 response.set(resp);
                 return body.asString();
             }).collectList().block();
@@ -121,7 +121,7 @@ public class StreamingDataTest {
         try {
             HttpClient client = HttpClient.create().port(server.port());
             final AtomicReference<HttpClientResponse> response = new AtomicReference<>();
-            List<String> strings = client.get().uri("/stream/paging?limit=10").response((resp, body)->{
+            List<String> strings = client.get().uri("/stream/paging?limit=10").response((resp, body) -> {
                 response.set(resp);
                 return body.asString();
             }).collectList().block();
@@ -145,7 +145,7 @@ public class StreamingDataTest {
         try {
             HttpClient client = HttpClient.create().port(server.port());
             final AtomicReference<HttpClientResponse> response = new AtomicReference<>();
-            List<String> strings = client.get().uri("/stream/paging?limit=15").response((resp, body)->{
+            List<String> strings = client.get().uri("/stream/paging?limit=15").response((resp, body) -> {
                 response.set(resp);
                 return body.asString();
             }).collectList().block();
@@ -158,7 +158,7 @@ public class StreamingDataTest {
     }
 
     @Test
-    public void shouldStreamConcatenatedJsonObjectsWhenObservableStream() throws SQLException {
+    public void shouldStreamJsonArrayOfObjects() throws SQLException {
         MockDb mockDb = new MockDb();
         StreamingDao streamingDao = mockDb.mockDao(10, StreamingDao.class);
         CollectionOptions collectionOptions = new CollectionOptions();
@@ -170,14 +170,14 @@ public class StreamingDataTest {
             HttpClient client = HttpClient.create().port(server.port());
 
             String content = client.get().uri("/stream/my-entities").responseContent().aggregate().asString().block();
-            assertThat(content).isEqualTo("{\"value\":\"Hello\"}{\"value\":\"World\"}");
+            assertThat(content).isEqualTo("[{\"value\":\"Hello\"},{\"value\":\"World\"}]");
         } finally {
             server.disposeNow();
         }
     }
 
     @Test
-    public void shouldHaveChunkedTransferEncodingWhenObservableStream() throws SQLException {
+    public void shouldHaveChunkedTransferEncoding() throws SQLException {
 
         MockDb mockDb = new MockDb();
         StreamingDao streamingDao = mockDb.mockDao(10, StreamingDao.class);
@@ -200,7 +200,7 @@ public class StreamingDataTest {
     }
 
     @Test
-    public void shouldStreamConcatenatedJsonStringsWhenObservableStream() throws SQLException {
+    public void shouldStreamJsonArrayOfStrings() throws SQLException {
 
         MockDb mockDb = new MockDb();
         StreamingDao streamingDao = mockDb.mockDao(10, StreamingDao.class);
@@ -213,7 +213,7 @@ public class StreamingDataTest {
             HttpClient client = HttpClient.create().port(server.port());
 
             String content = client.get().uri("/stream/json-strings").responseContent().aggregate().asString().block();
-            assertThat(content).isEqualTo("\"Hello\"\"World\"");
+            assertThat(content).isEqualTo("[\"Hello\",\"World\"]");
         } finally {
             server.disposeNow();
         }
@@ -231,7 +231,7 @@ public class StreamingDataTest {
         try {
             HttpClient client = HttpClient.create().port(server.port());
             final AtomicReference<HttpClientResponse> response = new AtomicReference<>();
-            List<String> strings = client.get().uri("/stream/paging?limit=15").response((resp, body)->{
+            List<String> strings = client.get().uri("/stream/paging?limit=15").response((resp, body) -> {
                 response.set(resp);
                 return body.asString();
             }).collectList().block();
@@ -251,18 +251,17 @@ public class StreamingDataTest {
     interface StreamingResource {
         @GET
         @Produces(MediaType.TEXT_PLAIN)
-        @Stream
-        Observable<String> streamOfStrings();
+        Flux<String> streamOfStrings();
 
         @GET
         @Produces(MediaType.TEXT_PLAIN)
         @Path("shouldNotStream")
-        Observable<String> noStreamOfStrings();
+        Flux<String> noStreamOfStrings();
 
         @GET
         @Produces(MediaType.TEXT_PLAIN)
         @Path("withHeaders")
-        Observable<String> streamWithHeaders();
+        Flux<String> streamWithHeaders();
 
         @GET
         @Produces(MediaType.TEXT_PLAIN)
@@ -271,11 +270,11 @@ public class StreamingDataTest {
 
         @GET
         @Path("/my-entities")
-        Observable<MyEntity> getMyEntities();
+        Flux<MyEntity> getMyEntities();
 
         @GET
         @Path("/json-strings")
-        Observable<String> getJsonStrings();
+        Flux<String> getJsonStrings();
 
     }
 
@@ -293,12 +292,12 @@ public class StreamingDataTest {
         @GET
         @Produces(MediaType.TEXT_PLAIN)
         @Stream
-        Observable<String> noStreamOfStrings();
+        Flux<String> noStreamOfStrings();
     }
 
     public class StreamingResourceImpl implements StreamingResource {
 
-        private StreamingDao streamingDao;
+        private final StreamingDao streamingDao;
         private final CollectionOptions collectionOptions;
 
         public StreamingResourceImpl(StreamingDao streamingDao, CollectionOptions collectionOptions) {
@@ -308,19 +307,19 @@ public class StreamingDataTest {
 
         @Override
         @Stream
-        public Observable<String> streamOfStrings() {
-            return just("a", "b");
+        public Flux<String> streamOfStrings() {
+            return Flux.just("a", "b");
         }
 
         @Override
-        public Observable<String> noStreamOfStrings() {
-            return just("a", "b");
+        public Flux<String> noStreamOfStrings() {
+            return Flux.just("a", "b");
         }
 
         @Override
         @Stream
-        public Observable<String> streamWithHeaders() {
-            return withHeaders(just("a", "b"), new HashMap<String, String>(){{
+        public Flux<String> streamWithHeaders() {
+            return withHeaders(Flux.just("a", "b"), new HashMap<>(){{
                 put("my-header", "my-value");
             }});
         }
@@ -329,29 +328,27 @@ public class StreamingDataTest {
         @Stream
         public Flux<String> streamWithPaging(String limit) {
             collectionOptions.setLimit(Integer.parseInt(limit));
-            return streamingDao.getData("test", collectionOptions).map(s -> {
-                return String.valueOf(s);
-            });
+            return streamingDao.getData("test", collectionOptions).map(String::valueOf);
         }
 
         @Override
         @Stream
-        public Observable<MyEntity> getMyEntities() {
-            return Observable.just(new MyEntity("Hello"), new MyEntity("World"));
+        public Flux<MyEntity> getMyEntities() {
+            return Flux.just(new MyEntity("Hello"), new MyEntity("World"));
         }
 
         @Override
         @Stream
-        public Observable<String> getJsonStrings() {
-            return Observable.just("Hello", "World");
+        public Flux<String> getJsonStrings() {
+            return Flux.just("Hello", "World");
         }
     }
 
     public class NoStreamingResourceImpl implements NoStreamingResource {
 
         @Override
-        public Observable<String> noStreamOfStrings() {
-            return just("a", "b");
+        public Flux<String> noStreamOfStrings() {
+            return Flux.just("a", "b");
         }
     }
 
