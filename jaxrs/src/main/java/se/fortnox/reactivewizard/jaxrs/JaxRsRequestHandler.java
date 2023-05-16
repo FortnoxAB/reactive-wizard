@@ -1,5 +1,7 @@
 package se.fortnox.reactivewizard.jaxrs;
 
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
 import reactor.netty.http.server.HttpServerRequest;
@@ -8,9 +10,6 @@ import se.fortnox.reactivewizard.ExceptionHandler;
 import se.fortnox.reactivewizard.RequestHandler;
 import se.fortnox.reactivewizard.jaxrs.response.JaxRsResult;
 import se.fortnox.reactivewizard.util.DebugUtil;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
 /**
  * Handles incoming requests. If the request matches a resource a Flux or Mono which completes the request is returned.

@@ -1,11 +1,11 @@
 package se.fortnox.reactivewizard.db.transactions;
 
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
 import se.fortnox.reactivewizard.util.ReactiveDecorator;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.util.List;
 
 import static java.util.Arrays.asList;

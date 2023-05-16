@@ -1,6 +1,6 @@
 package com.other.vendor;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 public class InjectedInTest {
     private final Source source;

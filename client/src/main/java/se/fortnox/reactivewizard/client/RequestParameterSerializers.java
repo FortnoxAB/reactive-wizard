@@ -1,6 +1,7 @@
 package se.fortnox.reactivewizard.client;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
+
 import java.lang.reflect.ParameterizedType;
 import java.util.Collections;
 import java.util.Map;

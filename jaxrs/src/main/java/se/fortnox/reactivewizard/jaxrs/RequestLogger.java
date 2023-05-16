@@ -2,11 +2,11 @@ package se.fortnox.reactivewizard.jaxrs;
 
 import com.google.common.annotations.VisibleForTesting;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import jakarta.inject.Singleton;
 import org.slf4j.Logger;
 import reactor.netty.http.server.HttpServerRequest;
 import reactor.netty.http.server.HttpServerResponse;
 
-import javax.inject.Singleton;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;

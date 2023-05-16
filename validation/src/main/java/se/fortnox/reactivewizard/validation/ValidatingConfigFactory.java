@@ -1,10 +1,9 @@
 package se.fortnox.reactivewizard.validation;
 
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
+import jakarta.inject.Singleton;
 import se.fortnox.reactivewizard.config.ConfigFactory;
-
-import javax.inject.Inject;
-import javax.inject.Named;
-import javax.inject.Singleton;
 
 @Singleton
 public class ValidatingConfigFactory extends ConfigFactory {

@@ -1,12 +1,12 @@
 package se.fortnox.reactivewizard.db.statement;
 
+import jakarta.inject.Inject;
 import se.fortnox.reactivewizard.db.GeneratedKey;
 import se.fortnox.reactivewizard.db.Query;
 import se.fortnox.reactivewizard.db.Update;
 import se.fortnox.reactivewizard.db.query.ParameterizedQuery;
 import se.fortnox.reactivewizard.util.ReflectionUtil;
 
-import javax.inject.Inject;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;

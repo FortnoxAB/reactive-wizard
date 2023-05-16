@@ -1,6 +1,8 @@
 package se.fortnox.reactivewizard.db;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -17,8 +19,6 @@ import se.fortnox.reactivewizard.util.DebugUtil;
 import se.fortnox.reactivewizard.util.ReflectionUtil;
 
 import javax.annotation.Nullable;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;

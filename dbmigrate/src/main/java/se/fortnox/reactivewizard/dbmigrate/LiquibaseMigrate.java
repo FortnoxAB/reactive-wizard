@@ -1,5 +1,6 @@
 package se.fortnox.reactivewizard.dbmigrate;
 
+import jakarta.inject.Inject;
 import liquibase.CatalogAndSchema;
 import liquibase.Contexts;
 import liquibase.LabelExpression;
@@ -18,7 +19,6 @@ import liquibase.resource.ClassLoaderResourceAccessor;
 import liquibase.resource.InputStreamList;
 import se.fortnox.reactivewizard.db.DbDriver;
 
-import javax.inject.Inject;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;

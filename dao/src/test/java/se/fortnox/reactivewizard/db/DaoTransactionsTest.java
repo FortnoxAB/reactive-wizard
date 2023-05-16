@@ -1,5 +1,6 @@
 package se.fortnox.reactivewizard.db;
 
+import jakarta.inject.Inject;
 import org.assertj.core.api.Fail;
 import org.junit.Test;
 import org.mockito.InOrder;
@@ -18,7 +19,6 @@ import se.fortnox.reactivewizard.db.transactions.StatementContext;
 import se.fortnox.reactivewizard.json.JsonSerializerFactory;
 import se.fortnox.reactivewizard.util.ReactiveDecorator;
 
-import javax.inject.Inject;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;

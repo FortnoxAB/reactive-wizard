@@ -1,6 +1,7 @@
 package se.fortnox.reactivewizard.util;
 
-import javax.inject.Provider;
+import jakarta.inject.Provider;
+
 import java.lang.annotation.Annotation;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;

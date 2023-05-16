@@ -1,12 +1,11 @@
 package se.fortnox.reactivewizard.dbmigrate;
 
 import com.google.inject.Binder;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import se.fortnox.reactivewizard.binding.AutoBindModule;
-
-import javax.inject.Inject;
-import javax.inject.Named;
 
 /**
  * Runs liquibase before the system is started, if parameter "db-migrate" is used. The following alternatives exist:

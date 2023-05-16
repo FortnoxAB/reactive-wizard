@@ -1,9 +1,8 @@
 package se.fortnox.reactivewizard.binding.scanners;
 
+import jakarta.inject.Singleton;
 import se.fortnox.reactivewizard.db.Query;
 import se.fortnox.reactivewizard.db.Update;
-
-import javax.inject.Singleton;
 
 @Singleton
 public class DaoClassScanner extends AbstractClassScanner {

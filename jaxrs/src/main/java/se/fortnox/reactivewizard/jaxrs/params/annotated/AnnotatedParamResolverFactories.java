@@ -1,8 +1,8 @@
 package se.fortnox.reactivewizard.jaxrs.params.annotated;
 
+import jakarta.inject.Inject;
 import se.fortnox.reactivewizard.jaxrs.params.deserializing.DeserializerFactory;
 
-import javax.inject.Inject;
 import javax.ws.rs.BeanParam;
 import javax.ws.rs.CookieParam;
 import javax.ws.rs.FormParam;

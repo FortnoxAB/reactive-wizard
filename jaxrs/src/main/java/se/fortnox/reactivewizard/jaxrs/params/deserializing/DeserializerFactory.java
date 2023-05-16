@@ -2,12 +2,12 @@ package se.fortnox.reactivewizard.jaxrs.params.deserializing;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.util.StdDateFormat;
+import jakarta.inject.Inject;
+import jakarta.inject.Provider;
 import se.fortnox.reactivewizard.json.JsonDeserializerFactory;
 import se.fortnox.reactivewizard.util.ReflectionUtil;
 
 import javax.annotation.Nullable;
-import javax.inject.Inject;
-import javax.inject.Provider;
 import javax.ws.rs.core.MediaType;
 import java.lang.reflect.ParameterizedType;
 import java.math.BigDecimal;

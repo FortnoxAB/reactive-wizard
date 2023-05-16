@@ -1,6 +1,7 @@
 package se.fortnox.reactivewizard.validation;
 
-import javax.inject.Provider;
+import jakarta.inject.Provider;
+
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;

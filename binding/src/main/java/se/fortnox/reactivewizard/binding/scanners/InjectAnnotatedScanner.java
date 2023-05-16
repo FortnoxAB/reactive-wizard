@@ -1,6 +1,7 @@
 package se.fortnox.reactivewizard.binding.scanners;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
+
 import java.util.stream.Stream;
 
 /**
@@ -10,13 +11,13 @@ import java.util.stream.Stream;
 public class InjectAnnotatedScanner extends AbstractClassScanner {
     @Override
     public void visit(ClassScanner classScanner) {
-        classScanner.findClassesWithMethodAnnotation(javax.inject.Inject.class).forEach(this::classFound);
+        classScanner.findClassesWithMethodAnnotation(jakarta.inject.Inject.class).forEach(this::classFound);
         classScanner.findClassesWithMethodAnnotation(com.google.inject.Inject.class).forEach(this::classFound);
     }
 
     private void classFound(Class cls) {
         if (Stream.of(cls.getConstructors())
-                .anyMatch(constructor -> constructor.isAnnotationPresent(javax.inject.Inject.class)
+                .anyMatch(constructor -> constructor.isAnnotationPresent(jakarta.inject.Inject.class)
                         || constructor.isAnnotationPresent(com.google.inject.Inject.class))) {
             add(cls);
         }
