@@ -2,15 +2,15 @@ package se.fortnox.reactivewizard.validation;
 
 import com.google.inject.Binder;
 import com.google.inject.Scopes;
+import jakarta.inject.Inject;
+import jakarta.inject.Provider;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
 import se.fortnox.reactivewizard.binding.AutoBindModule;
 import se.fortnox.reactivewizard.binding.scanners.InjectAnnotatedScanner;
 import se.fortnox.reactivewizard.config.ConfigFactory;
 import se.fortnox.reactivewizard.jaxrs.JaxRsMeta;
 
-import javax.inject.Inject;
-import javax.inject.Provider;
-import jakarta.validation.Validation;
-import jakarta.validation.Validator;
 import java.util.Optional;
 
 public class ValidationModule implements AutoBindModule {

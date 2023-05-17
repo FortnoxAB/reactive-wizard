@@ -1,6 +1,7 @@
 package se.fortnox.reactivewizard.metrics;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
+
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 

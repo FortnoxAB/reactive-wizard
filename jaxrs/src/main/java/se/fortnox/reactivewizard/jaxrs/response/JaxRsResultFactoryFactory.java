@@ -1,10 +1,9 @@
 package se.fortnox.reactivewizard.jaxrs.response;
 
+import jakarta.inject.Inject;
 import se.fortnox.reactivewizard.jaxrs.JaxRsResource;
 import se.fortnox.reactivewizard.jaxrs.Stream;
 import se.fortnox.reactivewizard.json.JsonSerializerFactory;
-
-import javax.inject.Inject;
 
 public class JaxRsResultFactoryFactory {
 

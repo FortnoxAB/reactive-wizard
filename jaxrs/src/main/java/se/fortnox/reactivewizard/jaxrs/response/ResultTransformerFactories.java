@@ -1,8 +1,8 @@
 package se.fortnox.reactivewizard.jaxrs.response;
 
+import jakarta.inject.Inject;
 import se.fortnox.reactivewizard.jaxrs.JaxRsResource;
 
-import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;

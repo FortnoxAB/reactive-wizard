@@ -1,6 +1,7 @@
 package se.fortnox.reactivewizard.binding.scanners;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
+
 import javax.ws.rs.Path;
 
 @Singleton

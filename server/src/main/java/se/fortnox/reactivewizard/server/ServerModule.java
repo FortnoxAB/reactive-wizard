@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.util.StdDateFormat;
 import com.google.inject.Binder;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import se.fortnox.reactivewizard.RequestHandler;
 import se.fortnox.reactivewizard.binding.AutoBindModule;
 import se.fortnox.reactivewizard.binding.scanners.InjectAnnotatedScanner;
@@ -19,8 +21,6 @@ import se.fortnox.reactivewizard.jaxrs.response.NoContentTransformer;
 import se.fortnox.reactivewizard.jaxrs.response.ResponseDecoratorTransformer;
 import se.fortnox.reactivewizard.jaxrs.response.ResultTransformerFactory;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.text.DateFormat;
 import java.util.Optional;
 

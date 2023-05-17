@@ -1,6 +1,8 @@
 package se.fortnox.reactivewizard.validation;
 
 import com.google.inject.Injector;
+import jakarta.inject.Inject;
+import jakarta.validation.constraints.Min;
 import org.junit.Test;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -8,8 +10,6 @@ import reactor.test.StepVerifier;
 import se.fortnox.reactivewizard.config.TestInjector;
 import se.fortnox.reactivewizard.server.ServerConfig;
 
-import javax.inject.Inject;
-import jakarta.validation.constraints.Min;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.QueryParam;

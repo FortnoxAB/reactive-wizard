@@ -1,9 +1,9 @@
 package se.fortnox.reactivewizard.validation;
 
-import se.fortnox.reactivewizard.jaxrs.FieldError;
-
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Path.Node;
+import se.fortnox.reactivewizard.jaxrs.FieldError;
+
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -32,7 +32,7 @@ class ValidationFieldError extends FieldError {
     private static String getErrorFromConstraintValidation(ConstraintViolation<Object> violation) {
         String error = violation.getMessageTemplate();
 
-        //Extract error code from message templates like "{javax.validation.constraints.Size.message}"
+        //Extract error code from message templates like "{jakarta.validation.constraints.Size.message}"
         error = error.replaceAll("\\{.*\\.constraints\\.(.*)\\.message\\}", "$1");
 
         return error;

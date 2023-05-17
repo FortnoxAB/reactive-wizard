@@ -6,8 +6,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.util.StdDateFormat;
+import jakarta.inject.Inject;
 
-import javax.inject.Inject;
 import java.lang.reflect.Type;
 import java.util.function.Function;
 

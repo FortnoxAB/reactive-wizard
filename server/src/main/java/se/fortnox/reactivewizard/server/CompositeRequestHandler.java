@@ -1,6 +1,7 @@
 package se.fortnox.reactivewizard.server;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
+import jakarta.inject.Inject;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,7 +13,6 @@ import se.fortnox.reactivewizard.RequestHandler;
 import se.fortnox.reactivewizard.jaxrs.RequestLogger;
 import se.fortnox.reactivewizard.jaxrs.WebException;
 
-import javax.inject.Inject;
 import java.util.Set;
 
 /**

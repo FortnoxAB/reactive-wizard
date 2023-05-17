@@ -1,9 +1,8 @@
 package se.fortnox.reactivewizard.server;
 
+import jakarta.inject.Singleton;
 import se.fortnox.reactivewizard.binding.scanners.AbstractClassScanner;
 import se.fortnox.reactivewizard.binding.scanners.ClassScanner;
-
-import javax.inject.Singleton;
 
 /**
  * Finds all classes with @Inject annotated constructors.

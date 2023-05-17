@@ -1,9 +1,9 @@
 package se.fortnox.reactivewizard.jaxrs.params;
 
+import jakarta.inject.Inject;
 import se.fortnox.reactivewizard.jaxrs.JaxRsRequest;
 import se.fortnox.reactivewizard.util.ReflectionUtil;
 
-import javax.inject.Inject;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.ParameterizedType;

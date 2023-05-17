@@ -1,8 +1,8 @@
 package se.fortnox.reactivewizard.server;
 
+import jakarta.inject.Provider;
 import se.fortnox.reactivewizard.jaxrs.JaxRsResourcesProvider;
 
-import javax.inject.Provider;
 import java.util.LinkedList;
 import java.util.List;
 

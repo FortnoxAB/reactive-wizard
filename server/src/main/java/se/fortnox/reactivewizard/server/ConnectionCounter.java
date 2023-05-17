@@ -1,6 +1,7 @@
 package se.fortnox.reactivewizard.server;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
+
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;

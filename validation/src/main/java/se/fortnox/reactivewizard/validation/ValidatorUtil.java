@@ -1,11 +1,11 @@
 package se.fortnox.reactivewizard.validation;
 
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.lang.reflect.Method;
 import java.util.Set;
 

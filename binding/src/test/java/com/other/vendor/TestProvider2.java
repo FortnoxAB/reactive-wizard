@@ -1,8 +1,7 @@
 package com.other.vendor;
 
 import com.google.inject.Provider;
-
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 public class TestProvider2 implements Provider<TestInterface> {
     @Inject

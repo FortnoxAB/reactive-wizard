@@ -4,15 +4,15 @@ import com.google.inject.Binder;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.TypeLiteral;
+import jakarta.inject.Singleton;
 import se.fortnox.reactivewizard.binding.scanners.InjectAnnotatedScanner;
 
-import javax.inject.Singleton;
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Binds all @{@link javax.inject.Inject} annotated classes to it's defined interfaces.
+ * Binds all @{@link jakarta.inject.Inject} annotated classes to it's defined interfaces.
  */
 @Singleton
 public class BindInjectAnnotatedImplementations implements AutoBindModule {
@@ -35,7 +35,7 @@ public class BindInjectAnnotatedImplementations implements AutoBindModule {
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     private void bindClassToInterface(Binder binder, Class<?> cls, Type iface, Map<Type, Class<?>> configuredInterfaces) {
-        if (Provider.class.isAssignableFrom(cls) || javax.inject.Provider.class.isAssignableFrom(cls)) {
+        if (Provider.class.isAssignableFrom(cls) || jakarta.inject.Provider.class.isAssignableFrom(cls)) {
             return;
         }
 

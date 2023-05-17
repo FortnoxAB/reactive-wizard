@@ -4,6 +4,8 @@ import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpUtil;
 import io.netty.util.concurrent.DefaultEventExecutor;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.netty.DisposableServer;
@@ -14,8 +16,6 @@ import se.fortnox.reactivewizard.RequestHandler;
 import se.fortnox.reactivewizard.server.modifiers.NoContentFixConfigurer;
 import se.fortnox.reactivewizard.server.modifiers.RequestSizesConfigurer;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashSet;

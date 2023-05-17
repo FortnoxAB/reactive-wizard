@@ -1,6 +1,7 @@
 package se.fortnox.reactivewizard.jaxrs.params.deserializing;
 
-import javax.inject.Provider;
+import jakarta.inject.Provider;
+
 import java.text.DateFormat;
 import java.util.Date;
 

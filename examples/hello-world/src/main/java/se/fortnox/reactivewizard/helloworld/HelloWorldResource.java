@@ -1,8 +1,8 @@
 package se.fortnox.reactivewizard.helloworld;
 
+import jakarta.inject.Inject;
 import reactor.core.publisher.Mono;
 
-import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 

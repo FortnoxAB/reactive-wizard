@@ -1,11 +1,10 @@
 package se.fortnox.reactivewizard.config;
 
 import com.google.inject.Binder;
+import jakarta.inject.Inject;
+import jakarta.inject.Provider;
 import se.fortnox.reactivewizard.binding.AutoBindModule;
 import se.fortnox.reactivewizard.binding.scanners.ConfigClassScanner;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
 
 /**
  * Binds all classes annotated with @{@link Config} to an instance bound to the data read from the config file.

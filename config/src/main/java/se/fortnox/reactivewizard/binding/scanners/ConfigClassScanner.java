@@ -1,8 +1,7 @@
 package se.fortnox.reactivewizard.binding.scanners;
 
+import jakarta.inject.Singleton;
 import se.fortnox.reactivewizard.config.Config;
-
-import javax.inject.Singleton;
 
 /**
  * Finds all classes annotated with @{@link Config}.

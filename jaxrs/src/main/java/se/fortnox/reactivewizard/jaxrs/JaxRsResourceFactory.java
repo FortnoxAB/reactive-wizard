@@ -1,10 +1,10 @@
 package se.fortnox.reactivewizard.jaxrs;
 
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import se.fortnox.reactivewizard.jaxrs.params.ParamResolverFactories;
 import se.fortnox.reactivewizard.jaxrs.response.JaxRsResultFactoryFactory;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import javax.ws.rs.Path;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
