@@ -1,6 +1,6 @@
 package se.fortnox.reactivewizard.metrics;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -10,10 +10,10 @@ import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class MetricsTest {
+class MetricsTest {
 
     @Test
-    public void shouldMeasureFlux() {
+    void shouldMeasureFlux() {
         String metricName = "test1_flux";
         Flux<Integer> measuredFlux = Metrics.get(metricName)
             .measure(Flux.just(1));
@@ -24,7 +24,7 @@ public class MetricsTest {
     }
 
     @Test
-    public void shouldMeasureMono() {
+    void shouldMeasureMono() {
         String metricName = "test1_mono";
         Mono<Integer> measuredMono = Metrics.get(metricName)
             .measure(Mono.just(1));
@@ -35,7 +35,7 @@ public class MetricsTest {
     }
 
     @Test
-    public void shouldStopMeasuringOnErrorMono() {
+    void shouldStopMeasuringOnErrorMono() {
         String metricName = "test2_mono";
         Mono<Integer> measuredMono = Metrics.get(metricName)
             .measure(Mono.error(new Exception()));
@@ -46,7 +46,7 @@ public class MetricsTest {
     }
 
     @Test
-    public void shouldStopMeasuringOnError() {
+    void shouldStopMeasuringOnError() {
         String metricName = "test2_flux";
         Flux<Integer> measuredFlux = Metrics.get(metricName)
             .measure(Flux.error(new Exception()));
@@ -57,7 +57,7 @@ public class MetricsTest {
     }
 
     @Test
-    public void shouldHandleNullFluxes() {
+    void shouldHandleNullFluxes() {
         String metricName = "test3_flux";
         Flux<Integer> measuredFlux = Metrics.get(metricName)
             .measure((Flux<Integer>)null);
@@ -66,7 +66,7 @@ public class MetricsTest {
     }
 
     @Test
-    public void shouldHandleNullMonos() {
+    void shouldHandleNullMonos() {
         String metricName = "test3_mono";
         Mono<Integer> measuredMono = Metrics.get(metricName)
             .measure((Mono<Integer>)null);
@@ -75,7 +75,7 @@ public class MetricsTest {
     }
 
     @Test
-    public void shouldHandleMultipleCallsToMeasureFlux() {
+    void shouldHandleMultipleCallsToMeasureFlux() {
         String              metricName          = "test4_flux";
         Metrics             metrics             = Metrics.get(metricName);
         Flux<Integer> measuredFlux1 = metrics.measure(Flux.just(1));
@@ -91,7 +91,7 @@ public class MetricsTest {
     }
 
     @Test
-    public void shouldHandleMultipleCallsToMeasureMono() {
+    void shouldHandleMultipleCallsToMeasureMono() {
         String              metricName          = "test4_mono";
         Metrics             metrics             = Metrics.get(metricName);
         Mono<Integer> measuredMono1 = metrics.measure(Mono.just(1));
@@ -107,7 +107,7 @@ public class MetricsTest {
     }
 
     @Test
-    public void shouldMeasurePublisher() {
+    void shouldMeasurePublisher() {
         String metricName = "test5_publisher";
         Publisher<Integer> publisher = s -> {
             s.onNext(1);
@@ -121,7 +121,7 @@ public class MetricsTest {
     }
 
     @Test
-    public void shouldReturnNullWhenPublisherIsNull() {
+    void shouldReturnNullWhenPublisherIsNull() {
         String metricName = "test5_publisher";
         Publisher<Integer> measuredPublisher = Metrics.get(metricName).measure((Publisher<Integer>) null);
         assertThat(measuredPublisher).isNull();

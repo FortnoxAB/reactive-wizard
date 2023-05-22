@@ -3,16 +3,16 @@ package se.fortnox.reactivewizard.config;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.name.Names;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mockingDetails;
 
-public class TestTestInjector {
+class TestTestInjector {
 
 
     @Test
-    public void testCreateWithOutConfigFile() {
+    void testCreateWithOutConfigFile() {
         Injector injector = TestInjector.create();
         assertThat(mockingDetails(injector.getInstance(ConfigFactory.class)).isMock())
             .isTrue();
@@ -22,7 +22,7 @@ public class TestTestInjector {
     }
 
     @Test
-    public void testCreateWithConfigFile() {
+    void testCreateWithConfigFile() {
         Injector injector = TestInjector.create("src/test/resources/testconfig.yml");
         assertThat(injector.getInstance(ConfigAutoBindModule.class).getClass().getName()).isEqualToIgnoringCase(ConfigAutoBindModule.class.getName());
         assertThat(mockingDetails(injector.getInstance(ConfigFactory.class)).isMock())

@@ -1,14 +1,14 @@
 package se.fortnox.reactivewizard.util;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class FieldSetterTest extends AccessorTest {
+class FieldSetterTest extends AccessorTest {
     private Setter value;
     private Setter longObservable;
     private Setter genericSuperKey;
@@ -16,7 +16,7 @@ public class FieldSetterTest extends AccessorTest {
     private Setter superKey;
     private Setter superValue;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         value = ReflectionUtil.getSetter(GenericFieldSubclass.class, "value");
         longObservable = ReflectionUtil.getSetter(GenericFieldSubclass.class, "longObservable");
@@ -27,12 +27,12 @@ public class FieldSetterTest extends AccessorTest {
     }
 
     @Test
-    public void shouldCreateFieldSetters() {
+    void shouldCreateFieldSetters() {
         assertThat(Stream.of(value, longObservable, genericSuperKey, genericSuperValue, superKey, superValue).allMatch(FieldSetter.class::isInstance)).isTrue();
     }
 
     @Test
-    public void shouldSetFinalField() throws Exception {
+    void shouldSetFinalField() throws Exception {
         GenericFieldSubclass foo = new GenericFieldSubclass(1);
         value.invoke(foo, 9);
         assertThat(foo.value).isEqualTo(9);
@@ -52,7 +52,7 @@ public class FieldSetterTest extends AccessorTest {
     }
 
     @Test
-    public void shouldSupportSetterLambda() {
+    void shouldSupportSetterLambda() {
         GenericFieldSubclass foo = new GenericFieldSubclass(1);
         BiConsumer<GenericFieldSubclass, Integer> setter = value.setterFunction();
         setter.accept(foo, 9);
@@ -60,7 +60,7 @@ public class FieldSetterTest extends AccessorTest {
     }
 
     @Test
-    public void shouldGetParameterType() {
+    void shouldGetParameterType() {
         assertThat(value.getParameterType()).isEqualTo(Integer.class);
         assertThat(genericSuperKey.getParameterType()).isEqualTo(String.class);
         assertThat(genericSuperValue.getParameterType()).isEqualTo(Integer.class);
@@ -69,7 +69,7 @@ public class FieldSetterTest extends AccessorTest {
     }
 
     @Test
-    public void shouldGetGenericParameterType() {
+    void shouldGetGenericParameterType() {
         assertThat(longObservable.getGenericParameterType().toString()).isEqualTo("rx.Observable<java.lang.Long>");
         assertThat(genericSuperKey.getGenericParameterType().toString()).isEqualTo("class java.lang.String");
         assertThat(genericSuperValue.getGenericParameterType().toString()).isEqualTo("class java.lang.Integer");

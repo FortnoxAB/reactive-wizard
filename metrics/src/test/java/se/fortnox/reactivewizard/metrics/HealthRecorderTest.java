@@ -1,26 +1,26 @@
 package se.fortnox.reactivewizard.metrics;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class HealthRecorderTest {
+class HealthRecorderTest {
 
     @Test
-    public void shouldReturnHealthyWhenStatusIsGood() {
+    void shouldReturnHealthyWhenStatusIsGood() {
         HealthRecorder healthRecorder = new HealthRecorder();
         healthRecorder.logStatus("ok", true);
         assertThat(healthRecorder.isHealthy()).isTrue();
     }
 
     @Test
-    public void shouldReturnHealthyWhenNoStatusIsRecorded() {
+    void shouldReturnHealthyWhenNoStatusIsRecorded() {
         HealthRecorder healthRecorder = new HealthRecorder();
         assertThat(healthRecorder.isHealthy()).isTrue();
     }
 
     @Test
-    public void shouldReturnUnhealthyWhenStatusIsBad() {
+    void shouldReturnUnhealthyWhenStatusIsBad() {
         HealthRecorder healthRecorder = new HealthRecorder();
         healthRecorder.logStatus("ok", false);
         assertThat(healthRecorder.isHealthy()).isFalse();
@@ -28,7 +28,7 @@ public class HealthRecorderTest {
 
 
     @Test
-    public void shouldRecalculateWhenStatusChanges() {
+    void shouldRecalculateWhenStatusChanges() {
         HealthRecorder healthRecorder = new HealthRecorder();
 
         healthRecorder.logStatus("ok", false);

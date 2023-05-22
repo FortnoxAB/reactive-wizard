@@ -1,29 +1,29 @@
 package se.fortnox.reactivewizard.jaxrs.params.deserializing;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.time.LocalTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
-public class LocalTimeDeserializerTest {
+class LocalTimeDeserializerTest {
     private final static Deserializer<LocalTime> DESERIALIZER = new LocalTimeDeserializer();
 
     @Test
-    public void shouldDeserialize() throws DeserializerException {
+    void shouldDeserialize() throws DeserializerException {
         LocalTime deserialized = DESERIALIZER.deserialize("14:10:15");
         assertThat(deserialized.toString()).isEqualTo("14:10:15");
     }
 
     @Test
-    public void shouldDeserializeNull() throws DeserializerException {
+    void shouldDeserializeNull() throws DeserializerException {
         LocalTime deserialized = DESERIALIZER.deserialize(null);
         assertThat(deserialized).isNull();
     }
 
     @Test
-    public void shouldThrowDeserializerExceptionForBadDates() {
+    void shouldThrowDeserializerExceptionForBadDates() {
         try {
             DESERIALIZER.deserialize("not a date");
             fail("Expected exception, but none was thrown");

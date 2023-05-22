@@ -1,6 +1,6 @@
 package se.fortnox.reactivewizard.jaxrs;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -8,31 +8,31 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
-public class FieldErrorTest {
+class FieldErrorTest {
 
     @Test
-    public void shouldPrefixErrorWithValidationWhenMissing() {
+    void shouldPrefixErrorWithValidationWhenMissing() {
         FieldError fieldError = new FieldError("username", "too.short");
         assertThat(fieldError.getError()).isEqualTo("validation.too.short");
         assertThat(fieldError.getField()).isEqualTo("username");
     }
 
     @Test
-    public void shouldNotPrefixErrorWithValidationWhenAlreadyPresent() {
+    void shouldNotPrefixErrorWithValidationWhenAlreadyPresent() {
         FieldError fieldError = new FieldError("username", "validation.too.short");
         assertThat(fieldError.getError()).isEqualTo("validation.too.short");
         assertThat(fieldError.getField()).isEqualTo("username");
     }
 
     @Test
-    public void shouldInitializeNotNullError() {
+    void shouldInitializeNotNullError() {
         FieldError fieldError = FieldError.notNull("username");
         assertThat(fieldError.getError()).isEqualTo("validation.notnull");
         assertThat(fieldError.getField()).isEqualTo("username");
     }
 
     @Test
-    public void shouldIncludeErrorParams() {
+    void shouldIncludeErrorParams() {
         Map<String, Object> errorParams = new HashMap<>();
         errorParams.put("name", "a");
 
@@ -43,7 +43,7 @@ public class FieldErrorTest {
     }
 
     @Test
-    public void shouldNotInitializeValues() {
+    void shouldNotInitializeValues() {
         FieldError fieldError = new FieldError();
         assertThat(fieldError.getError()).isNull();
         assertThat(fieldError.getField()).isNull();

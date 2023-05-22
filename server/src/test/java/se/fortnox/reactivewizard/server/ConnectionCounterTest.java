@@ -1,6 +1,6 @@
 package se.fortnox.reactivewizard.server;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
@@ -8,31 +8,31 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class ConnectionCounterTest {
+class ConnectionCounterTest {
 
     private ConnectionCounter connectionCounter = new ConnectionCounter();
 
     @Test
-    public void testZeroConnections() {
+    void testZeroConnections() {
         assertTrue(connectionCounter.awaitZero(0, TimeUnit.SECONDS));
     }
 
     @Test
-    public void testOneConnection() {
+    void testOneConnection() {
         connectionCounter.increase();
         connectionCounter.decrease();
         assertTrue(connectionCounter.awaitZero(0, TimeUnit.SECONDS));
     }
 
     @Test
-    public void testTwoConnections() {
+    void testTwoConnections() {
         connectionCounter.increase();
         connectionCounter.increase();
         connectionCounter.decrease();
@@ -41,13 +41,13 @@ public class ConnectionCounterTest {
     }
 
     @Test
-    public void testOneNeverEndingConnection() {
+    void testOneNeverEndingConnection() {
         connectionCounter.increase();
         assertFalse(connectionCounter.awaitZero(0, TimeUnit.SECONDS));
     }
 
     @Test
-    public void testOneDelayedConnection() {
+    void testOneDelayedConnection() {
         connectionCounter.increase();
         delayed(() -> connectionCounter.decrease());
         assertFalse(connectionCounter.awaitZero(0, TimeUnit.SECONDS));
@@ -55,7 +55,7 @@ public class ConnectionCounterTest {
     }
 
     @Test
-    public void shouldReturnFalseWhenExceptionOccuresDuringAwaitZero() throws InterruptedException {
+    void shouldReturnFalseWhenExceptionOccuresDuringAwaitZero() throws InterruptedException {
         Semaphore connectionsZero = mock(Semaphore.class);
         when(connectionsZero.tryAcquire(anyLong(), any(TimeUnit.class))).thenThrow(new InterruptedException());
 

@@ -3,7 +3,7 @@ package se.fortnox.reactivewizard.config;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.name.Names;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.yaml.snakeyaml.error.MarkedYAMLException;
 import se.fortnox.reactivewizard.binding.AutoBindModules;
 
@@ -15,7 +15,7 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
-public class ConfigReaderTest {
+class ConfigReaderTest {
     /**
      *
      */
@@ -56,7 +56,7 @@ public class ConfigReaderTest {
     }
 
     @Test
-    public void shouldReadConfigFromFile() {
+    void shouldReadConfigFromFile() {
         TestConfig testConfig = ConfigReader.fromFile("src/test/resources/testconfig.yml", TestConfig.class);
         assertThat(testConfig.getMyKey()).isEqualTo("myValue");
 
@@ -65,7 +65,7 @@ public class ConfigReaderTest {
     }
 
     @Test
-    public void shouldReadConfigRecordFromFile() {
+    void shouldReadConfigRecordFromFile() {
         TestConfigRecord testConfig = ConfigReader.fromFile("src/test/resources/testconfig.yml", TestConfigRecord.class);
         assertThat(testConfig.myKey()).isEqualTo("myValue");
 
@@ -74,7 +74,7 @@ public class ConfigReaderTest {
     }
 
     @Test
-    public void shouldReplaceEnvPlaceholderWithValue() {
+    void shouldReplaceEnvPlaceholderWithValue() {
         Map<String, String> env = new HashMap<>(System.getenv());
         env.put("CUSTOM_ENV_VAR", "hello");
         env.put("CUSTOM_ENV_VAR2", "hello again");
@@ -92,7 +92,7 @@ public class ConfigReaderTest {
     }
 
     @Test
-    public void shouldQuoteReplacementString() {
+    void shouldQuoteReplacementString() {
         Map<String, String> env = new HashMap<>(System.getenv());
         env.put("CUSTOM_ENV_VAR", "^THIS.IS.A.\\d{6}T\\d{7}.REGEX1$");
         setEnv(env);
@@ -103,7 +103,7 @@ public class ConfigReaderTest {
     }
 
     @Test
-    public void shouldReplaceEnvPlaceholderWithEmptyStringIfEnvNotSet() {
+    void shouldReplaceEnvPlaceholderWithEmptyStringIfEnvNotSet() {
         TestConfig testConfig = ConfigReader.fromFile("src/test/resources/testconfig-missing-value.yml", TestConfig.class);
         assertThat(testConfig.getConfigWithEnvPlaceholder()).isNull();
         assertThat(testConfig.getConfigWithEnvPlaceholderInMiddle()).isEqualTo("beforeafter");
@@ -114,7 +114,7 @@ public class ConfigReaderTest {
     }
 
     @Test
-    public void shouldReplaceEnvPlaceholderWithEmptyStringIfEnvNotSetForRecord() {
+    void shouldReplaceEnvPlaceholderWithEmptyStringIfEnvNotSetForRecord() {
         TestConfigRecord testConfig = ConfigReader.fromFile("src/test/resources/testconfig-missing-value.yml", TestConfigRecord.class);
         assertThat(testConfig.configWithEnvPlaceholder()).isNull();
         assertThat(testConfig.configWithEnvPlaceholderInMiddle()).isEqualTo("beforeafter");
@@ -125,7 +125,7 @@ public class ConfigReaderTest {
     }
 
     @Test
-    public void shouldReplaceMultipleEnvPlaceholders() {
+    void shouldReplaceMultipleEnvPlaceholders() {
         Map<String, String> env = new HashMap<>(System.getenv());
         env.put("HOST", "localhost");
         env.put("PORT", "8080");
@@ -138,7 +138,7 @@ public class ConfigReaderTest {
     }
 
     @Test
-    public void shouldBindConfigAutomatically() {
+    void shouldBindConfigAutomatically() {
         Injector injector = Guice.createInjector(new AutoBindModules(binder->{
             binder.bind(String[].class)
                     .annotatedWith(Names.named("args"))
@@ -149,19 +149,19 @@ public class ConfigReaderTest {
     }
 
     @Test
-    public void shouldSupportEmptyConfig() {
+    void shouldSupportEmptyConfig() {
         EmptyConfig testConfig = ConfigReader.fromFile("src/test/resources/testconfig.yml", EmptyConfig.class);
         assertThat(testConfig).isNotNull();
     }
 
     @Test
-    public void shouldSupportEmptyConfigRecord() {
+    void shouldSupportEmptyConfigRecord() {
         EmptyConfigRecord testConfig = ConfigReader.fromFile("src/test/resources/testconfig.yml", EmptyConfigRecord.class);
         assertThat(testConfig).isNotNull();
     }
 
     @Test
-    public void shouldSupportConfigWithAllMissingValues() {
+    void shouldSupportConfigWithAllMissingValues() {
         TestConfig testConfig = ConfigReader.fromFile("src/test/resources/testconfig-empty.yml", TestConfig.class);
         assertThat(testConfig.getMyKey()).isNull();
         assertThat(testConfig.getConfigWithEnvPlaceholder()).isNull();
@@ -171,7 +171,7 @@ public class ConfigReaderTest {
     }
 
     @Test
-    public void shouldSupportConfigRecordWithAllMissingValues() {
+    void shouldSupportConfigRecordWithAllMissingValues() {
         TestConfigRecord testConfig = ConfigReader.fromFile("src/test/resources/testconfig-empty.yml", TestConfigRecord.class);
         assertThat(testConfig.myKey()).isNull();
         assertThat(testConfig.configWithEnvPlaceholder()).isNull();
@@ -181,7 +181,7 @@ public class ConfigReaderTest {
     }
 
     @Test
-    public void shouldThrowExceptionForInvalidYaml() {
+    void shouldThrowExceptionForInvalidYaml() {
         try {
             ConfigReader.fromFile("src/test/resources/testconfig-invalid.yml", EmptyConfig.class);
             fail("Expected exception, but none was thrown");
@@ -191,7 +191,7 @@ public class ConfigReaderTest {
     }
 
     @Test
-    public void shouldReplaceEscapedNewLines() {
+    void shouldReplaceEscapedNewLines() {
         Map<String, String> env = new HashMap<>(System.getenv());
         env.put("CLIENTS", "" +
             "clients:\\n" +

@@ -1,15 +1,15 @@
 package se.fortnox.reactivewizard.util;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.function.Function;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
-public class PropertyResolverTest {
+class PropertyResolverTest {
     @Test
-    public void shouldGetAndSetPropertiesMutable() throws Exception {
+    void shouldGetAndSetPropertiesMutable() throws Exception {
         PropertyResolver propertyResolver = PropertyResolver.from(Mutable.class, new String[]{"anInt"}).orElse(null);
         assertThat(propertyResolver).isNotNull();
 
@@ -21,7 +21,7 @@ public class PropertyResolverTest {
     }
 
     @Test
-    public void shouldGetAndSetPropertiesImmutable() throws Exception {
+    void shouldGetAndSetPropertiesImmutable() throws Exception {
         PropertyResolver propertyResolver = PropertyResolver.from(Immutable.class, new String[]{"anInt"}).orElse(null);
         assertThat(propertyResolver).isNotNull();
 
@@ -32,7 +32,7 @@ public class PropertyResolverTest {
     }
 
     @Test
-    public void emptyPropertyResolver() {
+    void emptyPropertyResolver() {
         try {
             PropertyResolver.from(Mutable.class, new String[0]).get().setter();
             fail("expected exception");
@@ -44,7 +44,7 @@ public class PropertyResolverTest {
     }
 
     @Test
-    public void missingProperty() {
+    void missingProperty() {
         assertThat(PropertyResolver.from(Mutable.class, new String[]{"nonexisting"}).isPresent()).isFalse();
 
         PropertyResolver propertyResolver = PropertyResolver.from(Mutable.class, new String[0]).get();
@@ -52,7 +52,7 @@ public class PropertyResolverTest {
     }
 
     @Test
-    public void testToString() {
+    void testToString() {
         PropertyResolver.from(Mutable.class, new String[]{"anInt"}).get().toString();
     }
 

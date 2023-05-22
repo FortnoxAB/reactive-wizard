@@ -1,7 +1,7 @@
 package se.fortnox.reactivewizard.db;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import reactor.test.StepVerifier;
 import se.fortnox.reactivewizard.db.config.DatabaseConfig;
 
@@ -11,21 +11,21 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-public class DaoTest {
+class DaoTest {
     private MockDb                      db;
     private DaoTransactionsTest.TestDao dao;
 
     /**
      * Resets the test state
      */
-    @Before
+    @BeforeEach
     public void reset() {
         db  = new MockDb();
         dao = new DbProxy(new DatabaseConfig(), db.getConnectionProvider()).create(DaoTransactionsTest.TestDao.class);
     }
 
     @Test
-    public void shouldUseNewConnectionOnMultipleDaoCalls() {
+    void shouldUseNewConnectionOnMultipleDaoCalls() {
         StepVerifier.create(dao.find()).verifyComplete();
         db.verifyConnectionsUsed(1);
         StepVerifier.create(dao.updateFail()).verifyError();
@@ -33,7 +33,7 @@ public class DaoTest {
     }
 
     @Test
-    public void shouldCompleteOnQueryAndUpdate() throws SQLException {
+    void shouldCompleteOnQueryAndUpdate() throws SQLException {
         StepVerifier.create(dao.find()).verifyComplete();
         StepVerifier.create(dao.updateFail()).verifyError();
 

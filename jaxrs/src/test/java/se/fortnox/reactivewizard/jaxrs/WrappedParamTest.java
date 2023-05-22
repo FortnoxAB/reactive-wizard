@@ -1,7 +1,7 @@
 package se.fortnox.reactivewizard.jaxrs;
 
 import io.netty.handler.codec.http.HttpMethod;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.netty.http.server.HttpServerRequest;
@@ -15,10 +15,10 @@ import javax.ws.rs.Path;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
-public class WrappedParamTest {
+class WrappedParamTest {
 
     @Test
-    public void shouldUseSubclassOfParamIfWrapAnnotationUsed() {
+    void shouldUseSubclassOfParamIfWrapAnnotationUsed() {
         JaxRsRequestHandler handler = createHandler(new TestApi() {
 
             @Override
@@ -32,7 +32,7 @@ public class WrappedParamTest {
     }
 
     @Test
-    public void shouldReturnErrorWhenWrapIsNotSubclassOfApiParam() {
+    void shouldReturnErrorWhenWrapIsNotSubclassOfApiParam() {
         try {
             createHandler(new TestApi() {
                 @Override

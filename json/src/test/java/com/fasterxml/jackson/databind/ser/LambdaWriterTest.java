@@ -1,16 +1,16 @@
 package com.fasterxml.jackson.databind.ser;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import se.fortnox.reactivewizard.json.JsonSerializerFactory;
 
 import java.util.function.Function;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class LambdaWriterTest {
-	@Test
-	public void testSerializeAsArray() {
+class LambdaWriterTest {
+    @Test
+    void testSerializeAsArray() {
 		JsonSerializerFactory jsonSerializerFactory = new JsonSerializerFactory();
 		Function<TestEntity, String> stringSerializer = jsonSerializerFactory.createStringSerializer(TestEntity.class);
 

@@ -1,13 +1,13 @@
 package se.fortnox.reactivewizard.util;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class CamelSnakeConverterTest {
+class CamelSnakeConverterTest {
 
     @Test
-    public void shouldConvertToCamelCase() {
+    void shouldConvertToCamelCase() {
         assertThat(CamelSnakeConverter.snakeToCamel("AAA")).isEqualTo("aaa");
         assertThat(CamelSnakeConverter.snakeToCamel("AAA_AAA_AAA")).isEqualTo("aaaAaaAaa");
         assertThat(CamelSnakeConverter.snakeToCamel("a_a")).isEqualTo("aA");
@@ -19,7 +19,7 @@ public class CamelSnakeConverterTest {
     }
 
     @Test
-    public void shouldConvertToSnake() {
+    void shouldConvertToSnake() {
         assertThat(CamelSnakeConverter.camelToSnake("AAA")).isEqualTo("aaa");
         assertThat(CamelSnakeConverter.camelToSnake("aaaAaaAaa")).isEqualTo("aaa_aaa_aaa");
         assertThat(CamelSnakeConverter.camelToSnake("aA")).isEqualTo("a_a");

@@ -1,6 +1,6 @@
 package se.fortnox.reactivewizard.db;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
 import se.fortnox.reactivewizard.db.config.DatabaseConfig;
 
@@ -8,10 +8,10 @@ import java.sql.SQLException;
 
 import static org.mockito.Mockito.verify;
 
-public class DbConnectionTest {
+class DbConnectionTest {
 
     @Test
-    public void shouldOnlyRequireOneConnection() throws SQLException {
+    void shouldOnlyRequireOneConnection() throws SQLException {
         MockDb mockDb = new MockDb();
         mockDb.addRowColumn(1, 1, "testdata", String.class, "value");
 

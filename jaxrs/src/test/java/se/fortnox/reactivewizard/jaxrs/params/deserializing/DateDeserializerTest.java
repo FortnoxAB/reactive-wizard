@@ -1,9 +1,9 @@
 package se.fortnox.reactivewizard.jaxrs.params.deserializing;
 
 import com.fasterxml.jackson.databind.util.StdDateFormat;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Date;
 import java.util.TimeZone;
@@ -11,41 +11,41 @@ import java.util.TimeZone;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
-public class DateDeserializerTest {
+class DateDeserializerTest {
     private final static Deserializer<Date> DESERIALIZER = new DateDeserializer(StdDateFormat::new);
     private TimeZone previousTimeZone;
 
-    @Before
+    @BeforeEach
     public void setup() {
         previousTimeZone = TimeZone.getDefault();
         TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
     }
 
-    @After
+    @AfterEach
     public void reset() {
         TimeZone.setDefault(previousTimeZone);
     }
 
     @Test
-    public void shouldDeserialize() throws DeserializerException {
+    void shouldDeserialize() throws DeserializerException {
         Date deserialized = DESERIALIZER.deserialize("2010-01-01");
         assertThat(deserialized.toString()).isEqualTo("Fri Jan 01 00:00:00 UTC 2010");
     }
 
     @Test
-    public void shouldDeserializeTimestampsInMilliseconds() throws DeserializerException {
+    void shouldDeserializeTimestampsInMilliseconds() throws DeserializerException {
         Date deserialized = DESERIALIZER.deserialize("1262304000000");
         assertThat(deserialized.toString()).isEqualTo("Fri Jan 01 00:00:00 UTC 2010");
     }
 
     @Test
-    public void shouldDeserializeNull() throws DeserializerException {
+    void shouldDeserializeNull() throws DeserializerException {
         Date deserialized = DESERIALIZER.deserialize(null);
         assertThat(deserialized).isNull();
     }
 
     @Test
-    public void shouldThrowDeserializerExceptionForBadDates()  {
+    void shouldThrowDeserializerExceptionForBadDates() {
         try {
             DESERIALIZER.deserialize("not a date");
             fail("Expected exception, but none was thrown");

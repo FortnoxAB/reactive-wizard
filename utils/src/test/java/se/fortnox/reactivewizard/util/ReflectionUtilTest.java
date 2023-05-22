@@ -6,9 +6,8 @@ import com.google.inject.Injector;
 import com.google.inject.matcher.Matchers;
 import jakarta.inject.Provider;
 import org.aopalliance.intercept.Joinpoint;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import rx.Observable;
@@ -31,20 +30,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 
-@RunWith(Parameterized.class)
-public class ReflectionUtilTest {
+class ReflectionUtilTest {
 
-    public ReflectionUtilTest(boolean useLambdas) {
+    public void initReflectionUtilTest(boolean useLambdas) {
         LambdaCompiler.useLambdas = useLambdas;
     }
 
-    @Parameterized.Parameters
     public static Collection useLambdasParameters() {
         return List.of(new Object[][] {{ true }, { false }});
     }
 
-    @Test
-    public void shouldFindDeclaredMethods() {
+    @MethodSource("useLambdasParameters")
+    @ParameterizedTest
+    void shouldFindDeclaredMethods(boolean useLambdas) {
+        initReflectionUtilTest(useLambdas);
         Getter getter = ReflectionUtil.getGetter(Child.class, "j");
         assertThat(getter).isNotNull();
 
@@ -58,8 +57,10 @@ public class ReflectionUtilTest {
         assertThat(setter).isNotNull();
     }
 
-    @Test
-    public void shouldFindSuperclassMethods() {
+    @MethodSource("useLambdasParameters")
+    @ParameterizedTest
+    void shouldFindSuperclassMethods(boolean useLambdas) {
+        initReflectionUtilTest(useLambdas);
         Getter getter = ReflectionUtil.getGetter(Child.class, "i");
         assertThat(getter).isNotNull();
         assertThat(getter).isInstanceOf(MethodGetter.class);
@@ -73,8 +74,10 @@ public class ReflectionUtilTest {
         assertThat(setter).isInstanceOf(MethodSetter.class);
     }
 
-    @Test
-    public void shouldFindSuperclassFields() {
+    @MethodSource("useLambdasParameters")
+    @ParameterizedTest
+    void shouldFindSuperclassFields(boolean useLambdas) {
+        initReflectionUtilTest(useLambdas);
         Getter getter = ReflectionUtil.getGetter(Child.class, "l");
         assertThat(getter).isNotNull();
         assertThat(getter).isInstanceOf(FieldGetter.class);
@@ -84,26 +87,34 @@ public class ReflectionUtilTest {
         assertThat(setter).isInstanceOf(FieldSetter.class);
     }
 
-    @Test
-    public void shouldFindSizeMethod() {
+    @MethodSource("useLambdasParameters")
+    @ParameterizedTest
+    void shouldFindSizeMethod(boolean useLambdas) {
+        initReflectionUtilTest(useLambdas);
         Getter size = ReflectionUtil.getGetter(List.class, "size");
         assertThat(size).isNotNull();
     }
 
-    @Test
-    public void shouldInstantiate() {
+    @MethodSource("useLambdasParameters")
+    @ParameterizedTest
+    void shouldInstantiate(boolean useLambdas) {
+        initReflectionUtilTest(useLambdas);
         assertThat(ReflectionUtil.instantiator(Parent.class).get()).isNotNull();
         assertThat(ReflectionUtil.instantiator(Child.class).get()).isNotNull();
         assertThat(ReflectionUtil.instantiator(PrivateDefaultConstructor.class).get()).isNotNull();
     }
 
-    @Test
-    public void shouldCreateInstantiator() {
+    @MethodSource("useLambdasParameters")
+    @ParameterizedTest
+    void shouldCreateInstantiator(boolean useLambdas) {
+        initReflectionUtilTest(useLambdas);
         assertThat(ReflectionUtil.instantiator(Parent.class).get()).isInstanceOf(Parent.class);
     }
 
-    @Test
-    public void shouldCreateGetterLambda() {
+    @MethodSource("useLambdasParameters")
+    @ParameterizedTest
+    void shouldCreateGetterLambda(boolean useLambdas) {
+        initReflectionUtilTest(useLambdas);
         Parent parent = new Parent();
         parent.setI(3);
 
@@ -119,8 +130,10 @@ public class ReflectionUtilTest {
         assertThat(getFromInner.apply(parent)).isEqualTo(5);
     }
 
-    @Test
-    public void shouldCreateSetterLambda() {
+    @MethodSource("useLambdasParameters")
+    @ParameterizedTest
+    void shouldCreateSetterLambda(boolean useLambdas) {
+        initReflectionUtilTest(useLambdas);
         Parent parent = new Parent();
 
         BiConsumer<Parent, Integer> setOnParent = ReflectionUtil.<Parent,Integer>setter(Parent.class, "i").get();
@@ -136,8 +149,10 @@ public class ReflectionUtilTest {
         assertThat(parent.getInner().getI()).isEqualTo(4);
     }
 
-    @Test
-    public void shouldSupportNullsOnSetterPath() {
+    @MethodSource("useLambdasParameters")
+    @ParameterizedTest
+    void shouldSupportNullsOnSetterPath(boolean useLambdas) {
+        initReflectionUtilTest(useLambdas);
         Parent parent = new Parent();
         BiConsumer<Parent, Integer> setter = ReflectionUtil.<Parent,Integer>setter(Parent.class, "inner.i").get();
 
@@ -148,8 +163,10 @@ public class ReflectionUtilTest {
     }
 
 
-    @Test
-    public void shouldThrowHelpfulExceptionWhenNoZeroParametersConstructorExists()  {
+    @MethodSource("useLambdasParameters")
+    @ParameterizedTest
+    void shouldThrowHelpfulExceptionWhenNoZeroParametersConstructorExists(boolean useLambdas) {
+        initReflectionUtilTest(useLambdas);
         try {
             ReflectionUtil.instantiator(NoZeroParametersConstructorClass.class).get();
             fail("Expected RuntimeException, but none was thrown");
@@ -159,8 +176,10 @@ public class ReflectionUtilTest {
         }
     }
 
-    @Test
-    public void shouldFindFieldIfNoMethod() {
+    @MethodSource("useLambdasParameters")
+    @ParameterizedTest
+    void shouldFindFieldIfNoMethod(boolean useLambdas) {
+        initReflectionUtilTest(useLambdas);
         Getter getter = ReflectionUtil.getGetter(Child.class, "c");
         assertThat(getter).isNotNull();
 
@@ -168,8 +187,10 @@ public class ReflectionUtilTest {
         assertThat(setter).isNotNull();
     }
 
-    @Test
-    public void shouldFindParameterAnnotationsFromMethod() throws NoSuchMethodException {
+    @MethodSource("useLambdasParameters")
+    @ParameterizedTest
+    void shouldFindParameterAnnotationsFromMethod(boolean useLambdas) throws NoSuchMethodException {
+        initReflectionUtilTest(useLambdas);
         Method resourceGet = TestResource.class.getMethod("resourceGet", String.class, String.class);
         List<List<Annotation>> parameterAnnotations = ReflectionUtil.getParameterAnnotations(resourceGet);
         assertThat(parameterAnnotations).hasSize(2);
@@ -186,8 +207,10 @@ public class ReflectionUtilTest {
         assertThat(parameterAnnotations.get(1).get(0)).isInstanceOf(HeaderParam.class);
     }
 
-    @Test
-    public void shouldFindParameterAnnotationsFromParameter() throws NoSuchMethodException {
+    @MethodSource("useLambdasParameters")
+    @ParameterizedTest
+    void shouldFindParameterAnnotationsFromParameter(boolean useLambdas) throws NoSuchMethodException {
+        initReflectionUtilTest(useLambdas);
         Method resourceGet = TestResource.class.getMethod("resourceGet", String.class, String.class);
         List<Annotation> parameterAnnotations = ReflectionUtil.getParameterAnnotations(resourceGet.getParameters()[0]);
         assertThat(parameterAnnotations).hasSize(1);
@@ -199,8 +222,10 @@ public class ReflectionUtilTest {
         assertThat(parameterAnnotations.get(0)).isInstanceOf(QueryParam.class);
     }
 
-    @Test
-    public void shouldFindMethodAnnotations() throws NoSuchMethodException {
+    @MethodSource("useLambdasParameters")
+    @ParameterizedTest
+    void shouldFindMethodAnnotations(boolean useLambdas) throws NoSuchMethodException {
+        initReflectionUtilTest(useLambdas);
         Method resourceGet = TestResource.class.getMethod("resourceGet", String.class, String.class);
         List<Annotation> methodAnnotations = ReflectionUtil.getAnnotations(resourceGet);
         assertThat(methodAnnotations).hasSize(1);
@@ -212,8 +237,10 @@ public class ReflectionUtilTest {
         assertThat(methodAnnotations.get(0)).isInstanceOf(GET.class);
     }
 
-    @Test
-    public void shouldFindMethodAnnotation() throws NoSuchMethodException {
+    @MethodSource("useLambdasParameters")
+    @ParameterizedTest
+    void shouldFindMethodAnnotation(boolean useLambdas) throws NoSuchMethodException {
+        initReflectionUtilTest(useLambdas);
         Method resourceGet = TestResource.class.getMethod("resourceGet", String.class, String.class);
         assertThat(ReflectionUtil.getAnnotation(resourceGet, GET.class)).isNotNull().isInstanceOf(GET.class);
 
@@ -221,8 +248,10 @@ public class ReflectionUtilTest {
         assertThat(ReflectionUtil.getAnnotation(instanceMethod, GET.class)).isNotNull().isInstanceOf(GET.class);
     }
 
-    @Test
-    public void shouldFindObservableType() throws NoSuchMethodException {
+    @MethodSource("useLambdasParameters")
+    @ParameterizedTest
+    void shouldFindObservableType(boolean useLambdas) throws NoSuchMethodException {
+        initReflectionUtilTest(useLambdas);
         Method resourceGet = TestResource.class.getMethod("resourceGet", String.class, String.class);
         assertThat(ReflectionUtil.getTypeOfFluxOrMono(resourceGet)).isEqualTo(String.class);
 
@@ -230,8 +259,10 @@ public class ReflectionUtilTest {
         assertThat(ReflectionUtil.getTypeOfFluxOrMono(instanceMethod)).isEqualTo(String.class);
     }
 
-    @Test
-    public void shouldFindFluxType() throws NoSuchMethodException {
+    @MethodSource("useLambdasParameters")
+    @ParameterizedTest
+    void shouldFindFluxType(boolean useLambdas) throws NoSuchMethodException {
+        initReflectionUtilTest(useLambdas);
         Method resourceGet = TestResource.class.getMethod("fluxResourceGet", String.class, String.class);
         assertThat(ReflectionUtil.getTypeOfFluxOrMono(resourceGet)).isEqualTo(String.class);
 
@@ -239,8 +270,10 @@ public class ReflectionUtilTest {
         assertThat(ReflectionUtil.getTypeOfFluxOrMono(instanceMethod)).isEqualTo(String.class);
     }
 
-    @Test
-    public void shouldFindMonoType() throws NoSuchMethodException {
+    @MethodSource("useLambdasParameters")
+    @ParameterizedTest
+    void shouldFindMonoType(boolean useLambdas) throws NoSuchMethodException {
+        initReflectionUtilTest(useLambdas);
         Method resourceGet = TestResource.class.getMethod("monoResourceGet", String.class, String.class);
         assertThat(ReflectionUtil.getTypeOfFluxOrMono(resourceGet)).isEqualTo(String.class);
 
@@ -248,8 +281,10 @@ public class ReflectionUtilTest {
         assertThat(ReflectionUtil.getTypeOfFluxOrMono(instanceMethod)).isEqualTo(String.class);
     }
 
-    @Test
-    public void shouldFailFindingObservableType() throws NoSuchMethodException {
+    @MethodSource("useLambdasParameters")
+    @ParameterizedTest
+    void shouldFailFindingObservableType(boolean useLambdas) throws NoSuchMethodException {
+        initReflectionUtilTest(useLambdas);
         Method nonGenericReturnMethod = TestResource.class.getMethod("methodWithGenericParameter", List.class);
         try {
             ReflectionUtil.getTypeOfFluxOrMono(nonGenericReturnMethod);
@@ -267,14 +302,18 @@ public class ReflectionUtilTest {
         }
     }
 
-    @Test
-    public void shouldFindObservableFromMockedType() throws NoSuchMethodException {
+    @MethodSource("useLambdasParameters")
+    @ParameterizedTest
+    void shouldFindObservableFromMockedType(boolean useLambdas) throws NoSuchMethodException {
+        initReflectionUtilTest(useLambdas);
         Method instanceMethod = mock(TestResource.class).getClass().getMethod("resourceGet", String.class, String.class);
         assertThat(ReflectionUtil.getTypeOfFluxOrMono(instanceMethod)).isEqualTo(String.class);
     }
 
-    @Test
-    public void shouldFindInstanceMethodThroughInvocationHandler() throws NoSuchMethodException {
+    @MethodSource("useLambdasParameters")
+    @ParameterizedTest
+    void shouldFindInstanceMethodThroughInvocationHandler(boolean useLambdas) throws NoSuchMethodException {
+        initReflectionUtilTest(useLambdas);
         Method interfaceMethod = TestResource.class.getMethod("resourceGet", String.class, String.class);
 
         Object proxy = Proxy.newProxyInstance(this.getClass().getClassLoader(), new Class[]{TestResource.class}, new InstanceExposingInvocationHandler(new TestResourceImpl()));
@@ -285,8 +324,10 @@ public class ReflectionUtilTest {
         assertThat(instanceMethod).isEqualTo(TestResourceImpl.class.getMethod("resourceGet", String.class, String.class));
     }
 
-    @Test
-    public void shouldFindGenericParameterType() throws NoSuchMethodException {
+    @MethodSource("useLambdasParameters")
+    @ParameterizedTest
+    void shouldFindGenericParameterType(boolean useLambdas) throws NoSuchMethodException {
+        initReflectionUtilTest(useLambdas);
         Method interfaceMethod = TestResource.class.getMethod("methodWithGenericParameter", List.class);
         assertThat(ReflectionUtil.getGenericParameter(interfaceMethod.getGenericParameterTypes()[0])).isEqualTo(Integer.class);
 
@@ -306,8 +347,10 @@ public class ReflectionUtilTest {
         }
     }
 
-    @Test
-    public void shouldSupportSubPathsOfProperties() {
+    @MethodSource("useLambdasParameters")
+    @ParameterizedTest
+    void shouldSupportSubPathsOfProperties(boolean useLambdas) {
+        initReflectionUtilTest(useLambdas);
         Optional<PropertyResolver> propertyResolverMaybe = ReflectionUtil.getPropertyResolver(Parent.class, "inner");
         PropertyResolver resolver = propertyResolverMaybe.get();
 
@@ -325,16 +368,20 @@ public class ReflectionUtilTest {
         assertThat(subPath.getter().apply(entity)).isEqualTo(4);
     }
 
-    @Test
-    public void shouldSupportCglibProxiesWhenLocatingOverriddenMethods() throws Exception {
+    @MethodSource("useLambdasParameters")
+    @ParameterizedTest
+    void shouldSupportCglibProxiesWhenLocatingOverriddenMethods(boolean useLambdas) throws Exception {
+        initReflectionUtilTest(useLambdas);
         Injector injector = Guice.createInjector(new ProxyingModule());
         TestResource proxiedResource = injector.getInstance(TestResource.class);
         Method method = ReflectionUtil.getOverriddenMethod(proxiedResource.getClass().getMethod("resourceGet", String.class, String.class));
         assertThat(method).isEqualTo(TestResource.class.getMethod("resourceGet", String.class, String.class));
     }
 
-    @Test
-    public void shouldGetRedefinedVersionOfMethod() throws NoSuchMethodException {
+    @MethodSource("useLambdasParameters")
+    @ParameterizedTest
+    void shouldGetRedefinedVersionOfMethod(boolean useLambdas) throws NoSuchMethodException {
+        initReflectionUtilTest(useLambdas);
         Method method = TestResource.class.getMethod("resourceGet", String.class, String.class);
         assertThat(ReflectionUtil.getRedefinedMethod(method)).isEqualTo(method);
     }
@@ -398,7 +445,7 @@ public class ReflectionUtilTest {
     }
 
     class NoZeroParametersConstructorClass {
-        NoZeroParametersConstructorClass(String something) {
+        void initReflectionUtilTest(String something) {
 
         }
     }

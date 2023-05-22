@@ -1,12 +1,12 @@
 package se.fortnox.reactivewizard.db.config;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class DatabaseConfigTest {
+class DatabaseConfigTest {
     @Test
-    public void shouldProvideDatabaseConfig() {
+    void shouldProvideDatabaseConfig() {
         // this is a bit absurd, but it pleases the coverage check gods
         DatabaseConfig config = new DatabaseConfig();
         config.setConnectionTimeout(1);

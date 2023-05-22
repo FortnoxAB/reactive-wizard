@@ -3,7 +3,7 @@ package se.fortnox.reactivewizard.server;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.Appender;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
 import reactor.netty.http.client.HttpClient;
 import se.fortnox.reactivewizard.ExceptionHandler;
@@ -29,13 +29,13 @@ import static se.fortnox.reactivewizard.test.TestUtil.matches;
 /**
  * When client aborts the connection the server should still finish gracefully with only a debug-log as the result.
  */
-public class AbortedRequestHandlingTest {
+class AbortedRequestHandlingTest {
     @Test
-    public void shouldHandleAbortedRequestGracefully() throws InterruptedException {
+    void shouldHandleAbortedRequestGracefully() throws InterruptedException {
         LoggingMockUtil.setLevel(ExceptionHandler.class, Level.DEBUG);
         final Appender mockedLogAppender = LoggingMockUtil.createMockedLogAppender(ExceptionHandler.class);
 
-        RwServer      rwServer                   = null;
+        RwServer rwServer = null;
 
         CountDownLatch countSuccessfulServerHandlings = new CountDownLatch(1);
         try {
@@ -62,8 +62,7 @@ public class AbortedRequestHandlingTest {
 
             final boolean await = countSuccessfulServerHandlings.await(10, TimeUnit.SECONDS);
             assertThat(await).isTrue();
-        }
-        finally {
+        } finally {
             if (rwServer != null) {
                 rwServer.getServer().disposeNow();
             }

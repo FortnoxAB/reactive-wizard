@@ -1,27 +1,27 @@
 package se.fortnox.reactivewizard.jaxrs;
 
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 import java.util.Set;
 
 import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
-public class RequestLoggerTest {
+class RequestLoggerTest {
 
     private final RequestLogger requestLogger = new RequestLogger();
 
-    @After
+    @AfterEach
     public void cleanup() {
         requestLogger.clearTransformations();
     }
 
     @Test
-    public void shouldRedactAuthorizationValue() {
+    void shouldRedactAuthorizationValue() {
         var header = entry("Authorization", "secret");
 
         assertEquals("REDACTED", requestLogger.getHeaderValueOrRedactServer(header));
@@ -29,7 +29,7 @@ public class RequestLoggerTest {
     }
 
     @Test
-    public void shouldNotRedactNoneAuthorizationValue() {
+    void shouldNotRedactNoneAuthorizationValue() {
         var header = entry("OtherHeader", "notasecret");
 
         assertEquals("notasecret", requestLogger.getHeaderValueOrRedactServer(header));
@@ -37,7 +37,7 @@ public class RequestLoggerTest {
     }
 
     @Test
-    public void shouldRedactAuthorizationValues() {
+    void shouldRedactAuthorizationValues() {
         var headers = Map.of(
             "Authorization", "secret",
             "OtherHeader", "notasecret"
@@ -54,7 +54,7 @@ public class RequestLoggerTest {
     }
 
     @Test
-    public void shouldRedactSuppliedSensitiveHeader() {
+    void shouldRedactSuppliedSensitiveHeader() {
         var headers = Map.of(
             "OtherHeader", "notasecret",
             "Cookie", "oreo"
@@ -73,7 +73,7 @@ public class RequestLoggerTest {
     }
 
     @Test
-    public void shouldReturnEmpty_getHeaderValuesOrRedact() {
+    void shouldReturnEmpty_getHeaderValuesOrRedact() {
         assertThat(requestLogger.getHeaderValuesOrRedactServer(null))
             .isEmpty();
         assertThat(requestLogger.getHeaderValuesOrRedactClient(null))
@@ -81,13 +81,13 @@ public class RequestLoggerTest {
     }
 
     @Test
-    public void shouldReturnNull_getHeaderValueOrRedact() {
+    void shouldReturnNull_getHeaderValueOrRedact() {
         assertNull(requestLogger.getHeaderValueOrRedactServer(null));
         assertNull(requestLogger.getHeaderValueOrRedactClient(null));
     }
 
     @Test
-    public void shouldTransformHeaders() {
+    void shouldTransformHeaders() {
         var headers = Map.of(
             "header1", "value1",
             "header2", "value2",

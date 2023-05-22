@@ -1,7 +1,7 @@
 package se.fortnox.reactivewizard.db;
 
 import com.google.common.collect.Lists;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import se.fortnox.reactivewizard.db.config.DatabaseConfig;
@@ -22,14 +22,14 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class ParameterizedQueryTest {
+class ParameterizedQueryTest {
 
     MockDb  db      = new MockDb();
     DbProxy dbProxy = new DbProxy(new DatabaseConfig(), db.getConnectionProvider());
     TestDao dao     = dbProxy.create(TestDao.class);
 
     @Test
-    public void shouldResolveParametersFromQuery() throws SQLException {
+    void shouldResolveParametersFromQuery() throws SQLException {
         dao.namedParameters("myid", "myname").blockLast();
 
         verify(db.getConnection()).prepareStatement("SELECT * FROM foo WHERE id=? AND name=?");
@@ -38,7 +38,7 @@ public class ParameterizedQueryTest {
     }
 
     @Test
-    public void shouldResolveNestedParametersFromQuery() throws SQLException {
+    void shouldResolveNestedParametersFromQuery() throws SQLException {
         dao.nestedParameters("myid", new MyTestParam()).blockLast();
 
         verify(db.getConnection()).prepareStatement("SELECT * FROM foo WHERE id=? AND name=?");
@@ -47,7 +47,7 @@ public class ParameterizedQueryTest {
     }
 
     @Test
-    public void shouldResolveNestedRecordParametersFromQuery() throws SQLException {
+    void shouldResolveNestedRecordParametersFromQuery() throws SQLException {
         dao.nestedRecordParameters("myid", new MyTestParamRecord("testName")).blockLast();
 
         verify(db.getConnection()).prepareStatement("SELECT * FROM foo WHERE id=? AND name=?");
@@ -56,7 +56,7 @@ public class ParameterizedQueryTest {
     }
 
     @Test
-    public void shouldResolveParametersWithoutAnnotationFromQuery() throws SQLException {
+    void shouldResolveParametersWithoutAnnotationFromQuery() throws SQLException {
         dao.missingParamNames("myid", "myname").blockLast();
 
         verify(db.getConnection()).prepareStatement("SELECT * FROM foo WHERE id=? AND name=?");
@@ -65,7 +65,7 @@ public class ParameterizedQueryTest {
     }
 
     @Test
-    public void shouldThrowExceptionIfUnnamedParamsUsedInQuery() {
+    void shouldThrowExceptionIfUnnamedParamsUsedInQuery() {
         try {
             dao.unnamedParameters("myid", "myname").blockLast();
             fail("Exptected exception");
@@ -76,7 +76,7 @@ public class ParameterizedQueryTest {
     }
 
     @Test
-    public void shouldThrowExceptionIfNotAllParametersAreFound() {
+    void shouldThrowExceptionIfNotAllParametersAreFound() {
         try {
             dao.missingParamName("myid", "myname").blockLast();
             fail("Exptected exception");
@@ -87,7 +87,7 @@ public class ParameterizedQueryTest {
     }
 
     @Test
-    public void shouldSendEnumTypesAsStrings() throws SQLException {
+    void shouldSendEnumTypesAsStrings() throws SQLException {
         TestObject myobj = new TestObject();
         myobj.setMyEnum(TestEnum.T3);
         dao.enumParameter(myobj).block();
@@ -97,7 +97,7 @@ public class ParameterizedQueryTest {
     }
 
     @Test
-    public void shouldSupportGettersForBooleanThatHasIsAsPrefix()
+    void shouldSupportGettersForBooleanThatHasIsAsPrefix()
         throws SQLException {
         TestObject myobj = new TestObject();
         myobj.setFinished(true);
@@ -109,7 +109,7 @@ public class ParameterizedQueryTest {
     }
 
     @Test
-    public void shouldSendMapTypesAsStrings() throws SQLException {
+    void shouldSendMapTypesAsStrings() throws SQLException {
 
         TestObject myobj = new TestObject();
         myobj.setFinished(false);
@@ -126,7 +126,7 @@ public class ParameterizedQueryTest {
     }
 
     @Test
-    public void shouldSendMapTypesAsStringsAsLastArg() throws SQLException {
+    void shouldSendMapTypesAsStringsAsLastArg() throws SQLException {
         TestObject myobj = new TestObject();
         myobj.setFinished(false);
         Map<String, String> aMap = new HashMap<>();
@@ -142,7 +142,7 @@ public class ParameterizedQueryTest {
     }
 
     @Test
-    public void shouldSendMapTypesAsStringsAsMiddleArg() throws SQLException {
+    void shouldSendMapTypesAsStringsAsMiddleArg() throws SQLException {
         TestObject myobj = new TestObject();
         myobj.setFinished(false);
         Map<String, String> aMap = new HashMap<>();
@@ -159,7 +159,7 @@ public class ParameterizedQueryTest {
     }
 
     @Test
-    public void shouldSendListsOfObjectsAsJson() throws SQLException {
+    void shouldSendListsOfObjectsAsJson() throws SQLException {
         TestObject myobj = new TestObject();
         List<MyTestParam> list = new ArrayList<>();
         list.add(new MyTestParam());
@@ -174,7 +174,7 @@ public class ParameterizedQueryTest {
     }
 
     @Test
-    public void shouldSendListsOfLongAsArray() throws SQLException {
+    void shouldSendListsOfLongAsArray() throws SQLException {
         TestObject myobj = new TestObject();
         myobj.setLongList(Lists.newArrayList(1L, 2L));
 
@@ -187,7 +187,7 @@ public class ParameterizedQueryTest {
     }
 
     @Test
-    public void shouldSendListsOfIntegerAsArray() throws SQLException {
+    void shouldSendListsOfIntegerAsArray() throws SQLException {
         TestObject myobj = new TestObject();
         myobj.setIntegerList(Lists.newArrayList(1, 2));
 
@@ -200,7 +200,7 @@ public class ParameterizedQueryTest {
     }
 
     @Test
-    public void shouldHandleNotInClauseWithLongs() throws SQLException {
+    void shouldHandleNotInClauseWithLongs() throws SQLException {
         List<Long> param = Lists.newArrayList(1L, 2L);
         when(db.getConnection().createArrayOf(any(), any())).thenReturn(mock(Array.class));
 
@@ -213,7 +213,7 @@ public class ParameterizedQueryTest {
     }
 
     @Test
-    public void shouldHandleInClauseWithStrings() throws SQLException {
+    void shouldHandleInClauseWithStrings() throws SQLException {
         List<String> param = Lists.newArrayList("A", "B");
         when(db.getConnection().createArrayOf(any(), any())).thenReturn(mock(Array.class));
 
@@ -226,7 +226,7 @@ public class ParameterizedQueryTest {
     }
 
     @Test
-    public void shouldHandleInClauseWithoutSpaceInSQL() throws SQLException {
+    void shouldHandleInClauseWithoutSpaceInSQL() throws SQLException {
         List<String> param = Lists.newArrayList("A", "B");
         when(db.getConnection().createArrayOf(any(), any())).thenReturn(mock(Array.class));
 
@@ -236,7 +236,7 @@ public class ParameterizedQueryTest {
     }
 
     @Test
-    public void shouldHandleLowerCaseInClauseInSQL() throws SQLException {
+    void shouldHandleLowerCaseInClauseInSQL() throws SQLException {
         List<String> param = Lists.newArrayList("A", "B");
         when(db.getConnection().createArrayOf(any(), any())).thenReturn(mock(Array.class));
 
@@ -246,7 +246,7 @@ public class ParameterizedQueryTest {
     }
 
     @Test
-    public void shouldHandleInClauseWithUUIDs() throws SQLException {
+    void shouldHandleInClauseWithUUIDs() throws SQLException {
         // Given
         UUID uuid1 = UUID.randomUUID();
         UUID uuid2 = UUID.randomUUID();

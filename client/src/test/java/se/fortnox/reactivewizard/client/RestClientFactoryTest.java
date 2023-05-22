@@ -1,12 +1,15 @@
 package se.fortnox.reactivewizard.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.inject.AbstractModule;
+import com.google.inject.Binder;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
 import com.google.inject.Module;
-import com.google.inject.*;
 import com.google.inject.name.Names;
 import com.google.inject.util.Modules;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import reactor.core.publisher.Mono;
 import reactor.netty.DisposableServer;
@@ -30,15 +33,22 @@ import java.util.concurrent.atomic.AtomicReference;
 import static com.google.common.collect.ImmutableSet.of;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
-public class RestClientFactoryTest {
+class RestClientFactoryTest {
 
     private static final String SRC_TEST_RESOURCES = "src/test/resources/";
     private static final String HTTPCONFIG_URL_YML = SRC_TEST_RESOURCES + "httpconfig_url.yml";
 
     @Test
-    public void shouldProxyResourceInterfacesToHttpClient() {
+    void shouldProxyResourceInterfacesToHttpClient() {
 
         AtomicReference<HttpClient> httpClientSpy = new AtomicReference<>();
 
@@ -71,7 +81,7 @@ public class RestClientFactoryTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldUseCustomHttpClientConfigWhenRequested() {
+    void shouldUseCustomHttpClientConfigWhenRequested() {
         AtomicReference<HttpClient> mockClient = new AtomicReference<>(Mockito.mock(HttpClient.class));
         AtomicReference<HttpClient> mockCustomClient = new AtomicReference<>();
 
@@ -121,7 +131,7 @@ public class RestClientFactoryTest {
     }
 
     @Test
-    public void shouldThrowExceptionWhenPointedOutClassIsNotInterface() {
+    void shouldThrowExceptionWhenPointedOutClassIsNotInterface() {
         try {
             HttpConfigClassScanner mock = Mockito.mock(HttpConfigClassScanner.class);
             when(mock.getClasses()).thenReturn(of(TestConfig.class));
@@ -144,7 +154,7 @@ public class RestClientFactoryTest {
                 }
             };
             Guice.createInjector(new AutoBindModules(Modules.override(module).with(restClientFactory)));
-            Assert.fail("Should throw exception when class is not an interface");
+            Assertions.fail("Should throw exception when class is not an interface");
         } catch (Exception e) {
             assertThat(e.getCause()).isInstanceOf(IllegalArgumentException.class);
             assertThat(e.getCause().getMessage()).isEqualTo("class se.fortnox.reactivewizard.client.RestClientFactoryTest pointed out in UseInResource annotation must be an interface");
@@ -152,7 +162,7 @@ public class RestClientFactoryTest {
     }
 
     @Test
-    public void shouldDeserializeNullToEmpty() throws URISyntaxException {
+    void shouldDeserializeNullToEmpty() throws URISyntaxException {
         DisposableServer server = HttpServer.create().port(0).handle((req, resp) -> resp.sendString(Mono.just("null"))).bindNow();
         try {
             HttpClientConfig config = new HttpClientConfig("http://localhost:"+server.port());

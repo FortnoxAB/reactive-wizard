@@ -1,14 +1,14 @@
 package se.fortnox.reactivewizard.db;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import se.fortnox.reactivewizard.db.config.DatabaseConfig;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class ConnectionProviderTest {
+class ConnectionProviderTest {
 
     @Test
-    public void shouldUseConnectionPool() {
+    void shouldUseConnectionPool() {
         DatabaseConfig databaseConfig = new DatabaseConfig();
         databaseConfig.setUrl("jdbc:h2:mem:test");
         ConnectionProviderImpl connectionProvider = new ConnectionProviderImpl(databaseConfig);

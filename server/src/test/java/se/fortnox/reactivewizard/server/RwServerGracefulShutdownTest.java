@@ -1,8 +1,8 @@
 package se.fortnox.reactivewizard.server;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 import reactor.netty.DisposableServer;
 import reactor.netty.http.client.HttpClient;
@@ -18,13 +18,13 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.awaitility.Awaitility.await;
 
-public class RwServerGracefulShutdownTest {
+class RwServerGracefulShutdownTest {
 
     private ServerConfig serverConfig;
     private AtomicLong requests;
     private AtomicLong responses;
 
-    @Before
+    @BeforeEach
     public void before() {
         serverConfig = new ServerConfig();
         serverConfig.setPort(0);
@@ -33,7 +33,7 @@ public class RwServerGracefulShutdownTest {
     }
 
     @Test
-    public void shouldThrowExceptionIfGracefulShutDownIsNotPossible() {
+    void shouldThrowExceptionIfGracefulShutDownIsNotPossible() {
         serverConfig.setShutdownTimeoutMs(1);
 
         // start server with a endpoint that takes 30 seconds to respond.
@@ -57,7 +57,7 @@ public class RwServerGracefulShutdownTest {
     }
 
     @Test
-    public void shouldWaitFiveSecondsAsDefaultBeforeDisposingServer() {
+    void shouldWaitFiveSecondsAsDefaultBeforeDisposingServer() {
         RwServer rwServer = server(withEndpoint(Duration.ofSeconds(1)));
         Thread shutdown = new Thread(() -> RwServer.shutdownHook(serverConfig, rwServer.getServer(), new ConnectionCounter()));
         shutdown.start();
@@ -67,7 +67,7 @@ public class RwServerGracefulShutdownTest {
     }
 
     @Test
-    public void shouldWaitSpecifiedNumberOfSecondsBeforeDisposingServer() {
+    void shouldWaitSpecifiedNumberOfSecondsBeforeDisposingServer() {
         serverConfig.setShutdownDelaySeconds(1);
         RwServer rwServer = server(withEndpoint(Duration.ofSeconds(1)));
         Thread shutdown = new Thread(() -> RwServer.shutdownHook(serverConfig, rwServer.getServer(), new ConnectionCounter()));

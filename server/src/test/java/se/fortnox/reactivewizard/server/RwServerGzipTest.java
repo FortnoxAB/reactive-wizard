@@ -1,9 +1,9 @@
 package se.fortnox.reactivewizard.server;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Mono;
 import reactor.netty.http.client.HttpClient;
 import se.fortnox.reactivewizard.ExceptionHandler;
@@ -21,45 +21,45 @@ import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_TYPE;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
-@RunWith(MockitoJUnitRunner.class)
-public class RwServerGzipTest {
+@ExtendWith(MockitoExtension.class)
+class RwServerGzipTest {
     private RwServer rwServer;
 
     @Test
-    public void shouldCompressAllowedContentTypes() {
+    void shouldCompressAllowedContentTypes() {
         Arrays.asList("text/plain", "application/xml", "text/css", "application/x-javascript", "application/json")
             .forEach(allowedContentType -> assertCompressionForContentType(true, allowedContentType, true));
     }
 
     @Test
-    public void shouldCompressWhenMultipleDirectivesAreCombined() {
+    void shouldCompressWhenMultipleDirectivesAreCombined() {
         Arrays.asList("text/plain; boundary=something", "text/plain; charset=UTF-8", "text/plain; charset=UTF-8; boundary=something")
             .forEach(allowedContentType -> assertCompressionForContentType(true, allowedContentType, true));
     }
 
     @Test
-    public void shouldNotCompressAllowedContentTypeWhenGzipIsDisabled() {
+    void shouldNotCompressAllowedContentTypeWhenGzipIsDisabled() {
         Arrays.asList("text/plain", "application/xml", "text/css", "application/x-javascript", "application/json")
             .forEach(allowedContentType -> assertCompressionForContentType(false, allowedContentType, false));
     }
 
     @Test
-    public void shouldNotCompressNonAllowedContentTypes() {
+    void shouldNotCompressNonAllowedContentTypes() {
         assertCompressionForContentType(true, "application/pdf", false);
     }
 
     @Test
-    public void shouldNotCompressWhenMissingContentType() {
+    void shouldNotCompressWhenMissingContentType() {
         assertCompressionForContentType(true, null, false);
     }
 
     @Test
-    public void shouldNotCompressSmallPayload() {
+    void shouldNotCompressSmallPayload() {
         assertCompressionForContentType(true, "text/plain", 5, false);
     }
 
     @Test
-    public void shouldNotCompressIfMissingContentLength() {
+    void shouldNotCompressIfMissingContentLength() {
         assertCompressionForContentType(true, "text/plain", 5, true, false);
     }
 

@@ -1,22 +1,21 @@
 package se.fortnox.reactivewizard.util;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import rx.Observable;
 import rx.Single;
 
-import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class ReactiveDecoratorTest {
+class ReactiveDecoratorTest {
     Object decoration = new Object();
 
 
     @Test
-    public void canGetDecorationFromDecoratedObservable() {
+    void canGetDecorationFromDecoratedObservable() {
         Observable<String> decorated = ReactiveDecorator.decorated(Observable.just("test"), decoration);
 
         assertThat(decorated).isNotNull();
@@ -27,7 +26,7 @@ public class ReactiveDecoratorTest {
     }
 
     @Test
-    public void canGetDecorationFromDecoratedFlux() {
+    void canGetDecorationFromDecoratedFlux() {
         Flux<String> decorated = ReactiveDecorator.decorated(Flux.just("test"), decoration);
 
         assertThat(decorated.single().block()).isEqualTo("test");
@@ -35,7 +34,7 @@ public class ReactiveDecoratorTest {
     }
 
     @Test
-    public void canGetDecorationFromDecoratedMono() {
+    void canGetDecorationFromDecoratedMono() {
         Mono<String> decorated = ReactiveDecorator.decorated(Mono.just("test"), decoration);
 
         assertThat(decorated.block()).isEqualTo("test");
@@ -43,7 +42,7 @@ public class ReactiveDecoratorTest {
     }
 
     @Test
-    public void canGetDecorationFromDecoratedSingle() {
+    void canGetDecorationFromDecoratedSingle() {
         Single<String> decorated = ReactiveDecorator.decorated(Single.just("test"), decoration);
 
         assertThat(decorated.toBlocking().value()).isEqualTo("test");
@@ -51,7 +50,7 @@ public class ReactiveDecoratorTest {
     }
 
     @Test
-    public void willGetEmptyOptionalForNonDecorated() {
+    void willGetEmptyOptionalForNonDecorated() {
         assertThat(ReactiveDecorator.getDecoration(Observable.just("hej"))).isEmpty();
         assertThat(ReactiveDecorator.getDecoration(Flux.just("hej"))).isEmpty();
         assertThat(ReactiveDecorator.getDecoration(Mono.just("hej"))).isEmpty();

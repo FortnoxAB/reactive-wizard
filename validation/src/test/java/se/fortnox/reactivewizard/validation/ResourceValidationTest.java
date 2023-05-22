@@ -3,7 +3,7 @@ package se.fortnox.reactivewizard.validation;
 import com.google.inject.Injector;
 import jakarta.inject.Inject;
 import jakarta.validation.constraints.Min;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -17,14 +17,14 @@ import javax.ws.rs.QueryParam;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
-public class ResourceValidationTest {
+class ResourceValidationTest {
     private final Injector injector = TestInjector.create(binder -> binder.bind(ServerConfig.class).toInstance(new ServerConfig() {{
         setEnabled(false);
     }}));
     private final ValidatedResource validatedResource = injector.getInstance(ValidatedResource.class);
 
     @Test
-    public void shouldGiveErrorForBadResourceCall() {
+    void shouldGiveErrorForBadResourceCall() {
         try {
             validatedResource.fluxAcceptLong(10L).blockLast();
             validatedResource.monoAcceptLong(10L).block();
@@ -36,7 +36,7 @@ public class ResourceValidationTest {
     }
 
     @Test
-    public void shouldSucceedForCorrectResourceCall() {
+    void shouldSucceedForCorrectResourceCall() {
         StepVerifier.create(Flux.merge(validatedResource.fluxAcceptLong(101L), validatedResource.monoAcceptLong(101L)))
             .expectNextCount(2)
             .verifyComplete();

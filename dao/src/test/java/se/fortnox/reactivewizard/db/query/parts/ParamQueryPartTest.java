@@ -1,21 +1,21 @@
 package se.fortnox.reactivewizard.db.query.parts;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import se.fortnox.reactivewizard.util.ReflectionUtil;
 
 import java.sql.SQLException;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 
-public class ParamQueryPartTest {
+class ParamQueryPartTest {
     @Test
-    public void shouldIncludePropertiesAndTypeOnSubPathError() throws SQLException {
+    void shouldIncludePropertiesAndTypeOnSubPathError() throws SQLException {
         ParamQueryPart paramQueryPart = new ParamQueryPart(0,
             ReflectionUtil.getPropertyResolver(Foo.class).orElseThrow(IllegalArgumentException::new));
 
         try {
-            paramQueryPart.subPath(new String[] { "bar", "zap" });
+            paramQueryPart.subPath(new String[]{"bar", "zap"});
             fail();
         } catch (RuntimeException e) {
             assertThat(e.getMessage()).isEqualTo(String.format("Properties [bar, zap] cannot be found in class %s",
