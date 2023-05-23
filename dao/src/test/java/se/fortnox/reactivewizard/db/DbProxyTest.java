@@ -503,6 +503,12 @@ public class DbProxyTest {
     }
 
     @Test
+    public void shouldReturnEmptyMonoWhenUpdatingDbWithVoidReturnType() throws SQLException {
+        mockDb.setUpdatedRows(1);
+        StepVerifier.create(dbProxyTestDao.insertVoidReturnType()).verifyComplete();
+    }
+
+    @Test
     public void shouldFailIfMinimumAffectedRowsNotReachedForVoidReturnType() throws SQLException {
         mockDb.setUpdatedRows(0);
 
