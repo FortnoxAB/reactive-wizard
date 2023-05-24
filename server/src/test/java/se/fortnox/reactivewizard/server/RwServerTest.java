@@ -3,35 +3,39 @@ package se.fortnox.reactivewizard.server;
 import org.apache.logging.log4j.core.Appender;
 import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.message.Message;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.netty.DisposableServer;
 import reactor.netty.http.server.HttpServer;
 import se.fortnox.reactivewizard.test.LoggingMockUtil;
 
 import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.fail;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyInt;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static reactor.core.publisher.Mono.empty;
 import static se.fortnox.reactivewizard.test.TestUtil.matches;
 
-@RunWith(MockitoJUnitRunner.class)
-public class RwServerTest {
+@ExtendWith(MockitoExtension.class)
+class RwServerTest {
 
     @Mock
     ConnectionCounter connectionCounter;
@@ -43,20 +47,20 @@ public class RwServerTest {
 
     Appender mockAppender;
 
-    @Before
-    public void before() {
+    @BeforeEach
+    void before() {
         RwServer.registerShutdownDependency(null);
         mockAppender = LoggingMockUtil.createMockedLogAppender(RwServer.class);
         logCaptor = ArgumentCaptor.forClass(LogEvent.class);
     }
 
-    @After
-    public void after() {
+    @AfterEach
+    void after() {
         LoggingMockUtil.destroyMockedAppender(RwServer.class);
     }
 
     @Test
-    public void shouldSetServerToNullIfConfigSaysDisabled() throws InterruptedException {
+    void shouldSetServerToNullIfConfigSaysDisabled() throws InterruptedException {
         ServerConfig serverConfig = new ServerConfig();
         serverConfig.setEnabled(false);
         serverConfig.setPort(0);
@@ -68,7 +72,7 @@ public class RwServerTest {
     }
 
     @Test
-    public void shouldStartTheServerIfConfigSaysEnabled() throws InterruptedException {
+    void shouldStartTheServerIfConfigSaysEnabled() throws InterruptedException {
         ServerConfig serverConfig = new ServerConfig();
         serverConfig.setPort(0);
         AtomicInteger startInvokedNumberOfTimes = new AtomicInteger(0);
@@ -93,7 +97,7 @@ public class RwServerTest {
     }
 
     @Test
-    public void shouldAwaitShutDown() throws InterruptedException {
+    void shouldAwaitShutDown() throws InterruptedException {
         ServerConfig serverConfig = new ServerConfig();
 
         DisposableServer disposableServer = Mockito.mock(DisposableServer.class);
@@ -105,7 +109,7 @@ public class RwServerTest {
     }
 
     @Test
-    public void shouldLogThatShutDownIsRegistered() {
+    void shouldLogThatShutDownIsRegistered() {
         RwServer rwServer = null;
         try {
             final ServerConfig config = new ServerConfig();
@@ -130,7 +134,7 @@ public class RwServerTest {
     }
 
     @Test
-    public void shouldCallServerShutDownWhenShutdownHookIsInvoked() {
+    void shouldCallServerShutDownWhenShutdownHookIsInvoked() {
         DisposableServer disposableServer = mock(DisposableServer.class);
 
         RwServer.shutdownHook(new ServerConfig(), disposableServer, connectionCounter);
@@ -139,7 +143,7 @@ public class RwServerTest {
     }
 
     @Test
-    public void shouldLogErrorIfShutdownIsPerformedWhileConnectionCountIsNotZero() {
+    void shouldLogErrorIfShutdownIsPerformedWhileConnectionCountIsNotZero() {
         when(connectionCounter.awaitZero(anyInt(), any(TimeUnit.class))).thenReturn(false);
         when(connectionCounter.getCount()).thenReturn(4L);
         RwServer rwServer = null;
@@ -164,7 +168,7 @@ public class RwServerTest {
     }
 
     @Test
-    public void shouldNotOverrideShutdownDependency() {
+    void shouldNotOverrideShutdownDependency() {
         RwServer.registerShutdownDependency(() -> {
         });
         try {
@@ -177,13 +181,13 @@ public class RwServerTest {
     }
 
     @Test
-    public void shouldSkipAwaitingShutdownDependencyIfNotSet() {
+    void shouldSkipAwaitingShutdownDependencyIfNotSet() {
         RwServer.awaitShutdownDependency(new ServerConfig().getShutdownTimeoutSeconds());
         verify(mockAppender, never()).append(any());
     }
 
     @Test
-    public void shouldAwaitShutdownDependency() {
+    void shouldAwaitShutdownDependency() {
         Supplier supplier = mock(Supplier.class);
 
         RwServer.registerShutdownDependency(supplier::get);
@@ -201,7 +205,7 @@ public class RwServerTest {
     }
 
     @Test
-    public void shouldUseServerConfigurersInPrioOrder() {
+    void shouldUseServerConfigurersInPrioOrder() {
         RwServer rwServer = null;
 
         try {

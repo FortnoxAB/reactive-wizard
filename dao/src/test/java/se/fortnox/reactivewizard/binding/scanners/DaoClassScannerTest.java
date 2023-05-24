@@ -2,7 +2,7 @@ package se.fortnox.reactivewizard.binding.scanners;
 
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ScanResult;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import se.fortnox.reactivewizard.binding.ClassScannerImpl;
 import se.fortnox.reactivewizard.db.Query;
 import se.fortnox.reactivewizard.db.Update;
@@ -12,9 +12,9 @@ import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class DaoClassScannerTest {
+class DaoClassScannerTest {
     @Test
-    public void testDaoClassScanner() {
+    void testDaoClassScanner() {
         ClassGraph classGraph = new ClassGraph()
                 .whitelistPackages("se.fortnox.reactivewizard.binding.scanners")
                 .enableAnnotationInfo()

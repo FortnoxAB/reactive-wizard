@@ -4,32 +4,32 @@ import com.fasterxml.jackson.databind.util.StdDateFormat;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.multibindings.Multibinder;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import se.fortnox.reactivewizard.json.JsonDeserializerFactory;
 
 import java.text.DateFormat;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class DeserializerFactoryTest {
+class DeserializerFactoryTest {
     private static final Deserializer<Foo> FOO_DESERIALIZER = new FooDeserializer();
     private static final Deserializer<Boolean> BOOLEAN_DESERIALIZER = new BooleanDeserializer();
 
     private DeserializerFactory deserializerFactory;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         deserializerFactory = Guice.createInjector(new TestModule()).getInstance(DeserializerFactory.class);
     }
 
     @Test
-    public void shouldUseCustomDeserializer() {
+    void shouldUseCustomDeserializer() {
         assertThat(deserializerFactory.getClassDeserializer(Foo.class)).isSameAs(FOO_DESERIALIZER);
     }
 
     @Test
-    public void shouldUseOverriddenCustomDeserializer() {
+    void shouldUseOverriddenCustomDeserializer() {
         assertThat(deserializerFactory.getClassDeserializer(Boolean.class)).isSameAs(BOOLEAN_DESERIALIZER);
     }
 

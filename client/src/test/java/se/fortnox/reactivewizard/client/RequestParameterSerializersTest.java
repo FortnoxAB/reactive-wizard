@@ -1,22 +1,22 @@
 package se.fortnox.reactivewizard.client;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class RequestParameterSerializersTest {
+class RequestParameterSerializersTest {
     private RequestParameterSerializers serializers;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         serializers = new RequestParameterSerializers(Set.of(new Foo(), new Bar()));
     }
 
     @Test
-    public void shouldProvideSerializerByClass() {
+    void shouldProvideSerializerByClass() {
         assertThat(serializers.getSerializer(Foo.class)).isInstanceOf(Foo.class);
         assertThat(serializers.getSerializer(Bar.class)).isInstanceOf(Bar.class);
     }

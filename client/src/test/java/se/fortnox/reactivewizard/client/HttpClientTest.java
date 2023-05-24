@@ -7,13 +7,12 @@ import com.google.common.collect.Sets;
 import com.google.inject.Injector;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
-import io.netty.handler.codec.http.cookie.DefaultCookie;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import org.apache.logging.log4j.Level;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
@@ -36,6 +35,7 @@ import se.fortnox.reactivewizard.metrics.HealthRecorder;
 import se.fortnox.reactivewizard.server.ServerConfig;
 import se.fortnox.reactivewizard.test.LoggingMockUtil;
 import se.fortnox.reactivewizard.test.LoggingVerifier;
+import se.fortnox.reactivewizard.test.LoggingVerifierExtension;
 import se.fortnox.reactivewizard.test.TestUtil;
 import se.fortnox.reactivewizard.test.observable.ObservableAssertions;
 
@@ -92,7 +92,6 @@ import static java.lang.String.format;
 import static java.util.Collections.EMPTY_SET;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.IntStream.range;
-import static javax.ws.rs.core.HttpHeaders.CONTENT_LENGTH;
 import static org.apache.logging.log4j.Level.WARN;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
@@ -107,15 +106,15 @@ import static reactor.core.publisher.Flux.empty;
 import static reactor.core.publisher.Flux.just;
 import static se.fortnox.reactivewizard.test.TestUtil.matches;
 
-public class HttpClientTest {
+@ExtendWith(LoggingVerifierExtension.class)
+class HttpClientTest {
 
     private HealthRecorder healthRecorder = new HealthRecorder();
     private RequestLogger requestLogger;
-    @Rule
-    public LoggingVerifier loggingVerifier = new LoggingVerifier(HttpClient.class);
+    LoggingVerifier loggingVerifier = new LoggingVerifier(HttpClient.class);
 
     @Test
-    public void shouldNotRetryFailedPostCalls() {
+    void shouldNotRetryFailedPostCalls() {
         AtomicLong callCount = new AtomicLong();
         DisposableServer server = startServer(INTERNAL_SERVER_ERROR, "\"NOT OK\"", r -> callCount.incrementAndGet());
 
@@ -125,7 +124,7 @@ public class HttpClientTest {
 
             resource.postHello().toBlocking().lastOrDefault(null);
 
-            Assert.fail("Expected exception");
+            Assertions.fail("Expected exception");
         } catch (Exception e) {
             long duration = System.currentTimeMillis() - start;
 
@@ -139,7 +138,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldNotRetryFailedPostCallsWithNonWebExceptions() {
+    void shouldNotRetryFailedPostCallsWithNonWebExceptions() {
         AtomicLong callCount = new AtomicLong();
         DisposableServer server = startSlowServer(OK, 6, r -> callCount.incrementAndGet());
 
@@ -150,7 +149,7 @@ public class HttpClientTest {
 
             resource.postHello().toBlocking().singleOrDefault(null);
 
-            Assert.fail("Expected exception");
+            Assertions.fail("Expected exception");
         } catch (Exception e) {
             assertThat(callCount.get()).isLessThanOrEqualTo(1);
             assertThat(e.getClass()).isEqualTo(WebException.class);
@@ -191,7 +190,7 @@ public class HttpClientTest {
         try {
             config = new HttpClientConfig(disposableServer.host() + ":" + disposableServer.port());
         } catch (URISyntaxException e) {
-            Assert.fail("Could not create httpClientConfig: " + e);
+            Assertions.fail("Could not create httpClientConfig: " + e);
         }
 
         HttpClient client = new HttpClient(config, new ReactorRxClientProvider(config, healthRecorder),
@@ -210,7 +209,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldRetryOnFullConnectionPool() {
+    void shouldRetryOnFullConnectionPool() {
         withServer(server -> {
             long start = System.currentTimeMillis();
             try {
@@ -232,14 +231,14 @@ public class HttpClientTest {
 
 
             } catch (Exception e) {
-                Assert.fail("Expected no exception but got:" + e);
+                Assertions.fail("Expected no exception but got:" + e);
             }
         });
     }
 
 
     @Test
-    public void shouldNotSometimesDropItems() {
+    void shouldNotSometimesDropItems() {
 
         withServer(server -> {
 
@@ -274,7 +273,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldReuseJaxRsMetaObjectsToAvoidReflection() throws URISyntaxException, NoSuchMethodException {
+    void shouldReuseJaxRsMetaObjectsToAvoidReflection() throws URISyntaxException, NoSuchMethodException {
 
         List<JaxRsMeta> jaxRsMetas = new ArrayList<>();
         HttpClient httpClient = new HttpClient(new HttpClientConfig("localhost")) {
@@ -300,7 +299,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldRetryIfEmptyReturnedOnGet() {
+    void shouldRetryIfEmptyReturnedOnGet() {
 
         AtomicInteger callCount = new AtomicInteger();
 
@@ -316,7 +315,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldNotRetryIfEmptyReturnedOnPost() {
+    void shouldNotRetryIfEmptyReturnedOnPost() {
 
         AtomicInteger callCount = new AtomicInteger();
         DisposableServer server = startServer(CREATED, Mono.empty(), s -> callCount.incrementAndGet());
@@ -332,7 +331,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldNotReportUnhealthyWhenPoolIsExhaustedRatherSequentiatingTheRequests() throws URISyntaxException {
+    void shouldNotReportUnhealthyWhenPoolIsExhaustedRatherSequentiatingTheRequests() throws URISyntaxException {
 
         AtomicBoolean wasUnhealthy = new AtomicBoolean(false);
 
@@ -364,13 +363,13 @@ public class HttpClientTest {
                     .lastOrDefault(null);
 
             } catch (Exception e) {
-                Assert.fail("Expected no exception");
+                Assertions.fail("Expected no exception");
             }
         });
     }
 
     @Test
-    public void shouldReportUnhealthyWhenConnectionCannotBeAcquiredBeforeTimeoutAndAfter10Attempts() throws URISyntaxException {
+    void shouldReportUnhealthyWhenConnectionCannotBeAcquiredBeforeTimeoutAndAfter10Attempts() throws URISyntaxException {
 
         HttpClientConfig httpClientConfig = new HttpClientConfig();
         int port = 13337;
@@ -422,7 +421,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldReportHealthyWhenPoolIsNotExhausted() {
+    void shouldReportHealthyWhenPoolIsNotExhausted() {
         withServer(server -> {
             TestResource resource = getHttpProxy(server.port(), 5);
 
@@ -441,7 +440,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldRetryOnConnectionRefused() {
+    void shouldRetryOnConnectionRefused() {
         long start = System.currentTimeMillis();
         try {
             // A port that is not in use and will give connection refused
@@ -452,7 +451,7 @@ public class HttpClientTest {
 
             resource.getHello().toBlocking().lastOrDefault(null);
 
-            Assert.fail("Expected exception");
+            Assertions.fail("Expected exception");
         } catch (Exception e) {
             long duration = System.currentTimeMillis() - start;
 
@@ -463,14 +462,14 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldReturnDetailedError() {
+    void shouldReturnDetailedError() {
         String detailedErrorJson = "{\"error\":1,\"message\":\"Detailed error description.\",\"code\":100}";
         DisposableServer server = startServer(HttpResponseStatus.BAD_REQUEST, detailedErrorJson);
 
         TestResource resource = getHttpProxy(server.port());
         try {
             resource.getHello().toBlocking().single();
-            Assert.fail("Expected exception");
+            Assertions.fail("Expected exception");
         } catch (WebException e) {
             assertThat(e.getCause()).isInstanceOf(HttpClient.DetailedError.class);
             HttpClient.DetailedError detailedError = (HttpClient.DetailedError) e.getCause();
@@ -483,13 +482,13 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldSerializeDate() throws Exception {
+    void shouldSerializeDate() throws Exception {
         HttpClient client = new HttpClient(new HttpClientConfig("localhost"));
         assertThat(client.serialize(new Date(1474889891615L))).isEqualTo("1474889891615");
     }
 
     @Test
-    public void shouldSerializeList() throws Exception {
+    void shouldSerializeList() throws Exception {
         HttpClient client = new HttpClient(new HttpClientConfig("localhost"));
         assertThat(client.serialize(new Long[]{})).isEqualTo("");
         assertThat(client.serialize(new Long[]{5L, 78L, 1005L})).isEqualTo("5,78,1005");
@@ -498,7 +497,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldEncodePath() throws Exception {
+    void shouldEncodePath() throws Exception {
         HttpClient client = new HttpClient(new HttpClientConfig("localhost"));
         Method method = TestResource.class.getMethod("withPathAndQueryParam", String.class, String.class);
         String path = client.getPath(method, new Object[]{"key_with_ä", "value_with_+"}, new JaxRsMeta(method, null));
@@ -506,7 +505,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldEncodeWithMultipleQueryParams() throws Exception {
+    void shouldEncodeWithMultipleQueryParams() throws Exception {
         HttpClient client = new HttpClient(new HttpClientConfig("localhost"));
         Method method = TestResource.class.getMethod("withMultipleQueryParam", String.class, String.class);
         String path = client.getPath(method, new Object[]{"first", "second"}, new JaxRsMeta(method, null));
@@ -514,7 +513,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldEncodePathWithoutNullValues() throws Exception {
+    void shouldEncodePathWithoutNullValues() throws Exception {
         HttpClient client = new HttpClient(new HttpClientConfig("localhost"));
         Method method = TestResource.class.getMethod("withPathAndQueryParam", String.class, String.class);
         String path = client.getPath(method, new Object[]{"path", null}, new JaxRsMeta(method, null));
@@ -522,7 +521,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldNotEncodePathWithSlash() throws Exception {
+    void shouldNotEncodePathWithSlash() throws Exception {
         HttpClient client = new HttpClient(new HttpClientConfig("localhost"));
         Method method = TestResource.class.getMethod("withRegExpPathAndQueryParam", String.class, String.class);
         String path = client.getPath(method, new Object[]{"key/with/Slash", "value/with/slash"}, new JaxRsMeta(method, null));
@@ -530,7 +529,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldEncodePathWithSlash() throws Exception {
+    void shouldEncodePathWithSlash() throws Exception {
         HttpClient client = new HttpClient(new HttpClientConfig("localhost"));
         Method method = TestResource.class.getMethod("withPathAndQueryParam", String.class, String.class);
         String path = client.getPath(method, new Object[]{"key/with/Slash", "value/with/slash"}, new JaxRsMeta(method, null));
@@ -538,7 +537,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldEncodePathAndQueryWithColon() throws Exception {
+    void shouldEncodePathAndQueryWithColon() throws Exception {
         HttpClient client = new HttpClient(new HttpClientConfig("localhost"));
         Method method = TestResource.class.getMethod("withPathAndQueryParam", String.class, String.class);
         String path = client.getPath(method, new Object[]{"path:param", "query-param-with:colon"}, new JaxRsMeta(method, null));
@@ -546,7 +545,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldSupportBeanParamExtendingOtherClasses() throws Exception {
+    void shouldSupportBeanParamExtendingOtherClasses() throws Exception {
         HttpClient client = new HttpClient(new HttpClientConfig("localhost"));
         Method method = TestResource.class.getMethod("withBeanParam", TestResource.Filters.class);
         TestResource.Filters filters = new TestResource.Filters();
@@ -559,7 +558,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldSupportBeanParamRecord() throws Exception {
+    void shouldSupportBeanParamRecord() throws Exception {
         HttpClient client = new HttpClient(new HttpClientConfig("localhost"));
         Method method = TestResource.class.getMethod("withBeanParamRecord", TestResource.SomeRecord.class);
         TestResource.SomeRecord record = new TestResource.SomeRecord("value1", "value2");
@@ -568,7 +567,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldSupportSingleSource() {
+    void shouldSupportSingleSource() {
         DisposableServer server = startServer(HttpResponseStatus.OK, "\"OK\"");
 
         TestResource resource = getHttpProxy(server.port());
@@ -578,7 +577,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldHandleLargeResponses() {
+    void shouldHandleLargeResponses() {
         DisposableServer server = startServer(HttpResponseStatus.OK, generateLargeString(10));
         TestResource resource = getHttpProxy(server.port());
         resource.getHello().toBlocking().single();
@@ -587,7 +586,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldLogErrorOnTooLargeResponse() {
+    void shouldLogErrorOnTooLargeResponse() {
         DisposableServer server = startServer(HttpResponseStatus.OK, generateLargeString(11));
         try {
             TestResource resource = getHttpProxy(server.port());
@@ -607,7 +606,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldRedactAuthorizationHeaderInLogsAndExceptionMessage() throws Exception {
+    void shouldRedactAuthorizationHeaderInLogsAndExceptionMessage() throws Exception {
         DisposableServer server = startServer(BAD_REQUEST, "someError");
 
         try {
@@ -637,7 +636,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldApplyHeaderTransformerInLogsAndExceptionMessage() throws Exception {
+    void shouldApplyHeaderTransformerInLogsAndExceptionMessage() throws Exception {
         DisposableServer server = startServer(BAD_REQUEST, "someError");
         try {
             HttpClientConfig config = new HttpClientConfig("localhost:" + server.port());
@@ -660,7 +659,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldRedactSensitiveHeaderInLogsAndExceptionMessage() throws Exception {
+    void shouldRedactSensitiveHeaderInLogsAndExceptionMessage() throws Exception {
         DisposableServer server = startServer(BAD_REQUEST, "someError");
         try {
             HttpClientConfig config = new HttpClientConfig("localhost:" + server.port());
@@ -689,7 +688,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldReturnBadRequestOnTooLargeResponses() throws URISyntaxException {
+    void shouldReturnBadRequestOnTooLargeResponses() throws URISyntaxException {
         DisposableServer server = startServer(HttpResponseStatus.OK, "\"derp\"");
         HttpClientConfig config = new HttpClientConfig("127.0.0.1:" + server.port());
         config.setMaxResponseSize(5);
@@ -705,7 +704,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldSupportByteArrayResponse() {
+    void shouldSupportByteArrayResponse() {
         DisposableServer server = startServer(HttpResponseStatus.OK, "hej");
         TestResource resource = getHttpProxy(server.port());
         byte[] result = resource.getAsBytes().toBlocking().single();
@@ -715,7 +714,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldRetry5XXResponses() throws URISyntaxException {
+    void shouldRetry5XXResponses() throws URISyntaxException {
         AtomicLong callCount = new AtomicLong();
         DisposableServer server = startServer(INTERNAL_SERVER_ERROR, "", r -> callCount.incrementAndGet());
 
@@ -734,7 +733,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldNotRetryFor4XXResponses() {
+    void shouldNotRetryFor4XXResponses() {
         AtomicLong callCount = new AtomicLong();
         DisposableServer server = startServer(NOT_FOUND, "", r -> callCount.incrementAndGet());
 
@@ -751,7 +750,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldNotRetryForJsonParseErrors() {
+    void shouldNotRetryForJsonParseErrors() {
         AtomicLong callCount = new AtomicLong();
         DisposableServer server = startServer(OK, "{\"result\":[]}", r -> callCount.incrementAndGet());
 
@@ -768,7 +767,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldParseWebExceptions() {
+    void shouldParseWebExceptions() {
         AtomicLong callCount = new AtomicLong();
         DisposableServer server = startServer(BAD_REQUEST,
             "{\"id\":\"f3872d6a-43b9-41c2-a302-f1fc89621f68\",\"error\":\"validation\",\"fields\":[{\"field\":\"phoneNumber\",\"error\":\"validation.invalid.phone.number\"}]}",
@@ -793,7 +792,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldNotRetryOnTimeout() {
+    void shouldNotRetryOnTimeout() {
         AtomicLong callCount = new AtomicLong();
         DisposableServer server = startSlowServer(HttpResponseStatus.NOT_FOUND, 1000, r -> callCount.incrementAndGet());
 
@@ -811,7 +810,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldHandleLongerRequestsThan10SecondsWhenRequested() {
+    void shouldHandleLongerRequestsThan10SecondsWhenRequested() {
         DisposableServer server = startSlowServer(HttpResponseStatus.NOT_FOUND, 20000);
 
         TestResource resource = getHttpProxy(server.port(), 1, 30000);
@@ -827,7 +826,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldThrowNettyReadTimeoutIfRequestTakesLongerThanClientIsConfigured() {
+    void shouldThrowNettyReadTimeoutIfRequestTakesLongerThanClientIsConfigured() {
         // Slow server
         DisposableServer server = HttpServer.create().port(0)
             .handle((request, response) -> Flux.defer(() -> {
@@ -853,7 +852,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldHandleMultipleChunks() {
+    void shouldHandleMultipleChunks() {
         DisposableServer server = HttpServer.create().port(0).handle((request, response) -> {
             response.status(HttpResponseStatus.OK);
             return response.sendString(just("\"he")
@@ -869,7 +868,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldDeserializeVoidResult() {
+    void shouldDeserializeVoidResult() {
         DisposableServer server = startServer(HttpResponseStatus.CREATED, "");
 
         TestResource resource = getHttpProxy(server.port());
@@ -879,7 +878,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldDeserializeSimpleStringWithoutJsonQuotes() {
+    void shouldDeserializeSimpleStringWithoutJsonQuotes() {
         final String body = UUID.randomUUID().toString();
         DisposableServer server = startServer(HttpResponseStatus.CREATED, body);
 
@@ -891,7 +890,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldShutDownConnectionOnTimeoutBeforeHeaders() throws URISyntaxException {
+    void shouldShutDownConnectionOnTimeoutBeforeHeaders() throws URISyntaxException {
         Consumer<String> serverLog = mock(Consumer.class);
         DisposableServer server = createTestServer(serverLog);
 
@@ -956,7 +955,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldCloseConnectionOnTimeoutDuringContentReceive() throws URISyntaxException {
+    void shouldCloseConnectionOnTimeoutDuringContentReceive() throws URISyntaxException {
         Consumer<String> serverLog = mock(Consumer.class);
         DisposableServer server = createTestServer(serverLog);
 
@@ -994,7 +993,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldShouldNotGivePoolExhaustedIfServerDoesNotCloseConnection() throws URISyntaxException {
+    void shouldShouldNotGivePoolExhaustedIfServerDoesNotCloseConnection() throws URISyntaxException {
 
         Level originalLogLevel = LoggingMockUtil.setLevel(HttpClient.class, Level.OFF);
 
@@ -1034,7 +1033,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void willRequestWithMultipleCookies() {
+    void willRequestWithMultipleCookies() {
         Consumer<HttpServerRequest> reqLog = mock(Consumer.class);
         DisposableServer server = startServer(OK, "", reqLog::accept);
 
@@ -1092,7 +1091,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldSendFormParamsAsBodyWithCorrectContentType() {
+    void shouldSendFormParamsAsBodyWithCorrectContentType() {
         AtomicReference<HttpServerRequest> recordedRequest = new AtomicReference<>();
         AtomicReference<String> recordedRequestBody = new AtomicReference<>();
 
@@ -1115,7 +1114,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldNotSendHeaderParamsAsPostBody() {
+    void shouldNotSendHeaderParamsAsPostBody() {
         AtomicReference<HttpServerRequest> recordedRequest = new AtomicReference<>();
         AtomicReference<String> recordedRequestBody = new AtomicReference<>();
         DisposableServer server = HttpServer.create().port(0).handle((request, response) -> {
@@ -1139,7 +1138,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldNotWriteParametersWithRequestParameterSerializersToRequestBody() {
+    void shouldNotWriteParametersWithRequestParameterSerializersToRequestBody() {
         AtomicReference<HttpServerRequest> recordedRequest = new AtomicReference<>();
         AtomicReference<String> recordedRequestBody = new AtomicReference<>();
         DisposableServer server = HttpServer.create().port(0).handle((request, response) -> {
@@ -1163,7 +1162,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldUseConsumesAnnotationAsContentTypeHeader() {
+    void shouldUseConsumesAnnotationAsContentTypeHeader() {
         AtomicReference<HttpServerRequest> recordedRequest = new AtomicReference<>();
         DisposableServer server = startServer(OK, "", recordedRequest::set);
 
@@ -1176,7 +1175,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldSendBasicAuthHeaderIfConfigured() throws URISyntaxException {
+    void shouldSendBasicAuthHeaderIfConfigured() throws URISyntaxException {
         AtomicReference<HttpServerRequest> recordedRequest = new AtomicReference<>();
         DisposableServer server = startServer(OK, "", recordedRequest::set);
 
@@ -1194,7 +1193,7 @@ public class HttpClientTest {
 
 
     @Test
-    public void shouldNotSendAuthorizationHeadersUnlessConfigured() throws URISyntaxException {
+    void shouldNotSendAuthorizationHeadersUnlessConfigured() throws URISyntaxException {
         AtomicReference<HttpServerRequest> recordedRequest = new AtomicReference<>();
         DisposableServer server = startServer(OK, "", recordedRequest::set);
 
@@ -1209,7 +1208,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldSetDevParams() throws URISyntaxException {
+    void shouldSetDevParams() throws URISyntaxException {
         AtomicReference<HttpServerRequest> recordedRequest = new AtomicReference<>();
         DisposableServer server = startServer(OK, "", recordedRequest::set);
 
@@ -1229,7 +1228,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldAllowBodyInPostPutDeletePatchCalls() {
+    void shouldAllowBodyInPostPutDeletePatchCalls() {
         AtomicReference<HttpServerRequest> recordedRequest = new AtomicReference<>();
         AtomicReference<String> recordedRequestBody = new AtomicReference<>();
 
@@ -1264,7 +1263,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldBeAbleToSendAndReceiveRecordBody() {
+    void shouldBeAbleToSendAndReceiveRecordBody() {
         DisposableServer server = HttpServer.create().port(0).handle((request, response) ->
             request.receive().aggregate().flatMap(buf ->
                 response.status(HttpResponseStatus.OK).send(Mono.just(buf)).then()
@@ -1283,7 +1282,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldSetTimeoutOnResource() throws URISyntaxException {
+    void shouldSetTimeoutOnResource() throws URISyntaxException {
         HttpClientConfig httpClientConfig = new HttpClientConfig();
         httpClientConfig.setUrl("http://localhost");
 
@@ -1307,7 +1306,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldExecutePreRequestHooks() throws URISyntaxException {
+    void shouldExecutePreRequestHooks() throws URISyntaxException {
         DisposableServer server = HttpServer.create().port(0).handle((request, response) -> {
             response.status(HttpResponseStatus.OK);
             return response.sendString(Mono.just("\"hi\""));
@@ -1333,7 +1332,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldNotRetryFailedPostCallsWithStrangeExceptions() {
+    void shouldNotRetryFailedPostCallsWithStrangeExceptions() {
         AtomicLong callCount = new AtomicLong();
         DisposableServer server = startServer(INTERNAL_SERVER_ERROR, "\"NOT OK\"", r -> callCount.incrementAndGet());
         try {
@@ -1341,7 +1340,7 @@ public class HttpClientTest {
             config.setReadTimeoutMs(100);
             TestResource resource = getHttpProxy(config);
             resource.postHello().toBlocking().singleOrDefault(null);
-            Assert.fail("Expected exception");
+            Assertions.fail("Expected exception");
         } catch (Exception e) {
             assertThat(callCount.get()).isEqualTo(1);
             assertThat(e.getClass()).isEqualTo(WebException.class);
@@ -1351,7 +1350,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldHandleHttpsAgainstKnownHost() throws URISyntaxException {
+    void shouldHandleHttpsAgainstKnownHost() throws URISyntaxException {
         HttpClientConfig httpClientConfig = new HttpClientConfig("https://www.google.com");
         Injector injector = injectorWithProgrammaticHttpClientConfig(httpClientConfig);
         ReactorRxClientProvider rxClientProvider = injector.getInstance(ReactorRxClientProvider.class);
@@ -1367,7 +1366,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldErrorOnUntrustedHost() throws URISyntaxException, CertificateException {
+    void shouldErrorOnUntrustedHost() throws URISyntaxException, CertificateException {
         SelfSignedCertificate cert = new SelfSignedCertificate();
         SslContextBuilder serverOptions = SslContextBuilder.forServer(cert.certificate(), cert.privateKey());
         DisposableServer server =
@@ -1399,7 +1398,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldHandleUnsafeSecureOnUntrustedHost() throws URISyntaxException, CertificateException {
+    void shouldHandleUnsafeSecureOnUntrustedHost() throws URISyntaxException, CertificateException {
 
         SelfSignedCertificate cert = new SelfSignedCertificate();
         SslContextBuilder serverOptions = SslContextBuilder.forServer(cert.certificate(), cert.privateKey());
@@ -1425,14 +1424,14 @@ public class HttpClientTest {
                 .block();
             assertThat(response).isEqualTo("Hello");
         } catch (RuntimeException runtimeException) {
-            Assert.fail("Should not give an error");
+            Assertions.fail("Should not give an error");
         }
 
         server.disposeNow();
     }
 
     @Test
-    public void shouldLogRequestDetailsOnTimeout() {
+    void shouldLogRequestDetailsOnTimeout() {
         DisposableServer server = startServer(OK, Flux.never(), r -> {
         });
 
@@ -1469,7 +1468,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void assertRequestContainsHost() {
+    void assertRequestContainsHost() {
         Consumer<HttpServerRequest> reqLog = mock(Consumer.class);
         DisposableServer server = startServer(OK, "", reqLog::accept);
 
@@ -1486,7 +1485,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void assertRequestContainsHostFromHeaderParam() {
+    void assertRequestContainsHostFromHeaderParam() {
         Consumer<HttpServerRequest> reqLog = mock(Consumer.class);
         DisposableServer server = startServer(OK, "", reqLog::accept);
 
@@ -1503,7 +1502,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldSupportSendingXml() {
+    void shouldSupportSendingXml() {
         AtomicReference<HttpServerRequest> recordedRequest = new AtomicReference<>();
         AtomicReference<String> recordedRequestBody = new AtomicReference<>();
 
@@ -1528,7 +1527,7 @@ public class HttpClientTest {
 
 
     @Test
-    public void shouldSupportSendingXmlAsBytes() {
+    void shouldSupportSendingXmlAsBytes() {
         AtomicReference<HttpServerRequest> recordedRequest = new AtomicReference<>();
         AtomicReference<String> recordedRequestBody = new AtomicReference<>();
 
@@ -1552,7 +1551,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void shouldFailIfBodyIsNotStringOrBytes() {
+    void shouldFailIfBodyIsNotStringOrBytes() {
         AtomicReference<HttpServerRequest> recordedRequest = new AtomicReference<>();
         AtomicReference<String> recordedRequestBody = new AtomicReference<>();
 

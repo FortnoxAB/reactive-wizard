@@ -2,19 +2,18 @@ package se.fortnox.reactivewizard.validation;
 
 import com.google.inject.Injector;
 import com.google.inject.ProvisionException;
-import org.junit.Test;
+import jakarta.validation.constraints.NotEmpty;
+import org.junit.jupiter.api.Test;
 import se.fortnox.reactivewizard.config.Config;
 import se.fortnox.reactivewizard.config.TestInjector;
-
-import jakarta.validation.constraints.NotEmpty;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
-public class ConfigValidationTest {
+class ConfigValidationTest {
 
     @Test
-    public void shouldReturnErrorForInvalidConfig() {
+    void shouldReturnErrorForInvalidConfig() {
         Injector injector = TestInjector.create("src/test/resources/invalidconfig.yml");
         try {
             injector.getInstance(ValidatedConfig.class);
@@ -26,7 +25,7 @@ public class ConfigValidationTest {
     }
 
     @Test
-    public void shouldReturnErrorForInvalidConfigRecord() {
+    void shouldReturnErrorForInvalidConfigRecord() {
         Injector injector = TestInjector.create("src/test/resources/invalidconfig.yml");
         try {
             injector.getInstance(ValidatedConfigRecord.class);
@@ -38,13 +37,13 @@ public class ConfigValidationTest {
     }
 
     @Test
-    public void shouldReturnConfigForCorrectConfig() {
+    void shouldReturnConfigForCorrectConfig() {
         Injector injector = TestInjector.create("src/test/resources/correctconfig.yml");
         injector.getInstance(ValidatedConfig.class);
     }
 
     @Test
-    public void shouldReturnConfigForCorrectConfigRecord() {
+    void shouldReturnConfigForCorrectConfigRecord() {
         Injector injector = TestInjector.create("src/test/resources/correctconfig.yml");
         var config = injector.getInstance(ValidatedConfigRecord.class);
 

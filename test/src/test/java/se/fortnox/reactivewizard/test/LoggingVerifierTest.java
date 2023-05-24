@@ -1,8 +1,8 @@
 package se.fortnox.reactivewizard.test;
 
 import org.apache.logging.log4j.core.LogEvent;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,14 +16,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
 import static org.mockito.Mockito.never;
 
-public class LoggingVerifierTest {
+@ExtendWith(LoggingVerifierExtension.class)
+class LoggingVerifierTest {
     private static final Logger LOG = LoggerFactory.getLogger(LoggingVerifierTest.class);
 
-    @Rule
-    public LoggingVerifier loggingVerifier = new LoggingVerifier(LoggingVerifierTest.class, TRACE);
+    LoggingVerifier loggingVerifier = new LoggingVerifier(LoggingVerifierTest.class, TRACE);
 
     @Test
-    public void verifyLogging() {
+    void verifyLogging() {
         LOG.trace("trace");
         LOG.debug("debug");
         LOG.info("info");
@@ -43,7 +43,7 @@ public class LoggingVerifierTest {
     }
 
     @Test
-    public void shouldReturnListAssertOfLogEvents() {
+    void shouldReturnListAssertOfLogEvents() {
         LOG.trace("trace");
         LOG.debug("debug");
         LOG.info("info");
@@ -62,13 +62,13 @@ public class LoggingVerifierTest {
     }
 
     @Test
-    public void shouldReturnEmptyListAssertIfNothingIsLogged() {
+    void shouldReturnEmptyListAssertIfNothingIsLogged() {
         loggingVerifier.assertThatLogs()
             .isEmpty();
     }
 
     @Test
-    public void verifyLoggerDestroyedOnAfter() {
+    void verifyLoggerDestroyedOnAfter() {
         loggingVerifier.after();
         org.apache.logging.log4j.core.Logger logger = LoggingMockUtil.getLogger(LoggingVerifierTest.class);
         assertThat(logger.getAppenders())

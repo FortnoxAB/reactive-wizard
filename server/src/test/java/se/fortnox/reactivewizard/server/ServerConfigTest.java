@@ -1,15 +1,15 @@
 package se.fortnox.reactivewizard.server;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class ServerConfigTest {
+class ServerConfigTest {
 
     private final ServerConfig serverConfig = new ServerConfig();
 
     @Test
-    public void shouldSetCorrectDefaultValues() {
+    void shouldSetCorrectDefaultValues() {
         assertThat(serverConfig.isEnabled()).isTrue();
         assertThat(serverConfig.getPort()).isEqualTo(8080);
         assertThat(serverConfig.getMaxHeaderSize()).isEqualTo(20480);
@@ -19,7 +19,7 @@ public class ServerConfigTest {
     }
 
     @Test
-    public void changesToTheConfigShouldBePersisted() {
+    void changesToTheConfigShouldBePersisted() {
         serverConfig.setPort(1337);
         serverConfig.setEnabled(false);
         serverConfig.setMaxHeaderSize(123);

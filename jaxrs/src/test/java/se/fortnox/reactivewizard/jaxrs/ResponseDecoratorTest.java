@@ -1,8 +1,8 @@
 package se.fortnox.reactivewizard.jaxrs;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 import se.fortnox.reactivewizard.jaxrs.response.ResponseDecorator;
 import se.fortnox.reactivewizard.mocks.MockHttpServerResponse;
@@ -20,31 +20,31 @@ import static reactor.core.publisher.Mono.defer;
 import static reactor.core.publisher.Mono.empty;
 import static reactor.core.publisher.Mono.just;
 
-public class ResponseDecoratorTest {
+class ResponseDecoratorTest {
 
     @Test
-    public void shouldReturnHeaderFromResource() {
+    void shouldReturnHeaderFromResource() {
         MockHttpServerResponse response = JaxRsTestUtil.get(new ResourceWithHeaders(), "/headers");
         assertThat(response.responseHeaders().get("custom_header")).isEqualTo("value");
         assertThat(response.getOutp()).isEqualTo("\"body\"");
     }
 
     @Test
-    public void shouldReturnHeadersFromResourceWithEmptyBody() {
+    void shouldReturnHeadersFromResourceWithEmptyBody() {
         MockHttpServerResponse response = JaxRsTestUtil.get(new ResourceWithHeaders(), "/headers/empty-body");
         assertThat(response.responseHeaders().get("custom_header")).isEqualTo("value");
         assertThat(response.getOutp()).isEqualTo("");
     }
 
     @Test
-    public void shouldReturnDeferredHeaderFromResource() {
+    void shouldReturnDeferredHeaderFromResource() {
         MockHttpServerResponse response = JaxRsTestUtil.get(new ResourceWithHeaders(), "/headers/deferred");
         assertThat(response.responseHeaders().get("custom_header")).isEqualTo("deferred");
         assertThat(response.getOutp()).isEqualTo("\"body\"");
     }
 
     @Test
-    public void shouldReturnHeaderFromResourceWithBuilder() {
+    void shouldReturnHeaderFromResourceWithBuilder() {
         MockHttpServerResponse response = JaxRsTestUtil.get(new ResourceWithHeaders(), "/with-builder/headers");
         assertThat(response.responseHeaders().get("custom_header")).isEqualTo("value");
         assertThat(response.responseHeaders().get("custom_header2")).isEqualTo("value2");
@@ -52,48 +52,48 @@ public class ResponseDecoratorTest {
     }
 
     @Test
-    public void shouldReturnHeadersFromResourceWithEmptyBodyWithBuilder() {
+    void shouldReturnHeadersFromResourceWithEmptyBodyWithBuilder() {
         MockHttpServerResponse response = JaxRsTestUtil.get(new ResourceWithHeaders(), "with-builder/headers/empty-body");
         assertThat(response.responseHeaders().get("custom_header")).isEqualTo("value");
         assertThat(response.getOutp()).isEqualTo("");
     }
 
     @Test
-    public void shouldReturnDeferredHeaderFromResourceWithBuilder() {
+    void shouldReturnDeferredHeaderFromResourceWithBuilder() {
         MockHttpServerResponse response = JaxRsTestUtil.get(new ResourceWithHeaders(), "/with-builder/headers/deferred");
         assertThat(response.responseHeaders().get("custom_header")).isEqualTo("deferred");
         assertThat(response.getOutp()).isEqualTo("\"body\"");
     }
 
     @Test
-    public void shouldReturnStatusFromResourceWithBuilder() {
+    void shouldReturnStatusFromResourceWithBuilder() {
         MockHttpServerResponse response = JaxRsTestUtil.get(new ResourceWithHeaders(), "/with-builder/status");
         assertThat(response.status()).isEqualTo(HttpResponseStatus.MOVED_PERMANENTLY);
         assertThat(response.getOutp()).isEqualTo("\"body\"");
     }
 
     @Test
-    public void shouldReturnStatusFromResourceWithEmptyWithBuilder() {
+    void shouldReturnStatusFromResourceWithEmptyWithBuilder() {
         MockHttpServerResponse response = JaxRsTestUtil.get(new ResourceWithHeaders(), "/with-builder/status/empty");
         assertThat(response.status()).isEqualTo(HttpResponseStatus.MOVED_PERMANENTLY);
         assertThat(response.getOutp()).isEqualTo("");
     }
 
     @Test
-    public void shouldReturnDeferredStatusFromResourceWithBuilder() {
+    void shouldReturnDeferredStatusFromResourceWithBuilder() {
         MockHttpServerResponse response = JaxRsTestUtil.get(new ResourceWithHeaders(), "/with-builder/status/deferred");
         assertThat(response.status()).isEqualTo(HttpResponseStatus.MOVED_PERMANENTLY);
         assertThat(response.getOutp()).isEqualTo("\"body\"");
     }
 
     @Test
-    public void shouldNotFailIfDecorationIsAtomicReference() {
+    void shouldNotFailIfDecorationIsAtomicReference() {
         try {
             MockHttpServerResponse response = JaxRsTestUtil.get(new ResourceWithHeaders(), "/atomicreference");
             assertThat(response.status()).isEqualTo(HttpResponseStatus.OK);
 
         } catch (Exception e) {
-            Assert.fail();
+            Assertions.fail();
         }
     }
 

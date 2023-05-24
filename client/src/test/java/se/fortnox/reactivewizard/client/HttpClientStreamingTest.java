@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.netty.DisposableServer;
@@ -31,7 +31,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.assertj.core.api.Assertions.assertThat;
 import static reactor.core.publisher.Flux.empty;
 
-public class HttpClientStreamingTest {
+class HttpClientStreamingTest {
     private static final Random RANDOM = new Random();
 
     private final HealthRecorder healthRecorder = new HealthRecorder();
@@ -69,7 +69,7 @@ public class HttpClientStreamingTest {
     }
 
     @Test
-    public void shouldSupportSendingStreamAsChunkedTransfer() {
+    void shouldSupportSendingStreamAsChunkedTransfer() {
         AtomicReference<HttpServerRequest> recordedRequest = new AtomicReference<>();
         AtomicReference<String> recordedRequestBody = new AtomicReference<>("");
 
@@ -109,7 +109,7 @@ public class HttpClientStreamingTest {
     }
 
     @Test
-    public void shouldSupportStreamingResponseToRequest() {
+    void shouldSupportStreamingResponseToRequest() {
         var bytesDownloaded = new AtomicLong(0);
         var bytesUploaded = new AtomicLong(0);
         Flux<? extends byte[]> file = generateFile(1024L * 1024 * 1024);

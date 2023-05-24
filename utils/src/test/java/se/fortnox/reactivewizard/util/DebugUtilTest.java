@@ -1,6 +1,6 @@
 package se.fortnox.reactivewizard.util;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.net.MalformedURLException;
@@ -9,16 +9,16 @@ import java.net.URL;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
-public class DebugUtilTest {
+class DebugUtilTest {
 
     @Test
-    public void testIsDebug() {
+    void testIsDebug() {
         // will be true if running from Intellij IDEA and false from command line
         assertThat(DebugUtil.IS_DEBUG).isNotNull();
     }
 
     @Test
-    public void testIsIdePresent() throws MalformedURLException {
+    void testIsIdePresent() throws MalformedURLException {
         ClassLoader classLoaderWithIdeaDebugger = Mockito.mock(ClassLoader.class);
         when(classLoaderWithIdeaDebugger.getResource("com/intellij"))
                 .thenReturn(new URL("jar:file:/path/to/debugger-agent-storage.jar!/com/intellij"));
@@ -27,7 +27,7 @@ public class DebugUtilTest {
     }
 
     @Test
-    public void testIsMavenDebug() {
+    void testIsMavenDebug() {
         String debugPropName = "maven.surefire.debug";
         boolean originalSurefireDebugProp = Boolean.getBoolean(debugPropName);
         System.setProperty(debugPropName, "true");

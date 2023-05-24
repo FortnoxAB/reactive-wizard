@@ -1,6 +1,6 @@
 package se.fortnox.reactivewizard.dbmigrate;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import se.fortnox.reactivewizard.config.ConfigFactory;
 
 import static org.mockito.Mockito.atLeastOnce;
@@ -9,10 +9,10 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class LiquibaseMigrateProviderTest {
+class LiquibaseMigrateProviderTest {
 
     @Test
-    public void shouldGetLiquibaseMigrateInstance() {
+    void shouldGetLiquibaseMigrateInstance() {
         LiquibaseConfig liquibaseConfig = mock(LiquibaseConfig.class);
 
         when(liquibaseConfig.getUrl()).thenReturn("jdbc:h2:mem:test");

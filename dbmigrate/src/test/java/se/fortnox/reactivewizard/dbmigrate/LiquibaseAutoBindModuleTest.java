@@ -6,8 +6,8 @@ import com.google.inject.name.Names;
 import com.google.inject.util.Modules;
 import liquibase.exception.DatabaseException;
 import liquibase.exception.LiquibaseException;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import se.fortnox.reactivewizard.binding.AutoBindModules;
 import se.fortnox.reactivewizard.config.ConfigFactory;
 import se.fortnox.reactivewizard.config.TestInjector;
@@ -15,12 +15,17 @@ import se.fortnox.reactivewizard.json.JsonConfig;
 import se.fortnox.reactivewizard.server.ServerConfig;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.fail;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-public class LiquibaseAutoBindModuleTest {
+class LiquibaseAutoBindModuleTest {
     @Test
-    public void shouldOnlyRun() throws LiquibaseException {
+    void shouldOnlyRun() throws LiquibaseException {
         LiquibaseMigrate liquibaseMigrateMock = getInjectedLiquibaseMock("run", "config.yml");
 
         verify(liquibaseMigrateMock, never()).drop();
@@ -29,7 +34,7 @@ public class LiquibaseAutoBindModuleTest {
     }
 
     @Test
-    public void shouldDropMigrateAndExit() throws LiquibaseException {
+    void shouldDropMigrateAndExit() throws LiquibaseException {
         LiquibaseMigrate liquibaseMigrateMock = getInjectedLiquibaseMock("db-drop-migrate", "config.yml");
 
         verify(liquibaseMigrateMock).drop();
@@ -38,7 +43,7 @@ public class LiquibaseAutoBindModuleTest {
     }
 
     @Test
-    public void shouldNotExecuteLiquibase() throws LiquibaseException {
+    void shouldNotExecuteLiquibase() throws LiquibaseException {
         LiquibaseMigrate liquibaseMigrateMock = getInjectedLiquibaseMock("db-run");
 
         verify(liquibaseMigrateMock, never()).drop();
@@ -48,7 +53,7 @@ public class LiquibaseAutoBindModuleTest {
 
 
     @Test
-    public void shouldJustDrop() throws LiquibaseException {
+    void shouldJustDrop() throws LiquibaseException {
         LiquibaseMigrate liquibaseMigrateMock = getInjectedLiquibaseMock("db-drop-run", "config.yml");
 
         verify(liquibaseMigrateMock).drop();
@@ -57,7 +62,7 @@ public class LiquibaseAutoBindModuleTest {
     }
 
     @Test
-    public void shouldJustRollback() throws LiquibaseException {
+    void shouldJustRollback() throws LiquibaseException {
         LiquibaseMigrate liquibaseMigrateMock = getInjectedLiquibaseMock("db-rollback", "config.yml");
 
         verify(liquibaseMigrateMock, atLeastOnce()).rollback();
@@ -66,7 +71,7 @@ public class LiquibaseAutoBindModuleTest {
     }
 
     @Test
-    public void shouldContinueRunningAfterDropThrowsException() throws LiquibaseException {
+    void shouldContinueRunningAfterDropThrowsException() throws LiquibaseException {
         LiquibaseMigrate liquibaseMigrateMock = mock(LiquibaseMigrate.class);
         doThrow(new DatabaseException()).when(liquibaseMigrateMock).drop();
 
@@ -78,7 +83,7 @@ public class LiquibaseAutoBindModuleTest {
     }
 
     @Test
-    public void shouldAbortIfRunThrowsException() throws LiquibaseException {
+    void shouldAbortIfRunThrowsException() throws LiquibaseException {
         LiquibaseMigrate liquibaseMigrateMock = mock(LiquibaseMigrate.class);
         doThrow(new LiquibaseException()).when(liquibaseMigrateMock).run();
 
@@ -95,7 +100,7 @@ public class LiquibaseAutoBindModuleTest {
     }
 
     @Test
-    public void shouldNotRunLiquibaseWhenOnlyConfigIsPassed() throws LiquibaseException {
+    void shouldNotRunLiquibaseWhenOnlyConfigIsPassed() throws LiquibaseException {
         LiquibaseMigrate liquibaseMigrateMock = mock(LiquibaseMigrate.class);
         getInjectedLiquibaseMock(liquibaseMigrateMock, "config.yml");
 
@@ -105,13 +110,13 @@ public class LiquibaseAutoBindModuleTest {
     }
 
     @Test
-    public void shouldBeAbleToRunLiquibaseMigrationsOnStartup() {
+    void shouldBeAbleToRunLiquibaseMigrationsOnStartup() {
 
         try {
             TestInjector.create(binder -> {
             }, "test.bind.yml", new String[]{"db-migrate-run"});
         } catch (Exception e) {
-            Assert.fail("Running liquibase migrations from file should not fail:" + e.getMessage());
+            Assertions.fail("Running liquibase migrations from file should not fail:" + e.getMessage());
         }
 
     }

@@ -2,7 +2,7 @@ package se.fortnox.reactivewizard.db;
 
 import jakarta.inject.Inject;
 import org.assertj.core.api.Fail;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
@@ -31,6 +31,7 @@ import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.inOrder;
@@ -41,9 +42,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-/**
- */
-public class DaoTransactionsTest {
+class DaoTransactionsTest {
     private MockDb db = new MockDb();
     private ConnectionProvider connectionProvider = db.getConnectionProvider();
     private DbProxy dbProxy = new DbProxy(new DatabaseConfig(), connectionProvider);
@@ -51,7 +50,7 @@ public class DaoTransactionsTest {
     private DaoTransactions daoTransactions = new DaoTransactionsImpl();
 
     @Test
-    public void shouldHaveEmptyInjectAnnotatedConstructor() {
+    void shouldHaveEmptyInjectAnnotatedConstructor() {
         try {
             assertThat(DaoTransactionsImpl.class.getConstructor().getAnnotation(Inject.class)).isNotNull();
         } catch (NoSuchMethodException e) {
@@ -60,7 +59,7 @@ public class DaoTransactionsTest {
     }
 
     @Test
-    public void shouldRunTwoQueriesInOneTransaction() throws SQLException {
+    void shouldRunTwoQueriesInOneTransaction() throws SQLException {
         Flux<String> find1 = dao.find();
         Flux<String> find2 = dao.find();
 
@@ -81,7 +80,7 @@ public class DaoTransactionsTest {
     }
 
     @Test
-    public void shouldSupportFlux() throws SQLException {
+    void shouldSupportFlux() throws SQLException {
         daoTransactions.executeTransaction(dao.find(), dao.find()).block();
 
         db.verifyConnectionsUsed(1);
@@ -95,7 +94,7 @@ public class DaoTransactionsTest {
     }
 
     @Test
-    public void shouldSupportMoreThan256Flux() throws SQLException {
+    void shouldSupportMoreThan256Flux() throws SQLException {
 
         List<Publisher<String>> finds = new ArrayList<>();
 
@@ -116,7 +115,7 @@ public class DaoTransactionsTest {
     }
 
     @Test
-    public void shouldRunOnTransactionCompletedCallback() throws SQLException {
+    void shouldRunOnTransactionCompletedCallback() throws SQLException {
         when(db.getPreparedStatement().executeBatch())
                 .thenReturn(new int[]{1, 1});
 
@@ -144,7 +143,7 @@ public class DaoTransactionsTest {
     }
 
     @Test
-    public void shouldRunOnTransactionCompletedFlux() throws SQLException {
+    void shouldRunOnTransactionCompletedFlux() throws SQLException {
         when(db.getPreparedStatement().executeBatch())
                 .thenReturn(new int[]{1, 1});
 
@@ -161,7 +160,7 @@ public class DaoTransactionsTest {
     }
 
     @Test
-    public void subscribingToDaoPublisherWillResultInTwoCallsToQuery() throws SQLException {
+    void subscribingToDaoPublisherWillResultInTwoCallsToQuery() throws SQLException {
         Mono<GeneratedKey<Long>> update1 = dao.updateSuccessResultSet();
         Mono<GeneratedKey<Long>> update2 = dao.updateSuccessResultSet();
 
@@ -185,7 +184,7 @@ public class DaoTransactionsTest {
     }
 
     @Test
-    public void shouldRunOnCompletedOnceWhenTransactionFinished() throws SQLException {
+    void shouldRunOnCompletedOnceWhenTransactionFinished() throws SQLException {
         AtomicInteger completed = new AtomicInteger();
         daoTransactions.executeTransaction(dao.updateSuccess(), dao.updateOtherSuccess(), dao.updateSuccess(), dao.updateOtherSuccess())
             .doOnSuccess((v) -> completed.incrementAndGet())
@@ -199,7 +198,7 @@ public class DaoTransactionsTest {
     }
 
     @Test
-    public void shouldNotRunOnCompletedWhenTransactionFailed() throws SQLException {
+    void shouldNotRunOnCompletedWhenTransactionFailed() throws SQLException {
 
         Mono<Integer> find1 = dao.updateSuccess();
         Flux<Integer> find2 = dao.updateFail();
@@ -229,7 +228,7 @@ public class DaoTransactionsTest {
     }
 
     @Test
-    public void shouldRunTwoQueriesInTransactionOrder() throws SQLException {
+    void shouldRunTwoQueriesInTransactionOrder() throws SQLException {
         Flux<String> find1 = dao.find();
         Flux<String> find2 = dao.find2();
 
@@ -243,7 +242,7 @@ public class DaoTransactionsTest {
     }
 
     @Test
-    public void shouldFailAllQueriesIfOneUpdateHasNotReachedMinimumUpdates() throws SQLException {
+    void shouldFailAllQueriesIfOneUpdateHasNotReachedMinimumUpdates() throws SQLException {
         when(db.getPreparedStatement().getUpdateCount())
                 .thenReturn(1)
                 .thenReturn(0);
@@ -269,7 +268,7 @@ public class DaoTransactionsTest {
     }
 
     @Test
-    public void shouldBatchWhenSameQuery() throws SQLException {
+    void shouldBatchWhenSameQuery() throws SQLException {
         when(db.getPreparedStatement().executeBatch())
                 .thenReturn(new int[]{1, 1});
 
@@ -287,7 +286,7 @@ public class DaoTransactionsTest {
     }
 
     @Test
-    public void shouldBatchWhenSameQueryInSequence() throws SQLException {
+    void shouldBatchWhenSameQueryInSequence() throws SQLException {
         when(db.getPreparedStatement().executeBatch())
                 .thenReturn(new int[]{1, 1});
         when(db.getPreparedStatement().getUpdateCount())
@@ -310,7 +309,7 @@ public class DaoTransactionsTest {
     }
 
     @Test
-    public void shouldNotFailIfQueryIsSubscribedTwice() throws SQLException {
+    void shouldNotFailIfQueryIsSubscribedTwice() throws SQLException {
         db.setUpdatedRows(1);
 
         final Mono<Integer> update = dao.updateSuccess();
@@ -327,7 +326,7 @@ public class DaoTransactionsTest {
     }
 
     @Test
-    public void shouldBeAbleToUseRetryOnTransaction() throws SQLException {
+    void shouldBeAbleToUseRetryOnTransaction() throws SQLException {
 
         when(db.getPreparedStatement().getUpdateCount())
                 .thenReturn(0);
@@ -339,13 +338,15 @@ public class DaoTransactionsTest {
         verify(conn, times(4)).rollback();
     }
 
-    @Test(expected = RuntimeException.class)
-    public void shouldThrowExceptionIfPublisherIsNotFromDao() {
-        daoTransactions.executeTransaction(Flux.empty(), Mono.empty());
+    @Test
+    void shouldThrowExceptionIfPublisherIsNotFromDao() {
+        assertThrows(RuntimeException.class, () -> {
+            daoTransactions.executeTransaction(Flux.empty(), Mono.empty());
+        });
     }
 
     @Test
-    public void shouldAllowEmptyAndNullButNotNullInIterable() {
+    void shouldAllowEmptyAndNullButNotNullInIterable() {
         try {
             daoTransactions.executeTransaction(Collections.emptyList());
             daoTransactions.executeTransaction((Iterable<Publisher<Object>>) null);
@@ -359,7 +360,7 @@ public class DaoTransactionsTest {
     }
 
     @Test
-    public void shouldAllowEmptyListOfPublishers() {
+    void shouldAllowEmptyListOfPublishers() {
         try {
             daoTransactions.executeTransaction(Collections.emptyList()).block();
         } catch (Exception e) {
@@ -368,7 +369,7 @@ public class DaoTransactionsTest {
     }
 
     @Test
-    public void shouldAllowOnlyVoidsInTransaction() throws SQLException {
+    void shouldAllowOnlyVoidsInTransaction() throws SQLException {
         when(db.getPreparedStatement().executeBatch())
                 .thenReturn(new int[]{1, 1});
         try {
@@ -379,7 +380,7 @@ public class DaoTransactionsTest {
     }
 
     @Test
-    public void shouldIgnoreModificationToTransactionList() throws Exception {
+    void shouldIgnoreModificationToTransactionList() throws Exception {
         db.addRows(1);
         Flux<String> find1 = dao.find();
 
@@ -400,7 +401,7 @@ public class DaoTransactionsTest {
     }
 
     @Test
-    public void shouldUseSpecifiedConnectionAndScheduler() throws SQLException {
+    void shouldUseSpecifiedConnectionAndScheduler() throws SQLException {
         MockDb otherDb = new MockDb();
         ConnectionProvider otherConnectionProvider = otherDb.getConnectionProvider();
 
@@ -431,7 +432,7 @@ public class DaoTransactionsTest {
     }
 
     @Test
-    public void shouldUseSecondConnectionAndSchedulerIfFirstPublisherHasNoConnectionProvider() throws SQLException {
+    void shouldUseSecondConnectionAndSchedulerIfFirstPublisherHasNoConnectionProvider() throws SQLException {
         MockDb secondDb = new MockDb();
         ConnectionProvider otherConnectionProvider = secondDb.getConnectionProvider();
 

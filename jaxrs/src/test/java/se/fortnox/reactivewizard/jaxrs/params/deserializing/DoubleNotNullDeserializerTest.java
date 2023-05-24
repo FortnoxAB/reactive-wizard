@@ -1,15 +1,15 @@
 package se.fortnox.reactivewizard.jaxrs.params.deserializing;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
-public class DoubleNotNullDeserializerTest {
+class DoubleNotNullDeserializerTest {
     private final static Deserializer<Double> DESERIALIZER = new DoubleNotNullDeserializer();
 
     @Test
-    public void shouldDeserializeDouble() throws DeserializerException {
+    void shouldDeserializeDouble() throws DeserializerException {
         assertThat(DESERIALIZER.deserialize("5")).isEqualTo(5d);
         assertThat(DESERIALIZER.deserialize("7.2")).isEqualTo(7.2d);
         assertThat(DESERIALIZER.deserialize(String.valueOf(Double.MIN_VALUE))).isEqualTo(Double.MIN_VALUE);
@@ -17,7 +17,7 @@ public class DoubleNotNullDeserializerTest {
     }
 
     @Test
-    public void shouldThrowExceptionForNull() {
+    void shouldThrowExceptionForNull() {
         try {
             DESERIALIZER.deserialize(null);
             fail("Expected exception, but none was thrown");
@@ -28,7 +28,7 @@ public class DoubleNotNullDeserializerTest {
     }
 
     @Test
-    public void shouldThrowDeserializerExceptionForUnparsableStrings() {
+    void shouldThrowDeserializerExceptionForUnparsableStrings() {
         try {
             DESERIALIZER.deserialize("not a recognized value");
             fail("Expected exception, but none was thrown");

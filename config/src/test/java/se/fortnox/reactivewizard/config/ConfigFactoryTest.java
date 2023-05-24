@@ -1,16 +1,16 @@
 package se.fortnox.reactivewizard.config;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ConfigFactoryTest {
+class ConfigFactoryTest {
 
     @Test
-    public void testConfigFactory() {
+    void testConfigFactory() {
         try {
             new ConfigFactory("");
         } catch (Exception e) {
@@ -19,7 +19,7 @@ public class ConfigFactoryTest {
     }
 
     @Test
-    public void testConfigWithXML() {
+    void testConfigWithXML() {
         try {
             new ConfigFactory("test.xml");
         } catch (Exception e) {
@@ -28,29 +28,29 @@ public class ConfigFactoryTest {
     }
 
     @Test
-    public void testConfigWithYML() {
+    void testConfigWithYML() {
         try {
             new ConfigFactory("src/test/resources/testconfig.yml");
         } catch (Exception e) {
-            Assert.fail("Should handle yml file");
+            Assertions.fail("Should handle yml file");
         }
     }
 
     @Test
-    public void testConfigWithInjection() {
+    void testConfigWithInjection() {
         try {
             new ConfigFactory(new String[]{"app.jar", "src/test/resources/testconfig.yml"});
         } catch (Exception e) {
-            Assert.fail("Should handle yml file in second argument");
+            Assertions.fail("Should handle yml file in second argument");
         }
     }
 
     @Test
-    public void testConfigWithInjectionOnlyConfig() {
+    void testConfigWithInjectionOnlyConfig() {
         try {
             new ConfigFactory(new String[]{"src/test/resources/testconfig.yml"});
         } catch (Exception e) {
-            Assert.fail("Should handle yml file in second argument");
+            Assertions.fail("Should handle yml file in second argument");
         }
     }
 }

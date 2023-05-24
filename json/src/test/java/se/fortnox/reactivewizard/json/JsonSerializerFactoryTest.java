@@ -3,7 +3,7 @@ package se.fortnox.reactivewizard.json;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
@@ -14,7 +14,7 @@ import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
-public class JsonSerializerFactoryTest {
+class JsonSerializerFactoryTest {
 
 	private JsonSerializerFactory serializerFactory = new JsonSerializerFactory();
 	private JsonConfig jsonConfigWithoutLambdaModifier = new JsonConfig();
@@ -23,8 +23,8 @@ public class JsonSerializerFactoryTest {
 	}
 	private JsonSerializerFactory serializerFactoryWithoutLambdaModifier = new JsonSerializerFactory(new ObjectMapper(), jsonConfigWithoutLambdaModifier);
 
-	@Test
-	public void shouldSerializeUsingProtectedProp() {
+    @Test
+    void shouldSerializeUsingProtectedProp() {
 		PrivateEntity entity = new PrivateEntity();
 		entity.setProtectedProp("hello");
 		Function<PrivateEntity, String> serializer = serializerFactory.createStringSerializer(PrivateEntity.class);
@@ -32,8 +32,8 @@ public class JsonSerializerFactoryTest {
 		assertThat(serializer.apply(entity)).isEqualTo("{\"protectedProp\":\"hello\"}");
 	}
 
-	@Test
-	public void shouldSerializeUsingPrivateClassWithPublicProp() {
+    @Test
+    void shouldSerializeUsingPrivateClassWithPublicProp() {
 		PrivateEntity entity = new PrivateEntity();
 		entity.setPublicPropInPrivateClass("hello");
 		Function<PrivateEntity, String> serializer = serializerFactory.createStringSerializer(PrivateEntity.class);
@@ -41,8 +41,8 @@ public class JsonSerializerFactoryTest {
 		assertThat(serializer.apply(entity)).isEqualTo("{\"publicPropInPrivateClass\":\"hello\"}");
 	}
 
-	@Test
-	public void shouldSerializeUsingFieldProp() {
+    @Test
+    void shouldSerializeUsingFieldProp() {
 		PrivateEntity entity = new PrivateEntity();
 		entity.fieldProp = "hello";
 		Function<PrivateEntity, String> serializer = serializerFactory.createStringSerializer(PrivateEntity.class);
@@ -50,8 +50,8 @@ public class JsonSerializerFactoryTest {
 		assertThat(serializer.apply(entity)).isEqualTo("{\"fieldProp\":\"hello\"}");
 	}
 
-	@Test
-	public void shouldThrowInvalidJsonExceptionWhenSerializingFails() {
+    @Test
+    void shouldThrowInvalidJsonExceptionWhenSerializingFails() {
 		for (Function<EntityThrowingOnSerialize, ?> serializer : asList(
 				serializerFactory.createStringSerializer(EntityThrowingOnSerialize.class),
 				serializerFactory.createByteSerializer(EntityThrowingOnSerialize.class)
@@ -66,8 +66,8 @@ public class JsonSerializerFactoryTest {
 		}
 	}
 
-	@Test
-	public void shouldReturnNullWhenSerializingNull() {
+    @Test
+    void shouldReturnNullWhenSerializingNull() {
 		for (Function<EntityThrowingOnSerialize, ?> serializer : asList(
 				serializerFactory.createStringSerializer(EntityThrowingOnSerialize.class),
 				serializerFactory.createByteSerializer(EntityThrowingOnSerialize.class)
@@ -76,16 +76,16 @@ public class JsonSerializerFactoryTest {
 		}
 	}
 
-	@Test
-	public void shouldSerializeFromType() throws NoSuchMethodException {
+    @Test
+    void shouldSerializeFromType() throws NoSuchMethodException {
 		Method method = this.getClass().getDeclaredMethod("methodReturningListOfString");
 		Type type = method.getGenericReturnType();
 		Function<List<String>, String> serializeList = serializerFactory.createStringSerializer(type);
 		assertThat(serializeList.apply(methodReturningListOfString())).isEqualTo("[\"a\",\"b\"]");
 	}
 
-	@Test
-	public void shouldSerializeUnwrapped() {
+    @Test
+    void shouldSerializeUnwrapped() {
 		var unwrappedEntity = new UnwrappedEntity();
 		unwrappedEntity.setEntity(new Entity());
 		var serializer = serializerFactoryWithoutLambdaModifier.createStringSerializer(UnwrappedEntity.class);

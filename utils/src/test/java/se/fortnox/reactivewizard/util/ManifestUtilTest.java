@@ -1,15 +1,15 @@
 package se.fortnox.reactivewizard.util;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class ManifestUtilTest {
+class ManifestUtilTest {
 
     @Test
-    public void shouldLoadTestManifest() {
+    void shouldLoadTestManifest() {
         // Execution
         Optional<ManifestUtil.ManifestValues> manifestValuesOptional = ManifestUtil.getManifestValues();
 

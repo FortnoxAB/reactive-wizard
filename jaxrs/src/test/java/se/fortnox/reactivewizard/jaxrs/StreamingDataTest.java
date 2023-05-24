@@ -1,6 +1,6 @@
 package se.fortnox.reactivewizard.jaxrs;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
 import reactor.netty.DisposableServer;
 import reactor.netty.http.client.HttpClient;
@@ -23,13 +23,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static se.fortnox.reactivewizard.jaxrs.response.ResponseDecorator.withHeaders;
 import static se.fortnox.reactivewizard.utils.JaxRsTestUtil.testServer;
 
-public class StreamingDataTest {
+class StreamingDataTest {
 
     private final StreamingResource   streamingResource = new StreamingResourceImpl(null, null);
     private final NoStreamingResource noStreamingResource = new NoStreamingResourceImpl();
 
     @Test
-    public void testStreamingWithRealServer() {
+    void testStreamingWithRealServer() {
 
         DisposableServer      server   = testServer(streamingResource, noStreamingResource).getServer();
         HttpClient            client   = HttpClient.create().port(server.port());
@@ -64,7 +64,7 @@ public class StreamingDataTest {
     }
 
     @Test
-    public void shouldSendStreamingResultWithHeaders() {
+    void shouldSendStreamingResultWithHeaders() {
         DisposableServer server   = testServer(streamingResource).getServer();
         try {
             HttpClient client = HttpClient.create().port(server.port());
@@ -85,7 +85,7 @@ public class StreamingDataTest {
     }
 
     @Test
-    public void shouldNotSignalLastRecordIfMoreItems() throws SQLException {
+    void shouldNotSignalLastRecordIfMoreItems() throws SQLException {
 
         MockDb mockDb = new MockDb();
         StreamingDao streamingDao = mockDb.mockDao(10, StreamingDao.class);
@@ -110,7 +110,7 @@ public class StreamingDataTest {
 
 
     @Test
-    public void shouldSignalLastRecordIfNoMoreItems() throws SQLException {
+    void shouldSignalLastRecordIfNoMoreItems() throws SQLException {
 
         MockDb mockDb = new MockDb();
         StreamingDao streamingDao = mockDb.mockDao(10, StreamingDao.class);
@@ -134,7 +134,7 @@ public class StreamingDataTest {
     }
 
     @Test
-    public void shouldSignalLastRecordIfLimitIsHigherThanItemCount() throws SQLException {
+    void shouldSignalLastRecordIfLimitIsHigherThanItemCount() throws SQLException {
 
         MockDb mockDb = new MockDb();
         StreamingDao streamingDao = mockDb.mockDao(10, StreamingDao.class);
@@ -158,7 +158,7 @@ public class StreamingDataTest {
     }
 
     @Test
-    public void shouldStreamJsonArrayOfObjects() throws SQLException {
+    void shouldStreamJsonArrayOfObjects() throws SQLException {
         MockDb mockDb = new MockDb();
         StreamingDao streamingDao = mockDb.mockDao(10, StreamingDao.class);
         CollectionOptions collectionOptions = new CollectionOptions();
@@ -177,7 +177,7 @@ public class StreamingDataTest {
     }
 
     @Test
-    public void shouldHaveChunkedTransferEncoding() throws SQLException {
+    void shouldHaveChunkedTransferEncoding() throws SQLException {
 
         MockDb mockDb = new MockDb();
         StreamingDao streamingDao = mockDb.mockDao(10, StreamingDao.class);
@@ -200,7 +200,7 @@ public class StreamingDataTest {
     }
 
     @Test
-    public void shouldStreamJsonArrayOfStrings() throws SQLException {
+    void shouldStreamJsonArrayOfStrings() throws SQLException {
 
         MockDb mockDb = new MockDb();
         StreamingDao streamingDao = mockDb.mockDao(10, StreamingDao.class);
@@ -220,7 +220,7 @@ public class StreamingDataTest {
     }
 
     @Test
-    public void shouldSignalLastRecordIfEmptyResponse() throws SQLException {
+    void shouldSignalLastRecordIfEmptyResponse() throws SQLException {
 
         MockDb mockDb = new MockDb();
         StreamingDao streamingDao = mockDb.mockDao(0, StreamingDao.class);

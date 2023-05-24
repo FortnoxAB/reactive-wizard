@@ -1,7 +1,7 @@
 package se.fortnox.reactivewizard.client;
 
 import com.google.inject.Injector;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import se.fortnox.reactivewizard.config.TestInjector;
 import se.fortnox.reactivewizard.server.ServerConfig;
 
@@ -9,10 +9,10 @@ import java.net.URISyntaxException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class HttpClientProviderTest {
+class HttpClientProviderTest {
 
     @Test
-    public void shouldCreateInstanceOfHttpClient() throws URISyntaxException {
+    void shouldCreateInstanceOfHttpClient() throws URISyntaxException {
         Injector injector = TestInjector.create(binder -> {
             binder.bind(ServerConfig.class).toInstance(new ServerConfig(){{
                 setEnabled(false);

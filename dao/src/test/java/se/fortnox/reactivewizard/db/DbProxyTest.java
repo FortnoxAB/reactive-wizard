@@ -3,8 +3,8 @@ package se.fortnox.reactivewizard.db;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.inject.Injector;
 import org.assertj.core.api.ThrowableAssertAlternative;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import reactor.core.Exceptions;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -40,13 +40,13 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class DbProxyTest {
+class DbProxyTest {
 
     MockDb mockDb;
     DbProxyTestDao dbProxyTestDao;
 
     @Test
-    public void shouldReturnDataFromDbForQueryWhenReturningMono() throws SQLException {
+    void shouldReturnDataFromDbForQueryWhenReturningMono() throws SQLException {
         mockDb.addRowColumn(1, 1, "sql_val", String.class, "myname");
         assertThat(dbProxyTestDao.select("mykey").block().getSqlVal()).isEqualTo("myname");
         mockDb.verifySelect("select * from table where key=?", "mykey");
@@ -55,7 +55,7 @@ public class DbProxyTest {
     }
 
     @Test
-    public void shouldReturnDataFromDbForQueryWhenReturningFlux() throws SQLException {
+    void shouldReturnDataFromDbForQueryWhenReturningFlux() throws SQLException {
         mockDb.addRowColumn(1, 1, "sql_val", String.class, "myname");
         assertThat(dbProxyTestDao.selectFlux("mykey").blockLast().getSqlVal()).isEqualTo("myname");
         mockDb.verifySelect("select * from table where key=?", "mykey");
@@ -64,14 +64,14 @@ public class DbProxyTest {
     }
 
     @Test
-    public void shouldNotSignalErrorWhenFailingToCloseConnectionOnMonoReturnType() throws SQLException {
+    void shouldNotSignalErrorWhenFailingToCloseConnectionOnMonoReturnType() throws SQLException {
         mockDb.addRowColumn(1, 1, "sql_val", String.class, "myname");
         doThrow(new SQLException("close")).when(mockDb.getPreparedStatement()).close();
         StepVerifier.create(dbProxyTestDao.select("myname")).expectNextCount(1).verifyComplete();
     }
 
     @Test
-    public void shouldFailIfAttemptingToSignalNextMultipleTimesOnAMono() throws SQLException, InterruptedException {
+    void shouldFailIfAttemptingToSignalNextMultipleTimesOnAMono() throws SQLException, InterruptedException {
         mockDb.addRowColumn(1, 1, "sql_val", String.class, "myname1");
         mockDb.addRowColumn(2, 1, "sql_val", String.class, "myname2");
         StepVerifier.create(dbProxyTestDao.selectMultipleWithMono())
@@ -83,12 +83,12 @@ public class DbProxyTest {
     }
 
     @Test
-    public void shouldSignalCompleteWhenQueryReturnsNoResultOnMonoReturnType() {
+    void shouldSignalCompleteWhenQueryReturnsNoResultOnMonoReturnType() {
         StepVerifier.create(dbProxyTestDao.selectMultipleWithMono()).verifyComplete();
     }
 
     @Test
-    public void shouldSignalErrorWhenDaoMethodDoesNotReturnAPublisher() {
+    void shouldSignalErrorWhenDaoMethodDoesNotReturnAPublisher() {
         try {
             dbProxyTestDao.selectObservable().toBlocking().firstOrDefault(null);
             fail("Expected RuntimeException with the message '" +
@@ -102,7 +102,7 @@ public class DbProxyTest {
     }
 
     @Test
-    public void shouldSignalNextAndCompleteWhenSuccessfullyClosedConnectionOnMonoReturnType() throws SQLException {
+    void shouldSignalNextAndCompleteWhenSuccessfullyClosedConnectionOnMonoReturnType() throws SQLException {
         mockDb.addRowColumn(1, 1, "sql_val", String.class, "myname");
         StepVerifier.create(dbProxyTestDao.select("myname")).expectNextCount(1).verifyComplete();
         verify(mockDb.getPreparedStatement(), timeout(1000)).close();
@@ -111,7 +111,7 @@ public class DbProxyTest {
     }
 
     @Test
-    public void shouldThrowExceptionWhenDirectlySelectingNullValues() throws SQLException {
+    void shouldThrowExceptionWhenDirectlySelectingNullValues() throws SQLException {
         mockDb.addRowColumn(1, 1, "sql_val", String.class, null);
         StepVerifier.create(dbProxyTestDao.selectSpecificColumn("mykey"))
             .expectErrorSatisfies((throwable -> {
@@ -142,7 +142,7 @@ public class DbProxyTest {
     }
 
     @Test
-    public void shouldReuseTypeReference() {
+    void shouldReuseTypeReference() {
         final JsonSerializerFactory jsonSerializerFactoryReal = new JsonSerializerFactory();
         final JsonSerializerFactory jsonSerializerFactory = spy(jsonSerializerFactoryReal);
         AtomicReference<TypeReference<?>> typeReferenceAtomicReference = new AtomicReference<>();
@@ -162,7 +162,7 @@ public class DbProxyTest {
     }
 
     @Test
-    public void shouldReturnDataFromDbForQueryWithFlux() throws SQLException, InterruptedException {
+    void shouldReturnDataFromDbForQueryWithFlux() throws SQLException, InterruptedException {
         mockDb.addRowColumn(1, 1, "sql_val", String.class, "myname");
         assertThat(dbProxyTestDao.select("mykey").block().getSqlVal()).isEqualTo("myname");
         mockDb.verifySelect("select * from table where key=?", "mykey");
@@ -173,7 +173,7 @@ public class DbProxyTest {
     }
 
     @Test
-    public void shouldUpdateDbWithInputAndReturnAffectedRows() throws SQLException {
+    void shouldUpdateDbWithInputAndReturnAffectedRows() throws SQLException {
         mockDb.setUpdatedRows(1);
         assertThat(dbProxyTestDao.update("mykey", "myval").block()).isEqualTo(1);
         mockDb.verifyUpdate("update table set val=? where key=?", "myval", "mykey");
@@ -183,7 +183,7 @@ public class DbProxyTest {
     }
 
     @Test
-    public void shouldSupportReturningKeysFromInsert() throws SQLException {
+    void shouldSupportReturningKeysFromInsert() throws SQLException {
         mockDb.addUpdatedRowId(1L);
         assertThat(dbProxyTestDao.insert().blockLast().getKey()).isEqualTo(1L);
         mockDb.verifyUpdateGeneratedKeys("insert into table");
@@ -194,7 +194,7 @@ public class DbProxyTest {
     }
 
     @Test
-    public void shouldSetLocalDateAsSqlDate() throws SQLException {
+    void shouldSetLocalDateAsSqlDate() throws SQLException {
         mockDb.setUpdatedRows(1);
         LocalDate date = LocalDate.now();
         assertThat(dbProxyTestDao.insertLocalDate(date).blockLast()).isEqualTo(1);
@@ -202,7 +202,7 @@ public class DbProxyTest {
     }
 
     @Test
-    public void shouldSetLocalTimeAsSqlTime() throws SQLException {
+    void shouldSetLocalTimeAsSqlTime() throws SQLException {
         mockDb.setUpdatedRows(1);
         LocalTime time = LocalTime.now();
         assertThat(dbProxyTestDao.insertLocalTime(time).blockLast()).isEqualTo(1);
@@ -210,7 +210,7 @@ public class DbProxyTest {
     }
 
     @Test
-    public void shouldSetLocalDateTimeAsSqlTimeStamp() throws SQLException {
+    void shouldSetLocalDateTimeAsSqlTimeStamp() throws SQLException {
         mockDb.setUpdatedRows(1);
         LocalDateTime now = LocalDateTime.now();
         assertThat(dbProxyTestDao.insertLocalDateTime(now).blockLast()).isEqualTo(1);
@@ -218,7 +218,7 @@ public class DbProxyTest {
     }
 
     @Test
-    public void shouldSetYearMonthAsInteger() throws SQLException {
+    void shouldSetYearMonthAsInteger() throws SQLException {
         mockDb.setUpdatedRows(1);
         YearMonth yearMonth = YearMonth.parse("2021-10");
         assertThat(dbProxyTestDao.insertYearMonth(yearMonth).blockLast()).isEqualTo(1);
@@ -226,14 +226,14 @@ public class DbProxyTest {
     }
 
     @Test
-    public void shouldSetNullAsParam() throws SQLException {
+    void shouldSetNullAsParam() throws SQLException {
         mockDb.addUpdatedRowId(1L);
         assertThat(dbProxyTestDao.insertWithGeneratedKey(null).block().getKey()).isEqualTo(1L);
         mockDb.verifyUpdate("insert into table (date) values (?)", new Object[]{null});
     }
 
     @Test
-    public void shouldThrowExceptionForBadReturnTypeOnUpdate() {
+    void shouldThrowExceptionForBadReturnTypeOnUpdate() {
         try {
             dbProxyTestDao.insertBadreturnType().block();
             fail("expected exception");
@@ -245,7 +245,7 @@ public class DbProxyTest {
     }
 
     @Test
-    public void shouldThrowExceptionMethodsWithoutAnnotation() {
+    void shouldThrowExceptionMethodsWithoutAnnotation() {
         try {
             dbProxyTestDao.methodMissingAnnotation().block();
             fail("expected exception");
@@ -257,7 +257,7 @@ public class DbProxyTest {
     }
 
     @Test
-    public void shouldReturnErrorWhenSQLFails() throws SQLException {
+    void shouldReturnErrorWhenSQLFails() throws SQLException {
         when(mockDb.getPreparedStatement().executeQuery()).thenThrow(new SQLException("db-error"));
         try {
             dbProxyTestDao.failingSql().block();
@@ -273,7 +273,7 @@ public class DbProxyTest {
     }
 
     @Test
-    public void shouldReturnErrorWhenSQLFailsAndCopeWithThatCloseFails() throws SQLException {
+    void shouldReturnErrorWhenSQLFailsAndCopeWithThatCloseFails() throws SQLException {
         when(mockDb.getPreparedStatement().executeQuery()).thenThrow(new SQLException("db-error"));
         doThrow(new SQLException("db-error")).when(mockDb.getConnection()).close();
         try {
@@ -290,7 +290,7 @@ public class DbProxyTest {
     }
 
     @Test
-    public void shouldFailIfUpdateReturnsZeroAffectedRows() throws SQLException {
+    void shouldFailIfUpdateReturnsZeroAffectedRows() throws SQLException {
         mockDb.setUpdatedRows(0);
         try {
             dbProxyTestDao.update("mykey", "myval").block();
@@ -304,7 +304,7 @@ public class DbProxyTest {
     }
 
     @Test
-    public void shouldFailIfUpdateReturnsZeroGeneratedKeys() throws SQLException {
+    void shouldFailIfUpdateReturnsZeroGeneratedKeys() throws SQLException {
         mockDb.setUpdatedRows(0);
 
         try {
@@ -319,7 +319,7 @@ public class DbProxyTest {
     }
 
     @Test
-    public void shouldCreateNewDbProxyInstanceWithNewConnectionProviderAndNewDatabaseConfig() {
+    void shouldCreateNewDbProxyInstanceWithNewConnectionProviderAndNewDatabaseConfig() {
         // given
         DatabaseConfig oldConfig = new DatabaseConfig();
         oldConfig.setUrl("fooo");
@@ -340,7 +340,7 @@ public class DbProxyTest {
     }
 
     @Test
-    public void shouldCreateNewDbProxyInstanceWithNewConnectionProviderAndNewScheduler() {
+    void shouldCreateNewDbProxyInstanceWithNewConnectionProviderAndNewScheduler() {
         // given
         DatabaseConfig config = new DatabaseConfig();
         config.setUrl("fooo");
@@ -364,7 +364,7 @@ public class DbProxyTest {
     }
 
     @Test
-    public void testAllPathsOfTryWithResourceUsingGeneratedKey() throws SQLException {
+    void testAllPathsOfTryWithResourceUsingGeneratedKey() throws SQLException {
         // null AutoCloseable
         setup();
         mockDb.addUpdatedRowId(1L);
@@ -431,7 +431,7 @@ public class DbProxyTest {
     }
 
     @Test
-    public void testAllPathsOfTryWithResourceUsingCount() throws SQLException {
+    void testAllPathsOfTryWithResourceUsingCount() throws SQLException {
         // null AutoCloseable
         setup();
         mockDb.setUpdatedRows(1);
@@ -489,27 +489,27 @@ public class DbProxyTest {
     }
 
     @Test
-    public void shouldPassIfUpdateReturnsZeroAffectedRowsAndQueryAllowsZeroUpdates() throws SQLException {
+    void shouldPassIfUpdateReturnsZeroAffectedRowsAndQueryAllowsZeroUpdates() throws SQLException {
         mockDb.setUpdatedRows(0);
         assertThatNoException()
             .isThrownBy(() -> dbProxyTestDao.updateAllowingZeroAffectedRows("mykey", "myval").block());
     }
 
     @Test
-    public void shouldAllowVoidReturnType() throws SQLException {
+    void shouldAllowVoidReturnType() throws SQLException {
         mockDb.setUpdatedRows(1);
         dbProxyTestDao.insertVoidReturnType().hasElement().block();
         verify(mockDb.getPreparedStatement()).executeUpdate();
     }
 
     @Test
-    public void shouldReturnEmptyMonoWhenUpdatingDbWithVoidReturnType() throws SQLException {
+    void shouldReturnEmptyMonoWhenUpdatingDbWithVoidReturnType() throws SQLException {
         mockDb.setUpdatedRows(1);
         StepVerifier.create(dbProxyTestDao.insertVoidReturnType()).verifyComplete();
     }
 
     @Test
-    public void shouldFailIfMinimumAffectedRowsNotReachedForVoidReturnType() throws SQLException {
+    void shouldFailIfMinimumAffectedRowsNotReachedForVoidReturnType() throws SQLException {
         mockDb.setUpdatedRows(0);
 
         assertThatExceptionOfType(Exception.class)
@@ -521,7 +521,7 @@ public class DbProxyTest {
     }
 
     @Test
-    public void shouldSupportBackpressure() throws SQLException {
+    void shouldSupportBackpressure() throws SQLException {
         mockDb.addRowColumn(1, 1, "name", String.class, "row1");
         mockDb.addRowColumn(2, 1, "name", String.class, "row2");
 
@@ -547,7 +547,7 @@ public class DbProxyTest {
     }
 
     @Test
-    public void shouldReturnErrorOnFullBuffer() throws SQLException {
+    void shouldReturnErrorOnFullBuffer() throws SQLException {
         mockDb.setRowCount(MockDb.INFINITE);
         mockDb.addRowColumn(-1, 1, "name", String.class, "row2");
         StepVerifier.create(dbProxyTestDao.selectFlux("mykey"), 1) // subscribe and request one
@@ -558,7 +558,7 @@ public class DbProxyTest {
     }
 
     @Test
-    public void monoDaoMethodShallSignalNextAndCompleteWhenClosingConnectionFails() throws SQLException {
+    void monoDaoMethodShallSignalNextAndCompleteWhenClosingConnectionFails() throws SQLException {
         // Throws on close
         setup();
         mockDb.addUpdatedRowId(1L);
@@ -566,7 +566,7 @@ public class DbProxyTest {
         StepVerifier.create(dbProxyTestDao.insertMono()).expectNextCount(1).verifyComplete();
     }
 
-    @Before
+    @BeforeEach
     public void setup() {
         mockDb = new MockDb();
         ConnectionProvider connectionProvider = mockDb.getConnectionProvider();

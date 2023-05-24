@@ -1,8 +1,8 @@
 package se.fortnox.reactivewizard.dbmigrate;
 
 import liquibase.exception.LiquibaseException;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.sql.Connection;
@@ -13,12 +13,12 @@ import java.sql.SQLException;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
-public class LiquibaseMigrateTest {
+class LiquibaseMigrateTest {
 
     private LiquibaseConfig  liquibaseConfig;
     private LiquibaseMigrate liquibaseMigrate;
 
-    @Before
+    @BeforeEach
     public void setup() throws IOException, LiquibaseException {
         liquibaseConfig = new LiquibaseConfig();
         liquibaseConfig.setUrl("jdbc:h2:mem:testliquibase;INIT=CREATE SCHEMA IF NOT EXISTS TESTSCHEMA AUTHORIZATION SA");
@@ -29,7 +29,7 @@ public class LiquibaseMigrateTest {
     }
 
     @Test
-    public void shouldMigrate() throws LiquibaseException, SQLException {
+    void shouldMigrate() throws LiquibaseException, SQLException {
         liquibaseMigrate.run();
         Connection connection = getConnection(liquibaseConfig);
         try {
@@ -43,7 +43,7 @@ public class LiquibaseMigrateTest {
     }
 
     @Test
-    public void shouldRollback() throws LiquibaseException, SQLException {
+    void shouldRollback() throws LiquibaseException, SQLException {
         liquibaseMigrate.run();
         liquibaseMigrate.rollback();
         try (Connection connection = getConnection(liquibaseConfig)) {
@@ -54,7 +54,7 @@ public class LiquibaseMigrateTest {
     }
 
     @Test
-    public void shouldForceDropAllTables() throws LiquibaseException, SQLException {
+    void shouldForceDropAllTables() throws LiquibaseException, SQLException {
         liquibaseMigrate.run();
         simulateLock(liquibaseConfig);
 
@@ -65,14 +65,14 @@ public class LiquibaseMigrateTest {
     }
 
     @Test
-    public void shouldDropAllTables() throws LiquibaseException {
+    void shouldDropAllTables() throws LiquibaseException {
         liquibaseMigrate.run();
         liquibaseMigrate.drop();
         liquibaseMigrate.run();
     }
 
     @Test
-    public void shouldThrowExceptionWhenMissingMigrationsFile() throws IOException, LiquibaseException {
+    void shouldThrowExceptionWhenMissingMigrationsFile() throws IOException, LiquibaseException {
         LiquibaseConfig localConfig = liquibaseConfig;
         localConfig.setMigrationsFile("notfound.xml");
         try {

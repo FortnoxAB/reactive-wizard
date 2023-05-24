@@ -1,33 +1,38 @@
 package se.fortnox.reactivewizard.dbmigrate;
 
 import liquibase.Scope;
+import liquibase.database.core.MockDatabase;
 import liquibase.exception.DatabaseException;
 import liquibase.exception.LockException;
 import liquibase.executor.Executor;
 import liquibase.executor.ExecutorService;
 import liquibase.ext.TimeoutLockService;
-import liquibase.database.core.MockDatabase;
 import liquibase.statement.SqlStatement;
 import liquibase.statement.core.LockDatabaseChangeLogStatement;
 import liquibase.statement.core.UpdateStatement;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.util.Date;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.after;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-public class TimeoutLockServiceTest {
+class TimeoutLockServiceTest {
     private MockDatabase                 database           = new MockDatabase();
     private Executor                     executor           = mock(Executor.class);
     private TimeoutLockService           timeoutLockService = new TimeoutLockService(10);
     private ArgumentCaptor<SqlStatement> argument           = ArgumentCaptor.forClass(SqlStatement.class);
 
     @Test
-    public void shouldRenewLockWhenProcessingTakesLongTime() throws LockException, DatabaseException {
+    void shouldRenewLockWhenProcessingTakesLongTime() throws LockException, DatabaseException {
         // When we aquire a lock
         timeoutLockService.acquireLock();
 
@@ -50,7 +55,7 @@ public class TimeoutLockServiceTest {
         verify(executor, after(500).never()).update(any());
     }
 
-    @Before
+    @BeforeEach
     public void setup() throws DatabaseException {
         TimeoutLockService.setRenewalConnectionCreator(() -> database);
 

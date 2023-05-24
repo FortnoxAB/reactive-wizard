@@ -1,18 +1,17 @@
 package se.fortnox.reactivewizard.validation;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.Test;
-import org.slf4j.event.Level;
-import reactor.core.publisher.Mono;
-import se.fortnox.reactivewizard.jaxrs.FieldError;
-import se.fortnox.reactivewizard.jaxrs.WebException;
-import se.fortnox.reactivewizard.jaxrs.Wrap;
-
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+import org.junit.jupiter.api.Test;
+import org.slf4j.event.Level;
+import reactor.core.publisher.Mono;
+import se.fortnox.reactivewizard.jaxrs.FieldError;
+import se.fortnox.reactivewizard.jaxrs.WebException;
+import se.fortnox.reactivewizard.jaxrs.Wrap;
 
 import java.text.ParseException;
 import java.util.Date;
@@ -31,7 +30,7 @@ import static org.mockito.Mockito.verify;
  * The purpose of this document is to show you how you can do some simple and
  * some more advanced validation of your input.
  */
-public class InputValidationTest {
+class InputValidationTest {
 
     /**
      * Create a class representing the input that should be validated
@@ -64,7 +63,7 @@ public class InputValidationTest {
 
 
     @Test
-    public void shouldGiveValidationErrorWhenFieldIsNull() {
+    void shouldGiveValidationErrorWhenFieldIsNull() {
         /**
          * Pass an instance to your service, and you get an exception.
          * This is what the exception looks like when it is json-serialized and sent back to the caller.
@@ -79,7 +78,7 @@ public class InputValidationTest {
     }
 
     @Test
-    public void shouldCallServiceIfNoValidationError() {
+    void shouldCallServiceIfNoValidationError() {
         /**
          * Pass a valid instance, where name is not null, and you get no exception
          */
@@ -109,7 +108,7 @@ public class InputValidationTest {
     }
 
     @Test
-    public void minMaxValidation() {
+    void minMaxValidation() {
         /**
          * First we set the age to 1, which is less than the minimum of 3, so
          * we get a validation error:
@@ -208,7 +207,7 @@ public class InputValidationTest {
      * double validation errors.
      */
     @Test
-    public void shouldFailIfStartDateIsNull() throws ParseException {
+    void shouldFailIfStartDateIsNull() throws ParseException {
         assertValidationException(callService(new Period()),
                 "{'id':'.*','error':'validation','fields':[{'field':'startDate','error':'validation.notnull'}]}");
     }
@@ -270,7 +269,7 @@ public class InputValidationTest {
     }
 
     @Test
-    public void shouldUseSubTypeWhenValidating() {
+    void shouldUseSubTypeWhenValidating() {
         MyPeriodService service = ValidatingProxy.create(MyPeriodService.class, new MyPeriodServiceImpl(), new ValidatorUtil());
         assertValidationException(() -> service.acceptsPeriod(new PeriodPrivate() {{
             setStartDate(new Date(10));
@@ -301,7 +300,7 @@ public class InputValidationTest {
     }
 
     @Test
-    public void shouldReturnValidationErrorFromService() {
+    void shouldReturnValidationErrorFromService() {
         MyValidatingService service = new MyValidatingService();
         assertValidationException(() -> service.acceptsPeriod(new Period() {{
             setStartDate(new Date(5));
@@ -334,7 +333,7 @@ public class InputValidationTest {
     }
 
     @Test
-    public void shouldValidateParentButNotChildIfNoValidateAnnotation() {
+    void shouldValidateParentButNotChildIfNoValidateAnnotation() {
         assertValidationException(callService(new EntityWithUnvalidatedChild()),
                 "{'id':'.*','error':'validation','fields':[{'field':'child','error':'validation.notnull'}]}");
         callService(new EntityWithUnvalidatedChild() {{
@@ -353,7 +352,7 @@ public class InputValidationTest {
     }
 
     @Test
-    public void shouldValidateParentAndChildIfValidateAnnotation() {
+    void shouldValidateParentAndChildIfValidateAnnotation() {
         assertValidationException(callService(new EntityWithValidatedChild() {{
                     setChild(new Child());
                 }}),
@@ -374,7 +373,7 @@ public class InputValidationTest {
      * Records are also validated
      */
     @Test
-    public void shouldFailIfStartDateIsNullInRecord() {
+    void shouldFailIfStartDateIsNullInRecord() {
         assertValidationException(callService(new PeriodRecord(null, null)),
                 "{'id':'.*','error':'validation','fields':[{'field':'startDate','error':'validation.notnull'}]}");
     }
@@ -428,14 +427,14 @@ public class InputValidationTest {
      * in a list and passes it to the service. The object is validated.
      */
     @Test
-    public void shouldValidateObjectsInIterables() {
+    void shouldValidateObjectsInIterables() {
         assertValidationException(() -> iterableValidationService.call(List.of(new InputClass())),
             "{'id':'.*','error':'validation','fields':[{'field':'name','error':'validation.notnull'}]}");
         verify(service, times(0)).call(any());
     }
 
     @Test
-    public void shouldPassIterableIfNoErrorsWithin() {
+    void shouldPassIterableIfNoErrorsWithin() {
         iterableValidationService.call(List.of(new InputClass() {{ setName("some name"); }}));
         verify(service, times(1)).call(any());
     }
@@ -446,14 +445,14 @@ public class InputValidationTest {
      * Jakarta annotation
      */
     @Test
-    public void shouldStillValidateObjectsInAnnotatedIterables() {
+    void shouldStillValidateObjectsInAnnotatedIterables() {
         assertValidationException(() -> annotatedValidationService.call(List.of(new InputClass())),
             "{'id':'.*','error':'validation','fields':[{'field':'name','error':'validation.notnull'}]}");
         verify(annotatedService, times(0)).call(any());
     }
 
     @Test
-    public void shouldPassValidIterableIfNoErrorsWithin() {
+    void shouldPassValidIterableIfNoErrorsWithin() {
         annotatedValidationService.call(List.of(new InputClass() {{ setName("some name"); }}));
         verify(annotatedService, times(1)).call(any());
     }

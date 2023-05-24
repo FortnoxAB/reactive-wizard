@@ -1,7 +1,7 @@
 package se.fortnox.reactivewizard.client;
 
 import com.google.inject.Injector;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import se.fortnox.reactivewizard.config.TestInjector;
 import se.fortnox.reactivewizard.server.ServerConfig;
 
@@ -12,10 +12,10 @@ import java.util.Date;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
-public class HttpClientConfigTest {
+class HttpClientConfigTest {
 
     @Test
-    public void shouldInitializeFromConfig() {
+    void shouldInitializeFromConfig() {
         Injector injector = TestInjector.create(binder -> {
             binder.bind(ServerConfig.class).toInstance(new ServerConfig() {{
                 setEnabled(false);
@@ -40,7 +40,7 @@ public class HttpClientConfigTest {
     }
 
     @Test
-    public void shouldInitializeFromConfigWithUrl() {
+    void shouldInitializeFromConfigWithUrl() {
         Injector injector = TestInjector.create(binder -> {
             binder.bind(ServerConfig.class).toInstance(new ServerConfig() {{
                 setEnabled(false);
@@ -56,7 +56,7 @@ public class HttpClientConfigTest {
     }
 
     @Test
-    public void shouldDefaultPortTo80() throws URISyntaxException {
+    void shouldDefaultPortTo80() throws URISyntaxException {
         HttpClientConfig config = new HttpClientConfig("http://localhost");
 
 
@@ -66,7 +66,7 @@ public class HttpClientConfigTest {
     }
 
     @Test
-    public void shouldSetPortTo443WhenHttps() throws URISyntaxException {
+    void shouldSetPortTo443WhenHttps() throws URISyntaxException {
         HttpClientConfig config = new HttpClientConfig("https://localhost");
 
         assertThat(config.getPort()).isEqualTo(443);
@@ -75,7 +75,7 @@ public class HttpClientConfigTest {
     }
 
     @Test
-    public void shouldSetPort() throws URISyntaxException {
+    void shouldSetPort() throws URISyntaxException {
         HttpClientConfig config = new HttpClientConfig("http://localhost:8080");
 
         assertThat(config.getPort()).isEqualTo(8080);
@@ -84,7 +84,7 @@ public class HttpClientConfigTest {
     }
 
     @Test
-    public void shouldSetHttpsFromProtocolEvenIfPortIsSupplied() throws URISyntaxException {
+    void shouldSetHttpsFromProtocolEvenIfPortIsSupplied() throws URISyntaxException {
         HttpClientConfig config = new HttpClientConfig("https://localhost:8080");
 
         assertThat(config.getPort()).isEqualTo(8080);
@@ -94,7 +94,7 @@ public class HttpClientConfigTest {
 
 
     @Test
-    public void shouldAddHttpWhenProtocolIsMissing() throws URISyntaxException {
+    void shouldAddHttpWhenProtocolIsMissing() throws URISyntaxException {
         HttpClientConfig config = new HttpClientConfig("localhost");
 
         assertThat(config.getPort()).isEqualTo(80);
@@ -104,7 +104,7 @@ public class HttpClientConfigTest {
     }
 
     @Test
-    public void shouldBlockStartupIfHostCannotBeResolved() {
+    void shouldBlockStartupIfHostCannotBeResolved() {
         String host = "Nonexistinghost" + new Date().getTime();
         try {
             new HttpClientConfig(host);
@@ -116,7 +116,7 @@ public class HttpClientConfigTest {
     }
 
     @Test
-    public void shouldNotBeInsecureByDefault() throws URISyntaxException {
+    void shouldNotBeInsecureByDefault() throws URISyntaxException {
         HttpClientConfig httpClientConfig = new HttpClientConfig("https://example.com");
         assertThat(httpClientConfig.isHttps()).isTrue();
         assertThat(httpClientConfig.isValidateCertificates()).isTrue();

@@ -1,8 +1,8 @@
 package se.fortnox.reactivewizard.json;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
@@ -18,7 +18,7 @@ import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
-public class JsonDeserializerFactoryTest {
+class JsonDeserializerFactoryTest {
     private JsonSerializerFactory   serializerFactory;
     private JsonDeserializerFactory deserializerFactory;
 
@@ -33,7 +33,7 @@ public class JsonDeserializerFactoryTest {
         }
     };
 
-    @Before
+    @BeforeEach
     public void setUp() {
         serializerFactory = new JsonSerializerFactory();
         deserializerFactory = new JsonDeserializerFactory();
@@ -48,7 +48,7 @@ public class JsonDeserializerFactoryTest {
     }
 
     @Test
-    public void shouldThrowInvalidJsonException() {
+    void shouldThrowInvalidJsonException() {
         Function<String, ImmutableEntity> deserializer = deserializerFactory.createDeserializer(ImmutableEntity.class);
 
         try {
@@ -61,7 +61,7 @@ public class JsonDeserializerFactoryTest {
     }
 
     @Test
-    public void shouldThrowInvalidJsonExceptionUsingByteArayDeserializer() {
+    void shouldThrowInvalidJsonExceptionUsingByteArayDeserializer() {
         Function<byte[], ImmutableEntity> deserializer = deserializerFactory.createByteDeserializer(ImmutableEntity.class);
 
         try {
@@ -74,7 +74,7 @@ public class JsonDeserializerFactoryTest {
     }
 
     @Test
-    public void shouldDeserializeNullToNull() {
+    void shouldDeserializeNullToNull() {
         Function<String, ImmutableEntity> deserializer = deserializerFactory.createDeserializer(ImmutableEntity.class);
 
         ImmutableEntity result = deserializer.apply(null);
@@ -83,7 +83,7 @@ public class JsonDeserializerFactoryTest {
     }
 
     @Test
-    public void shouldDeserializeByteArrayNullToNull() {
+    void shouldDeserializeByteArrayNullToNull() {
         Function<byte[], ImmutableEntity> deserializer = deserializerFactory.createByteDeserializer(ImmutableEntity.class);
 
         ImmutableEntity result = deserializer.apply(null);
@@ -93,7 +93,7 @@ public class JsonDeserializerFactoryTest {
 
 
     @Test
-    public void shouldSerializeAndDeserializeImmutableObjectsByTypeReference() {
+    void shouldSerializeAndDeserializeImmutableObjectsByTypeReference() {
         Function<ImmutableEntity, byte[]> serializer = serializerFactory.createByteSerializer(immutableEntityTypeReference);
         byte[] json = serializer.apply(immutableEntity);
 
@@ -105,7 +105,7 @@ public class JsonDeserializerFactoryTest {
 
 
     @Test
-    public void shouldSerializeAndDeserializeImmutableObjectsByTypeReferenceToAndFromByteArrays() {
+    void shouldSerializeAndDeserializeImmutableObjectsByTypeReferenceToAndFromByteArrays() {
         Function<ImmutableEntity, String> serializer = serializerFactory.createStringSerializer(immutableEntityTypeReference);
         String json = serializer.apply(immutableEntity);
 
@@ -116,7 +116,7 @@ public class JsonDeserializerFactoryTest {
     }
 
     @Test
-    public void shouldSerializeAndDeserializeToAndFromByteArrays() {
+    void shouldSerializeAndDeserializeToAndFromByteArrays() {
         Function<ImmutableEntity, byte[]> serializer = serializerFactory.createByteSerializer(ImmutableEntity.class);
         byte[] json = serializer.apply(immutableEntity);
 
@@ -127,7 +127,7 @@ public class JsonDeserializerFactoryTest {
     }
 
     @Test
-    public void shouldSerializeAndDeserializeImmutableObjects() {
+    void shouldSerializeAndDeserializeImmutableObjects() {
         Function<ImmutableEntity, String> serializer = serializerFactory.createStringSerializer(ImmutableEntity.class);
         String json = serializer.apply(immutableEntity);
 
@@ -138,7 +138,7 @@ public class JsonDeserializerFactoryTest {
     }
 
     @Test
-    public void shouldSerializeAndDeserializeMutableObjects() {
+    void shouldSerializeAndDeserializeMutableObjects() {
         Function<MutableEntity, String> serializer = serializerFactory.createStringSerializer(MutableEntity.class);
         String json = serializer.apply(mutableEntity);
 
@@ -149,7 +149,7 @@ public class JsonDeserializerFactoryTest {
     }
 
     @Test
-    public void shouldSerializeAndDeserializeJdk8Types() {
+    void shouldSerializeAndDeserializeJdk8Types() {
         Function<Jdk8Types, String> serializer = serializerFactory.createStringSerializer(Jdk8Types.class);
         String json = serializer.apply(jdk8Types);
 
@@ -160,7 +160,7 @@ public class JsonDeserializerFactoryTest {
     }
 
     @Test
-    public void shouldDeserializeFromType() throws NoSuchMethodException {
+    void shouldDeserializeFromType() throws NoSuchMethodException {
         Method method = this.getClass().getDeclaredMethod("methodReturningListOfString");
         Type type = method.getGenericReturnType();
         Function<String, List<String>> serializeList = deserializerFactory.createDeserializer(type);

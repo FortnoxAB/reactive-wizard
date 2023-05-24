@@ -1,13 +1,13 @@
 package se.fortnox.reactivewizard.util;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class CompoundKeyTest {
+class CompoundKeyTest {
 
     @Test
-    public void shouldBeComparableWhenSame() {
+    void shouldBeComparableWhenSame() {
         CompoundKey key1 = new CompoundKey("one", "two", "three");
         CompoundKey key2 = new CompoundKey("one", "two", "three");
 
@@ -16,7 +16,7 @@ public class CompoundKeyTest {
     }
 
     @Test
-    public void shouldBeComparableWhenDifferent() {
+    void shouldBeComparableWhenDifferent() {
         CompoundKey key1 = new CompoundKey("one", "two", "three");
         CompoundKey key2 = new CompoundKey("one", "two", "four");
 
@@ -25,7 +25,7 @@ public class CompoundKeyTest {
     }
 
     @Test
-    public void shouldCompareKeysWithDifferentLength() {
+    void shouldCompareKeysWithDifferentLength() {
         CompoundKey key1 = new CompoundKey("one", "two", "three");
         CompoundKey key2 = new CompoundKey("one", "two");
 
@@ -34,7 +34,7 @@ public class CompoundKeyTest {
     }
 
     @Test
-    public void shouldCompareNullValues() {
+    void shouldCompareNullValues() {
         CompoundKey key1 = new CompoundKey(null, null);
         CompoundKey key2 = new CompoundKey(null, null, null);
 
@@ -43,7 +43,7 @@ public class CompoundKeyTest {
     }
 
     @Test
-    public void shouldCompareWithNullValues() {
+    void shouldCompareWithNullValues() {
         CompoundKey key1 = new CompoundKey(null, null);
 
         assertThat(key1).isNotEqualTo(null);
@@ -51,7 +51,7 @@ public class CompoundKeyTest {
 
 
     @Test
-    public void shouldCompareWithOtherTypes() {
+    void shouldCompareWithOtherTypes() {
         CompoundKey key1 = new CompoundKey("one");
 
         assertThat(key1).isNotEqualTo("one");

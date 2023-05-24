@@ -8,19 +8,19 @@ import net.bytebuddy.description.type.TypeDescription;
 import net.bytebuddy.dynamic.scaffold.subclass.ConstructorStrategy;
 import net.bytebuddy.implementation.FieldAccessor;
 import net.bytebuddy.implementation.MethodCall;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class MutabilityDetectorTest {
+class MutabilityDetectorTest {
     @Test
-    public void testIsImmutable() {
+    void testIsImmutable() {
         assertThat(MutabilityDetector.isImmutable(Immutable.class)).isTrue();
         assertThat(MutabilityDetector.isImmutable(Mutable.class)).isFalse();
     }
 
     @Test
-    public void shouldIgnoreSyntheticMembers() throws Exception {
+    void shouldIgnoreSyntheticMembers() throws Exception {
         Class<?> withSynthetic = createClassWithSyntheticMembers();
         assertThat(MutabilityDetector.isImmutable(withSynthetic)).isTrue();
     }

@@ -1,10 +1,10 @@
 package se.fortnox.reactivewizard.db;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
@@ -26,8 +26,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
-public class ReactiveStatementFactoryTest {
+@ExtendWith(MockitoExtension.class)
+class ReactiveStatementFactoryTest {
     @Mock
     private PagingOutput pagingOutput;
 
@@ -45,7 +45,7 @@ public class ReactiveStatementFactoryTest {
 
     private ReactiveStatementFactory statementFactory;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         when(pagingOutput.apply(any(), any())).then(invocationOnMock -> invocationOnMock.getArgument(0,
             Flux.class));
@@ -104,7 +104,7 @@ public class ReactiveStatementFactoryTest {
     }
 
     @Test
-    public void shouldReleaseSchedulerWorkers() {
+    void shouldReleaseSchedulerWorkers() {
         Flux<Object> stmt = (Flux<Object>) statementFactory.create(new Object[0], new ConnectionScheduler(() -> mock(Connection.class), scheduler));
         stmt.blockFirst();
         verify(scheduler).createWorker();

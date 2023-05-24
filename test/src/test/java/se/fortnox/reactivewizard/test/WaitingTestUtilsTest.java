@@ -1,7 +1,7 @@
 package se.fortnox.reactivewizard.test;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.util.UUID;
@@ -11,10 +11,10 @@ import java.util.function.BooleanSupplier;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
-public class WaitingTestUtilsTest {
+class WaitingTestUtilsTest {
 
     @Test
-    public void shouldFailTestIfConditionIsNotMetWithinDefaultTime() {
+    void shouldFailTestIfConditionIsNotMetWithinDefaultTime() {
         Error assertionError = null;
         try {
             WaitingTestUtils.assertConditionIsTrueWithinDefaultTime(() -> false);
@@ -26,7 +26,7 @@ public class WaitingTestUtilsTest {
     }
 
     @Test
-    public void shouldFailTestIfConditionIsNotMetWithinDefaultTimeWithCustomMessage() {
+    void shouldFailTestIfConditionIsNotMetWithinDefaultTimeWithCustomMessage() {
         Error assertionError = null;
         String errorMessage = UUID.randomUUID().toString();
         try {
@@ -40,7 +40,7 @@ public class WaitingTestUtilsTest {
     }
 
     @Test
-    public void shouldFailTestIfConditionIsNotMetWithinTime() {
+    void shouldFailTestIfConditionIsNotMetWithinTime() {
         Error assertionError = null;
         try {
             WaitingTestUtils.assertConditionIsTrueWithinTime(200, TimeUnit.MILLISECONDS, () -> false);
@@ -53,19 +53,19 @@ public class WaitingTestUtilsTest {
 
 
     @Test
-    public void shouldNotFailTestIfConditionIsMetWithinTime() {
+    void shouldNotFailTestIfConditionIsMetWithinTime() {
         try {
             final BooleanSupplier mock = Mockito.mock(BooleanSupplier.class);
             when(mock.getAsBoolean()).thenReturn(false).thenReturn(false).thenReturn(true);
             WaitingTestUtils.assertConditionIsTrueWithinTime(1000, TimeUnit.MILLISECONDS, mock);
         } catch (Error assertionError) {
-            Assert.fail("This should not throw an assertionexception");
+            Assertions.fail("This should not throw an assertionexception");
             assertionError.printStackTrace();
         }
     }
 
     @Test
-    public void shouldAcceptCustomErrorMessage() {
+    void shouldAcceptCustomErrorMessage() {
         final String errorMessage = UUID.randomUUID().toString();
         try {
             WaitingTestUtils.assertConditionIsTrueWithinTime(1000, TimeUnit.MILLISECONDS, () -> false, errorMessage);

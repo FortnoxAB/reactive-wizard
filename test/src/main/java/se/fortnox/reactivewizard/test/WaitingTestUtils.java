@@ -1,6 +1,6 @@
 package se.fortnox.reactivewizard.test;
 
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 import rx.Observable;
 import rx.Subscription;
 
@@ -76,11 +76,11 @@ public abstract class WaitingTestUtils {
         try {
             final boolean await = countDownLatch.await(wait, waitingUnit);
             if (!await) {
-                Assert.fail(message);
+                Assertions.fail(message);
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            Assert.fail();
+            Assertions.fail();
         } finally {
             subscribe.unsubscribe();
         }

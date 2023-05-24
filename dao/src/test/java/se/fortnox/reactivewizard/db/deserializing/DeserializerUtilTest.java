@@ -2,9 +2,9 @@ package se.fortnox.reactivewizard.db.deserializing;
 
 import org.apache.logging.log4j.core.Appender;
 import org.h2.tools.SimpleResultSet;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.sql.SQLException;
 import java.sql.Types;
@@ -17,22 +17,22 @@ import static se.fortnox.reactivewizard.test.LoggingMockUtil.createMockedLogAppe
 import static se.fortnox.reactivewizard.test.LoggingMockUtil.destroyMockedAppender;
 import static se.fortnox.reactivewizard.test.TestUtil.matches;
 
-public class DeserializerUtilTest {
+class DeserializerUtilTest {
 
     Appender mockAppender;
 
-    @Before
+    @BeforeEach
     public void setup() {
         mockAppender = createMockedLogAppender(DeserializerUtil.class);
     }
 
-    @After
+    @AfterEach
     public void destroy() {
         destroyMockedAppender(DeserializerUtil.class);
     }
 
     @Test
-    public void shouldLogWarnIfNoPropertyDeserializerWasFound() throws SQLException {
+    void shouldLogWarnIfNoPropertyDeserializerWasFound() throws SQLException {
         SimpleResultSet resultSet = new SimpleResultSet();
         resultSet.addColumn("test_a", Types.VARCHAR, 255, 0);
 
@@ -46,7 +46,7 @@ public class DeserializerUtilTest {
     }
 
     @Test
-    public void shouldNotWarnForFoundProperties() throws SQLException {
+    void shouldNotWarnForFoundProperties() throws SQLException {
         SimpleResultSet resultSet = new SimpleResultSet();
         resultSet.addColumn("test_b", Types.VARCHAR, 255, 0);
 

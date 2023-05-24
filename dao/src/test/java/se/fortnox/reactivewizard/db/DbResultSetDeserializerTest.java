@@ -2,13 +2,17 @@ package se.fortnox.reactivewizard.db;
 
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.ObjectAssert;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import se.fortnox.reactivewizard.db.deserializing.DbResultSetDeserializer;
 
 import java.math.BigDecimal;
-import java.sql.*;
+import java.sql.Array;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Types;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -20,67 +24,67 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class DbResultSetDeserializerTest {
+class DbResultSetDeserializerTest {
 
     private final ResultSet         rs        = mock(ResultSet.class);
     private final ResultSetMetaData meta      = mock(ResultSetMetaData.class);
     private final Array             jdbcArray = mock(Array.class);
     private       TimeZone          previousTimeZone;
 
-    @Before
+    @BeforeEach
     public void setup() {
         previousTimeZone = TimeZone.getDefault();
         TimeZone.setDefault(TimeZone.getTimeZone("GMT+2:00"));
     }
 
-    @After
+    @AfterEach
     public void reset() {
         TimeZone.setDefault(previousTimeZone);
     }
 
     @Test
-    public void shouldDeserializeString() throws SQLException {
+    void shouldDeserializeString() throws SQLException {
         when(rs.getString(1)).thenReturn("Test");
         thenDeserialized(String.class).isEqualTo("Test");
     }
 
     @Test
-    public void shouldDeserializeUUID() throws SQLException {
+    void shouldDeserializeUUID() throws SQLException {
         UUID uuid = UUID.randomUUID();
         when(rs.getObject(1)).thenReturn(uuid);
         thenDeserialized(UUID.class).isEqualTo(uuid);
     }
 
     @Test
-    public void shouldDeserializeNullString() throws SQLException {
+    void shouldDeserializeNullString() throws SQLException {
         when(rs.getString(1)).thenReturn(null);
         when(rs.wasNull()).thenReturn(true);
         thenDeserialized(String.class).isNull();
     }
 
     @Test
-    public void shouldDeserializeInt() throws SQLException {
+    void shouldDeserializeInt() throws SQLException {
         when(rs.getInt(1)).thenReturn(567);
         thenDeserialized(int.class).isEqualTo(567);
         thenDeserialized(Integer.class).isEqualTo(567);
     }
 
     @Test
-    public void shouldDeserializeDouble() throws SQLException {
+    void shouldDeserializeDouble() throws SQLException {
         when(rs.getDouble(1)).thenReturn(567d);
         thenDeserialized(double.class).isEqualTo(567d);
         thenDeserialized(Double.class).isEqualTo(567d);
     }
 
     @Test
-    public void shouldDeserializeFloat() throws SQLException {
+    void shouldDeserializeFloat() throws SQLException {
         when(rs.getFloat(1)).thenReturn(567f);
         thenDeserialized(float.class).isEqualTo(567f);
         thenDeserialized(Float.class).isEqualTo(567f);
     }
 
     @Test
-    public void shouldDeserializeNullInt() throws SQLException {
+    void shouldDeserializeNullInt() throws SQLException {
         when(rs.getInt(1)).thenReturn(0);
         when(rs.wasNull()).thenReturn(true);
         thenDeserialized(int.class).isEqualTo(0);
@@ -88,14 +92,14 @@ public class DbResultSetDeserializerTest {
     }
 
     @Test
-    public void shouldDeserializeLong() throws SQLException {
+    void shouldDeserializeLong() throws SQLException {
         when(rs.getLong(1)).thenReturn(567888L);
         thenDeserialized(long.class).isEqualTo(567888L);
         thenDeserialized(Long.class).isEqualTo(567888L);
     }
 
     @Test
-    public void shouldDeserializeNullLong() throws SQLException {
+    void shouldDeserializeNullLong() throws SQLException {
         when(rs.getLong(1)).thenReturn(0L);
         when(rs.wasNull()).thenReturn(true);
         thenDeserialized(long.class).isEqualTo(0L);
@@ -103,19 +107,19 @@ public class DbResultSetDeserializerTest {
     }
 
     @Test
-    public void shouldDeserializeBigDecimal() throws SQLException {
+    void shouldDeserializeBigDecimal() throws SQLException {
         when(rs.getBigDecimal(1)).thenReturn(BigDecimal.TEN);
         thenDeserialized(BigDecimal.class).isEqualTo(BigDecimal.TEN);
     }
 
     @Test
-    public void shouldDeserializeNullBigDecimal() throws SQLException {
+    void shouldDeserializeNullBigDecimal() throws SQLException {
         when(rs.getBigDecimal(1)).thenReturn(null);
         thenDeserialized(BigDecimal.class).isNull();
     }
 
     @Test
-    public void shouldDeserializeBoolean() throws SQLException {
+    void shouldDeserializeBoolean() throws SQLException {
         when(rs.getBoolean(1)).thenReturn(true);
         thenDeserialized(Boolean.class).isEqualTo(Boolean.TRUE);
         thenDeserialized(boolean.class).isEqualTo(Boolean.TRUE);
@@ -125,7 +129,7 @@ public class DbResultSetDeserializerTest {
     }
 
     @Test
-    public void shouldDeserializeNullBoolean() throws SQLException {
+    void shouldDeserializeNullBoolean() throws SQLException {
         when(rs.getBoolean(1)).thenReturn(false);
         when(rs.wasNull()).thenReturn(true);
         thenDeserialized(Boolean.class).isNull();
@@ -133,7 +137,7 @@ public class DbResultSetDeserializerTest {
     }
 
     @Test
-    public void shouldDeserializeLocalDate() throws SQLException {
+    void shouldDeserializeLocalDate() throws SQLException {
         when(rs.getDate(1)).thenReturn(new java.sql.Date(1262300400000L));
         thenDeserialized(LocalDate.class).isEqualTo(LocalDate.parse("2010-01-01"));
         when(rs.getDate(1)).thenReturn(null);
@@ -141,7 +145,7 @@ public class DbResultSetDeserializerTest {
     }
 
     @Test
-    public void shouldDeserializeLocalDateTime() throws SQLException {
+    void shouldDeserializeLocalDateTime() throws SQLException {
         when(rs.getTimestamp(1)).thenReturn(new java.sql.Timestamp(1472739367000L));
         thenDeserialized(LocalDateTime.class).isEqualTo(LocalDateTime.parse("2016-09-01T16:16:07"));
         when(rs.getTimestamp(1)).thenReturn(null);
@@ -149,7 +153,7 @@ public class DbResultSetDeserializerTest {
     }
 
     @Test
-    public void shouldDeserializeYearMonth() throws SQLException {
+    void shouldDeserializeYearMonth() throws SQLException {
         when(rs.getInt(1)).thenReturn(202110);
         thenDeserialized(YearMonth.class).isEqualTo(YearMonth.parse("2021-10"));
         when(rs.getInt(1)).thenReturn(0);
@@ -158,33 +162,33 @@ public class DbResultSetDeserializerTest {
     }
 
     @Test
-    public void shouldDeserializeEnum() throws SQLException {
+    void shouldDeserializeEnum() throws SQLException {
         when(rs.getString(1)).thenReturn("T2");
         thenDeserialized(TestEnum.class).isEqualTo(TestEnum.T2);
     }
 
     @Test
-    public void shouldDeserializeLocalTime() throws SQLException {
+    void shouldDeserializeLocalTime() throws SQLException {
         when(rs.getTime(1)).thenReturn(new java.sql.Time(1466163420000L));
         thenDeserialized(LocalTime.class).isEqualTo(LocalTime.parse("13:37:00"));
     }
 
     @Test
-    public void shouldDeserializeNullTime() throws SQLException {
+    void shouldDeserializeNullTime() throws SQLException {
         when(rs.getTime(1)).thenReturn(null);
         when(rs.wasNull()).thenReturn(true);
         thenDeserialized(LocalTime.class).isNull();
     }
 
     @Test
-    public void shouldDeserializeNullEnum() throws SQLException {
+    void shouldDeserializeNullEnum() throws SQLException {
         when(rs.getString(1)).thenReturn(null);
         when(rs.wasNull()).thenReturn(true);
         thenDeserialized(TestEnum.class).isNull();
     }
 
     @Test
-    public void shouldDeserializeImmutableObject() throws SQLException {
+    void shouldDeserializeImmutableObject() throws SQLException {
         DbResultSetDeserializer des = new DbResultSetDeserializer(ImmutableDbTestObj.class);
         when(meta.getColumnCount()).thenReturn(5);
         when(meta.getColumnLabel(1)).thenReturn("sql_val");
@@ -208,7 +212,7 @@ public class DbResultSetDeserializerTest {
     }
 
     @Test
-    public void shouldDeserializeObject() throws SQLException {
+    void shouldDeserializeObject() throws SQLException {
         DbResultSetDeserializer des = new DbResultSetDeserializer(DbTestObj.class);
         when(meta.getColumnCount()).thenReturn(3);
         when(meta.getColumnLabel(1)).thenReturn("sql_val");
@@ -225,7 +229,7 @@ public class DbResultSetDeserializerTest {
     }
 
     @Test
-    public void shouldDeserializeObjectRecord() throws SQLException {
+    void shouldDeserializeObjectRecord() throws SQLException {
         DbResultSetDeserializer des = new DbResultSetDeserializer(DbTestObjRecord.class);
         when(meta.getColumnCount()).thenReturn(3);
         when(meta.getColumnLabel(1)).thenReturn("sql_val");
@@ -242,7 +246,7 @@ public class DbResultSetDeserializerTest {
     }
 
     @Test
-    public void shouldDeserializeChildObject() throws SQLException {
+    void shouldDeserializeChildObject() throws SQLException {
         DbResultSetDeserializer des = new DbResultSetDeserializer(DbTestObj.class);
         when(meta.getColumnCount()).thenReturn(1);
         when(meta.getColumnLabel(1)).thenReturn("child.sql_val");
@@ -253,7 +257,7 @@ public class DbResultSetDeserializerTest {
     }
 
     @Test
-    public void shouldDeserializeChildObjectRecord() throws SQLException {
+    void shouldDeserializeChildObjectRecord() throws SQLException {
         DbResultSetDeserializer des = new DbResultSetDeserializer(DbTestObjRecord.class);
         when(meta.getColumnCount()).thenReturn(1);
         when(meta.getColumnLabel(1)).thenReturn("child.sql_val");
@@ -264,7 +268,7 @@ public class DbResultSetDeserializerTest {
     }
 
     @Test
-    public void shouldDeserializeGrandChildObject() throws SQLException {
+    void shouldDeserializeGrandChildObject() throws SQLException {
         DbResultSetDeserializer des = new DbResultSetDeserializer(DbTestObj.class);
         when(meta.getColumnCount()).thenReturn(1);
         when(meta.getColumnLabel(1)).thenReturn("child.child.sql_val");
@@ -275,7 +279,7 @@ public class DbResultSetDeserializerTest {
     }
 
     @Test
-    public void shouldDeserializeGrandChildObjectRecord() throws SQLException {
+    void shouldDeserializeGrandChildObjectRecord() throws SQLException {
         DbResultSetDeserializer des = new DbResultSetDeserializer(DbTestObjRecord.class);
         when(meta.getColumnCount()).thenReturn(1);
         when(meta.getColumnLabel(1)).thenReturn("child.child.sql_val");
@@ -286,7 +290,7 @@ public class DbResultSetDeserializerTest {
     }
 
     @Test
-    public void shouldDeserializeChildObjectWithoutSetter() throws SQLException {
+    void shouldDeserializeChildObjectWithoutSetter() throws SQLException {
         DbResultSetDeserializer des = new DbResultSetDeserializer(DbTestObj.class);
         when(meta.getColumnCount()).thenReturn(1);
         when(meta.getColumnLabel(1)).thenReturn("child.no_getter");
@@ -297,7 +301,7 @@ public class DbResultSetDeserializerTest {
     }
 
     @Test
-    public void shouldDeserializePropertyWithoutSetter() throws SQLException {
+    void shouldDeserializePropertyWithoutSetter() throws SQLException {
         DbResultSetDeserializer des = new DbResultSetDeserializer(DbTestObj.class);
         when(meta.getColumnCount()).thenReturn(1);
         when(meta.getColumnLabel(1)).thenReturn("no_getter");
@@ -308,7 +312,7 @@ public class DbResultSetDeserializerTest {
     }
 
     @Test
-    public void shouldIgnoreUnknownColumnsForRecords() throws SQLException {
+    void shouldIgnoreUnknownColumnsForRecords() throws SQLException {
         DbResultSetDeserializer des = new DbResultSetDeserializer(DbTestObjRecord.class);
         when(meta.getColumnCount()).thenReturn(2);
         when(meta.getColumnLabel(1)).thenReturn("sql_val");
@@ -321,7 +325,7 @@ public class DbResultSetDeserializerTest {
     }
 
     @Test
-    public void shouldIgnoreColumnsWithoutSetters() throws SQLException {
+    void shouldIgnoreColumnsWithoutSetters() throws SQLException {
         DbResultSetDeserializer des = new DbResultSetDeserializer(DbTestObj.class);
         when(meta.getColumnCount()).thenReturn(2);
         when(meta.getColumnLabel(1)).thenReturn("non_existing_prop");
@@ -334,7 +338,7 @@ public class DbResultSetDeserializerTest {
     }
 
     @Test
-    public void shouldDeserializeObjectWithDoubleProperty() throws SQLException {
+    void shouldDeserializeObjectWithDoubleProperty() throws SQLException {
         DbResultSetDeserializer des = new DbResultSetDeserializer(DbTestObj.class);
         when(meta.getColumnCount()).thenReturn(1);
         when(meta.getColumnLabel(1)).thenReturn("double_val");
@@ -345,7 +349,7 @@ public class DbResultSetDeserializerTest {
     }
 
     @Test
-    public void shouldDeserializeObjectRecordWithDoubleProperty() throws SQLException {
+    void shouldDeserializeObjectRecordWithDoubleProperty() throws SQLException {
         DbResultSetDeserializer des = new DbResultSetDeserializer(DbTestObjRecord.class);
         when(meta.getColumnCount()).thenReturn(1);
         when(meta.getColumnLabel(1)).thenReturn("double_val");
@@ -356,7 +360,7 @@ public class DbResultSetDeserializerTest {
     }
 
     @Test
-    public void shouldDeserializeObjectWithNullValues() throws SQLException {
+    void shouldDeserializeObjectWithNullValues() throws SQLException {
         DbResultSetDeserializer des = new DbResultSetDeserializer(DbTestObj.class);
         when(meta.getColumnCount()).thenReturn(3);
         when(meta.getColumnLabel(1)).thenReturn("sql_val");
@@ -374,7 +378,7 @@ public class DbResultSetDeserializerTest {
     }
 
     @Test
-    public void shouldDeserializeObjectRecordWithNullValues() throws SQLException {
+    void shouldDeserializeObjectRecordWithNullValues() throws SQLException {
         DbResultSetDeserializer des = new DbResultSetDeserializer(DbTestObjRecord.class);
         when(meta.getColumnCount()).thenReturn(3);
         when(meta.getColumnLabel(1)).thenReturn("sql_val");
@@ -392,7 +396,7 @@ public class DbResultSetDeserializerTest {
     }
 
     @Test
-    public void shouldDeserializeCollectionAsJson() throws SQLException {
+    void shouldDeserializeCollectionAsJson() throws SQLException {
         DbResultSetDeserializer des = new DbResultSetDeserializer(DbTestObj.class);
         when(meta.getColumnCount()).thenReturn(1);
         when(meta.getColumnLabel(1)).thenReturn("list_of_strings");
@@ -406,7 +410,7 @@ public class DbResultSetDeserializerTest {
     }
 
     @Test
-    public void shouldDeserializeRecordCollectionAsJson() throws SQLException {
+    void shouldDeserializeRecordCollectionAsJson() throws SQLException {
         DbResultSetDeserializer des = new DbResultSetDeserializer(DbTestObjRecord.class);
         when(meta.getColumnCount()).thenReturn(1);
         when(meta.getColumnLabel(1)).thenReturn("list_of_strings");
@@ -420,7 +424,7 @@ public class DbResultSetDeserializerTest {
     }
 
     @Test
-    public void shouldDeserializeCollectionAsArray() throws SQLException {
+    void shouldDeserializeCollectionAsArray() throws SQLException {
         DbResultSetDeserializer des = new DbResultSetDeserializer(DbTestObj.class);
         when(meta.getColumnCount()).thenReturn(1);
         when(meta.getColumnType(1)).thenReturn(Types.ARRAY);
@@ -436,7 +440,7 @@ public class DbResultSetDeserializerTest {
     }
 
     @Test
-    public void shouldDeserializeRecordCollectionAsArray() throws SQLException {
+    void shouldDeserializeRecordCollectionAsArray() throws SQLException {
         DbResultSetDeserializer des = new DbResultSetDeserializer(DbTestObjRecord.class);
         when(meta.getColumnCount()).thenReturn(1);
         when(meta.getColumnType(1)).thenReturn(Types.ARRAY);
@@ -452,7 +456,7 @@ public class DbResultSetDeserializerTest {
     }
 
     @Test
-    public void shouldDeserializeListOfEnums() throws SQLException {
+    void shouldDeserializeListOfEnums() throws SQLException {
         when(meta.getColumnCount()).thenReturn(1);
         when(meta.getColumnLabel(1)).thenReturn("list_of_enums");
         when(rs.getMetaData()).thenReturn(meta);
@@ -466,7 +470,7 @@ public class DbResultSetDeserializerTest {
     }
 
     @Test
-    public void shouldDeserializeRecordListOfEnums() throws SQLException {
+    void shouldDeserializeRecordListOfEnums() throws SQLException {
         when(meta.getColumnCount()).thenReturn(1);
         when(meta.getColumnLabel(1)).thenReturn("list_of_enums");
         when(rs.getMetaData()).thenReturn(meta);
@@ -480,7 +484,7 @@ public class DbResultSetDeserializerTest {
     }
 
     @Test
-    public void shouldDeserializeListOfObjects() throws SQLException {
+    void shouldDeserializeListOfObjects() throws SQLException {
         when(meta.getColumnCount()).thenReturn(1);
         when(meta.getColumnLabel(1)).thenReturn("list_of_objects");
         when(rs.getMetaData()).thenReturn(meta);
@@ -495,7 +499,7 @@ public class DbResultSetDeserializerTest {
     }
 
     @Test
-    public void shouldDeserializeRecordListOfObjects() throws SQLException {
+    void shouldDeserializeRecordListOfObjects() throws SQLException {
         when(meta.getColumnCount()).thenReturn(1);
         when(meta.getColumnLabel(1)).thenReturn("list_of_objects");
         when(rs.getMetaData()).thenReturn(meta);
@@ -510,7 +514,7 @@ public class DbResultSetDeserializerTest {
     }
 
     @Test
-    public void shouldDeserializeJsonObject() throws SQLException {
+    void shouldDeserializeJsonObject() throws SQLException {
         when(meta.getColumnCount()).thenReturn(1);
         when(meta.getColumnLabel(1)).thenReturn("child");
         when(meta.getColumnType(1)).thenReturn(Types.OTHER);
@@ -525,7 +529,7 @@ public class DbResultSetDeserializerTest {
     }
 
     @Test
-    public void shouldDeserializeJsonObjectRecord() throws SQLException {
+    void shouldDeserializeJsonObjectRecord() throws SQLException {
         when(meta.getColumnCount()).thenReturn(1);
         when(meta.getColumnLabel(1)).thenReturn("child");
         when(meta.getColumnType(1)).thenReturn(Types.OTHER);
@@ -540,7 +544,7 @@ public class DbResultSetDeserializerTest {
     }
 
     @Test
-    public void shouldDeserializeNullCollectionAsNull() throws SQLException {
+    void shouldDeserializeNullCollectionAsNull() throws SQLException {
         DbResultSetDeserializer des = new DbResultSetDeserializer(DbTestObj.class);
         when(meta.getColumnCount()).thenReturn(1);
         when(meta.getColumnLabel(1)).thenReturn("list_of_strings");
@@ -552,7 +556,7 @@ public class DbResultSetDeserializerTest {
     }
 
     @Test
-    public void shouldDeserializeRecordNullCollectionAsNull() throws SQLException {
+    void shouldDeserializeRecordNullCollectionAsNull() throws SQLException {
         DbResultSetDeserializer des = new DbResultSetDeserializer(DbTestObjRecord.class);
         when(meta.getColumnCount()).thenReturn(1);
         when(meta.getColumnLabel(1)).thenReturn("list_of_strings");
@@ -564,7 +568,7 @@ public class DbResultSetDeserializerTest {
     }
 
     @Test
-    public void shouldDeserializeArray() throws SQLException {
+    void shouldDeserializeArray() throws SQLException {
         when(jdbcArray.getArray()).thenReturn(new Object[]{"1"});
         when(rs.getArray(1)).thenReturn(jdbcArray);
         thenDeserialized(String[].class).isEqualTo(new String[]{"1"});
@@ -574,7 +578,7 @@ public class DbResultSetDeserializerTest {
     }
 
     @Test
-    public void shouldDeserializeByteArray() throws SQLException {
+    void shouldDeserializeByteArray() throws SQLException {
         when(meta.getColumnCount()).thenReturn(1);
         when(meta.getColumnLabel(1)).thenReturn("bytes");
         when(meta.getColumnType(1)).thenReturn(Types.BLOB);
