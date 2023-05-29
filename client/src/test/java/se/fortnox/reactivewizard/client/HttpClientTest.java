@@ -37,7 +37,7 @@ import se.fortnox.reactivewizard.test.LoggingMockUtil;
 import se.fortnox.reactivewizard.test.LoggingVerifier;
 import se.fortnox.reactivewizard.test.LoggingVerifierExtension;
 import se.fortnox.reactivewizard.test.TestUtil;
-import se.fortnox.reactivewizard.test.observable.ObservableAssertions;
+import se.fortnox.reactivewizard.test.publisher.PublisherAssertions;
 
 import javax.net.ssl.SSLHandshakeException;
 import javax.ws.rs.BeanParam;
@@ -105,6 +105,7 @@ import static reactor.core.publisher.Flux.defer;
 import static reactor.core.publisher.Flux.empty;
 import static reactor.core.publisher.Flux.just;
 import static se.fortnox.reactivewizard.test.TestUtil.matches;
+import static se.fortnox.reactivewizard.util.FluxRxConverter.observableToFlux;
 
 @ExtendWith(LoggingVerifierExtension.class)
 class HttpClientTest {
@@ -671,8 +672,8 @@ class HttpClientTest {
 
             HttpClient.markHeaderAsSensitive(resource, "cookie");
 
-            ObservableAssertions.assertThatExceptionOfType(WebException.class)
-                .isEmittedBy(resource.getHello().single());
+            PublisherAssertions.assertThatExceptionOfType(WebException.class)
+                .isEmittedBy(observableToFlux(resource.getHello().single()));
 
             loggingVerifier.verify(WARN, logEvent -> {
                 String message = ofNullable(logEvent.getThrown().getMessage())

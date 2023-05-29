@@ -1,14 +1,14 @@
 package se.fortnox.reactivewizard.test;
 
 import org.junit.jupiter.api.Assertions;
-import rx.Observable;
-import rx.Subscription;
+import reactor.core.Disposable;
+import reactor.core.publisher.Flux;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.time.Duration.ofMillis;
 
 /**
  * Small class for verifying things in a certain time.
@@ -60,8 +60,8 @@ public abstract class WaitingTestUtils {
     public static void assertConditionIsTrueWithinTime(int wait, TimeUnit waitingUnit, BooleanSupplier condition, String message) {
         CountDownLatch countDownLatch = new CountDownLatch(1);
 
-        final Subscription subscribe = Observable
-            .interval(100, MILLISECONDS)
+        final Disposable subscribe = Flux
+            .interval(ofMillis(100))
             .takeUntil(aLong -> {
                 final boolean result = condition.getAsBoolean();
 
@@ -82,7 +82,7 @@ public abstract class WaitingTestUtils {
             Thread.currentThread().interrupt();
             Assertions.fail();
         } finally {
-            subscribe.unsubscribe();
+            subscribe.dispose();
         }
     }
 }
