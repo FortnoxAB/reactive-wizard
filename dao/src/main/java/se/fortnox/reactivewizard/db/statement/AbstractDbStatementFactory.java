@@ -91,10 +91,6 @@ public abstract class AbstractDbStatementFactory implements DbStatementFactory {
             if (fluxSink != null) {
                 fluxSink.complete();
             }
-            if (monoSink != null) {
-                // Should already be completed, but calling again is ok.
-                monoSink.success();
-            }
         }
 
         @Override

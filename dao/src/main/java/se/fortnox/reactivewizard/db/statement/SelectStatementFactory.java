@@ -53,16 +53,23 @@ public class SelectStatementFactory extends AbstractDbStatementFactory {
         try (PreparedStatement statement = parameterizedQuery.createStatement(connection, args)) {
             parameterizedQuery.addParameters(args, statement);
             try (ResultSet resultSet = statement.executeQuery()) {
-                while (resultSet.next()) {
-                    if (monoSink != null) {
-                        var value = deserialize(resultSet);
-                        if (resultSet.next()) {
-                            throw new RuntimeException(format(MONO_NEXT_ERROR, methodName));
-                        }
-                        monoSink.success(value);
-                        return;
-                    }
+                if (monoSink == null) {
+                    return;
                 }
+
+                Object object = null;
+
+                if (resultSet.next()) {
+                    object = deserialize(resultSet);
+                } else {
+                    monoSink.success();
+                }
+
+                if (resultSet.next()) {
+                    throw new RuntimeException(format(MONO_NEXT_ERROR, methodName));
+                }
+
+                monoSink.success(object);
             }
             StatementDebug.log(statement);
         }

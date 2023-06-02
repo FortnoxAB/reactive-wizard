@@ -460,6 +460,9 @@ class DaoTransactionsTest {
         @Query("select * from test")
         Flux<String> find();
 
+        @Query("select * from test")
+        Mono<String> findMono();
+
         @Query("select * from test2")
         Flux<String> find2();
 

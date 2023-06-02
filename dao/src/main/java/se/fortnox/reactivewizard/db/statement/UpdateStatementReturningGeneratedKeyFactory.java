@@ -1,5 +1,6 @@
 package se.fortnox.reactivewizard.db.statement;
 
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.MonoSink;
 import se.fortnox.reactivewizard.db.GeneratedKey;
@@ -46,11 +47,13 @@ public class UpdateStatementReturningGeneratedKeyFactory extends AbstractUpdateS
             parameterizedQuery.addParameters(args, statement);
             ensureMinimumReached(statement.executeUpdate());
             try (ResultSet resultSet = statement.getGeneratedKeys()) {
-                while (resultSet.next()) {
-                    if (monoSink != null) {
-                        monoSink.success((GeneratedKey) () -> deserializer.deserialize(resultSet));
-                        return;
-                    }
+                if (monoSink == null) {
+                    return;
+                }
+                if (resultSet.next()) {
+                    monoSink.success((GeneratedKey)() -> deserializer.deserialize(resultSet));
+                } else {
+                    monoSink.success();
                 }
             }
         }

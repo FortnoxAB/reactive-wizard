@@ -78,7 +78,7 @@ public class ReactiveStatementFactory {
     }
 
     private Mono<Object> getResultMono(StatementContext statementContext) {
-        return Mono.create(monoSink -> {
+        return Mono.create(monoSink -> monoSink.onRequest(unusedRequestedAmount -> {
             try {
                 statementContext.getConnectionScheduler()
                     .schedule(monoSink::error, connection -> {
@@ -89,7 +89,7 @@ public class ReactiveStatementFactory {
             } catch (Exception e) {
                 monoSink.error(e);
             }
-        });
+        }));
     }
 
     /**
