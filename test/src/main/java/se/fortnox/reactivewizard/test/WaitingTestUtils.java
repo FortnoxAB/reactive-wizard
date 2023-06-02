@@ -3,6 +3,7 @@ package se.fortnox.reactivewizard.test;
 import org.junit.jupiter.api.Assertions;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
+import reactor.core.scheduler.Schedulers;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -62,6 +63,7 @@ public abstract class WaitingTestUtils {
 
         final Disposable subscribe = Flux
             .interval(ofMillis(100))
+            .publishOn(Schedulers.boundedElastic())
             .takeUntil(aLong -> {
                 final boolean result = condition.getAsBoolean();
 
