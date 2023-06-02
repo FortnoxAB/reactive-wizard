@@ -3,6 +3,7 @@ package se.fortnox.reactivewizard.test;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import reactor.core.publisher.Flux;
 
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -73,5 +74,11 @@ class WaitingTestUtilsTest {
             assertThat(assertionError.getMessage()).isEqualTo(errorMessage);
             assertionError.printStackTrace();
         }
+    }
+
+    @Test
+    void shouldAllowBlocking() {
+        WaitingTestUtils.assertConditionIsTrueWithinTime(1000, TimeUnit.MILLISECONDS, () ->
+            Flux.just(true).blockLast());
     }
 }
