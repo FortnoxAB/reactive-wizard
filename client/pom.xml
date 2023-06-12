@@ -1,19 +1,19 @@
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-	<modelVersion>4.0.0</modelVersion>
-	<artifactId>reactivewizard-client</artifactId>
+    <modelVersion>4.0.0</modelVersion>
+    <artifactId>reactivewizard-client</artifactId>
 
-	<parent>
-		<groupId>se.fortnox.reactivewizard</groupId>
-		<artifactId>reactivewizard-parent</artifactId>
-		<version>999.9.9-SNAPSHOT</version>
-	</parent>
+    <parent>
+        <groupId>se.fortnox.reactivewizard</groupId>
+        <artifactId>reactivewizard-parent</artifactId>
+        <version>999.9.9-SNAPSHOT</version>
+    </parent>
 
-	<dependencies>
-		<dependency>
-			<groupId>se.fortnox.reactivewizard</groupId>
-			<artifactId>reactivewizard-utils</artifactId>
-		</dependency>
+    <dependencies>
+        <dependency>
+            <groupId>se.fortnox.reactivewizard</groupId>
+            <artifactId>reactivewizard-utils</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>se.fortnox.reactivewizard</groupId>
@@ -30,60 +30,60 @@
             <artifactId>reactive-streams</artifactId>
         </dependency>
 
-		<dependency>
-			<groupId>se.fortnox.reactivewizard</groupId>
-			<artifactId>reactivewizard-jaxrs</artifactId>
-		</dependency>
+        <dependency>
+            <groupId>se.fortnox.reactivewizard</groupId>
+            <artifactId>reactivewizard-jaxrs</artifactId>
+        </dependency>
 
-		<dependency>
-			<groupId>se.fortnox.reactivewizard</groupId>
-			<artifactId>reactivewizard-jaxrs-api</artifactId>
-		</dependency>
+        <dependency>
+            <groupId>se.fortnox.reactivewizard</groupId>
+            <artifactId>reactivewizard-jaxrs-api</artifactId>
+        </dependency>
 
-		<dependency>
-			<groupId>se.fortnox.reactivewizard</groupId>
-			<artifactId>reactivewizard-binding</artifactId>
-		</dependency>
+        <dependency>
+            <groupId>se.fortnox.reactivewizard</groupId>
+            <artifactId>reactivewizard-binding</artifactId>
+        </dependency>
 
-		<dependency>
-			<groupId>se.fortnox.reactivewizard</groupId>
-			<artifactId>reactivewizard-config</artifactId>
-		</dependency>
+        <dependency>
+            <groupId>se.fortnox.reactivewizard</groupId>
+            <artifactId>reactivewizard-config</artifactId>
+        </dependency>
 
-		<dependency>
-			<groupId>se.fortnox.reactivewizard</groupId>
-			<artifactId>reactivewizard-validation</artifactId>
-		</dependency>
+        <dependency>
+            <groupId>se.fortnox.reactivewizard</groupId>
+            <artifactId>reactivewizard-validation</artifactId>
+        </dependency>
 
-		<dependency>
-			<groupId>se.fortnox.reactivewizard</groupId>
-			<artifactId>reactivewizard-metrics</artifactId>
-		</dependency>
+        <dependency>
+            <groupId>se.fortnox.reactivewizard</groupId>
+            <artifactId>reactivewizard-metrics</artifactId>
+        </dependency>
 
-		<dependency>
-			<groupId>se.fortnox.reactivewizard</groupId>
-			<artifactId>reactivewizard-test</artifactId>
-			<scope>test</scope>
-		</dependency>
+        <dependency>
+            <groupId>se.fortnox.reactivewizard</groupId>
+            <artifactId>reactivewizard-test</artifactId>
+            <scope>test</scope>
+        </dependency>
 
-		<dependency>
-			<groupId>se.fortnox.reactivewizard</groupId>
-			<artifactId>reactivewizard-server</artifactId>
-			<scope>test</scope>
-		</dependency>
+        <dependency>
+            <groupId>se.fortnox.reactivewizard</groupId>
+            <artifactId>reactivewizard-server</artifactId>
+            <scope>test</scope>
+        </dependency>
 
-		<dependency>
-			<groupId>se.fortnox.reactivewizard</groupId>
-			<artifactId>reactivewizard-config</artifactId>
-			<scope>test</scope>
-			<classifier>tests</classifier>
-		</dependency>
+        <dependency>
+            <groupId>se.fortnox.reactivewizard</groupId>
+            <artifactId>reactivewizard-config</artifactId>
+            <scope>test</scope>
+            <classifier>tests</classifier>
+        </dependency>
 
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
         </dependency>
-	</dependencies>
+    </dependencies>
 
     <build>
         <plugins>
@@ -97,13 +97,6 @@
                         </goals>
                     </execution>
                 </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <configuration>
-                    <argLine>@{argLine} --add-opens java.base/java.lang.invoke=ALL-UNNAMED --add-opens java.base/sun.security.x509=ALL-UNNAMED</argLine>
-                </configuration>
             </plugin>
         </plugins>
     </build>

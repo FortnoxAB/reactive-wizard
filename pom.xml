@@ -92,11 +92,13 @@
         <log4j.version>2.20.0</log4j.version>
 
         <guice.version>7.0.0</guice.version>
+        <auto-service.version>1.1.0</auto-service.version>
         <assertj.version>3.24.2</assertj.version>
         <mockito.version>5.3.1</mockito.version>
         <jacoco.version>0.8.10</jacoco.version>
         <reactiversecontexts.version>1.0.1</reactiversecontexts.version>
         <classgraph.version>4.8.160</classgraph.version>
+        <blockhound.version>1.0.8.RELEASE</blockhound.version>
 
         <maven-gpg-plugin.version>3.1.0</maven-gpg-plugin.version>
         <surefire.version>3.1.2</surefire.version>
@@ -119,6 +121,7 @@
         <maven-deploy-plugin.version>3.1.1</maven-deploy-plugin.version>
         <byte-buddy.version>1.14.5</byte-buddy.version>
         <jakarta.inject-api.version>2.0.1</jakarta.inject-api.version>
+        <bcpkix-jdk18on.version>1.73</bcpkix-jdk18on.version>
 
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         <sonar.organization>fortnoxab</sonar.organization>
@@ -132,6 +135,19 @@
                 <version>${reactor-bom.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>io.projectreactor.tools</groupId>
+                <artifactId>blockhound</artifactId>
+                <version>${blockhound.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.projectreactor.tools</groupId>
+                <artifactId>blockhound-junit-platform</artifactId>
+                <version>${blockhound.version}</version>
+                <scope>test</scope>
             </dependency>
 
             <dependency>
@@ -386,6 +402,12 @@
             </dependency>
 
             <dependency>
+                <groupId>com.google.auto.service</groupId>
+                <artifactId>auto-service-annotations</artifactId>
+                <version>${auto-service.version}</version>
+            </dependency>
+
+            <dependency>
                 <groupId>io.github.classgraph</groupId>
                 <artifactId>classgraph</artifactId>
                 <version>${classgraph.version}</version>
@@ -456,9 +478,24 @@
                 <artifactId>jakarta.inject-api</artifactId>
                 <version>${jakarta.inject-api.version}</version>
             </dependency>
+
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcpkix-jdk18on</artifactId>
+                <version>${bcpkix-jdk18on.version}</version>
+                <scope>test</scope>
+            </dependency>
         </dependencies>
 
     </dependencyManagement>
+
+    <dependencies>
+        <dependency>
+            <groupId>io.projectreactor.tools</groupId>
+            <artifactId>blockhound-junit-platform</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
 
     <profiles>
         <profile>
@@ -508,6 +545,13 @@
                 <configuration>
                     <release>17</release>
                     <compilerArgument>-parameters</compilerArgument>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>com.google.auto.service</groupId>
+                            <artifactId>auto-service</artifactId>
+                            <version>${auto-service.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
                 </configuration>
             </plugin>
 
@@ -603,6 +647,13 @@
                 <artifactId>maven-deploy-plugin</artifactId>
                 <configuration>
                     <deployAtEnd>true</deployAtEnd>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <argLine>@{argLine} -Dfile.encoding=UTF-8 -XX:+AllowRedefinitionToAddDeleteMethods --add-opens java.base/java.lang.invoke=ALL-UNNAMED --add-opens java.base/java.time=ALL-UNNAMED --add-opens java.base/java.util=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED --add-opens java.base/sun.security.x509=ALL-UNNAMED</argLine>
                 </configuration>
             </plugin>
         </plugins>
