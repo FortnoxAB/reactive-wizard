@@ -29,7 +29,7 @@ public class WebException extends RuntimeException {
         super(null, throwable, false, stacktrace);
         this.error = errorCodeFromStatus(httpStatus);
         this.status = httpStatus;
-        this.id = UUID.randomUUID().toString();
+        this.id = createUUID();
         this.logLevel = logLevelFromStatus(httpStatus);
         this.body = body;
     }
@@ -38,7 +38,7 @@ public class WebException extends RuntimeException {
         super(null, throwable, false, stacktrace);
         this.error = errorCodeFromStatus(httpStatus);
         this.status = httpStatus;
-        this.id = UUID.randomUUID().toString();
+        this.id = createUUID();
         this.logLevel = logLevelFromStatus(httpStatus);
         this.body = null;
     }
@@ -64,7 +64,7 @@ public class WebException extends RuntimeException {
         } else {
             error = errorCodeFromStatus(httpStatus);
         }
-        this.id = UUID.randomUUID().toString();
+        this.id = createUUID();
         this.logLevel = logLevelFromStatus(httpStatus);
         this.body = null;
     }
@@ -80,7 +80,7 @@ public class WebException extends RuntimeException {
         this.message = userMessage;
         this.status = httpStatus;
         this.error = errorCode;
-        this.id = UUID.randomUUID().toString();
+        this.id = createUUID();
         this.logLevel = logLevelFromStatus(httpStatus);
         this.body = null;
     }
@@ -160,5 +160,9 @@ public class WebException extends RuntimeException {
         }
 
         return Level.WARN;
+    }
+
+    private String createUUID() {
+        return UUID.randomUUID().toString();
     }
 }
