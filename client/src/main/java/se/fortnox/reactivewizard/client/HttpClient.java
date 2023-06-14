@@ -481,7 +481,7 @@ public class HttpClient implements InvocationHandler {
                     .code(),
                     reasonPhrase);
 
-                throw new WebException(responseStatus, detailedError, false);
+                throw new WebException(responseStatus, detailedError, false, data);
             });
         }
         return null;

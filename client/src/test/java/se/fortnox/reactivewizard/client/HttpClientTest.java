@@ -10,6 +10,7 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import org.apache.logging.log4j.Level;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -21,6 +22,7 @@ import reactor.netty.DisposableServer;
 import reactor.netty.http.server.HttpServer;
 import reactor.netty.http.server.HttpServerRequest;
 import reactor.netty.http.server.HttpServerResponse;
+import reactor.test.StepVerifier;
 import rx.Observable;
 import rx.Single;
 import rx.observers.AssertableSubscriber;
@@ -113,6 +115,15 @@ class HttpClientTest {
     private HealthRecorder healthRecorder = new HealthRecorder();
     private RequestLogger requestLogger;
     LoggingVerifier loggingVerifier = new LoggingVerifier(HttpClient.class);
+
+    DisposableServer server;
+
+    @AfterEach
+    void dispose() {
+        ofNullable(server)
+            .ifPresent(DisposableServer::disposeNow);
+        server = null;
+    }
 
     @Test
     void shouldNotRetryFailedPostCalls() {
@@ -477,9 +488,41 @@ class HttpClientTest {
             assertThat(detailedError.getError()).isEqualTo("1");
             assertThat(detailedError.getCode()).isEqualTo(100);
             assertThat(detailedError.getMessage()).isEqualTo("Detailed error description.");
-        } finally {
-            server.disposeNow();
         }
+    }
+
+    @Test
+    void shouldReturnErrorJsonBody() {
+        String errorJson = "{\"superimportant\":\"braap!\",\"message\":\"My message\"}";
+        server = startServer(HttpResponseStatus.BAD_REQUEST, errorJson);
+
+        TestResource resource = getHttpProxy(server.port());
+        StepVerifier.create(resource.getHelloMono())
+            .verifyErrorSatisfies(error -> {
+                assertThat(error)
+                    .isInstanceOf(WebException.class)
+                    .hasFieldOrPropertyWithValue("body", errorJson)
+                    .cause()
+                    .isInstanceOf(HttpClient.DetailedError.class)
+                    .hasMessage("My message");
+            });
+    }
+
+    @Test
+    void shouldReturnErrorNonJsonBody() {
+        String errorNonJson = "Guru Meditation #00000004.0000AAC0";
+        DisposableServer server = startServer(HttpResponseStatus.BAD_REQUEST, errorNonJson);
+
+        TestResource resource = getHttpProxy(server.port());
+        StepVerifier.create(resource.getHelloMono())
+            .verifyErrorSatisfies(error -> {
+                assertThat(error)
+                    .isInstanceOf(WebException.class)
+                    .hasFieldOrPropertyWithValue("body", errorNonJson)
+                    .cause()
+                    .isInstanceOf(HttpClient.DetailedError.class)
+                    .hasMessage(errorNonJson);
+            });
     }
 
     @Test
@@ -1615,6 +1658,9 @@ class HttpClientTest {
 
         @GET
         Observable<String> getHello();
+
+        @GET
+        Mono<String> getHelloMono();
 
         @POST
         Observable<String> postHello();
