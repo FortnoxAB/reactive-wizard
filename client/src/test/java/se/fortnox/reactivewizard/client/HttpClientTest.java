@@ -128,7 +128,7 @@ class HttpClientTest {
     @Test
     void shouldNotRetryFailedPostCalls() {
         AtomicLong callCount = new AtomicLong();
-        DisposableServer server = startServer(INTERNAL_SERVER_ERROR, "\"NOT OK\"", r -> callCount.incrementAndGet());
+        server = startServer(INTERNAL_SERVER_ERROR, "\"NOT OK\"", r -> callCount.incrementAndGet());
 
         long start = System.currentTimeMillis();
         try {
@@ -144,15 +144,13 @@ class HttpClientTest {
             assertThat(callCount.get()).isEqualTo(1);
 
             assertThat(e.getClass()).isEqualTo(WebException.class);
-        } finally {
-            server.disposeNow();
         }
     }
 
     @Test
     void shouldNotRetryFailedPostCallsWithNonWebExceptions() {
         AtomicLong callCount = new AtomicLong();
-        DisposableServer server = startSlowServer(OK, 6, r -> callCount.incrementAndGet());
+        server = startSlowServer(OK, 6, r -> callCount.incrementAndGet());
 
         try {
             HttpClientConfig config = new HttpClientConfig("localhost:" + server.port());
@@ -165,8 +163,6 @@ class HttpClientTest {
         } catch (Exception e) {
             assertThat(callCount.get()).isLessThanOrEqualTo(1);
             assertThat(e.getClass()).isEqualTo(WebException.class);
-        } finally {
-            server.disposeNow();
         }
     }
 
@@ -211,19 +207,13 @@ class HttpClientTest {
     }
 
     protected void withServer(Consumer<DisposableServer> serverConsumer) {
-        final DisposableServer server = startServer(HttpResponseStatus.OK, "\"OK\"");
-
-        try {
-            serverConsumer.accept(server);
-        } finally {
-            server.disposeNow();
-        }
+        server = startServer(HttpResponseStatus.OK, "\"OK\"");
+        serverConsumer.accept(server);
     }
 
     @Test
     void shouldRetryOnFullConnectionPool() {
         withServer(server -> {
-            long start = System.currentTimeMillis();
             try {
                 HttpClientConfig config = new HttpClientConfig("127.0.0.1:" + server.port());
                 config.setRetryCount(1);
@@ -315,14 +305,12 @@ class HttpClientTest {
 
         AtomicInteger callCount = new AtomicInteger();
 
-        DisposableServer server = createTestServer(s -> callCount.incrementAndGet());
+        server = createTestServer(s -> callCount.incrementAndGet());
         try {
             TestResource resource = getHttpProxyWithClientReturningEmpty(server);
             resource.getHello().toBlocking().singleOrDefault(null);
         } catch (Exception expected) {
             assertThat(callCount.get()).isEqualTo(4);
-        } finally {
-            server.disposeNow();
         }
     }
 
@@ -330,15 +318,13 @@ class HttpClientTest {
     void shouldNotRetryIfEmptyReturnedOnPost() {
 
         AtomicInteger callCount = new AtomicInteger();
-        DisposableServer server = startServer(CREATED, Mono.empty(), s -> callCount.incrementAndGet());
+        server = startServer(CREATED, Mono.empty(), s -> callCount.incrementAndGet());
         try {
 
             TestResource resource = getHttpProxyWithClientReturningEmpty(server);
             resource.postHello().toBlocking().singleOrDefault(null);
         } catch (Exception e) {
             assertThat(callCount.get()).isEqualTo(1);
-        } finally {
-            server.disposeNow();
         }
     }
 
@@ -405,19 +391,15 @@ class HttpClientTest {
         assertThat(healthRecorder.isHealthy()).isFalse();
 
         //And a successful connection should reset the healthRecorder to healthy again
-        DisposableServer server = HttpServer.create().port(port)
+        server = HttpServer.create().port(port)
             .handle((request, response) -> defer(() -> {
                 response.status(OK);
                 return Flux.empty();
             }))
             .bindNow();
 
-        try {
-            testResource.postHello().test().awaitTerminalEvent();
-            assertThat(healthRecorder.isHealthy()).isTrue();
-        } finally {
-            server.disposeNow();
-        }
+        testResource.postHello().test().awaitTerminalEvent();
+        assertThat(healthRecorder.isHealthy()).isTrue();
 
         //Sleep over the max idle time
         try {
@@ -476,7 +458,7 @@ class HttpClientTest {
     @Test
     void shouldReturnDetailedError() {
         String detailedErrorJson = "{\"error\":1,\"message\":\"Detailed error description.\",\"code\":100}";
-        DisposableServer server = startServer(HttpResponseStatus.BAD_REQUEST, detailedErrorJson);
+        server = startServer(HttpResponseStatus.BAD_REQUEST, detailedErrorJson);
 
         TestResource resource = getHttpProxy(server.port());
         try {
@@ -612,128 +594,108 @@ class HttpClientTest {
 
     @Test
     void shouldSupportSingleSource() {
-        DisposableServer server = startServer(HttpResponseStatus.OK, "\"OK\"");
+        server = startServer(HttpResponseStatus.OK, "\"OK\"");
 
         TestResource resource = getHttpProxy(server.port());
         resource.getSingle().toBlocking().value();
-
-        server.disposeNow();
     }
 
     @Test
     void shouldHandleLargeResponses() {
-        DisposableServer server = startServer(HttpResponseStatus.OK, generateLargeString(10));
+        server = startServer(HttpResponseStatus.OK, generateLargeString(10));
         TestResource resource = getHttpProxy(server.port());
         resource.getHello().toBlocking().single();
-
-        server.disposeNow();
     }
 
     @Test
     void shouldLogErrorOnTooLargeResponse() {
-        DisposableServer server = startServer(HttpResponseStatus.OK, generateLargeString(11));
-        try {
-            TestResource resource = getHttpProxy(server.port());
-            assertThatExceptionOfType(WebException.class)
-                .isThrownBy(() -> resource.getHello().toBlocking().single())
-                .satisfies(webException -> {
-                    assertThat(webException.getStatus())
-                        .isEqualTo(BAD_REQUEST);
-                    assertThat(webException.getError())
-                        .isEqualTo("too.large.input");
-                });
-            loggingVerifier
-                .verify(WARN, "Failed request. Url: localhost:" + server.port() + "/hello, headers: [Host=localhost]");
-        } finally {
-            server.disposeNow();
-        }
+        server = startServer(HttpResponseStatus.OK, generateLargeString(11));
+        TestResource resource = getHttpProxy(server.port());
+        assertThatExceptionOfType(WebException.class)
+            .isThrownBy(() -> resource.getHello().toBlocking().single())
+            .satisfies(webException -> {
+                assertThat(webException.getStatus())
+                    .isEqualTo(BAD_REQUEST);
+                assertThat(webException.getError())
+                    .isEqualTo("too.large.input");
+            });
+        loggingVerifier
+            .verify(WARN, "Failed request. Url: localhost:" + server.port() + "/hello, headers: [Host=localhost]");
     }
 
     @Test
     void shouldRedactAuthorizationHeaderInLogsAndExceptionMessage() throws Exception {
-        DisposableServer server = startServer(BAD_REQUEST, "someError");
+        server = startServer(BAD_REQUEST, "someError");
 
-        try {
-            HttpClientConfig config = new HttpClientConfig("localhost:" + server.port());
-            Map<String, String> headers = new HashMap<>();
-            headers.put("Authorization", "secretvalue");
-            config.setDevHeaders(headers);
-            TestResource resource = getHttpProxy(config);
+        HttpClientConfig config = new HttpClientConfig("localhost:" + server.port());
+        Map<String, String> headers = new HashMap<>();
+        headers.put("Authorization", "secretvalue");
+        config.setDevHeaders(headers);
+        TestResource resource = getHttpProxy(config);
 
-            assertThatExceptionOfType(WebException.class)
-                .isThrownBy(() -> resource.getHello()
-                    .toBlocking()
-                    .single());
+        assertThatExceptionOfType(WebException.class)
+            .isThrownBy(() -> resource.getHello()
+                .toBlocking()
+                .single());
 
-            loggingVerifier.verify(WARN, logEvent -> {
-                String message = ofNullable(logEvent.getThrown().getMessage())
-                    .orElse("");
-                assertThat(message)
-                    .doesNotContain("secretvalue");
-                assertThat(logEvent.getMessage().getFormattedMessage())
-                    .isEqualTo("Failed request. Url: localhost:" + server.port() + "/hello, headers: [Authorization=REDACTED, " +
-                        "Host=localhost]");
-            });
-        } finally {
-            server.disposeNow();
-        }
+        loggingVerifier.verify(WARN, logEvent -> {
+            String message = ofNullable(logEvent.getThrown().getMessage())
+                .orElse("");
+            assertThat(message)
+                .doesNotContain("secretvalue");
+            assertThat(logEvent.getMessage().getFormattedMessage())
+                .isEqualTo("Failed request. Url: localhost:" + server.port() + "/hello, headers: [Authorization=REDACTED, " +
+                    "Host=localhost]");
+        });
     }
 
     @Test
     void shouldApplyHeaderTransformerInLogsAndExceptionMessage() throws Exception {
-        DisposableServer server = startServer(BAD_REQUEST, "someError");
-        try {
-            HttpClientConfig config = new HttpClientConfig("localhost:" + server.port());
-            Map<String, String> headers = new HashMap<>();
-            headers.put("someHeader", "abcd");
-            config.setDevHeaders(headers);
-            TestResource resource = getHttpProxy(config);
+        server = startServer(BAD_REQUEST, "someError");
+        HttpClientConfig config = new HttpClientConfig("localhost:" + server.port());
+        Map<String, String> headers = new HashMap<>();
+        headers.put("someHeader", "abcd");
+        config.setDevHeaders(headers);
+        TestResource resource = getHttpProxy(config);
 
-            requestLogger.addHeaderTransformationClient("someHeader", String::toUpperCase);
+        requestLogger.addHeaderTransformationClient("someHeader", String::toUpperCase);
 
-            assertThatExceptionOfType(WebException.class)
-                .isThrownBy(() -> resource.getHello()
-                    .toBlocking()
-                    .single());
+        assertThatExceptionOfType(WebException.class)
+            .isThrownBy(() -> resource.getHello()
+                .toBlocking()
+                .single());
 
-            loggingVerifier.verify(WARN, "Failed request. Url: localhost:" + server.port() + "/hello, headers: [Host=localhost, someHeader=ABCD]");
-        } finally {
-            server.disposeNow();
-        }
+        loggingVerifier.verify(WARN, "Failed request. Url: localhost:" + server.port() + "/hello, headers: [Host=localhost, someHeader=ABCD]");
     }
 
     @Test
     void shouldRedactSensitiveHeaderInLogsAndExceptionMessage() throws Exception {
-        DisposableServer server = startServer(BAD_REQUEST, "someError");
-        try {
-            HttpClientConfig config = new HttpClientConfig("localhost:" + server.port());
-            Map<String, String> headers = new HashMap<>();
+        server = startServer(BAD_REQUEST, "someError");
+        HttpClientConfig config = new HttpClientConfig("localhost:" + server.port());
+        Map<String, String> headers = new HashMap<>();
 
-            headers.put("Cookie", "pepperidge farm");
-            config.setDevHeaders(headers);
-            TestResource resource = getHttpProxy(config);
+        headers.put("Cookie", "pepperidge farm");
+        config.setDevHeaders(headers);
+        TestResource resource = getHttpProxy(config);
 
-            HttpClient.markHeaderAsSensitive(resource, "cookie");
+        HttpClient.markHeaderAsSensitive(resource, "cookie");
 
-            PublisherAssertions.assertThatExceptionOfType(WebException.class)
-                .isEmittedBy(observableToFlux(resource.getHello().single()));
+        PublisherAssertions.assertThatExceptionOfType(WebException.class)
+            .isEmittedBy(observableToFlux(resource.getHello().single()));
 
-            loggingVerifier.verify(WARN, logEvent -> {
-                String message = ofNullable(logEvent.getThrown().getMessage())
-                    .orElse("");
-                assertThat(message)
-                    .doesNotContain("secretvalue");
-                assertThat(logEvent.getMessage().getFormattedMessage())
-                    .isEqualTo("Failed request. Url: localhost:" + server.port() + "/hello, headers: [Cookie=REDACTED, Host=localhost]");
-            });
-        } finally {
-            server.disposeNow();
-        }
+        loggingVerifier.verify(WARN, logEvent -> {
+            String message = ofNullable(logEvent.getThrown().getMessage())
+                .orElse("");
+            assertThat(message)
+                .doesNotContain("secretvalue");
+            assertThat(logEvent.getMessage().getFormattedMessage())
+                .isEqualTo("Failed request. Url: localhost:" + server.port() + "/hello, headers: [Cookie=REDACTED, Host=localhost]");
+        });
     }
 
     @Test
     void shouldReturnBadRequestOnTooLargeResponses() throws URISyntaxException {
-        DisposableServer server = startServer(HttpResponseStatus.OK, "\"derp\"");
+        server = startServer(HttpResponseStatus.OK, "\"derp\"");
         HttpClientConfig config = new HttpClientConfig("127.0.0.1:" + server.port());
         config.setMaxResponseSize(5);
         TestResource resource = getHttpProxy(config);
@@ -743,24 +705,20 @@ class HttpClientTest {
         } catch (WebException e) {
             assertThat(e.getStatus()).isEqualTo(BAD_REQUEST);
         }
-
-        server.disposeNow();
     }
 
     @Test
     void shouldSupportByteArrayResponse() {
-        DisposableServer server = startServer(HttpResponseStatus.OK, "hej");
+        server = startServer(HttpResponseStatus.OK, "hej");
         TestResource resource = getHttpProxy(server.port());
         byte[] result = resource.getAsBytes().toBlocking().single();
         assertThat(new String(result)).isEqualTo("hej");
-
-        server.disposeNow();
     }
 
     @Test
     void shouldRetry5XXResponses() throws URISyntaxException {
         AtomicLong callCount = new AtomicLong();
-        DisposableServer server = startServer(INTERNAL_SERVER_ERROR, "", r -> callCount.incrementAndGet());
+        server = startServer(INTERNAL_SERVER_ERROR, "", r -> callCount.incrementAndGet());
 
         HttpClientConfig config = new HttpClientConfig("127.0.0.1:" + server.port());
         config.setRetryDelayMs(10);
@@ -772,14 +730,12 @@ class HttpClientTest {
             assertThat(e.getStatus()).isEqualTo(INTERNAL_SERVER_ERROR);
         }
         assertThat(callCount.get()).isEqualTo(4);
-
-        server.disposeNow();
     }
 
     @Test
     void shouldNotRetryFor4XXResponses() {
         AtomicLong callCount = new AtomicLong();
-        DisposableServer server = startServer(NOT_FOUND, "", r -> callCount.incrementAndGet());
+        server = startServer(NOT_FOUND, "", r -> callCount.incrementAndGet());
 
         TestResource resource = getHttpProxy(server.port());
         try {
@@ -789,14 +745,12 @@ class HttpClientTest {
             assertThat(e.getStatus()).isEqualTo(HttpResponseStatus.NOT_FOUND);
         }
         assertThat(callCount.get()).isEqualTo(1);
-
-        server.disposeNow();
     }
 
     @Test
     void shouldNotRetryForJsonParseErrors() {
         AtomicLong callCount = new AtomicLong();
-        DisposableServer server = startServer(OK, "{\"result\":[]}", r -> callCount.incrementAndGet());
+        server = startServer(OK, "{\"result\":[]}", r -> callCount.incrementAndGet());
 
         TestResource resource = getHttpProxy(server.port());
         try {
@@ -806,14 +760,12 @@ class HttpClientTest {
             assertThat(e.getCause().getCause().getCause()).isInstanceOf(JsonMappingException.class);
         }
         assertThat(callCount.get()).isEqualTo(1);
-
-        server.disposeNow();
     }
 
     @Test
     void shouldParseWebExceptions() {
         AtomicLong callCount = new AtomicLong();
-        DisposableServer server = startServer(BAD_REQUEST,
+        server = startServer(BAD_REQUEST,
             "{\"id\":\"f3872d6a-43b9-41c2-a302-f1fc89621f68\",\"error\":\"validation\",\"fields\":[{\"field\":\"phoneNumber\",\"error\":\"validation.invalid.phone.number\"}]}",
             r -> callCount.incrementAndGet());
 
@@ -832,13 +784,12 @@ class HttpClientTest {
         }
 
         assertThat(callCount.get()).isEqualTo(1);
-        server.disposeNow();
     }
 
     @Test
     void shouldNotRetryOnTimeout() {
         AtomicLong callCount = new AtomicLong();
-        DisposableServer server = startSlowServer(HttpResponseStatus.NOT_FOUND, 1000, r -> callCount.incrementAndGet());
+        server = startSlowServer(HttpResponseStatus.NOT_FOUND, 1000, r -> callCount.incrementAndGet());
 
         TestResource resource = getHttpProxy(server.port());
         HttpClient.setTimeout(resource, 500, ChronoUnit.MILLIS);
@@ -849,13 +800,11 @@ class HttpClientTest {
             assertThat(e.getStatus()).isEqualTo(GATEWAY_TIMEOUT);
         }
         assertThat(callCount.get()).isEqualTo(1);
-
-        server.disposeNow();
     }
 
     @Test
     void shouldHandleLongerRequestsThan10SecondsWhenRequested() {
-        DisposableServer server = startSlowServer(HttpResponseStatus.NOT_FOUND, 20000);
+        server = startSlowServer(HttpResponseStatus.NOT_FOUND, 20000);
 
         TestResource resource = getHttpProxy(server.port(), 1, 30000);
         HttpClient.setTimeout(resource, 15000, ChronoUnit.MILLIS);
@@ -865,14 +814,12 @@ class HttpClientTest {
         } catch (WebException e) {
             assertThat(e.getStatus()).isEqualTo(GATEWAY_TIMEOUT);
         }
-
-        server.disposeNow();
     }
 
     @Test
     void shouldThrowNettyReadTimeoutIfRequestTakesLongerThanClientIsConfigured() {
         // Slow server
-        DisposableServer server = HttpServer.create().port(0)
+        server = HttpServer.create().port(0)
             .handle((request, response) -> Flux.defer(() -> {
                 response.status(HttpResponseStatus.NOT_FOUND);
                 return Flux.<Void>empty();
@@ -891,13 +838,11 @@ class HttpClientTest {
         } catch (WebException e) {
             assertThat(e.getStatus()).isEqualTo(GATEWAY_TIMEOUT);
         }
-
-        server.disposeNow();
     }
 
     @Test
     void shouldHandleMultipleChunks() {
-        DisposableServer server = HttpServer.create().port(0).handle((request, response) -> {
+        server = HttpServer.create().port(0).handle((request, response) -> {
             response.status(HttpResponseStatus.OK);
             return response.sendString(just("\"he")
                 .concatWith(defer(() -> just("llo\"")))
@@ -907,36 +852,31 @@ class HttpClientTest {
         TestResource resource = getHttpProxy(server.port());
         String result = resource.getHello().toBlocking().single();
         assertThat(result).isEqualTo("hello");
-
-        server.disposeNow();
     }
 
     @Test
     void shouldDeserializeVoidResult() {
-        DisposableServer server = startServer(HttpResponseStatus.CREATED, "");
+        server = startServer(HttpResponseStatus.CREATED, "");
 
         TestResource resource = getHttpProxy(server.port());
         resource.getVoid().toBlocking().singleOrDefault(null);
-
-        server.disposeNow();
     }
 
     @Test
     void shouldDeserializeSimpleStringWithoutJsonQuotes() {
         final String body = UUID.randomUUID().toString();
-        DisposableServer server = startServer(HttpResponseStatus.CREATED, body);
+        server = startServer(HttpResponseStatus.CREATED, body);
 
         TestResource resource = getHttpProxy(server.port());
         final String s = resource.getString().toBlocking().singleOrDefault(null);
 
         assertThat(s).isEqualTo(body);
-        server.disposeNow();
     }
 
     @Test
     void shouldShutDownConnectionOnTimeoutBeforeHeaders() throws URISyntaxException {
         Consumer<String> serverLog = mock(Consumer.class);
-        DisposableServer server = createTestServer(serverLog);
+        server = createTestServer(serverLog);
 
         HttpClientConfig config = new HttpClientConfig("localhost:" + server.port());
         config.setMaxConnections(1);
@@ -968,8 +908,6 @@ class HttpClientTest {
         }
 
         verify(serverLog, times(6)).accept("/hello/servertest/slowHeaders");
-
-        server.disposeNow();
     }
 
     private DisposableServer createTestServer(Consumer<String> serverLog) {
@@ -1001,7 +939,7 @@ class HttpClientTest {
     @Test
     void shouldCloseConnectionOnTimeoutDuringContentReceive() throws URISyntaxException {
         Consumer<String> serverLog = mock(Consumer.class);
-        DisposableServer server = createTestServer(serverLog);
+        server = createTestServer(serverLog);
 
         HttpClientConfig config = new HttpClientConfig("localhost:" + server.port());
         config.setMaxConnections(1);
@@ -1032,8 +970,6 @@ class HttpClientTest {
         }
 
         verify(serverLog, times(11)).accept("/hello/servertest/slowBody");
-
-        server.disposeNow();
     }
 
     @Test
@@ -1042,7 +978,7 @@ class HttpClientTest {
         Level originalLogLevel = LoggingMockUtil.setLevel(HttpClient.class, Level.OFF);
 
         try {
-            DisposableServer server = HttpServer.create().port(0)
+            server = HttpServer.create().port(0)
                 .handle((request, response) -> {
                     return Flux.defer(() -> {
                             response.status(HttpResponseStatus.OK);
@@ -1069,8 +1005,6 @@ class HttpClientTest {
                     assertThat(e.getStatus()).isEqualTo(GATEWAY_TIMEOUT);
                 }
             }
-
-            server.disposeNow();
         } finally {
             LoggingMockUtil.setLevel(HttpClient.class, originalLogLevel);
         }
@@ -1079,7 +1013,7 @@ class HttpClientTest {
     @Test
     void willRequestWithMultipleCookies() {
         Consumer<HttpServerRequest> reqLog = mock(Consumer.class);
-        DisposableServer server = startServer(OK, "", reqLog::accept);
+        server = startServer(OK, "", reqLog::accept);
 
         String cookie1Value = "stub1";
         String cookie2Value = "stub2";
@@ -1090,8 +1024,6 @@ class HttpClientTest {
             assertThat(req.requestHeaders()).isNotEmpty();
             assertThat(req.requestHeaders().get("Cookie")).isEqualTo(cookieHeader);
         }));
-
-        server.disposeNow();
     }
 
     private DisposableServer startServer(HttpResponseStatus status, String body, Consumer<HttpServerRequest> callback) {
@@ -1139,7 +1071,7 @@ class HttpClientTest {
         AtomicReference<HttpServerRequest> recordedRequest = new AtomicReference<>();
         AtomicReference<String> recordedRequestBody = new AtomicReference<>();
 
-        DisposableServer server = HttpServer.create().port(0).handle((request, response) -> {
+        server = HttpServer.create().port(0).handle((request, response) -> {
             recordedRequest.set(request);
             response.status(HttpResponseStatus.CREATED);
             return request.receive().flatMap(buf -> {
@@ -1153,15 +1085,13 @@ class HttpClientTest {
 
         assertThat(recordedRequest.get().requestHeaders().get("Content-Type")).isEqualTo(MediaType.APPLICATION_FORM_URLENCODED);
         assertThat(recordedRequestBody.get()).isEqualTo("paramA=A&paramB=b%21%22%23%C2%A4%25%2F%3D%26");
-
-        server.disposeNow();
     }
 
     @Test
     void shouldNotSendHeaderParamsAsPostBody() {
         AtomicReference<HttpServerRequest> recordedRequest = new AtomicReference<>();
         AtomicReference<String> recordedRequestBody = new AtomicReference<>();
-        DisposableServer server = HttpServer.create().port(0).handle((request, response) -> {
+        server = HttpServer.create().port(0).handle((request, response) -> {
             recordedRequest.set(request);
             response.status(HttpResponseStatus.CREATED);
             return request.receive().flatMap(buf -> {
@@ -1177,15 +1107,13 @@ class HttpClientTest {
         assertThat(recordedRequest.get().requestHeaders().get("myheader")).isEqualTo("123");
         assertThat(recordedRequest.get().requestHeaders().get("Cookie")).isEqualTo("cookie_key=cookie_val");
         assertThat(recordedRequestBody.get()).isEqualTo("paramA=A&paramB=b%21%22%23%C2%A4%25%2F%3D%26");
-
-        server.disposeNow();
     }
 
     @Test
     void shouldNotWriteParametersWithRequestParameterSerializersToRequestBody() {
         AtomicReference<HttpServerRequest> recordedRequest = new AtomicReference<>();
         AtomicReference<String> recordedRequestBody = new AtomicReference<>();
-        DisposableServer server = HttpServer.create().port(0).handle((request, response) -> {
+        server = HttpServer.create().port(0).handle((request, response) -> {
             recordedRequest.set(request);
             response.status(HttpResponseStatus.CREATED);
             return request.receive().flatMap(buf -> {
@@ -1201,27 +1129,23 @@ class HttpClientTest {
 
         assertThat(recordedRequestBody.get()).isNull();
         assertThat(recordedRequest.get().requestHeaders().get("SESSION")).isEqualTo(session.getSessionId().toString());
-
-        server.disposeNow();
     }
 
     @Test
     void shouldUseConsumesAnnotationAsContentTypeHeader() {
         AtomicReference<HttpServerRequest> recordedRequest = new AtomicReference<>();
-        DisposableServer server = startServer(OK, "", recordedRequest::set);
+        server = startServer(OK, "", recordedRequest::set);
 
         TestResource resource = getHttpProxy(server.port());
         resource.consumesAnnotation().toBlocking().singleOrDefault(null);
 
         assertThat(recordedRequest.get().requestHeaders().get("Content-Type")).isEqualTo("my-test-value");
-
-        server.disposeNow();
     }
 
     @Test
     void shouldSendBasicAuthHeaderIfConfigured() throws URISyntaxException {
         AtomicReference<HttpServerRequest> recordedRequest = new AtomicReference<>();
-        DisposableServer server = startServer(OK, "", recordedRequest::set);
+        server = startServer(OK, "", recordedRequest::set);
 
         HttpClientConfig httpClientConfig = new HttpClientConfig("localhost:" + server.port());
         httpClientConfig.setBasicAuth("root", "hunter2");
@@ -1231,15 +1155,13 @@ class HttpClientTest {
 
         assertThat(recordedRequest.get().requestHeaders().contains("Authorization")).isTrue();
         assertThat(recordedRequest.get().requestHeaders().get("Authorization")).isEqualTo("Basic cm9vdDpodW50ZXIy");
-
-        server.disposeNow();
     }
 
 
     @Test
     void shouldNotSendAuthorizationHeadersUnlessConfigured() throws URISyntaxException {
         AtomicReference<HttpServerRequest> recordedRequest = new AtomicReference<>();
-        DisposableServer server = startServer(OK, "", recordedRequest::set);
+        server = startServer(OK, "", recordedRequest::set);
 
         HttpClientConfig httpClientConfig = new HttpClientConfig("localhost:" + server.port());
 
@@ -1247,14 +1169,12 @@ class HttpClientTest {
         resource.getHello().test().awaitTerminalEvent();
 
         assertThat(recordedRequest.get().requestHeaders().contains("Authorization")).isFalse();
-
-        server.disposeNow();
     }
 
     @Test
     void shouldSetDevParams() throws URISyntaxException {
         AtomicReference<HttpServerRequest> recordedRequest = new AtomicReference<>();
-        DisposableServer server = startServer(OK, "", recordedRequest::set);
+        server = startServer(OK, "", recordedRequest::set);
 
         HttpClientConfig httpClientConfig = new HttpClientConfig("localhost:12345");
         httpClientConfig.setDevCookie("DevCookie=123");
@@ -1267,8 +1187,6 @@ class HttpClientTest {
 
         assertThat(recordedRequest.get().requestHeaders().get("Cookie")).isEqualTo("cookie=cookieParam;DevCookie=123");
         assertThat(recordedRequest.get().requestHeaders().get("DevHeader")).isEqualTo("213");
-
-        server.disposeNow();
     }
 
     @Test
@@ -1276,7 +1194,7 @@ class HttpClientTest {
         AtomicReference<HttpServerRequest> recordedRequest = new AtomicReference<>();
         AtomicReference<String> recordedRequestBody = new AtomicReference<>();
 
-        DisposableServer server = HttpServer.create().port(0).handle((request, response) -> {
+        server = HttpServer.create().port(0).handle((request, response) -> {
             recordedRequest.set(request);
             response.status(HttpResponseStatus.NO_CONTENT);
             return request.receive().flatMap(buf -> {
@@ -1302,13 +1220,11 @@ class HttpClientTest {
         resource.post("test").toBlocking().lastOrDefault(null);
         assertThat(recordedRequestBody.get()).isEqualTo("\"test\"");
         assertThat(recordedRequest.get().method()).isEqualTo(HttpMethod.POST);
-
-        server.disposeNow();
     }
 
     @Test
     void shouldBeAbleToSendAndReceiveRecordBody() {
-        DisposableServer server = HttpServer.create().port(0).handle((request, response) ->
+        server = HttpServer.create().port(0).handle((request, response) ->
             request.receive().aggregate().flatMap(buf ->
                 response.status(HttpResponseStatus.OK).send(Mono.just(buf)).then()
             )).bindNow();
@@ -1321,8 +1237,6 @@ class HttpClientTest {
 
         assertThat(responseRecord).isNotNull();
         assertThat(responseRecord).isEqualTo(requestRecord);
-
-        server.disposeNow();
     }
 
     @Test
@@ -1351,7 +1265,7 @@ class HttpClientTest {
 
     @Test
     void shouldExecutePreRequestHooks() throws URISyntaxException {
-        DisposableServer server = HttpServer.create().port(0).handle((request, response) -> {
+        server = HttpServer.create().port(0).handle((request, response) -> {
             response.status(HttpResponseStatus.OK);
             return response.sendString(Mono.just("\"hi\""));
         }).bindNow();
@@ -1371,14 +1285,12 @@ class HttpClientTest {
         verify(preRequestHook, times(1)).apply((TestUtil.matches(requestBuilder -> {
             assertThat(requestBuilder.getFullUrl()).isEqualToIgnoringCase(url + "/hello");
         })));
-
-        server.disposeNow();
     }
 
     @Test
     void shouldNotRetryFailedPostCallsWithStrangeExceptions() {
         AtomicLong callCount = new AtomicLong();
-        DisposableServer server = startServer(INTERNAL_SERVER_ERROR, "\"NOT OK\"", r -> callCount.incrementAndGet());
+        server = startServer(INTERNAL_SERVER_ERROR, "\"NOT OK\"", r -> callCount.incrementAndGet());
         try {
             HttpClientConfig config = new HttpClientConfig("localhost:" + server.port());
             config.setReadTimeoutMs(100);
@@ -1388,8 +1300,6 @@ class HttpClientTest {
         } catch (Exception e) {
             assertThat(callCount.get()).isEqualTo(1);
             assertThat(e.getClass()).isEqualTo(WebException.class);
-        } finally {
-            server.disposeNow();
         }
     }
 
@@ -1413,7 +1323,7 @@ class HttpClientTest {
     void shouldErrorOnUntrustedHost() throws URISyntaxException, CertificateException {
         SelfSignedCertificate cert = new SelfSignedCertificate();
         SslContextBuilder serverOptions = SslContextBuilder.forServer(cert.certificate(), cert.privateKey());
-        DisposableServer server =
+        server =
             reactor.netty.http.server.HttpServer.create()
                 .secure(sslContextSpec -> sslContextSpec.sslContext(serverOptions))
                 .handle((req, res) -> res.sendString(Mono.just("Hello")))
@@ -1437,8 +1347,6 @@ class HttpClientTest {
         } catch (RuntimeException runtimeException) {
             assertThat(runtimeException.getCause()).isInstanceOf(SSLHandshakeException.class);
         }
-
-        server.disposeNow();
     }
 
     @Test
@@ -1446,7 +1354,7 @@ class HttpClientTest {
 
         SelfSignedCertificate cert = new SelfSignedCertificate();
         SslContextBuilder serverOptions = SslContextBuilder.forServer(cert.certificate(), cert.privateKey());
-        DisposableServer server =
+        server =
             reactor.netty.http.server.HttpServer.create()
                 .secure(sslContextSpec -> sslContextSpec.sslContext(serverOptions))
                 .handle((req, res) -> res.sendString(Mono.just("Hello")))
@@ -1470,13 +1378,11 @@ class HttpClientTest {
         } catch (RuntimeException runtimeException) {
             Assertions.fail("Should not give an error");
         }
-
-        server.disposeNow();
     }
 
     @Test
     void shouldLogRequestDetailsOnTimeout() {
-        DisposableServer server = startServer(OK, Flux.never(), r -> {
+        server = startServer(OK, Flux.never(), r -> {
         });
 
         try {
@@ -1489,8 +1395,6 @@ class HttpClientTest {
             PrintStream stream = new PrintStream(baos, true);
             e.printStackTrace(stream);
             assertThat(baos.toString()).contains("Timeout after 10 ms calling localhost:" + server.port() + "/hello/servertest/mode");
-        } finally {
-            server.disposeNow();
         }
     }
 
@@ -1514,7 +1418,7 @@ class HttpClientTest {
     @Test
     void assertRequestContainsHost() {
         Consumer<HttpServerRequest> reqLog = mock(Consumer.class);
-        DisposableServer server = startServer(OK, "", reqLog::accept);
+        server = startServer(OK, "", reqLog::accept);
 
         String host = "localhost";
 
@@ -1524,14 +1428,12 @@ class HttpClientTest {
             assertThat(req.requestHeaders()).isNotEmpty();
             assertThat(req.requestHeaders().get("Host")).isEqualTo(host);
         }));
-
-        server.disposeNow();
     }
 
     @Test
     void assertRequestContainsHostFromHeaderParam() {
         Consumer<HttpServerRequest> reqLog = mock(Consumer.class);
-        DisposableServer server = startServer(OK, "", reqLog::accept);
+        server = startServer(OK, "", reqLog::accept);
 
         String host = "globalhost";
 
@@ -1541,8 +1443,6 @@ class HttpClientTest {
             assertThat(req.requestHeaders()).isNotEmpty();
             assertThat(req.requestHeaders().get("Host")).isEqualTo(host);
         }));
-
-        server.disposeNow();
     }
 
     @Test
@@ -1550,7 +1450,7 @@ class HttpClientTest {
         AtomicReference<HttpServerRequest> recordedRequest = new AtomicReference<>();
         AtomicReference<String> recordedRequestBody = new AtomicReference<>();
 
-        DisposableServer server = HttpServer.create().port(0).handle((request, response) -> {
+        server = HttpServer.create().port(0).handle((request, response) -> {
             recordedRequest.set(request);
             response.status(HttpResponseStatus.NO_CONTENT);
             return request.receive().flatMap(buf -> {
@@ -1565,8 +1465,6 @@ class HttpClientTest {
         assertThat(recordedRequestBody.get()).isEqualTo("<xml></xml>");
         assertThat(recordedRequest.get().method()).isEqualTo(HttpMethod.POST);
         assertThat(recordedRequest.get().requestHeaders().get("Content-Type")).isEqualTo("application/xml");
-
-        server.disposeNow();
     }
 
 
@@ -1575,7 +1473,7 @@ class HttpClientTest {
         AtomicReference<HttpServerRequest> recordedRequest = new AtomicReference<>();
         AtomicReference<String> recordedRequestBody = new AtomicReference<>();
 
-        DisposableServer server = HttpServer.create().port(0).handle((request, response) -> {
+        server = HttpServer.create().port(0).handle((request, response) -> {
             recordedRequest.set(request);
             response.status(HttpResponseStatus.NO_CONTENT);
             return request.receive().flatMap(buf -> {
@@ -1590,8 +1488,6 @@ class HttpClientTest {
         assertThat(recordedRequestBody.get()).isEqualTo("<xml></xml>");
         assertThat(recordedRequest.get().method()).isEqualTo(HttpMethod.POST);
         assertThat(recordedRequest.get().requestHeaders().get("Content-Type")).isEqualTo("application/xml");
-
-        server.disposeNow();
     }
 
     @Test
@@ -1599,7 +1495,7 @@ class HttpClientTest {
         AtomicReference<HttpServerRequest> recordedRequest = new AtomicReference<>();
         AtomicReference<String> recordedRequestBody = new AtomicReference<>();
 
-        DisposableServer server = HttpServer.create().port(0).handle((request, response) -> {
+        server = HttpServer.create().port(0).handle((request, response) -> {
             recordedRequest.set(request);
             response.status(HttpResponseStatus.NO_CONTENT);
             return request.receive().flatMap(buf -> {
@@ -1616,8 +1512,6 @@ class HttpClientTest {
         } catch (IllegalArgumentException e) {
             assertThat(e).hasMessage("When content type is not application/json the body param must be String, byte[] or Publisher<? extends byte[]>, but was class se.fortnox.reactivewizard.client.HttpClientTest$Pojo");
         }
-
-        server.disposeNow();
     }
 
     @Path("/hello")
