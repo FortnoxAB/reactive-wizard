@@ -1,40 +1,40 @@
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
-		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-	<modelVersion>4.0.0</modelVersion>
-	<artifactId>reactivewizard-dbmigrate</artifactId>
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <artifactId>reactivewizard-dbmigrate</artifactId>
 
-	<parent>
-		<groupId>se.fortnox.reactivewizard</groupId>
-		<artifactId>reactivewizard-parent</artifactId>
-		<version>999.9.9-SNAPSHOT</version>
-	</parent>
+    <parent>
+        <groupId>se.fortnox.reactivewizard</groupId>
+        <artifactId>reactivewizard-parent</artifactId>
+        <version>999.9.9-SNAPSHOT</version>
+    </parent>
 
-	<dependencies>
-		<dependency>
-			<groupId>se.fortnox.reactivewizard</groupId>
-			<artifactId>reactivewizard-dao</artifactId>
-		</dependency>
+    <dependencies>
+        <dependency>
+            <groupId>se.fortnox.reactivewizard</groupId>
+            <artifactId>reactivewizard-dao</artifactId>
+        </dependency>
 
-		<dependency>
-			<groupId>se.fortnox.reactivewizard</groupId>
-			<artifactId>reactivewizard-config</artifactId>
-		</dependency>
+        <dependency>
+            <groupId>se.fortnox.reactivewizard</groupId>
+            <artifactId>reactivewizard-config</artifactId>
+        </dependency>
 
-		<dependency>
-			<groupId>se.fortnox.reactivewizard</groupId>
-			<artifactId>reactivewizard-binding</artifactId>
-		</dependency>
+        <dependency>
+            <groupId>se.fortnox.reactivewizard</groupId>
+            <artifactId>reactivewizard-binding</artifactId>
+        </dependency>
 
-		<dependency>
-			<groupId>se.fortnox.reactivewizard</groupId>
-			<artifactId>reactivewizard-test</artifactId>
-			<scope>test</scope>
-		</dependency>
+        <dependency>
+            <groupId>se.fortnox.reactivewizard</groupId>
+            <artifactId>reactivewizard-test</artifactId>
+            <scope>test</scope>
+        </dependency>
 
-		<dependency>
-			<groupId>org.liquibase</groupId>
-			<artifactId>liquibase-core</artifactId>
-		</dependency>
+        <dependency>
+            <groupId>org.liquibase</groupId>
+            <artifactId>liquibase-core</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -46,16 +46,16 @@
             <artifactId>snakeyaml</artifactId>
         </dependency>
 
-		<dependency>
-			<groupId>com.h2database</groupId>
-			<artifactId>h2</artifactId>
-			<scope>test</scope>
-		</dependency>
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>test</scope>
+        </dependency>
 
-		<dependency>
-			<groupId>com.mattbertolini</groupId>
-			<artifactId>liquibase-slf4j</artifactId>
-		</dependency>
+        <dependency>
+            <groupId>com.mattbertolini</groupId>
+            <artifactId>liquibase-slf4j</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>se.fortnox.reactivewizard</groupId>
