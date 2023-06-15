@@ -7,7 +7,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>reactivewizard-dao</artifactId>
+    <artifactId>coverage</artifactId>
 
     <dependencies>
 
@@ -17,7 +17,15 @@
         </dependency>
         <dependency>
             <groupId>se.fortnox.reactivewizard</groupId>
-            <artifactId>reactivewizard-json</artifactId>
+            <artifactId>reactivewizard-binding</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>se.fortnox.reactivewizard</groupId>
+            <artifactId>reactivewizard-bootstrap</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>se.fortnox.reactivewizard</groupId>
+            <artifactId>reactivewizard-client</artifactId>
         </dependency>
         <dependency>
             <groupId>se.fortnox.reactivewizard</groupId>
@@ -25,8 +33,35 @@
         </dependency>
         <dependency>
             <groupId>se.fortnox.reactivewizard</groupId>
+            <artifactId>reactivewizard-dbmigrate</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>se.fortnox.reactivewizard</groupId>
+            <artifactId>reactivewizard-jaxrs</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>se.fortnox.reactivewizard</groupId>
+            <artifactId>reactivewizard-jaxrs-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>se.fortnox.reactivewizard</groupId>
+            <artifactId>reactivewizard-jaxrs-api-test</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>se.fortnox.reactivewizard</groupId>
+            <artifactId>reactivewizard-json</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>se.fortnox.reactivewizard</groupId>
+            <artifactId>reactivewizard-metrics</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>se.fortnox.reactivewizard</groupId>
+            <artifactId>reactivewizard-server</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>se.fortnox.reactivewizard</groupId>
             <artifactId>reactivewizard-test</artifactId>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>se.fortnox.reactivewizard</groupId>
@@ -34,72 +69,30 @@
         </dependency>
         <dependency>
             <groupId>se.fortnox.reactivewizard</groupId>
-            <artifactId>reactivewizard-binding</artifactId>
+            <artifactId>reactivewizard-validation</artifactId>
         </dependency>
-        <dependency>
-            <groupId>se.fortnox.reactivewizard</groupId>
-            <artifactId>reactivewizard-metrics</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>com.zaxxer</groupId>
-            <artifactId>HikariCP</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>com.h2database</groupId>
-            <artifactId>h2</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>se.fortnox.reactivewizard</groupId>
-            <artifactId>reactivewizard-config</artifactId>
-            <scope>test</scope>
-            <classifier>tests</classifier>
-        </dependency>
-
-        <dependency>
-            <groupId>org.awaitility</groupId>
-            <artifactId>awaitility</artifactId>
-            <scope>test</scope>
-        </dependency>
-
     </dependencies>
-
     <build>
         <plugins>
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
                 <executions>
                     <execution>
+                        <id>report</id>
                         <goals>
-                            <goal>test-jar</goal>
+                            <goal>report-aggregate</goal>
                         </goals>
+                        <phase>verify</phase>
                     </execution>
                 </executions>
             </plugin>
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
+                <artifactId>maven-deploy-plugin</artifactId>
                 <configuration>
-                    <argLine>@{argLine} -Dfile.encoding=UTF-8 -Xmx64m --add-opens
-                        java.base/java.lang.invoke=ALL-UNNAMED
-                    </argLine>
+                    <skip>true</skip>
                 </configuration>
             </plugin>
         </plugins>
     </build>
-
 </project>

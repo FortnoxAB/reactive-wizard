@@ -67,10 +67,14 @@
         <module>client</module>
         <module>validation</module>
         <module>dbmigrate</module>
+        <module>coverage</module>
     </modules>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <sonar.coverage.jacoco.xmlReportPaths>
+            ${project.basedir}/../coverage/target/site/jacoco-aggregate/jacoco.xml
+        </sonar.coverage.jacoco.xmlReportPaths>
 
         <reactor-bom.version>2022.0.8</reactor-bom.version>
         <netty.version>4.1.93.Final</netty.version>
@@ -564,13 +568,6 @@
                         <id>default-prepare-agent</id>
                         <goals>
                             <goal>prepare-agent</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>default-report</id>
-                        <phase>test</phase>
-                        <goals>
-                            <goal>report</goal>
                         </goals>
                     </execution>
                 </executions>

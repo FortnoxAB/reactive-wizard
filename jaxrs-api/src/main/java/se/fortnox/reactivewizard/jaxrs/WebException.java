@@ -10,7 +10,7 @@ import org.slf4j.event.Level;
 import java.util.UUID;
 
 @SuppressWarnings("serial")
-@JsonIgnoreProperties({"cause", "stackTrace", "localizedMessage", "suppressed", "logLevel"})
+@JsonIgnoreProperties({"cause", "stackTrace", "localizedMessage", "suppressed", "logLevel", "body"})
 public class WebException extends RuntimeException {
 
     private   String             id;
@@ -21,12 +21,26 @@ public class WebException extends RuntimeException {
     private   String             message;
     protected Level              logLevel;
 
+
+    private final String body;
+
+
+    public WebException(HttpResponseStatus httpStatus, Throwable throwable, boolean stacktrace, String body) {
+        super(null, throwable, false, stacktrace);
+        this.error = errorCodeFromStatus(httpStatus);
+        this.status = httpStatus;
+        this.id = UUID.randomUUID().toString();
+        this.logLevel = logLevelFromStatus(httpStatus);
+        this.body = body;
+    }
+
     public WebException(HttpResponseStatus httpStatus, Throwable throwable, boolean stacktrace) {
         super(null, throwable, false, stacktrace);
         this.error = errorCodeFromStatus(httpStatus);
         this.status = httpStatus;
         this.id = UUID.randomUUID().toString();
         this.logLevel = logLevelFromStatus(httpStatus);
+        this.body = null;
     }
 
     public WebException(HttpResponseStatus httpStatus, String errorCode, Throwable throwable) {
@@ -52,6 +66,7 @@ public class WebException extends RuntimeException {
         }
         this.id = UUID.randomUUID().toString();
         this.logLevel = logLevelFromStatus(httpStatus);
+        this.body = null;
     }
 
     public WebException(FieldError... fieldErrors) {
@@ -67,6 +82,7 @@ public class WebException extends RuntimeException {
         this.error = errorCode;
         this.id = UUID.randomUUID().toString();
         this.logLevel = logLevelFromStatus(httpStatus);
+        this.body = null;
     }
 
     public WebException(HttpResponseStatus httpStatus, String errorCode) {
@@ -129,6 +145,10 @@ public class WebException extends RuntimeException {
     public WebException withLogLevel(Level logLevel) {
         setLogLevel(logLevel);
         return this;
+    }
+
+    public String getBody() {
+        return body;
     }
 
     private Level logLevelFromStatus(HttpResponseStatus httpStatus) {
