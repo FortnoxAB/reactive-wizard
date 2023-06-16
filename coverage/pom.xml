@@ -33,6 +33,10 @@
         </dependency>
         <dependency>
             <groupId>se.fortnox.reactivewizard</groupId>
+            <artifactId>reactivewizard-dao</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>se.fortnox.reactivewizard</groupId>
             <artifactId>reactivewizard-dbmigrate</artifactId>
         </dependency>
         <dependency>
