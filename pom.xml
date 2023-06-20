@@ -121,7 +121,7 @@
         <maven-deploy-plugin.version>3.1.1</maven-deploy-plugin.version>
         <byte-buddy.version>1.14.5</byte-buddy.version>
         <jakarta.inject-api.version>2.0.1</jakarta.inject-api.version>
-        <bcpkix-jdk18on.version>1.73</bcpkix-jdk18on.version>
+        <bcpkix-jdk18on.version>1.74</bcpkix-jdk18on.version>
 
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         <sonar.organization>fortnoxab</sonar.organization>
