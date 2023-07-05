@@ -23,9 +23,9 @@ class LoggingVerifierExtensionTest {
     }
 
     @AfterAll
-    static void verifyLoggerDestroyed() {
+    static void verifyMockedLoggerDestroyed() {
         org.apache.logging.log4j.core.Logger logger = LoggingMockUtil.getLogger(ClassThatLogsStuff.class);
         assertThat(logger.getAppenders())
-            .isEmpty();
+            .doesNotContainKey("mockAppender");
     }
 }

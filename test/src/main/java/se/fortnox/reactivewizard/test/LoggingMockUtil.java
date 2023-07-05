@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.lang.reflect.Field;
+import java.util.List;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -36,26 +37,29 @@ public class LoggingMockUtil {
      * @param cls class for which to create appender
      * @return appender
      */
-    public static org.apache.logging.log4j.core.Appender createMockedLogAppender(Class cls) {
+    public static org.apache.logging.log4j.core.Appender createMockedLogAppender(Class<?> cls) {
         setLevel(Level.INFO);
-        Logger logger       = LoggingMockUtil.getLogger(cls);
+        Logger logger = LoggingMockUtil.getLogger(cls);
 
         Appender mockAppender = logger.getAppenders().get(MOCK_APPENDER);
         if (mockAppender != null) {
-            return ((AppenderPreservingEvents)mockAppender).getInner();
+            return ((AppenderPreservingEvents) mockAppender).getInner();
         }
 
         mockAppender = mock(Appender.class);
         when(mockAppender.getName()).thenReturn(MOCK_APPENDER);
+        List<Appender> existingAppenders = List.copyOf(logger.getAppenders().values());
         logger.addAppender(new AppenderPreservingEvents(mockAppender));
+        existingAppenders.forEach(logger::addAppender);
         return mockAppender;
     }
 
     /**
      * Destroy mocked log appender.
+     *
      * @param cls class for which to destroy appender
      */
-    public static void destroyMockedAppender(Class cls) {
+    public static void destroyMockedAppender(Class<?> cls) {
         Logger logger = LoggingMockUtil.getLogger(cls);
         Appender appender = logger.getAppenders().get(MOCK_APPENDER);
 
@@ -63,8 +67,8 @@ public class LoggingMockUtil {
             logger.removeAppender(appender);
             return;
         }
-        LOG.warn("Tried to destroy a mocked appender on " + cls.getName() +
-            " but none was mocked. Perhaps you set up the mockedLogAppender for a different class?");
+        LOG.warn("Tried to destroy a mocked appender on {} but none was mocked. Perhaps you set up the mockedLogAppender for a different class?",
+            cls.getName());
     }
 
     /**
@@ -73,15 +77,15 @@ public class LoggingMockUtil {
      *
      * @return the logger instance used in the class
      */
-    static Logger getLogger(Class cls) {
+    static Logger getLogger(Class<?> cls) {
         try {
             Field logField = cls.getDeclaredField("LOG");
             logField.setAccessible(true);
-            Log4jLogger loggerAdapter = (Log4jLogger)logField.get(null);
+            Log4jLogger loggerAdapter = (Log4jLogger) logField.get(null);
             Field innerLogField = loggerAdapter.getClass()
                 .getDeclaredField("logger");
             innerLogField.setAccessible(true);
-            return (Logger)innerLogField.get(loggerAdapter);
+            return (Logger) innerLogField.get(loggerAdapter);
         } catch (NoSuchFieldException | IllegalAccessException e) {
             throw new RuntimeException(e);
         }
@@ -89,6 +93,7 @@ public class LoggingMockUtil {
 
     /**
      * Set root level.
+     *
      * @param level level
      */
     public static void setLevel(Level level) {
@@ -97,7 +102,8 @@ public class LoggingMockUtil {
 
     /**
      * Set level for class.
-     * @param cls class
+     *
+     * @param cls   class
      * @param level level
      * @return old level
      */

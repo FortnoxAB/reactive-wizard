@@ -7,8 +7,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Map;
+
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.Mockito.verify;
 import static se.fortnox.reactivewizard.test.TestUtil.matches;
 
@@ -19,7 +21,7 @@ class LoggingMockUtilTest {
     @Test
     void shouldLogToMockAppender() {
         ClassWithLogger classWithLogger = new ClassWithLogger();
-        Appender appender        = LoggingMockUtil.createMockedLogAppender(ClassWithLogger.class);
+        Appender appender = LoggingMockUtil.createMockedLogAppender(ClassWithLogger.class);
 
         classWithLogger.doSomethingLogged();
 
@@ -36,13 +38,9 @@ class LoggingMockUtilTest {
 
     @Test
     void shouldThrowExceptionIfFieldLOGCannotBeFoundWhileCreatingMockAppender() {
-        try {
-            LoggingMockUtil.createMockedLogAppender(String.class);
-            fail("expected exception");
-        } catch (RuntimeException exception) {
-            assertThat(exception.getCause())
-                .isInstanceOf(ReflectiveOperationException.class);
-        }
+        assertThatExceptionOfType(RuntimeException.class)
+            .isThrownBy(() -> LoggingMockUtil.createMockedLogAppender(String.class))
+            .withCauseInstanceOf(ReflectiveOperationException.class);
     }
 
     /**
@@ -50,7 +48,7 @@ class LoggingMockUtilTest {
      */
     @Test
     void shouldBePossibleToDestroyMockAppender() {
-        Appender appender = LoggingMockUtil.createMockedLogAppender(ClassWithLogger.class);
+        LoggingMockUtil.createMockedLogAppender(ClassWithLogger.class);
 
         LoggingMockUtil.destroyMockedAppender(ClassWithLogger.class);
 
@@ -68,10 +66,23 @@ class LoggingMockUtilTest {
         LoggingMockUtil.destroyMockedAppender(ClassWithLogger.class);
         loggingVerifier.verify(Level.WARN, "Tried to destroy a mocked appender on se.fortnox.reactivewizard.test.ClassWithLogger but none was mocked. Perhaps you set up the mockedLogAppender for a different class?");
     }
+
+    @Test
+    void shouldKeepExistingAppenders() {
+        org.apache.logging.log4j.core.Logger logger = LoggingMockUtil.getLogger(ClassWithLogger.class);
+        Map<String, Appender> existingAppenders = logger.getAppenders();
+        assertThat(existingAppenders)
+            .isNotEmpty();
+        LoggingMockUtil.createMockedLogAppender(ClassWithLogger.class);
+        assertThat(logger.getAppenders())
+            .containsAllEntriesOf(existingAppenders)
+            .containsKey("mockAppender")
+            .hasSize(existingAppenders.size() + 1);
+    }
 }
 
 class ClassWithLogger {
-    private static final Logger LOG = LoggerFactory.getLogger(LoggingMockUtilTest.class);
+    static final Logger LOG = LoggerFactory.getLogger(LoggingMockUtilTest.class);
 
     public void doSomethingLogged() {
         LOG.info("Information was logged");

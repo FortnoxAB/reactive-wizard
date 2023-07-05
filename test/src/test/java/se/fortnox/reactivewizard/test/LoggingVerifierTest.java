@@ -3,7 +3,6 @@ package se.fortnox.reactivewizard.test;
 import org.apache.logging.log4j.core.LogEvent;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,6 +14,7 @@ import static org.apache.logging.log4j.Level.WARN;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(LoggingVerifierExtension.class)
 class LoggingVerifierTest {
@@ -36,7 +36,7 @@ class LoggingVerifierTest {
         loggingVerifier.verify(WARN, "warn");
         loggingVerifier.verify(ERROR, "error");
 
-        Mockito.verify(loggingVerifier.getMockedAppender(), never()).append(TestUtil.matches(logEvent -> {
+        verify(loggingVerifier.getMockedAppender(), never()).append(TestUtil.matches(logEvent -> {
             assertThat(logEvent.getLevel()).isEqualTo(INFO);
             assertThat(logEvent.getMessage().getFormattedMessage()).isEqualTo("Test");
         }));
