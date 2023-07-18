@@ -7,10 +7,12 @@ import com.google.inject.Module;
 import com.google.inject.*;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.cookie.DefaultCookie;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import rx.Observable;
 import se.fortnox.reactivewizard.jaxrs.params.*;
 import se.fortnox.reactivewizard.jaxrs.params.annotated.AnnotatedParamResolverFactories;
 import se.fortnox.reactivewizard.jaxrs.params.deserializing.Deserializer;
@@ -65,6 +67,14 @@ class JaxRsResourceTest {
         JaxRsResources resources = new JaxRsResources(new Object[]{new Testresource()}, new JaxRsResourceFactory(), false);
         JaxRsRequest jaxRsRequest = new JaxRsRequest(new MockHttpServerRequest("/test/acceptsString"), new ByteBufCollector());
         assertThat(resources.findResource(jaxRsRequest).call(jaxRsRequest)).isNotNull();
+    }
+
+    @Test
+    void shouldfailToInitializeResourcesReturningObservables() {
+        Assertions.assertThatThrownBy(() -> new JaxRsResources(new Object[]{new TestResourceWithObservables()}, new JaxRsResourceFactory(), false))
+            .hasMessage("Can only serve methods that are of type Flux or Mono. " +
+                "public rx.Observable se.fortnox.reactivewizard.jaxrs.JaxRsResourceTest$TestResourceWithObservables.shouldFail()" +
+                " had unsupported return type class rx.Observable");
     }
 
     @Test
@@ -938,6 +948,14 @@ class JaxRsResourceTest {
 
         public void setLocalTime(LocalTime localTime) {
             this.localTime = localTime;
+        }
+    }
+
+    @Path("testobservable")
+    public class TestResourceWithObservables {
+        @GET
+        public Observable<String> shouldFail() {
+            return Observable.just("");
         }
     }
 

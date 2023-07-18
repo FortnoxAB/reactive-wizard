@@ -141,6 +141,10 @@ public class FluxRxConverter {
         return Flux.class.isAssignableFrom(returnType);
     }
 
+    public static boolean isMono(Class<?> returnType) {
+        return Mono.class.isAssignableFrom(returnType);
+    }
+
     /**
      * Create a converter from Observable to a reactive type.
      *
