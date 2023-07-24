@@ -120,7 +120,7 @@ public class HttpClient implements InvocationHandler {
         this.requestLogger = requestLogger;
         this.objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         var constraints = StreamReadConstraints.builder()
-            .maxStringLength(config.getMaxResponseSize())
+            .maxStringLength(20_000_000)
             .build();
         this.objectMapper.getFactory()
             .setStreamReadConstraints(constraints);
