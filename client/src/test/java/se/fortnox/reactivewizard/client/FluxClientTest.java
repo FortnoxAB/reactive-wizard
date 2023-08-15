@@ -45,12 +45,7 @@ class FluxClientTest {
     @Mock
     FluxResource fluxServerResource;
 
-    @Mock
-    ObservableResource observableServerResource;
-
     JaxRsRequestHandler handler;
-
-    JaxRsRequestHandler failingHandler;
 
     public LoggingVerifier loggingVerifier = new LoggingVerifier(HttpClient.class);
 
@@ -88,23 +83,6 @@ class FluxClientTest {
             assertThat(entitiesResult).hasSize(3);
             assertThat(entitiesResult.get(0).getSomeDouble()).isEqualTo(3.1415d);
 
-        } finally {
-            server.disposeNow();
-        }
-    }
-
-    @Test
-    void shouldDecodeJsonArrayAsFluxInOneChunk() throws URISyntaxException {
-        handler = new JaxRsRequestHandler(new Object[]{observableServerResource}, new JaxRsResourceFactory(), new ExceptionHandler(), false);
-        DisposableServer server = HttpServer.create().handle(handler).bindNow();
-        when(observableServerResource.arrayOfStrings()).thenReturn(Observable.just("a", "b").toList());
-
-        try {
-            FluxResource fluxClientResource = client(server);
-            List<String> result = fluxClientResource.arrayOfStrings().collectList().block();
-            assertThat(result).hasSize(2);
-            assertThat(result.get(0)).isEqualTo("a");
-            assertThat(result.get(1)).isEqualTo("b");
         } finally {
             server.disposeNow();
         }
@@ -638,17 +616,6 @@ class FluxClientTest {
         @Produces(APPLICATION_JSON)
         Flux<Entity> entitiesWithOverridingJsonContentTypeNonStream();
 
-    }
-
-    @Path("/")
-    interface ObservableResource {
-        @GET
-        @Path("strings")
-        Observable<List<String>> arrayOfStrings();
-
-        @GET
-        @Path("entities")
-        Observable<List<Entity>> arrayOfEntities();
     }
 
     public static class Entity {

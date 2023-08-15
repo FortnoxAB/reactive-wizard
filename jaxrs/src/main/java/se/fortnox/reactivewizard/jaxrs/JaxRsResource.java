@@ -25,6 +25,8 @@ import java.util.regex.Pattern;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
+import static se.fortnox.reactivewizard.util.FluxRxConverter.isFlux;
+import static se.fortnox.reactivewizard.util.FluxRxConverter.isMono;
 
 /**
  * Represents a JaxRs resource. Maps to a method of a resource class. Use the call method with an incoming request to
@@ -102,12 +104,19 @@ public class JaxRsResource<T> implements Comparable<JaxRsResource> {
 
     @SuppressWarnings("unchecked")
     private Function<Object[], Flux<T>> createMethodCaller(Method method, Object resourceInstance) {
-        Function<Object, Flux<T>> fluxConverter = FluxRxConverter.converterToFlux(method.getReturnType());
+        Class<?> returnType = method.getReturnType();
+        Function<Object, Flux<T>> fluxConverter = FluxRxConverter.converterToFlux(returnType);
+
+        if (!isFlux(returnType) && !isMono(returnType)) {
+            throw new IllegalArgumentException(format(
+                "Can only serve methods that are of type Flux or Mono. %s had unsupported return type %s",
+                method, returnType));
+        }
 
         if (fluxConverter == null) {
             throw new IllegalArgumentException(format(
                     "Can only serve methods that are reactive. %s had unsupported return type %s",
-                    method, method.getReturnType()));
+                    method, returnType));
         }
 
         return args -> {
