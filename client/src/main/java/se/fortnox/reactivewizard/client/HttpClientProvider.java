@@ -5,10 +5,9 @@ import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import se.fortnox.reactivewizard.jaxrs.RequestLogger;
 import se.fortnox.reactivewizard.metrics.HealthRecorder;
-
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Handles creation of HttpClients from a given config, for easy creation of custom clients.
@@ -19,7 +18,7 @@ public class HttpClientProvider {
     protected final RequestParameterSerializers                              requestParameterSerializers;
     protected final Set<PreRequestHook>                                             preRequestHooks;
     private final HealthRecorder healthRecorder;
-    private final   Map<Class<? extends HttpClientConfig>, ReactorRxClientProvider> rxClientProviderCache = new HashMap<>();
+    private final   Map<Class<? extends HttpClientConfig>, ReactorRxClientProvider> rxClientProviderCache = new ConcurrentHashMap<>();
     private final RequestLogger requestLogger;
 
     @Inject
