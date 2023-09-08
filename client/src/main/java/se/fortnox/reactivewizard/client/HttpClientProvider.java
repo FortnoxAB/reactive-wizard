@@ -5,8 +5,6 @@ import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import se.fortnox.reactivewizard.jaxrs.RequestLogger;
 import se.fortnox.reactivewizard.metrics.HealthRecorder;
-
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
