@@ -16,12 +16,11 @@ import java.lang.reflect.Method;
 import java.util.Optional;
 
 public class JaxRsMeta {
-    private HttpMethod method                      = null;
-    private Path       methodPath                  = null;
-    private String     produces                    = MediaType.APPLICATION_JSON;
-    private boolean    isProducesAnnotationPresent = false;
-    private Consumes   consumes                    = null;
-    private String fullPath;
+    private HttpMethod method = null;
+    private String produces = MediaType.APPLICATION_JSON;
+    private boolean isProducesAnnotationPresent = false;
+    private Consumes consumes = null;
+    private final String fullPath;
 
     private Stream.Type streamType;
 
@@ -30,6 +29,7 @@ public class JaxRsMeta {
     }
 
     public JaxRsMeta(Method method, Path classPath) {
+        Path methodPath = null;
         for (Annotation annotation : ReflectionUtil.getAnnotations(method)) {
             if (annotation instanceof GET) {
                 this.method = HttpMethod.GET;
@@ -43,14 +43,14 @@ public class JaxRsMeta {
                 this.method = HttpMethod.DELETE;
             } else if (annotation instanceof Produces) {
                 isProducesAnnotationPresent = true;
-                String[] types = ((Produces)annotation).value();
+                String[] types = ((Produces) annotation).value();
                 if (types != null && types.length != 0) {
                     produces = types[0];
                 }
             } else if (annotation instanceof Consumes) {
-                consumes = (Consumes)annotation;
+                consumes = (Consumes) annotation;
             } else if (annotation instanceof Path) {
-                methodPath = (Path)annotation;
+                methodPath = (Path) annotation;
             } else if (annotation instanceof Stream annotationStream) {
                 this.streamType = annotationStream.value();
             }
@@ -63,6 +63,7 @@ public class JaxRsMeta {
 
     /**
      * Return the path.
+     *
      * @param cls the class
      * @return the path
      */
@@ -81,18 +82,19 @@ public class JaxRsMeta {
 
     /**
      * Concatenate paths.
+     *
      * @param path1 the first path
      * @param path2 the second path
      * @return the concatenated path
      */
     public static String concatPaths(Path path1, Path path2) {
-        final String        path1String   = path1 == null ? "" : path1.value();
+        final String path1String = path1 == null ? "" : path1.value();
         final StringBuilder stringBuilder = new StringBuilder();
         if (!path1String.startsWith("/")) {
             stringBuilder.append("/");
         }
         stringBuilder.append(path1String);
-        if (!path1String.endsWith("/")) {
+        if (!path1String.isEmpty() && !path1String.endsWith("/")) {
             stringBuilder.append("/");
         }
 
@@ -133,6 +135,7 @@ public class JaxRsMeta {
 
     /**
      * Finds the JAX-RS class of a class, which may be the same class or an interface that it implements.
+     *
      * @param cls is a class that might be a JaxRs resource
      * @return the JaxRs-annotated class, which might be the sent in class, or an interface implemented by it.
      */

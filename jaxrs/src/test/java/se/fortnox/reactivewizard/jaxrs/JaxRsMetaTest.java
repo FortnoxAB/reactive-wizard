@@ -30,6 +30,13 @@ class JaxRsMetaTest {
         assertThat(jaxRsClass.get()).isEqualTo(jaxRsClassOrInterface);
     }
 
+    private static Stream<Arguments> classesAndInterfaces() {
+        return Stream.of(
+            arguments(ResourceImplementingInterface.class, ResourceInterface.class),
+            arguments(ResourceImplementation.class, ResourceImplementation.class)
+        );
+    }
+
     @ParameterizedTest
     @MethodSource("resourceMethods")
     void producesAnnotation(String methodName, boolean isAnnotationPresent, String annotationValue) throws NoSuchMethodException {
@@ -44,19 +51,6 @@ class JaxRsMetaTest {
         assertThat(jaxRsMeta.getProduces()).isEqualTo(annotationValue);
     }
 
-    @Test
-    void shouldNotReturnJaxRsClassFromInterface() {
-        Optional<Class<?>> jaxRsClass = JaxRsMeta.getJaxRsClass(ResourceInterface.class);
-        assertThat(jaxRsClass.isPresent()).isFalse();
-    }
-
-    private static Stream<Arguments> classesAndInterfaces() {
-        return Stream.of(
-            arguments(ResourceImplementingInterface.class, ResourceInterface.class),
-            arguments(ResourceImplementation.class, ResourceImplementation.class)
-        );
-    }
-
     private static Stream<Arguments> resourceMethods() {
         return Stream.of(
             arguments("hello", PRODUCES_ANNOTATION_NOT_PRESENT, "application/json"),
@@ -66,8 +60,31 @@ class JaxRsMetaTest {
         );
     }
 
+    @Test
+    void shouldNotReturnJaxRsClassFromInterface() {
+        Optional<Class<?>> jaxRsClass = JaxRsMeta.getJaxRsClass(ResourceInterface.class);
+        assertThat(jaxRsClass.isPresent()).isFalse();
+    }
+
+    @ParameterizedTest
+    @MethodSource("pathChecks")
+    void assertFullPath(Class<?> resource, String methodName, String expectedPath) throws NoSuchMethodException {
+        JaxRsMeta jaxRsMeta = new JaxRsMeta(resource.getMethod(methodName));
+        assertThat(jaxRsMeta.getFullPath()).isEqualTo(expectedPath);
+    }
+
+    private static Stream<Arguments> pathChecks() {
+        return Stream.of(
+            arguments(ResourceInterfaceWithoutMainPath.class, "methodWithNoLeadingSlash", "/noLeadingSlash"),
+            arguments(ResourceInterfaceWithoutMainPath.class, "methodWithLeadingSlash", "/leadingSlash"),
+            arguments(ResourceInterface.class, "hello", "/test/hello")
+        );
+    }
+
     @Path("/test")
     interface ResourceInterface {
+
+        @Path("hello")
         @GET
         Mono<String> hello();
 
@@ -133,4 +150,13 @@ class JaxRsMetaTest {
         }
     }
 
+    interface ResourceInterfaceWithoutMainPath {
+        @Path("noLeadingSlash")
+        @GET
+        Mono<Void> methodWithNoLeadingSlash();
+
+        @Path("/leadingSlash")
+        @GET
+        Mono<Void> methodWithLeadingSlash();
+    }
 }
