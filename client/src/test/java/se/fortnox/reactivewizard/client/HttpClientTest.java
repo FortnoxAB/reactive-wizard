@@ -608,6 +608,15 @@ class HttpClientTest {
     }
 
     @Test
+    void shouldThrowIllegalArgumentExceptionWhenPathParamIsNull() {
+        server = startServer(HttpResponseStatus.OK, generateLargeString(10));
+        TestResource resource = getHttpProxy(server.port());
+        assertThatExceptionOfType(IllegalArgumentException.class)
+            .isThrownBy(() -> resource.getPathParam(null).block())
+            .withMessage("Failed to send http request, unexpected null argument for path param 'myParam' when calling se.fortnox.reactivewizard.client.HttpClientTest.TestResource::getPathParam");
+    }
+
+    @Test
     void shouldLogErrorOnTooLargeResponse() {
         server = startServer(HttpResponseStatus.OK, generateLargeString(11));
         TestResource resource = getHttpProxy(server.port());
@@ -1559,6 +1568,10 @@ class HttpClientTest {
         @POST
         Observable<String> postHello();
 
+        @GET
+        @Path("/with-path-param/{myParam}")
+        Mono<String> getPathParam(@PathParam("myParam") String myParam);
+
         @Path("{fid}/{key}")
         Observable<String> withPathAndQueryParam(@PathParam("key") String key, @QueryParam("value") String value);
 
@@ -1642,6 +1655,7 @@ class HttpClientTest {
         @POST
         @Consumes("application/xml")
         Observable<Void> sendXml(Pojo pojo);
+
     }
 
     static class Wrapper {

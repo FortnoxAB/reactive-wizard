@@ -632,6 +632,13 @@ public class HttpClient implements InvocationHandler {
                     query.append('=');
                     query.append(urlEncode(serialize(value)));
                 } else if (annotation instanceof PathParam pathParam) {
+                    if (value == null) {
+                        throw new IllegalArgumentException(
+                            format("Failed to send http request, unexpected null argument for path param '%s' when calling %s::%s",
+                                pathParam.value(),
+                                method.getDeclaringClass().getCanonicalName(),
+                                method.getName()));
+                    }
                     if (path.contains("{" + pathParam.value() + ":.*}")) {
                         path = path.replaceAll("\\{" + pathParam.value() + ":.*\\}", this.encode(this.serialize(value)));
                     } else {
