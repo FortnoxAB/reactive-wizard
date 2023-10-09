@@ -1,9 +1,10 @@
 package se.fortnox.reactivewizard.server;
 
-import io.netty.handler.codec.http.HttpResponseStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Flux;
@@ -18,8 +19,11 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -38,12 +42,18 @@ class CompositeRequestHandlerTest {
     @Mock
     private HttpServerResponse response;
 
+    @Mock
+    private RequestLogger requestLogger;
+
+    @Captor
+    private ArgumentCaptor<WebException> webExceptionCaptor;
+
     private ConnectionCounter connectionCounter;
 
     @BeforeEach
     public void beforeEach() {
         connectionCounter = new ConnectionCounter();
-        compositeRequestHandler = new CompositeRequestHandler(requestHandlers, exceptionHandler, connectionCounter, new RequestLogger());
+        compositeRequestHandler = new CompositeRequestHandler(requestHandlers, exceptionHandler, connectionCounter, requestLogger);
     }
 
     @Test
@@ -60,7 +70,7 @@ class CompositeRequestHandlerTest {
 
         Flux.from(compositeRequestHandler.apply(request, response)).count().block();
 
-        assertThat(callCounter.get()).isEqualTo(1);
+        assertThat(callCounter).hasValue(1);
 
     }
 
@@ -80,7 +90,6 @@ class CompositeRequestHandlerTest {
 
     @Test
     void exceptionHandlerShallBeInvokedWhenNoRequestHandlerIsGiven() {
-        when(response.status()).thenReturn(null);
         when(exceptionHandler.handleException(any(), any(), any())).thenReturn(Flux.empty());
 
         Flux.from(compositeRequestHandler.apply(request, response)).count().block();
@@ -91,8 +100,6 @@ class CompositeRequestHandlerTest {
 
     @Test
     void exceptionHandlerShallBeInvokedWhenNullIsReturnedByRequestHandler() {
-
-        when(response.status()).thenReturn(HttpResponseStatus.OK);
         when(exceptionHandler.handleException(any(), any(), any(WebException.class))).thenReturn(Flux.empty());
         requestHandlers.add((request, response) -> null);
 
@@ -100,5 +107,21 @@ class CompositeRequestHandlerTest {
 
         verify(exceptionHandler).handleException(any(), any(), any(WebException.class));
 
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenNoHandlersMatch() {
+        when(exceptionHandler.handleException(any(), any(), any(WebException.class)))
+            .thenReturn(Flux.empty());
+        doNothing()
+            .when(requestLogger).logRequestResponse(any(), any(), anyLong(), any());
+
+        Flux.from(compositeRequestHandler.apply(request, response)).count().block();
+
+        verify(exceptionHandler).handleException(any(), any(), webExceptionCaptor.capture());
+        WebException handledException = webExceptionCaptor.getValue();
+        assertThat(handledException)
+            .hasFieldOrPropertyWithValue("status", NOT_FOUND)
+            .hasFieldOrPropertyWithValue("error", "resource.not.found");
     }
 }
