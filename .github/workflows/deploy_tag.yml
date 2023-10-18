@@ -1,15 +1,21 @@
-name: CI
-
+name: Build and deploy tag
+run-name: Build and deploy ${{ github.event.inputs.release_tag }}
 on:
-    release:
-        types: [ created ]
+    workflow_call:
+        inputs:
+            tag:
+                description: 'Tag to deploy'
+                required: true
+                type: string
 
 jobs:
     publish:
         runs-on: ubuntu-latest
         steps:
             -   name: Checkout
-                uses: actions/checkout@v3
+                uses: actions/checkout@v4
+                with:
+                    ref: ${{ inputs.tag }}
             -   name: 'Download latest JDK 17'
                 run: |
                     wget \
@@ -34,7 +40,7 @@ jobs:
                     gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
                     gpg-passphrase: GPG_PASS
             -   name: set version
-                run: mvn versions:set -DnewVersion=${GITHUB_REF##*/}
+                run: mvn versions:set -DnewVersion=${{ inputs.tag }}
             -   name: Publish to the Maven Central Repository
                 run: mvn clean deploy -Prelease
                 env:
@@ -42,3 +48,4 @@ jobs:
                     PASSWORD: ${{ secrets.OSSRH_TOKEN }}
                     GPG_PASS: ${{ secrets.PASSPHRASE }}
                     MAVEN_OPTS: "--add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.text=ALL-UNNAMED --add-opens=java.desktop/java.awt.font=ALL-UNNAMED"
+

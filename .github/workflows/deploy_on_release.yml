@@ -1,0 +1,20 @@
+name: Automatic deploy on release
+run-name: Deploy of ${{ github.ref }} on release
+on:
+    release:
+        types: [ created ]
+
+jobs:
+    get_tag:
+        runs-on: ubuntu-latest
+        outputs:
+            tag: ${{ steps.get.outputs.tag }}
+        steps:
+            -   name: Get tag
+                id: get
+                run: echo "tag=${GITHUB_REF##*/}" >> $GITHUB_OUTPUT
+    deploy:
+        needs: [ get_tag ]
+        uses: ./.github/workflows/deploy_tag.yml
+        with:
+            tag: ${{ needs.get_tag.outputs.tag }}
