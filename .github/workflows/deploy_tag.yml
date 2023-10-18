@@ -7,6 +7,15 @@ on:
                 description: 'Tag to deploy'
                 required: true
                 type: string
+        secrets:
+            OSSRH_USERNAME:
+                required: true
+            OSSRH_TOKEN:
+                required: true
+            PASSPHRASE:
+                required: true
+            GPG_PRIVATE_KEY:
+                required: true
 
 jobs:
     publish:
