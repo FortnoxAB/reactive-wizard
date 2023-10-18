@@ -13,3 +13,8 @@ jobs:
         uses: ./.github/workflows/deploy_tag.yml
         with:
             tag: ${{ inputs.tag }}
+        secrets:
+            OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+            OSSRH_TOKEN: ${{ secrets.OSSRH_TOKEN }}
+            PASSPHRASE: ${{ secrets.PASSPHRASE }}
+            GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
