@@ -207,7 +207,7 @@ class HttpClientTest {
     }
 
     protected void withServer(Consumer<DisposableServer> serverConsumer) {
-        server = startServer(HttpResponseStatus.OK, "\"OK\"");
+        server = startServer(OK, "\"OK\"");
         serverConsumer.accept(server);
     }
 
@@ -594,7 +594,7 @@ class HttpClientTest {
 
     @Test
     void shouldSupportSingleSource() {
-        server = startServer(HttpResponseStatus.OK, "\"OK\"");
+        server = startServer(OK, "\"OK\"");
 
         TestResource resource = getHttpProxy(server.port());
         resource.getSingle().toBlocking().value();
@@ -602,14 +602,14 @@ class HttpClientTest {
 
     @Test
     void shouldHandleLargeResponses() {
-        server = startServer(HttpResponseStatus.OK, generateLargeString(10));
+        server = startServer(OK, generateLargeString(10));
         TestResource resource = getHttpProxy(server.port());
         resource.getHello().toBlocking().single();
     }
 
     @Test
     void shouldThrowIllegalArgumentExceptionWhenPathParamIsNull() {
-        server = startServer(HttpResponseStatus.OK, generateLargeString(10));
+        server = startServer(OK, generateLargeString(10));
         TestResource resource = getHttpProxy(server.port());
         assertThatExceptionOfType(IllegalArgumentException.class)
             .isThrownBy(() -> resource.getPathParam(null).block())
@@ -618,7 +618,7 @@ class HttpClientTest {
 
     @Test
     void shouldLogErrorOnTooLargeResponse() {
-        server = startServer(HttpResponseStatus.OK, generateLargeString(11));
+        server = startServer(OK, generateLargeString(11));
         TestResource resource = getHttpProxy(server.port());
         assertThatExceptionOfType(WebException.class)
             .isThrownBy(() -> resource.getHello().toBlocking().single())
@@ -704,7 +704,7 @@ class HttpClientTest {
 
     @Test
     void shouldReturnBadRequestOnTooLargeResponses() throws URISyntaxException {
-        server = startServer(HttpResponseStatus.OK, "\"derp\"");
+        server = startServer(OK, "\"derp\"");
         HttpClientConfig config = new HttpClientConfig("127.0.0.1:" + server.port());
         config.setMaxResponseSize(5);
         TestResource resource = getHttpProxy(config);
@@ -718,7 +718,7 @@ class HttpClientTest {
 
     @Test
     void shouldSupportByteArrayResponse() {
-        server = startServer(HttpResponseStatus.OK, "hej");
+        server = startServer(OK, "hej");
         TestResource resource = getHttpProxy(server.port());
         byte[] result = resource.getAsBytes().toBlocking().single();
         assertThat(new String(result)).isEqualTo("hej");
@@ -852,7 +852,7 @@ class HttpClientTest {
     @Test
     void shouldHandleMultipleChunks() {
         server = HttpServer.create().port(0).handle((request, response) -> {
-            response.status(HttpResponseStatus.OK);
+            response.status(OK);
             return response.sendString(just("\"he")
                 .concatWith(defer(() -> just("llo\"")))
                 .concatWith(defer(Flux::empty)));
@@ -923,18 +923,18 @@ class HttpClientTest {
         return HttpServer.create().host("localhost").port(0).handle((request, response) -> {
             serverLog.accept(request.fullPath());
             if (request.fullPath().equals("/hello/servertest/fast")) {
-                response.status(HttpResponseStatus.OK);
+                response.status(OK);
                 return response.sendString(just("\"fast\""));
             }
             if (request.fullPath().equals("/hello/servertest/slowHeaders")) {
                 return Flux.defer(() -> {
-                        response.status(HttpResponseStatus.OK);
+                        response.status(OK);
                         return response.sendString(just("\"slowHeaders\""));
                     })
                     .delaySubscription(Duration.ofMillis(5000));
             }
             if (request.fullPath().equals("/hello/servertest/slowBody")) {
-                response.status(HttpResponseStatus.OK);
+                response.status(OK);
                 return response.sendString(
                     just("\"slowBody: ")
                         .concatWith(just("1", "2", "3").delaySequence(Duration.ofMillis(10000)))
@@ -990,7 +990,7 @@ class HttpClientTest {
             server = HttpServer.create().port(0)
                 .handle((request, response) -> {
                     return Flux.defer(() -> {
-                            response.status(HttpResponseStatus.OK);
+                            response.status(OK);
                             return response.sendString(Mono.just("\"hello\""));
                         })
                         .delaySubscription(Duration.ofMillis(50000))
@@ -1235,7 +1235,7 @@ class HttpClientTest {
     void shouldBeAbleToSendAndReceiveRecordBody() {
         server = HttpServer.create().port(0).handle((request, response) ->
             request.receive().aggregate().flatMap(buf ->
-                response.status(HttpResponseStatus.OK).send(Mono.just(buf)).then()
+                response.status(OK).send(Mono.just(buf)).then()
             )).bindNow();
 
         var resource = getHttpProxy(server.port());
@@ -1275,7 +1275,7 @@ class HttpClientTest {
     @Test
     void shouldExecutePreRequestHooks() throws URISyntaxException {
         server = HttpServer.create().port(0).handle((request, response) -> {
-            response.status(HttpResponseStatus.OK);
+            response.status(OK);
             return response.sendString(Mono.just("\"hi\""));
         }).bindNow();
 
@@ -1523,6 +1523,35 @@ class HttpClientTest {
         }
     }
 
+    @Test
+    void shouldDisregardCharsetInContentTypeWhenComparingToResourceAnnotation() {
+        String someRecordJson = """
+                [{
+                  "param1": "a",
+                  "param2": "b"
+                },
+                {
+                  "param1": "c",
+                  "param2": "d"
+                }
+                ]""";
+        server = HttpServer.create().port(0).handle((request, response) ->
+            response.status(OK)
+                .header("Content-Type", "application/json; charset=utf-8")
+                .sendString(Mono.just(someRecordJson))
+                .then()).bindNow();
+        TestResource resource = getHttpProxy(server.port());
+
+        StepVerifier.create(resource.producesJson())
+            .expectNext(new TestResource.SomeRecord("a", "b"))
+            .expectNext(new TestResource.SomeRecord("c", "d"))
+            .verifyComplete();
+        loggingVerifier.assertThatLogs()
+            .noneSatisfy(logEvent ->
+                assertThat(logEvent.getMessage().getFormattedMessage())
+                    .contains("does not match the Content-Type"));
+    }
+
     @Path("/hello")
     public interface TestResource {
 
@@ -1655,6 +1684,9 @@ class HttpClientTest {
         @POST
         @Consumes("application/xml")
         Observable<Void> sendXml(Pojo pojo);
+
+        @GET
+        Flux<SomeRecord> producesJson();
 
     }
 

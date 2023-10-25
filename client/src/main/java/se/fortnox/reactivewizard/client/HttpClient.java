@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.google.common.collect.Sets;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.codec.http.HttpUtil;
 import io.netty.handler.timeout.ReadTimeoutException;
 import jakarta.inject.Inject;
 import org.reactivestreams.Publisher;
@@ -281,7 +282,7 @@ public class HttpClient implements InvocationHandler {
     }
 
     private String resolveContentType(Method method, RwHttpClientResponse response) {
-        String contentType = response.getHttpClientResponse().responseHeaders().get(CONTENT_TYPE);
+        String contentType = HttpUtil.getMimeType(response.getHttpClientResponse().responseHeaders().get(CONTENT_TYPE)).toString();
 
         // Override response content-type if resource method is annotated with a non-empty @Produces
         JaxRsMeta jaxRsMeta = new JaxRsMeta(method);
