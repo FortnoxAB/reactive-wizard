@@ -329,7 +329,7 @@ class HttpClientTest {
     }
 
     @Test
-    void shouldNotReportUnhealthyWhenPoolIsExhaustedRatherSequentiatingTheRequests() throws URISyntaxException {
+    void shouldNotReportUnhealthyWhenPoolIsExhaustedRatherSequentiatingTheRequests() {
 
         AtomicBoolean wasUnhealthy = new AtomicBoolean(false);
 
@@ -350,7 +350,7 @@ class HttpClientTest {
                 config.setRetryCount(0);
                 TestResource resource = getHttpProxy(config);
 
-                List<Observable<String>> results = new ArrayList<Observable<String>>();
+                List<Observable<String>> results = new ArrayList<>();
                 for (int i = 0; i < 10; i++) {
                     results.add(resource.getHello());
                 }
@@ -419,7 +419,7 @@ class HttpClientTest {
         withServer(server -> {
             TestResource resource = getHttpProxy(server.port(), 5);
 
-            List<Observable<String>> results = new ArrayList<Observable<String>>();
+            List<Observable<String>> results = new ArrayList<>();
             for (int i = 0; i < 5; i++) {
                 results.add(resource.getHello());
             }
@@ -480,14 +480,13 @@ class HttpClientTest {
 
         TestResource resource = getHttpProxy(server.port());
         StepVerifier.create(resource.getHelloMono())
-            .verifyErrorSatisfies(error -> {
+            .verifyErrorSatisfies(error ->
                 assertThat(error)
                     .isInstanceOf(WebException.class)
                     .hasFieldOrPropertyWithValue("body", errorJson)
                     .cause()
                     .isInstanceOf(HttpClient.DetailedError.class)
-                    .hasMessage("My message");
-            });
+                    .hasMessage("My message"));
     }
 
     @Test
@@ -497,14 +496,13 @@ class HttpClientTest {
 
         TestResource resource = getHttpProxy(server.port());
         StepVerifier.create(resource.getHelloMono())
-            .verifyErrorSatisfies(error -> {
+            .verifyErrorSatisfies(error ->
                 assertThat(error)
                     .isInstanceOf(WebException.class)
                     .hasFieldOrPropertyWithValue("body", errorNonJson)
                     .cause()
                     .isInstanceOf(HttpClient.DetailedError.class)
-                    .hasMessage(errorNonJson);
-            });
+                    .hasMessage(errorNonJson));
     }
 
     @Test
@@ -988,16 +986,14 @@ class HttpClientTest {
 
         try {
             server = HttpServer.create().port(0)
-                .handle((request, response) -> {
-                    return Flux.defer(() -> {
+                .handle((request, response) ->
+                    Flux.defer(() -> {
                             response.status(OK);
                             return response.sendString(Mono.just("\"hello\""));
                         })
                         .delaySubscription(Duration.ofMillis(50000))
-                        .doOnError(e -> {
-                            e.printStackTrace();
-                        });
-                }).bindNow();
+                        .doOnError(Throwable::printStackTrace)
+                ).bindNow();
 
             // this config ensures that the autocleanup will run before the hystrix timeout
             HttpClientConfig config = new HttpClientConfig("localhost:" + server.port());
@@ -1022,7 +1018,7 @@ class HttpClientTest {
     @Test
     void willRequestWithMultipleCookies() {
         Consumer<HttpServerRequest> reqLog = mock(Consumer.class);
-        server = startServer(OK, "", reqLog::accept);
+        server = startServer(OK, "", reqLog);
 
         String cookie1Value = "stub1";
         String cookie2Value = "stub2";
@@ -1291,9 +1287,9 @@ class HttpClientTest {
         TestResource resource = client.create(TestResource.class);
         resource.getHello().toBlocking().single();
 
-        verify(preRequestHook, times(1)).apply((TestUtil.matches(requestBuilder -> {
-            assertThat(requestBuilder.getFullUrl()).isEqualToIgnoringCase(url + "/hello");
-        })));
+        verify(preRequestHook, times(1)).apply((TestUtil.matches(requestBuilder ->
+            assertThat(requestBuilder.getFullUrl()).isEqualToIgnoringCase(url + "/hello")
+        )));
     }
 
     @Test
@@ -1427,7 +1423,7 @@ class HttpClientTest {
     @Test
     void assertRequestContainsHost() {
         Consumer<HttpServerRequest> reqLog = mock(Consumer.class);
-        server = startServer(OK, "", reqLog::accept);
+        server = startServer(OK, "", reqLog);
 
         String host = "localhost";
 
@@ -1442,7 +1438,7 @@ class HttpClientTest {
     @Test
     void assertRequestContainsHostFromHeaderParam() {
         Consumer<HttpServerRequest> reqLog = mock(Consumer.class);
-        server = startServer(OK, "", reqLog::accept);
+        server = startServer(OK, "", reqLog);
 
         String host = "globalhost";
 
@@ -1526,15 +1522,15 @@ class HttpClientTest {
     @Test
     void shouldDisregardCharsetInContentTypeWhenComparingToResourceAnnotation() {
         String someRecordJson = """
-                [{
-                  "param1": "a",
-                  "param2": "b"
-                },
-                {
-                  "param1": "c",
-                  "param2": "d"
-                }
-                ]""";
+            [{
+              "param1": "a",
+              "param2": "b"
+            },
+            {
+              "param1": "c",
+              "param2": "d"
+            }
+            ]""";
         server = HttpServer.create().port(0).handle((request, response) ->
             response.status(OK)
                 .header("Content-Type", "application/json; charset=utf-8")
