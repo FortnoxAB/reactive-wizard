@@ -282,7 +282,10 @@ public class HttpClient implements InvocationHandler {
     }
 
     private String resolveContentType(Method method, RwHttpClientResponse response) {
-        String contentType = HttpUtil.getMimeType(response.getHttpClientResponse().responseHeaders().get(CONTENT_TYPE)).toString();
+        String contentType = Optional.ofNullable(response.getHttpClientResponse().responseHeaders().get(CONTENT_TYPE))
+            .map(HttpUtil::getMimeType)
+            .map(CharSequence::toString)
+            .orElse(null);
 
         // Override response content-type if resource method is annotated with a non-empty @Produces
         JaxRsMeta jaxRsMeta = new JaxRsMeta(method);

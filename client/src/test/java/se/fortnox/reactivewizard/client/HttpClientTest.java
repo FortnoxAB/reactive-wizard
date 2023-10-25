@@ -1548,6 +1548,19 @@ class HttpClientTest {
                     .contains("does not match the Content-Type"));
     }
 
+    @Test
+    void shouldHandleMissingContentTypeInResponse() {
+        server = HttpServer.create().port(0).handle((request, response) ->
+            response.status(OK)
+                .sendString(Mono.just("[]"))
+                .then()).bindNow();
+        TestResource resource = getHttpProxy(server.port());
+
+        StepVerifier.create(resource.producesJson())
+            .expectNextCount(1)
+            .verifyComplete();
+    }
+
     @Path("/hello")
     public interface TestResource {
 
