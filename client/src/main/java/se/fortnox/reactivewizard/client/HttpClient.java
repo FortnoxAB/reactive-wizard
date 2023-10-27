@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.google.common.collect.Sets;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.codec.http.HttpUtil;
 import io.netty.handler.timeout.ReadTimeoutException;
 import jakarta.inject.Inject;
 import org.reactivestreams.Publisher;
@@ -233,7 +234,7 @@ public class HttpClient implements InvocationHandler {
      */
     public static <T> Mono<Response<Flux<T>>> getFullResponse(Flux<T> source) {
         Optional<Mono<Response<Flux<T>>>> responseFlux = ReactiveDecorator.getDecoration(source);
-        if (!responseFlux.isPresent()) {
+        if (responseFlux.isEmpty()) {
             throw new IllegalArgumentException("Must be used with Flux returned from api call");
         }
         return responseFlux.get();
@@ -248,7 +249,7 @@ public class HttpClient implements InvocationHandler {
      */
     public static <T> Mono<Response<T>> getFullResponse(Mono<T> source) {
         Optional<Mono<Response<Flux<T>>>> responseFlux = ReactiveDecorator.getDecoration(source);
-        if (!responseFlux.isPresent()) {
+        if (responseFlux.isEmpty()) {
             throw new IllegalArgumentException("Must be used with Mono returned from api call");
         }
         return flattenResponse(responseFlux.get());
@@ -281,7 +282,10 @@ public class HttpClient implements InvocationHandler {
     }
 
     private String resolveContentType(Method method, RwHttpClientResponse response) {
-        String contentType = response.getHttpClientResponse().responseHeaders().get(CONTENT_TYPE);
+        String contentType = Optional.ofNullable(response.getHttpClientResponse().responseHeaders().get(CONTENT_TYPE))
+            .map(HttpUtil::getMimeType)
+            .map(CharSequence::toString)
+            .orElse(null);
 
         // Override response content-type if resource method is annotated with a non-empty @Produces
         JaxRsMeta jaxRsMeta = new JaxRsMeta(method);
@@ -433,13 +437,13 @@ public class HttpClient implements InvocationHandler {
                 }
             }
         }
-        if (output.length() > 0) {
+        if (!output.isEmpty()) {
             requestBuilder.setContent(output.toString());
         }
     }
 
     protected void addFormParamToOutput(StringBuilder output, Object value, FormParam formParam) {
-        if (output.length() != 0) {
+        if (!output.isEmpty()) {
             output.append("&");
         }
         output.append(formParam.value()).append("=").append(urlEncode(value.toString()));
@@ -495,7 +499,7 @@ public class HttpClient implements InvocationHandler {
 
     private HttpClient.DetailedError getDetailedError(String data, Throwable cause) {
         HttpClient.DetailedError detailedError = new HttpClient.DetailedError(cause);
-        if (data != null && data.length() > 0) {
+        if (data != null && !data.isEmpty()) {
             try {
                 objectMapper.readerForUpdating(detailedError).readValue(data);
             } catch (IOException e) {
@@ -666,13 +670,12 @@ public class HttpClient implements InvocationHandler {
     private List<BeanParamProperty> getBeanParamGetters(Class beanParamType) {
         List<BeanParamProperty> result = new ArrayList<>();
         for (Field field : getDeclaredFieldsFromClassAndAncestors(beanParamType)) {
-            Optional<Function<Object, Object>> getter = ReflectionUtil.getter(beanParamType, field.getName());
-            if (getter.isPresent()) {
+            Optional<Function<Object, Object>> optionalGetter = ReflectionUtil.getter(beanParamType, field.getName());
+            optionalGetter.ifPresent(getter ->
                 result.add(new BeanParamProperty(
-                    getter.get(),
+                    getter,
                     field.getAnnotations()
-                ));
-            }
+                )));
         }
         return result;
     }
@@ -681,7 +684,7 @@ public class HttpClient implements InvocationHandler {
      * Recursive function getting all declared fields from the passed in class and its ancestors.
      *
      * @param clazz the clazz fetching fields from
-     * @return list of fields
+     * @return set of fields
      */
     private static Set<Field> getDeclaredFieldsFromClassAndAncestors(Class clazz) {
         final HashSet<Field> declaredFields = new HashSet<>(asList(clazz.getDeclaredFields()));

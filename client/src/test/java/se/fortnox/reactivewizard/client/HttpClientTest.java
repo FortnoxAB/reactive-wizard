@@ -207,7 +207,7 @@ class HttpClientTest {
     }
 
     protected void withServer(Consumer<DisposableServer> serverConsumer) {
-        server = startServer(HttpResponseStatus.OK, "\"OK\"");
+        server = startServer(OK, "\"OK\"");
         serverConsumer.accept(server);
     }
 
@@ -329,7 +329,7 @@ class HttpClientTest {
     }
 
     @Test
-    void shouldNotReportUnhealthyWhenPoolIsExhaustedRatherSequentiatingTheRequests() throws URISyntaxException {
+    void shouldNotReportUnhealthyWhenPoolIsExhaustedRatherSequentiatingTheRequests() {
 
         AtomicBoolean wasUnhealthy = new AtomicBoolean(false);
 
@@ -350,7 +350,7 @@ class HttpClientTest {
                 config.setRetryCount(0);
                 TestResource resource = getHttpProxy(config);
 
-                List<Observable<String>> results = new ArrayList<Observable<String>>();
+                List<Observable<String>> results = new ArrayList<>();
                 for (int i = 0; i < 10; i++) {
                     results.add(resource.getHello());
                 }
@@ -419,7 +419,7 @@ class HttpClientTest {
         withServer(server -> {
             TestResource resource = getHttpProxy(server.port(), 5);
 
-            List<Observable<String>> results = new ArrayList<Observable<String>>();
+            List<Observable<String>> results = new ArrayList<>();
             for (int i = 0; i < 5; i++) {
                 results.add(resource.getHello());
             }
@@ -480,14 +480,13 @@ class HttpClientTest {
 
         TestResource resource = getHttpProxy(server.port());
         StepVerifier.create(resource.getHelloMono())
-            .verifyErrorSatisfies(error -> {
+            .verifyErrorSatisfies(error ->
                 assertThat(error)
                     .isInstanceOf(WebException.class)
                     .hasFieldOrPropertyWithValue("body", errorJson)
                     .cause()
                     .isInstanceOf(HttpClient.DetailedError.class)
-                    .hasMessage("My message");
-            });
+                    .hasMessage("My message"));
     }
 
     @Test
@@ -497,14 +496,13 @@ class HttpClientTest {
 
         TestResource resource = getHttpProxy(server.port());
         StepVerifier.create(resource.getHelloMono())
-            .verifyErrorSatisfies(error -> {
+            .verifyErrorSatisfies(error ->
                 assertThat(error)
                     .isInstanceOf(WebException.class)
                     .hasFieldOrPropertyWithValue("body", errorNonJson)
                     .cause()
                     .isInstanceOf(HttpClient.DetailedError.class)
-                    .hasMessage(errorNonJson);
-            });
+                    .hasMessage(errorNonJson));
     }
 
     @Test
@@ -594,7 +592,7 @@ class HttpClientTest {
 
     @Test
     void shouldSupportSingleSource() {
-        server = startServer(HttpResponseStatus.OK, "\"OK\"");
+        server = startServer(OK, "\"OK\"");
 
         TestResource resource = getHttpProxy(server.port());
         resource.getSingle().toBlocking().value();
@@ -602,14 +600,14 @@ class HttpClientTest {
 
     @Test
     void shouldHandleLargeResponses() {
-        server = startServer(HttpResponseStatus.OK, generateLargeString(10));
+        server = startServer(OK, generateLargeString(10));
         TestResource resource = getHttpProxy(server.port());
         resource.getHello().toBlocking().single();
     }
 
     @Test
     void shouldThrowIllegalArgumentExceptionWhenPathParamIsNull() {
-        server = startServer(HttpResponseStatus.OK, generateLargeString(10));
+        server = startServer(OK, generateLargeString(10));
         TestResource resource = getHttpProxy(server.port());
         assertThatExceptionOfType(IllegalArgumentException.class)
             .isThrownBy(() -> resource.getPathParam(null).block())
@@ -618,7 +616,7 @@ class HttpClientTest {
 
     @Test
     void shouldLogErrorOnTooLargeResponse() {
-        server = startServer(HttpResponseStatus.OK, generateLargeString(11));
+        server = startServer(OK, generateLargeString(11));
         TestResource resource = getHttpProxy(server.port());
         assertThatExceptionOfType(WebException.class)
             .isThrownBy(() -> resource.getHello().toBlocking().single())
@@ -704,7 +702,7 @@ class HttpClientTest {
 
     @Test
     void shouldReturnBadRequestOnTooLargeResponses() throws URISyntaxException {
-        server = startServer(HttpResponseStatus.OK, "\"derp\"");
+        server = startServer(OK, "\"derp\"");
         HttpClientConfig config = new HttpClientConfig("127.0.0.1:" + server.port());
         config.setMaxResponseSize(5);
         TestResource resource = getHttpProxy(config);
@@ -718,7 +716,7 @@ class HttpClientTest {
 
     @Test
     void shouldSupportByteArrayResponse() {
-        server = startServer(HttpResponseStatus.OK, "hej");
+        server = startServer(OK, "hej");
         TestResource resource = getHttpProxy(server.port());
         byte[] result = resource.getAsBytes().toBlocking().single();
         assertThat(new String(result)).isEqualTo("hej");
@@ -852,7 +850,7 @@ class HttpClientTest {
     @Test
     void shouldHandleMultipleChunks() {
         server = HttpServer.create().port(0).handle((request, response) -> {
-            response.status(HttpResponseStatus.OK);
+            response.status(OK);
             return response.sendString(just("\"he")
                 .concatWith(defer(() -> just("llo\"")))
                 .concatWith(defer(Flux::empty)));
@@ -923,18 +921,18 @@ class HttpClientTest {
         return HttpServer.create().host("localhost").port(0).handle((request, response) -> {
             serverLog.accept(request.fullPath());
             if (request.fullPath().equals("/hello/servertest/fast")) {
-                response.status(HttpResponseStatus.OK);
+                response.status(OK);
                 return response.sendString(just("\"fast\""));
             }
             if (request.fullPath().equals("/hello/servertest/slowHeaders")) {
                 return Flux.defer(() -> {
-                        response.status(HttpResponseStatus.OK);
+                        response.status(OK);
                         return response.sendString(just("\"slowHeaders\""));
                     })
                     .delaySubscription(Duration.ofMillis(5000));
             }
             if (request.fullPath().equals("/hello/servertest/slowBody")) {
-                response.status(HttpResponseStatus.OK);
+                response.status(OK);
                 return response.sendString(
                     just("\"slowBody: ")
                         .concatWith(just("1", "2", "3").delaySequence(Duration.ofMillis(10000)))
@@ -988,16 +986,14 @@ class HttpClientTest {
 
         try {
             server = HttpServer.create().port(0)
-                .handle((request, response) -> {
-                    return Flux.defer(() -> {
-                            response.status(HttpResponseStatus.OK);
+                .handle((request, response) ->
+                    Flux.defer(() -> {
+                            response.status(OK);
                             return response.sendString(Mono.just("\"hello\""));
                         })
                         .delaySubscription(Duration.ofMillis(50000))
-                        .doOnError(e -> {
-                            e.printStackTrace();
-                        });
-                }).bindNow();
+                        .doOnError(Throwable::printStackTrace)
+                ).bindNow();
 
             // this config ensures that the autocleanup will run before the hystrix timeout
             HttpClientConfig config = new HttpClientConfig("localhost:" + server.port());
@@ -1022,7 +1018,7 @@ class HttpClientTest {
     @Test
     void willRequestWithMultipleCookies() {
         Consumer<HttpServerRequest> reqLog = mock(Consumer.class);
-        server = startServer(OK, "", reqLog::accept);
+        server = startServer(OK, "", reqLog);
 
         String cookie1Value = "stub1";
         String cookie2Value = "stub2";
@@ -1235,7 +1231,7 @@ class HttpClientTest {
     void shouldBeAbleToSendAndReceiveRecordBody() {
         server = HttpServer.create().port(0).handle((request, response) ->
             request.receive().aggregate().flatMap(buf ->
-                response.status(HttpResponseStatus.OK).send(Mono.just(buf)).then()
+                response.status(OK).send(Mono.just(buf)).then()
             )).bindNow();
 
         var resource = getHttpProxy(server.port());
@@ -1275,7 +1271,7 @@ class HttpClientTest {
     @Test
     void shouldExecutePreRequestHooks() throws URISyntaxException {
         server = HttpServer.create().port(0).handle((request, response) -> {
-            response.status(HttpResponseStatus.OK);
+            response.status(OK);
             return response.sendString(Mono.just("\"hi\""));
         }).bindNow();
 
@@ -1291,9 +1287,9 @@ class HttpClientTest {
         TestResource resource = client.create(TestResource.class);
         resource.getHello().toBlocking().single();
 
-        verify(preRequestHook, times(1)).apply((TestUtil.matches(requestBuilder -> {
-            assertThat(requestBuilder.getFullUrl()).isEqualToIgnoringCase(url + "/hello");
-        })));
+        verify(preRequestHook, times(1)).apply((TestUtil.matches(requestBuilder ->
+            assertThat(requestBuilder.getFullUrl()).isEqualToIgnoringCase(url + "/hello")
+        )));
     }
 
     @Test
@@ -1427,7 +1423,7 @@ class HttpClientTest {
     @Test
     void assertRequestContainsHost() {
         Consumer<HttpServerRequest> reqLog = mock(Consumer.class);
-        server = startServer(OK, "", reqLog::accept);
+        server = startServer(OK, "", reqLog);
 
         String host = "localhost";
 
@@ -1442,7 +1438,7 @@ class HttpClientTest {
     @Test
     void assertRequestContainsHostFromHeaderParam() {
         Consumer<HttpServerRequest> reqLog = mock(Consumer.class);
-        server = startServer(OK, "", reqLog::accept);
+        server = startServer(OK, "", reqLog);
 
         String host = "globalhost";
 
@@ -1521,6 +1517,48 @@ class HttpClientTest {
         } catch (IllegalArgumentException e) {
             assertThat(e).hasMessage("When content type is not application/json the body param must be String, byte[] or Publisher<? extends byte[]>, but was class se.fortnox.reactivewizard.client.HttpClientTest$Pojo");
         }
+    }
+
+    @Test
+    void shouldDisregardCharsetInContentTypeWhenComparingToResourceAnnotation() {
+        String someRecordJson = """
+            [{
+              "param1": "a",
+              "param2": "b"
+            },
+            {
+              "param1": "c",
+              "param2": "d"
+            }
+            ]""";
+        server = HttpServer.create().port(0).handle((request, response) ->
+            response.status(OK)
+                .header("Content-Type", "application/json; charset=utf-8")
+                .sendString(Mono.just(someRecordJson))
+                .then()).bindNow();
+        TestResource resource = getHttpProxy(server.port());
+
+        StepVerifier.create(resource.producesJson())
+            .expectNext(new TestResource.SomeRecord("a", "b"))
+            .expectNext(new TestResource.SomeRecord("c", "d"))
+            .verifyComplete();
+        loggingVerifier.assertThatLogs()
+            .noneSatisfy(logEvent ->
+                assertThat(logEvent.getMessage().getFormattedMessage())
+                    .contains("does not match the Content-Type"));
+    }
+
+    @Test
+    void shouldHandleMissingContentTypeInResponse() {
+        server = HttpServer.create().port(0).handle((request, response) ->
+            response.status(OK)
+                .sendString(Mono.just("[]"))
+                .then()).bindNow();
+        TestResource resource = getHttpProxy(server.port());
+
+        StepVerifier.create(resource.producesJson())
+            .expectNextCount(1)
+            .verifyComplete();
     }
 
     @Path("/hello")
@@ -1655,6 +1693,9 @@ class HttpClientTest {
         @POST
         @Consumes("application/xml")
         Observable<Void> sendXml(Pojo pojo);
+
+        @GET
+        Flux<SomeRecord> producesJson();
 
     }
 
