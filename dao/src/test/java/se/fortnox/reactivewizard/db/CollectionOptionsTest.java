@@ -2,6 +2,8 @@ package se.fortnox.reactivewizard.db;
 
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 import se.fortnox.reactivewizard.CollectionOptions;
 import se.fortnox.reactivewizard.db.config.DatabaseConfig;
 
@@ -73,10 +75,24 @@ class CollectionOptionsTest {
 
     @Test
     void shouldUseConfiguredDefaultLimit() throws SQLException {
+        mockDb.addRows(10);
         final CollectionOptions collectionOptions = new CollectionOptions();
-        collectionOptionsDao.selectWithDefaultLimit10(collectionOptions).collectList().block();
+        StepVerifier.create(collectionOptionsDao.selectWithDefaultLimit10(collectionOptions))
+            .expectNextCount(10)
+            .verifyComplete();
         mockDb.verifySelect("select * from table LIMIT 11");
         assertThat(collectionOptions.isLastRecord()).isTrue();
+    }
+
+    @Test
+    void shouldUseConfiguredDefaultLimitOfOneWithReturnTypeMono() throws SQLException {
+        mockDb.addRows(2);
+        final CollectionOptions collectionOptions = new CollectionOptions();
+        StepVerifier.create(collectionOptionsDao.selectWithDefaultLimit1(collectionOptions))
+            .expectNextCount(1)
+            .verifyComplete();
+        mockDb.verifySelect("select * from table LIMIT 2");
+        assertThat(collectionOptions.isLastRecord()).isFalse();
     }
 
     @Test
@@ -193,6 +209,9 @@ class CollectionOptionsTest {
 
         @Query(value = "select * from table", maxLimit = 3)
         Flux<String> selectWithMaxLimit3(CollectionOptions collectionOptions);
+
+        @Query(value = "select * from table", defaultLimit = 1)
+        Mono<String> selectWithDefaultLimit1(CollectionOptions collectionOptions);
 
         @Query(value = "select * from table", defaultLimit = 10)
         Flux<String> selectWithDefaultLimit10(CollectionOptions collectionOptions);
