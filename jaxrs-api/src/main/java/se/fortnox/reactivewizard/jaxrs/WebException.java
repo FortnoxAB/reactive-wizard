@@ -165,4 +165,29 @@ public class WebException extends RuntimeException {
     private String createUUID() {
         return UUID.randomUUID().toString();
     }
+
+    /**
+     * @param throwable Throwable to check
+     * @param status Status to compare with
+     * @return If the throwable is a WebException and has status equal to the second argument
+     */
+    public static boolean hasStatus(Throwable throwable, HttpResponseStatus status) {
+        if (throwable instanceof WebException webException) {
+            return webException.getStatus().equals(status);
+        }
+        return false;
+    }
+
+
+    /**
+     * @param throwable Throwable to check
+     * @param error Error string to compare with
+     * @return If the throwable is a WebException and has an error code equal to the second argument
+     */
+    public static boolean hasError(Throwable throwable, String error) {
+        if (throwable instanceof WebException webException) {
+            return webException.getError().equals(error);
+        }
+        return false;
+    }
 }
