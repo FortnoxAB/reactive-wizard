@@ -1,5 +1,6 @@
 package se.fortnox.reactivewizard.jaxrs;
 
+import io.netty.handler.codec.http.HttpResponseStatus;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -48,6 +49,14 @@ class WebExceptionTest {
     @Test
     void shouldSetDebugLoggingFor404() {
         WebException webException = new WebException(NOT_FOUND);
+        assertThat(webException.getLogLevel()).isEqualTo(DEBUG);
+    }
+
+    @Test
+    void shouldSetDebugLoggingFor404OnlyRegardingTheStatusCode() {
+        HttpResponseStatus customStatus = new HttpResponseStatus(NOT_FOUND.code(), "A custom reason");
+
+        WebException webException = new WebException(customStatus);
         assertThat(webException.getLogLevel()).isEqualTo(DEBUG);
     }
 

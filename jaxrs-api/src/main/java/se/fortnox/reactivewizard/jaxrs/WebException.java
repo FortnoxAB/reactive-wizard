@@ -155,7 +155,7 @@ public class WebException extends RuntimeException {
         if (httpStatus.code() >= 500) {
             return Level.ERROR;
 
-        } else if (httpStatus == HttpResponseStatus.NOT_FOUND) {
+        } else if (httpStatus.equals(HttpResponseStatus.NOT_FOUND)) {
             return Level.DEBUG;
         }
 
