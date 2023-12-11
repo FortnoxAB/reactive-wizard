@@ -2,6 +2,7 @@ package se.fortnox.reactivewizard.jaxrs;
 
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
 import java.util.regex.Pattern;
 
 import static io.netty.handler.codec.http.HttpResponseStatus.BAD_GATEWAY;
@@ -10,6 +11,8 @@ import static io.netty.handler.codec.http.HttpResponseStatus.CONTINUE;
 import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.netty.handler.codec.http.HttpResponseStatus.METHOD_NOT_ALLOWED;
 import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
+import static io.netty.handler.codec.http.HttpResponseStatus.UNAUTHORIZED;
+import static io.netty.handler.codec.http.HttpResponseStatus.UNPROCESSABLE_ENTITY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.slf4j.event.Level.DEBUG;
 import static org.slf4j.event.Level.ERROR;
@@ -17,7 +20,7 @@ import static org.slf4j.event.Level.WARN;
 
 class WebExceptionTest {
     @Test
-    void shouldGetIdWhenIntializedWithStatus() {
+    void shouldGetIdWhenInitializedWithStatus() {
         WebException webException = new WebException(BAD_GATEWAY);
         assertUuid(webException.getId());
     }
@@ -132,8 +135,60 @@ class WebExceptionTest {
         assertThat(webException.getErrorParams()[0]).isEqualTo("donkey");
     }
 
+    @Test
+    void shouldReturnTrueWhenHasStatusMatches() {
+        Throwable throwable = new WebException(NOT_FOUND);
+        assertThat(WebException.hasStatus(throwable, NOT_FOUND)).isTrue();
+    }
+
+    @Test
+    void shouldReturnFalseWhenHasStatusDoesNotMatch() {
+        Throwable throwable = new WebException(BAD_REQUEST);
+        assertThat(WebException.hasStatus(throwable, UNAUTHORIZED)).isFalse();
+    }
+
+    @Test
+    void shouldReturnFalseWhenHasStatusIsPassedAnotherExceptionClass() {
+        Throwable throwable = new IOException();
+        assertThat(WebException.hasStatus(throwable, UNAUTHORIZED)).isFalse();
+    }
+
+    @Test
+    void shouldReturnFalseWhenHasStatusIsCalledForANullThrowable() {
+        assertThat(WebException.hasStatus(null, UNPROCESSABLE_ENTITY)).isFalse();
+    }
+
+    @Test
+    void shouldReturnTrueWhenHasErrorMatches() {
+        Throwable throwable = new WebException(NOT_FOUND, "not-found");
+        assertThat(WebException.hasError(throwable, "not-found")).isTrue();
+    }
+
+    @Test
+    void shouldReturnFalseWhenHasErrorDoesNotMatch() {
+        Throwable throwable = new WebException(NOT_FOUND, "not-found");
+        assertThat(WebException.hasError(throwable, "something-else")).isFalse();
+    }
+
+    @Test
+    void shouldReturnFalseWhenHasErrorIsPassedNull() {
+        Throwable throwable = new WebException(NOT_FOUND, "not-found");
+        assertThat(WebException.hasError(throwable, null)).isFalse();
+    }
+
+    @Test
+    void shouldReturnFalseWhenHasErrorIsPassedAnotherExceptionClass() {
+        Throwable throwable = new IOException();
+        assertThat(WebException.hasError(throwable, "not used")).isFalse();
+    }
+
+    @Test
+    void shouldReturnFalseWhenHasErrorIsCalledForANullThrowable() {
+        assertThat(WebException.hasError(null, "not used")).isFalse();
+    }
+
     private void assertUuid(String id) {
-        Pattern p = Pattern.compile("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f‌​]{4}-[0-9a-f]{12}$");
-        assertThat(p.matcher(id).matches()).isTrue();
+        Pattern pattern = Pattern.compile("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$");
+        assertThat(pattern.matcher(id).matches()).isTrue();
     }
 }
