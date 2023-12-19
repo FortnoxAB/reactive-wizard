@@ -1,6 +1,8 @@
 package se.fortnox.reactivewizard.server;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.Appender;
 import org.junit.jupiter.api.Test;
@@ -13,8 +15,6 @@ import se.fortnox.reactivewizard.jaxrs.JaxRsResourceFactory;
 import se.fortnox.reactivewizard.jaxrs.RequestLogger;
 import se.fortnox.reactivewizard.test.LoggingMockUtil;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
 import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;

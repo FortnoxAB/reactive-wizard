@@ -23,7 +23,7 @@ import java.util.concurrent.CancellationException;
 import static io.netty.handler.codec.http.HttpResponseStatus.BAD_REQUEST;
 import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static reactor.core.Exceptions.isMultiple;
 import static reactor.core.Exceptions.unwrap;
 import static reactor.core.Exceptions.unwrapMultiple;

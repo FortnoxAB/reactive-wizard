@@ -2,6 +2,13 @@ package se.fortnox.reactivewizard.jaxrs;
 
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -13,14 +20,6 @@ import se.fortnox.reactivewizard.jaxrs.response.ResponseDecorator;
 import se.fortnox.reactivewizard.mocks.MockHttpServerRequest;
 import se.fortnox.reactivewizard.mocks.MockHttpServerResponse;
 
-
-import javax.ws.rs.DELETE;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;

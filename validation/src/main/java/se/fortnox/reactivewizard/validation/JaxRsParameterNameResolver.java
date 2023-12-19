@@ -1,12 +1,12 @@
 package se.fortnox.reactivewizard.validation;
 
+import jakarta.validation.ParameterNameProvider;
+import jakarta.ws.rs.FormParam;
+import jakarta.ws.rs.HeaderParam;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.QueryParam;
 import se.fortnox.reactivewizard.util.ReflectionUtil;
 
-import jakarta.validation.ParameterNameProvider;
-import javax.ws.rs.FormParam;
-import javax.ws.rs.HeaderParam;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.QueryParam;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;

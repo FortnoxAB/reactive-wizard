@@ -1,10 +1,9 @@
 package se.fortnox.reactivewizard.helloworld;
 
 import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 import reactor.core.publisher.Mono;
-
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
 
 import static reactor.core.publisher.Mono.just;
 

@@ -9,7 +9,7 @@ import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
 
-import static javax.ws.rs.core.HttpHeaders.CONTENT_LENGTH;
+import static jakarta.ws.rs.core.HttpHeaders.CONTENT_LENGTH;
 
 /**
  * Represents both a client request and a server info (both host and url), which

@@ -1,11 +1,11 @@
 package se.fortnox.reactivewizard.jaxrs.response;
 
 import jakarta.inject.Inject;
+import jakarta.ws.rs.core.MediaType;
 import reactor.core.publisher.Flux;
 import se.fortnox.reactivewizard.jaxrs.Stream;
 import se.fortnox.reactivewizard.json.JsonSerializerFactory;
 
-import javax.ws.rs.core.MediaType;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicBoolean;

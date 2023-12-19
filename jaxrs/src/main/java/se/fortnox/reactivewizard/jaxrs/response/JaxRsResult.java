@@ -14,7 +14,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
-import static javax.ws.rs.core.HttpHeaders.CONTENT_LENGTH;
+import static jakarta.ws.rs.core.HttpHeaders.CONTENT_LENGTH;
 
 /**
  * Represents a result of a call to a JaxRs resource. Contains the output but also some meta data about the call.

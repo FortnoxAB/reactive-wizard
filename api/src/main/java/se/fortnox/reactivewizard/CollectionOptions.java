@@ -1,6 +1,6 @@
 package se.fortnox.reactivewizard;
 
-import javax.ws.rs.QueryParam;
+import jakarta.ws.rs.QueryParam;
 
 public class CollectionOptions {
     public enum SortOrder {

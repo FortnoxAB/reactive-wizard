@@ -1,6 +1,8 @@
 package se.fortnox.reactivewizard.jaxrs;
 
 import io.netty.handler.codec.http.HttpMethod;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.core.MediaType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
@@ -15,8 +17,6 @@ import se.fortnox.reactivewizard.jaxrs.response.JaxRsResultFactoryFactory;
 import se.fortnox.reactivewizard.util.FluxRxConverter;
 import se.fortnox.reactivewizard.util.ReflectionUtil;
 
-import javax.ws.rs.Consumes;
-import javax.ws.rs.core.MediaType;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;

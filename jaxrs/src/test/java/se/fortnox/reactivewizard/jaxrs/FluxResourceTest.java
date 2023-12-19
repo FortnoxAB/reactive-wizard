@@ -1,6 +1,10 @@
 package se.fortnox.reactivewizard.jaxrs;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
@@ -11,15 +15,8 @@ import reactor.netty.http.client.HttpClientResponse;
 import reactor.netty.http.server.HttpServer;
 import reactor.test.StepVerifier;
 import se.fortnox.reactivewizard.ExceptionHandler;
-import se.fortnox.reactivewizard.jaxrs.response.JaxRsResultFactoryFactory;
-
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
 
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 import static io.netty.handler.codec.http.HttpResponseStatus.PAYMENT_REQUIRED;
 import static org.mockito.Mockito.mock;

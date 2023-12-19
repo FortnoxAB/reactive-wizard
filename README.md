@@ -89,8 +89,8 @@ package foo.bar;
 import reactor.core.publisher.Mono;
 
 import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import static reactor.core.publisher.Mono.just;
 
