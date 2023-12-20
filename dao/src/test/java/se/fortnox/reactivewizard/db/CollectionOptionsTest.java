@@ -86,12 +86,12 @@ class CollectionOptionsTest {
 
     @Test
     void shouldUseConfiguredDefaultLimitOfOneWithReturnTypeMono() throws SQLException {
-        mockDb.addRows(2);
+        mockDb.addRows(1);
         final CollectionOptions collectionOptions = new CollectionOptions();
         StepVerifier.create(collectionOptionsDao.selectWithDefaultLimit1(collectionOptions))
             .expectNextCount(1)
             .verifyComplete();
-        mockDb.verifySelect("select * from table LIMIT 2");
+        mockDb.verifySelect("select * from table LIMIT 1");
         assertThat(collectionOptions.isLastRecord()).isFalse();
     }
 
