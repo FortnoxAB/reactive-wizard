@@ -4,6 +4,7 @@ import se.fortnox.reactivewizard.CollectionOptions;
 import se.fortnox.reactivewizard.db.Query;
 import se.fortnox.reactivewizard.db.query.PreparedStatementParameters;
 import se.fortnox.reactivewizard.util.CamelSnakeConverter;
+import se.fortnox.reactivewizard.util.FluxRxConverter;
 
 import java.lang.reflect.Method;
 import java.sql.SQLException;
@@ -15,11 +16,14 @@ public class CollectionOptionsQueryPart implements QueryPart {
     private static final String ORDER_BY = "ORDER BY ";
     private final        int    collectionOptionsArgIndex;
     private final        Query  queryAnnotation;
+    private final        boolean isMono;
 
     public CollectionOptionsQueryPart(Method method) {
         collectionOptionsArgIndex = indexOf(asList(method.getParameterTypes()), CollectionOptions.class::isAssignableFrom);
 
         queryAnnotation = method.getDeclaredAnnotation(Query.class);
+
+        isMono = FluxRxConverter.isMono(method.getReturnType());
     }
 
     @Override
@@ -59,7 +63,9 @@ public class CollectionOptionsQueryPart implements QueryPart {
             // that we know for sure if there are more records, in case we
             // get exactly the same amount back as was requested. The extra
             // record is thrown away in PagingResponseProcessor
-            limit = limit + 1;
+            if (!isMono) {
+                limit = limit + 1;
+            }
             sql.append(" LIMIT ");
             sql.append(limit);
 
