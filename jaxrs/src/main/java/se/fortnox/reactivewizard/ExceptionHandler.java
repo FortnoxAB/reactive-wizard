@@ -14,6 +14,7 @@ import se.fortnox.reactivewizard.jaxrs.RequestLogger;
 import se.fortnox.reactivewizard.jaxrs.WebException;
 import se.fortnox.reactivewizard.json.InvalidJsonException;
 
+import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.file.FileSystemException;
 import java.util.List;
@@ -72,7 +73,8 @@ public class ExceptionHandler {
             webException = new WebException(BAD_REQUEST, "invalidjson", throwable.getMessage());
         } else if (throwable instanceof WebException we) {
             webException = we;
-        } else if (throwable instanceof ClosedChannelException || throwable instanceof AbortedException || throwable instanceof CancellationException) {
+        } else if (throwable instanceof ClosedChannelException || throwable instanceof AbortedException || throwable instanceof CancellationException
+            || (throwable instanceof IOException && throwable.getMessage().contains("Broken pipe"))) {
             LOG.atDebug()
                 .setMessage(INBOUND_CONNECTION_CLOSED)
                 .addArgument(request::method)
