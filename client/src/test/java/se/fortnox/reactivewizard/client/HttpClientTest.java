@@ -53,7 +53,6 @@ import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import java.io.ByteArrayOutputStream;
@@ -520,9 +519,9 @@ class HttpClientTest {
     @Test
     void shouldSerializeList() throws Exception {
         HttpClient client = new HttpClient(new HttpClientConfig("localhost"));
-        assertThat(client.serialize(new Long[]{})).isEqualTo("");
+        assertThat(client.serialize(new Long[]{})).isEmpty();
         assertThat(client.serialize(new Long[]{5L, 78L, 1005L})).isEqualTo("5,78,1005");
-        assertThat(client.serialize(new ArrayList<>())).isEqualTo("");
+        assertThat(client.serialize(new ArrayList<>())).isEmpty();
         assertThat(client.serialize(Arrays.asList(5L, 78L, 1005L))).isEqualTo("5,78,1005");
     }
 
@@ -601,14 +600,16 @@ class HttpClientTest {
         server = startServer(OK, "\"OK\"");
 
         TestResource resource = getHttpProxy(server.port());
-        resource.getSingle().toBlocking().value();
+        assertThat(resource.getSingle().toBlocking().value())
+            .isNotNull();
     }
 
     @Test
     void shouldHandleLargeResponses() {
         server = startServer(OK, generateLargeString(10));
         TestResource resource = getHttpProxy(server.port());
-        resource.getHello().toBlocking().single();
+        assertThat(resource.getHello().toBlocking().single())
+            .isNotNull();
     }
 
     @Test
@@ -872,7 +873,8 @@ class HttpClientTest {
         server = startServer(HttpResponseStatus.CREATED, "");
 
         TestResource resource = getHttpProxy(server.port());
-        resource.getVoid().toBlocking().singleOrDefault(null);
+        assertThat(resource.getVoid().toBlocking().singleOrDefault(null))
+            .isNull();
     }
 
     @Test
@@ -1246,8 +1248,9 @@ class HttpClientTest {
 
         var responseRecord = resource.postRecord(requestRecord).toBlocking().singleOrDefault(null);
 
-        assertThat(responseRecord).isNotNull();
-        assertThat(responseRecord).isEqualTo(requestRecord);
+        assertThat(responseRecord)
+            .isNotNull()
+            .isEqualTo(requestRecord);
     }
 
     @Test
@@ -1589,13 +1592,12 @@ class HttpClientTest {
         TestResource testResource = getHttpProxy(config);
 
         StepVerifier.create(getFullResponse(testResource.getHelloMono()))
-            .verifyErrorSatisfies(throwable -> {
+            .verifyErrorSatisfies(throwable ->
                 assertThat(throwable)
                     .isInstanceOf(WebException.class)
                     .cause().cause()
                     .satisfies(exception -> assertThat(exception)
-                        .hasMessageContaining("URL: %s:%s/hello", host, server.port()));
-            });
+                        .hasMessageContaining("URL: %s:%s/hello", host, server.port())));
         loggingVerifier.verify(WARN, "Failed request. Url: %1$s:%2$s/hello, headers: [Host=%1$s]".formatted(host, server.port()));
     }
 
