@@ -53,6 +53,7 @@ import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import java.io.ByteArrayOutputStream;
@@ -94,6 +95,7 @@ import static java.lang.String.format;
 import static java.util.Collections.EMPTY_SET;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.IntStream.range;
+import static org.apache.logging.log4j.Level.INFO;
 import static org.apache.logging.log4j.Level.WARN;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
@@ -106,6 +108,7 @@ import static org.mockito.Mockito.when;
 import static reactor.core.publisher.Flux.defer;
 import static reactor.core.publisher.Flux.empty;
 import static reactor.core.publisher.Flux.just;
+import static se.fortnox.reactivewizard.client.HttpClient.getFullResponse;
 import static se.fortnox.reactivewizard.test.TestUtil.matches;
 import static se.fortnox.reactivewizard.util.FluxRxConverter.observableToFlux;
 
@@ -113,16 +116,19 @@ import static se.fortnox.reactivewizard.util.FluxRxConverter.observableToFlux;
 class HttpClientTest {
 
     private HealthRecorder healthRecorder = new HealthRecorder();
-    private RequestLogger requestLogger;
+    private RequestLogger  requestLogger;
     LoggingVerifier loggingVerifier = new LoggingVerifier(HttpClient.class);
 
     DisposableServer server;
+
+    HttpClient client;
 
     @AfterEach
     void dispose() {
         ofNullable(server)
             .ifPresent(DisposableServer::disposeNow);
         server = null;
+        client = null;
     }
 
     @Test
@@ -1561,6 +1567,50 @@ class HttpClientTest {
             .verifyComplete();
     }
 
+    @Test
+    void shouldNotDoReverseLookupOfHost() throws URISyntaxException {
+        server = startServer(OK, "\"OK\"");
+        String host = "127.0.0.1";
+        HttpClientConfig config = new HttpClientConfig("%s:%s".formatted(host, server.port()));
+        TestResource testResource = getHttpProxy(config);
+
+        StepVerifier.create(getFullResponse(testResource.getHelloMono()))
+            .consumeNextWith(response ->
+                assertThat(response.getResourceUrl())
+                    .isEqualTo("http://%s:%s/hello".formatted(host, server.port())))
+            .verifyComplete();
+    }
+
+    @Test
+    void shouldLogConfiguredIpAddressOnFailedRequest() throws URISyntaxException {
+        server = startServer(NOT_FOUND, "\"Braap!\"");
+        String host = "127.0.0.1";
+        HttpClientConfig config = new HttpClientConfig("%s:%s".formatted(host, server.port()));
+        TestResource testResource = getHttpProxy(config);
+
+        StepVerifier.create(getFullResponse(testResource.getHelloMono()))
+            .verifyErrorSatisfies(throwable -> {
+                assertThat(throwable)
+                    .isInstanceOf(WebException.class)
+                    .cause().cause()
+                    .satisfies(exception -> assertThat(exception)
+                        .hasMessageContaining("URL: %s:%s/hello", host, server.port()));
+            });
+        loggingVerifier.verify(WARN, "Failed request. Url: %1$s:%2$s/hello, headers: [Host=%1$s]".formatted(host, server.port()));
+    }
+
+    @Test
+    void shouldLogConfiguredIpAddressOnRetry() throws URISyntaxException {
+        server = startServer(INTERNAL_SERVER_ERROR, "\"Braap!\"");
+        String host = "127.0.0.1";
+        HttpClientConfig config = new HttpClientConfig("%s:%s".formatted(host, server.port()));
+        TestResource testResource = getHttpProxy(config);
+
+        StepVerifier.create(getFullResponse(testResource.getHelloMono()))
+            .verifyError(WebException.class);
+        loggingVerifier.verify(INFO, "Will retry because an error occurred. %1$s:%2$s/hello, headers: [Host=%1$s]".formatted(host, server.port()));
+    }
+
     @Path("/hello")
     public interface TestResource {
 
@@ -1647,9 +1697,9 @@ class HttpClientTest {
 
         @POST
         Observable<String> postForm(@FormParam("paramA") String a,
-                                    @FormParam("paramB") String b,
-                                    @HeaderParam("myheader") String header,
-                                    @CookieParam("cookie_key") String cookie
+            @FormParam("paramB") String b,
+            @HeaderParam("myheader") String header,
+            @CookieParam("cookie_key") String cookie
         );
 
         @POST

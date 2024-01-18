@@ -6,6 +6,7 @@ import reactor.core.publisher.Mono;
 
 import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -73,7 +74,7 @@ public class RequestBuilder {
     }
 
     public String getFullUrl() {
-        return serverInfo.getHostName() + ":" + serverInfo.getPort() + uri;
+        return serverInfo.getHostString() + ":" + serverInfo.getPort() + uri;
     }
 
     @Override

@@ -84,4 +84,12 @@ public class Response<T> {
     public Map<String, String> getHeaders() {
         return ImmutableMap.copyOf(httpClientResponse.responseHeaders());
     }
+
+    /**
+     * The resource url.
+     * @return the resource url, e.g. http://host.domain:port/path
+     */
+    public String getResourceUrl() {
+        return httpClientResponse.resourceUrl();
+    }
 }
