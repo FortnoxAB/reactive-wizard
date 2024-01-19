@@ -1558,7 +1558,7 @@ class JaxRsResourceTest {
 
         @Override
         public Mono<String> acceptsGenericParam(List<ParamEntity> list) {
-            Object listItem = list.get(0);
+            Object listItem = list.getFirst();
             return just(listItem.getClass().getSimpleName());
         }
 

@@ -296,7 +296,7 @@ class HttpClientTest {
         httpClient.createRequest(postHello, new Object[0]);
         httpClient.createRequest(postHello, new Object[0]);
 
-        assertThat(jaxRsMetas.get(0)).isSameAs(jaxRsMetas.get(1));
+        assertThat(jaxRsMetas.getFirst()).isSameAs(jaxRsMetas.get(1));
         assertThat(jaxRsMetas.get(2)).isSameAs(jaxRsMetas.get(3));
     }
 

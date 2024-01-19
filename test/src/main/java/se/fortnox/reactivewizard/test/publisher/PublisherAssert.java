@@ -48,7 +48,7 @@ public class PublisherAssert<T> extends AbstractAssert<PublisherAssert<T>, Publi
         Assertions.assertThat(values)
             .describedAs("Expected one value, but got %s.", values)
             .hasSize(1);
-        return Assertions.assertThat(values.get(0));
+        return Assertions.assertThat(values.getFirst());
     }
 
     /**

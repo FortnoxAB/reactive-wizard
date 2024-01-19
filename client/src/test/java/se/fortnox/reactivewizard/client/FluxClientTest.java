@@ -64,7 +64,7 @@ class FluxClientTest {
 
             List<String> result = fluxClientResource.arrayOfStrings().collectList().block();
             assertThat(result).hasSize(2);
-            assertThat(result.get(0)).isEqualTo("a");
+            assertThat(result.getFirst()).isEqualTo("a");
             assertThat(result.get(1)).isEqualTo("b");
         } finally {
             server.disposeNow();
@@ -81,7 +81,7 @@ class FluxClientTest {
 
             List<Entity> entitiesResult = fluxClientResource.arrayOfEntities().collectList().block();
             assertThat(entitiesResult).hasSize(3);
-            assertThat(entitiesResult.get(0).getSomeDouble()).isEqualTo(3.1415d);
+            assertThat(entitiesResult.getFirst().getSomeDouble()).isEqualTo(3.1415d);
 
         } finally {
             server.disposeNow();
@@ -121,9 +121,9 @@ class FluxClientTest {
             FluxResource fluxClientResource = client(server);
             List<List<String>> result = fluxClientResource.arrayOfArray().collectList().block();
             assertThat(result).hasSize(2);
-            assertThat(result.get(0)).hasSize(2);
-            assertThat(result.get(0).get(0)).isEqualTo("a");
-            assertThat(result.get(0).get(1)).isEqualTo("b");
+            assertThat(result.getFirst()).hasSize(2);
+            assertThat(result.getFirst().getFirst()).isEqualTo("a");
+            assertThat(result.getFirst().get(1)).isEqualTo("b");
         } finally {
             server.disposeNow();
         }
@@ -145,9 +145,9 @@ class FluxClientTest {
             FluxResource fluxClientResource = client(server);
             List<List<String>> result = fluxClientResource.arrayOfArray().collectList().block();
             assertThat(result).hasSize(1);
-            assertThat(result.get(0)).hasSize(2);
-            assertThat(result.get(0).get(0)).isEqualTo("a");
-            assertThat(result.get(0).get(1)).isEqualTo("b");
+            assertThat(result.getFirst()).hasSize(2);
+            assertThat(result.getFirst().getFirst()).isEqualTo("a");
+            assertThat(result.getFirst().get(1)).isEqualTo("b");
         } finally {
             server.disposeNow();
         }
@@ -212,7 +212,7 @@ class FluxClientTest {
 
             List<String> bodyResult = awaitedResponse.getBody().collectList().block();
             assertThat(bodyResult).hasSize(2);
-            assertThat(bodyResult.get(0)).isEqualTo("a");
+            assertThat(bodyResult.getFirst()).isEqualTo("a");
 
             verify(fluxServerResource).arrayOfStrings();
 
@@ -252,7 +252,7 @@ class FluxClientTest {
             Flux<byte[]> result = fluxClientResource.fluxByteArrayAsJson();
             List<byte[]> byteArrays = result.collectList().block();
             assertThat(byteArrays).hasSize(2);
-            assertThat(new String(byteArrays.get(0))).isEqualTo("abc");
+            assertThat(new String(byteArrays.getFirst())).isEqualTo("abc");
             assertThat(new String(byteArrays.get(1))).isEqualTo("def");
         } finally {
             server.disposeNow();
@@ -270,7 +270,7 @@ class FluxClientTest {
             Flux<byte[]> result = fluxClientResource.fluxByteArray();
             List<byte[]> byteArrays = result.collectList().block();
             assertThat(byteArrays).hasSize(2);
-            assertThat(new String(byteArrays.get(0))).isEqualTo("abc");
+            assertThat(new String(byteArrays.getFirst())).isEqualTo("abc");
             assertThat(new String(byteArrays.get(1))).isEqualTo("def");
         } finally {
             server.disposeNow();
@@ -353,7 +353,7 @@ class FluxClientTest {
 
             List<String> result = fluxClientResource.arrayOfStringsNonStream().collectList().block();
             assertThat(result).hasSize(2);
-            assertThat(result.get(0)).isEqualTo("a");
+            assertThat(result.getFirst()).isEqualTo("a");
             assertThat(result.get(1)).isEqualTo("b");
         } finally {
             server.disposeNow();
@@ -370,7 +370,7 @@ class FluxClientTest {
 
             List<Entity> entitiesResult = fluxClientResource.arrayOfEntitiesNonStream().collectList().block();
             assertThat(entitiesResult).hasSize(3);
-            assertThat(entitiesResult.get(0).getSomeDouble()).isEqualTo(3.1415d);
+            assertThat(entitiesResult.getFirst().getSomeDouble()).isEqualTo(3.1415d);
 
         } finally {
             server.disposeNow();
@@ -393,7 +393,7 @@ class FluxClientTest {
             FluxResource fluxClientResource = client(server);
             List<String> result = fluxClientResource.arrayOfStringsNonStream().collectList().block();
             assertThat(result).hasSize(2);
-            assertThat(result.get(0)).isEqualTo("a");
+            assertThat(result.getFirst()).isEqualTo("a");
             assertThat(result.get(1)).isEqualTo("b");
         } finally {
             server.disposeNow();
@@ -409,9 +409,9 @@ class FluxClientTest {
             FluxResource fluxClientResource = client(server);
             List<List<String>> result = fluxClientResource.arrayOfArrayNonStream().collectList().block();
             assertThat(result).hasSize(2);
-            assertThat(result.get(0)).hasSize(2);
-            assertThat(result.get(0).get(0)).isEqualTo("a");
-            assertThat(result.get(0).get(1)).isEqualTo("b");
+            assertThat(result.getFirst()).hasSize(2);
+            assertThat(result.getFirst().getFirst()).isEqualTo("a");
+            assertThat(result.getFirst().get(1)).isEqualTo("b");
         } finally {
             server.disposeNow();
         }
@@ -433,9 +433,9 @@ class FluxClientTest {
             FluxResource fluxClientResource = client(server);
             List<List<String>> result = fluxClientResource.arrayOfArrayNonStream().collectList().block();
             assertThat(result).hasSize(1);
-            assertThat(result.get(0)).hasSize(2);
-            assertThat(result.get(0).get(0)).isEqualTo("a");
-            assertThat(result.get(0).get(1)).isEqualTo("b");
+            assertThat(result.getFirst()).hasSize(2);
+            assertThat(result.getFirst().getFirst()).isEqualTo("a");
+            assertThat(result.getFirst().get(1)).isEqualTo("b");
         } finally {
             server.disposeNow();
         }
@@ -475,7 +475,7 @@ class FluxClientTest {
 
             List<String> bodyResult = awaitedResponse.getBody().collectList().block();
             assertThat(bodyResult).hasSize(2);
-            assertThat(bodyResult.get(0)).isEqualTo("a");
+            assertThat(bodyResult.getFirst()).isEqualTo("a");
 
             verify(fluxServerResource).arrayOfStringsNonStream();
 
@@ -496,7 +496,7 @@ class FluxClientTest {
             Flux<byte[]> result = fluxClientResource.fluxByteArrayAsJsonNonStream();
             List<byte[]> byteArrays = result.collectList().block();
             assertThat(byteArrays).hasSize(2);
-            assertThat(new String(byteArrays.get(0))).isEqualTo("abc");
+            assertThat(new String(byteArrays.getFirst())).isEqualTo("abc");
             assertThat(new String(byteArrays.get(1))).isEqualTo("def");
         } finally {
             server.disposeNow();

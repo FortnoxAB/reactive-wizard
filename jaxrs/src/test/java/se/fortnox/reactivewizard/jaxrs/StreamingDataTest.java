@@ -40,7 +40,7 @@ class StreamingDataTest {
         }).collectList().block();
 
         assertThat(strings).hasSize(2);
-        assertThat(strings.get(0)).isEqualTo("a");
+        assertThat(strings.getFirst()).isEqualTo("a");
         assertThat(strings.get(1)).isEqualTo("b");
         assertThat(response.get().responseHeaders().get("Content-Type")).isEqualTo(MediaType.TEXT_PLAIN);
         assertThat(response.get().responseHeaders().get("Transfer-Encoding")).isEqualTo("chunked");
@@ -52,7 +52,7 @@ class StreamingDataTest {
         }).collectList().block();
 
         assertThat(strings).hasSize(1);
-        assertThat(strings.get(0)).isEqualTo("ab");
+        assertThat(strings.getFirst()).isEqualTo("ab");
         assertThat(response.get().responseHeaders().get("Content-Type")).isEqualTo(MediaType.TEXT_PLAIN);
         assertThat(response.get().responseHeaders().get("Transfer-Encoding")).isNotEqualTo("chunked");
 
@@ -75,7 +75,7 @@ class StreamingDataTest {
             }).collectList().block();
 
             assertThat(strings).hasSize(2);
-            assertThat(strings.get(0)).isEqualTo("a");
+            assertThat(strings.getFirst()).isEqualTo("a");
             assertThat(strings.get(1)).isEqualTo("b");
             assertThat(response.get().responseHeaders().get("Content-Type")).isEqualTo(MediaType.TEXT_PLAIN);
             assertThat(response.get().responseHeaders().get("my-header")).isEqualTo("my-value");

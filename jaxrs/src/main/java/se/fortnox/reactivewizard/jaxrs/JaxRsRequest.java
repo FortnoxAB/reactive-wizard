@@ -118,7 +118,7 @@ public class JaxRsRequest {
 
         List<String> list = queryParameters.get(key);
         if (list != null && !list.isEmpty()) {
-            return list.get(0);
+            return list.getFirst();
         }
         return defaultValue;
     }
@@ -165,7 +165,7 @@ public class JaxRsRequest {
         QueryStringDecoder        decoder    = new QueryStringDecoder(new String(body), false);
         Map<String, List<String>> parameters = decoder.parameters();
         List<String>              list       = parameters.get(key);
-        return list == null || list.isEmpty() ? defaultValue : list.get(0);
+        return list == null || list.isEmpty() ? defaultValue : list.getFirst();
     }
 
     public Set<Cookie> getCookie(String key) {
