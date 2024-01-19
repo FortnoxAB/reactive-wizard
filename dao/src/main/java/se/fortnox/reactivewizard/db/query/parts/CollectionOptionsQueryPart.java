@@ -42,19 +42,29 @@ public class CollectionOptionsQueryPart implements QueryPart {
                 if (collectionOptions.getSortBy() != null) {
                     String sortBy = CamelSnakeConverter.camelToSnake(collectionOptions.getSortBy());
                     var sortByParts = sortBy.split(",");
-                    Collections.reverse(Arrays.asList(sortByParts));
-                    for (var sortByPart: sortByParts) {
-                        Matcher matcher = SORT_BY_PART.matcher(sortByPart);
-                        if (matcher.find()) {
-                            var sortByColumn = matcher.group("sortby");
-                            if (sortByColumn != null && !sortByColumn.isBlank()) {
-                                var order = matcher.group("order");
-                                if (order != null || collectionOptions.getSortBy() != null) {
-                                    for (String allowed : queryAnnotation.allowedSortColumns()) {
-                                        if (allowed.equals(sortByColumn)) {
-                                            collectionOptionsHasOrderBy = true;
-                                            addOrderBy(sql, buildOrderBy(order == null ? collectionOptions.getOrder() : CollectionOptions.SortOrder.valueOf(order.toUpperCase()), allowed));
-                                            break;
+                    if (sortByParts.length == 1) {
+                        for (String allowed : queryAnnotation.allowedSortColumns()) {
+                            if (allowed.equals(sortBy)) {
+                                collectionOptionsHasOrderBy = true;
+                                addOrderBy(sql, buildOrderBy(collectionOptions.getOrder(), allowed));
+                                break;
+                            }
+                        }
+                    } else {
+                        Collections.reverse(Arrays.asList(sortByParts));
+                        for (var sortByPart: sortByParts) {
+                            Matcher matcher = SORT_BY_PART.matcher(sortByPart);
+                            if (matcher.find()) {
+                                var sortByColumn = matcher.group("sortby");
+                                if (sortByColumn != null && !sortByColumn.isBlank()) {
+                                    var order = matcher.group("order");
+                                    if (order != null || collectionOptions.getSortBy() != null) {
+                                        for (String allowed : queryAnnotation.allowedSortColumns()) {
+                                            if (allowed.equals(sortByColumn)) {
+                                                collectionOptionsHasOrderBy = true;
+                                                addOrderBy(sql, buildOrderBy(order == null ? collectionOptions.getOrder() : CollectionOptions.SortOrder.valueOf(order.toUpperCase()), allowed));
+                                                break;
+                                            }
                                         }
                                     }
                                 }
