@@ -1,6 +1,8 @@
 package se.fortnox.reactivewizard.jaxrs;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
@@ -9,8 +11,6 @@ import se.fortnox.reactivewizard.mocks.MockHttpServerResponse;
 import se.fortnox.reactivewizard.util.ReactiveDecorator;
 import se.fortnox.reactivewizard.utils.JaxRsTestUtil;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;

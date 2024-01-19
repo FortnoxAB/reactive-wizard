@@ -1,5 +1,10 @@
 package se.fortnox.reactivewizard.jaxrs;
 
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.MediaType;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
 import reactor.netty.DisposableServer;
@@ -9,11 +14,6 @@ import se.fortnox.reactivewizard.CollectionOptions;
 import se.fortnox.reactivewizard.db.MockDb;
 import se.fortnox.reactivewizard.db.Query;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.MediaType;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;

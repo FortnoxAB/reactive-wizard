@@ -1,8 +1,7 @@
 package se.fortnox.reactivewizard.binding.scanners;
 
 import jakarta.inject.Singleton;
-
-import javax.ws.rs.Path;
+import jakarta.ws.rs.Path;
 
 @Singleton
 public class JaxRsClassScanner extends AbstractClassScanner {

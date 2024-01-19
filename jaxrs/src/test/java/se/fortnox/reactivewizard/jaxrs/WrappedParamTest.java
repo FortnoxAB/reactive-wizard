@@ -1,6 +1,8 @@
 package se.fortnox.reactivewizard.jaxrs;
 
 import io.netty.handler.codec.http.HttpMethod;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -8,9 +10,6 @@ import reactor.netty.http.server.HttpServerRequest;
 import se.fortnox.reactivewizard.ExceptionHandler;
 import se.fortnox.reactivewizard.mocks.MockHttpServerRequest;
 import se.fortnox.reactivewizard.mocks.MockHttpServerResponse;
-
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;

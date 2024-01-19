@@ -3,6 +3,7 @@ package se.fortnox.reactivewizard.jaxrs.params;
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.DefaultValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
@@ -14,7 +15,6 @@ import se.fortnox.reactivewizard.jaxrs.params.deserializing.DeserializerExceptio
 import se.fortnox.reactivewizard.jaxrs.params.deserializing.DeserializerFactory;
 import se.fortnox.reactivewizard.util.ReflectionUtil;
 
-import javax.ws.rs.DefaultValue;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;

@@ -8,6 +8,8 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.name.Names;
 import com.google.inject.util.Modules;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -23,8 +25,6 @@ import se.fortnox.reactivewizard.jaxrs.RequestLogger;
 import se.fortnox.reactivewizard.metrics.HealthRecorder;
 import se.fortnox.reactivewizard.server.ServerConfig;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
 import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.Set;

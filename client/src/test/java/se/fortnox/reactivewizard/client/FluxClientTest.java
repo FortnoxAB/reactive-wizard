@@ -1,6 +1,10 @@
 package se.fortnox.reactivewizard.client;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 import org.apache.logging.log4j.Level;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -12,9 +16,7 @@ import reactor.core.publisher.Mono;
 import reactor.netty.DisposableServer;
 import reactor.netty.http.server.HttpServer;
 import reactor.test.StepVerifier;
-import rx.Observable;
 import se.fortnox.reactivewizard.ExceptionHandler;
-import se.fortnox.reactivewizard.jaxrs.JaxRsRequest;
 import se.fortnox.reactivewizard.jaxrs.JaxRsRequestHandler;
 import se.fortnox.reactivewizard.jaxrs.JaxRsResourceFactory;
 import se.fortnox.reactivewizard.jaxrs.Stream;
@@ -22,19 +24,15 @@ import se.fortnox.reactivewizard.jaxrs.WebException;
 import se.fortnox.reactivewizard.test.LoggingVerifier;
 import se.fortnox.reactivewizard.test.LoggingVerifierExtension;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
 import java.net.URISyntaxException;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static jakarta.ws.rs.core.HttpHeaders.CONTENT_TYPE;
+import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
+import static jakarta.ws.rs.core.MediaType.TEXT_HTML;
 import static java.util.Arrays.asList;
-import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-import static javax.ws.rs.core.MediaType.TEXT_HTML;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.Mockito.verify;

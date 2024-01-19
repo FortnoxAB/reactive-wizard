@@ -1,12 +1,12 @@
 package se.fortnox.reactivewizard.jaxrs.params.annotated;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import jakarta.ws.rs.CookieParam;
 import se.fortnox.reactivewizard.jaxrs.JaxRsRequest;
 import se.fortnox.reactivewizard.jaxrs.params.ParamResolver;
 import se.fortnox.reactivewizard.jaxrs.params.deserializing.Deserializer;
 import se.fortnox.reactivewizard.jaxrs.params.deserializing.DeserializerFactory;
 
-import javax.ws.rs.CookieParam;
 import java.lang.annotation.Annotation;
 
 /**

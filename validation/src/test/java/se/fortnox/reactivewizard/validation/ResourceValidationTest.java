@@ -3,16 +3,15 @@ package se.fortnox.reactivewizard.validation;
 import com.google.inject.Injector;
 import jakarta.inject.Inject;
 import jakarta.validation.constraints.Min;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.QueryParam;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import se.fortnox.reactivewizard.config.TestInjector;
 import se.fortnox.reactivewizard.server.ServerConfig;
-
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.QueryParam;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
