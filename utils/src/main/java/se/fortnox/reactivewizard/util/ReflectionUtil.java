@@ -58,10 +58,9 @@ public class ReflectionUtil {
      * @return the class
      */
     public static Class<?> getGenericParameter(Type type) {
-        if (!(type instanceof ParameterizedType)) {
+        if (!(type instanceof ParameterizedType pt)) {
             throw new RuntimeException("The sent in type " + type + " is not a ParameterizedType");
         }
-        ParameterizedType pt                  = (ParameterizedType)type;
         Type[]            actualTypeArguments = pt.getActualTypeArguments();
         if (actualTypeArguments.length != 1) {
             throw new RuntimeException("The sent in type " + type + " should have exactly one type argument, but had " + actualTypeArguments.length);

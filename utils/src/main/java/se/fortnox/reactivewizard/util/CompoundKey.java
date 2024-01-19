@@ -25,10 +25,9 @@ public class CompoundKey {
 
     @Override
     public boolean equals(Object obj) {
-        if (obj == null || !(obj instanceof CompoundKey)) {
+        if (obj == null || !(obj instanceof CompoundKey other)) {
             return false;
         }
-        CompoundKey other = (CompoundKey)obj;
 
         if (other.keys.length != keys.length) {
             return false;
