@@ -56,15 +56,14 @@ public class CollectionOptionsQueryPart implements QueryPart {
                             Matcher matcher = SORT_BY_PART.matcher(sortByPart);
                             if (matcher.find()) {
                                 var sortByColumn = matcher.group("sortby");
-                                if (sortByColumn != null && !sortByColumn.isBlank()) {
+                                if (sortByColumn != null) {
                                     var order = matcher.group("order");
-                                    if (order != null || collectionOptions.getSortBy() != null) {
-                                        for (String allowed : queryAnnotation.allowedSortColumns()) {
-                                            if (allowed.equals(sortByColumn)) {
-                                                collectionOptionsHasOrderBy = true;
-                                                addOrderBy(sql, buildOrderBy(order == null ? collectionOptions.getOrder() : CollectionOptions.SortOrder.valueOf(order.toUpperCase()), allowed));
-                                                break;
-                                            }
+                                    for (String allowed : queryAnnotation.allowedSortColumns()) {
+                                        if (allowed.equals(sortByColumn)) {
+                                            collectionOptionsHasOrderBy = true;
+                                            var sortOrder = order != null ? CollectionOptions.SortOrder.valueOf(order.toUpperCase()) : collectionOptions.getOrder();
+                                            addOrderBy(sql, buildOrderBy(sortOrder, allowed));
+                                            break;
                                         }
                                     }
                                 }
