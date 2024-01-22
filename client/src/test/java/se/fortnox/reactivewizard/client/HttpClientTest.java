@@ -192,7 +192,7 @@ class HttpClientTest {
 
     private TestResource getHttpProxy(HttpClientConfig config) {
         requestLogger = new RequestLogger();
-        HttpClient client = new HttpClient(config, new ReactorRxClientProvider(config, healthRecorder), new ObjectMapper(), new RequestParameterSerializers(
+        client = new HttpClient(config, new ReactorRxClientProvider(config, healthRecorder), new ObjectMapper(), new RequestParameterSerializers(
             Set.of(new SessionParameterSerializer())), Collections.emptySet(), requestLogger);
         return client.create(TestResource.class);
     }
@@ -206,7 +206,7 @@ class HttpClientTest {
             Assertions.fail("Could not create httpClientConfig: " + e);
         }
 
-        HttpClient client = new HttpClient(config, new ReactorRxClientProvider(config, healthRecorder),
+        client = new HttpClient(config, new ReactorRxClientProvider(config, healthRecorder),
             new ObjectMapper(), new RequestParameterSerializers(), Collections.emptySet(), new RequestLogger());
         return client.create(TestResource.class);
     }
@@ -1582,6 +1582,16 @@ class HttpClientTest {
                 assertThat(response.getResourceUrl())
                     .isEqualTo("http://%s:%s/hello".formatted(host, server.port())))
             .verifyComplete();
+    }
+
+    @Test
+    void shouldNotResolveHostName() throws URISyntaxException {
+        server = startServer(OK, "\"OK\"");
+        String host = "localhost";
+        HttpClientConfig config = new HttpClientConfig("%s:%s".formatted(host, server.port()));
+        HttpClient client = new HttpClient(config);
+        assertThat(client.serverInfo.isUnresolved())
+            .isTrue();
     }
 
     @Test
