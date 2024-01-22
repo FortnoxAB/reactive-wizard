@@ -73,12 +73,7 @@ public class ExceptionHandler {
             webException = new WebException(BAD_REQUEST, "invalidjson", throwable.getMessage());
         } else if (throwable instanceof WebException we) {
             webException = we;
-        } else if (throwable instanceof ClosedChannelException
-            || throwable instanceof AbortedException
-            || throwable instanceof CancellationException
-            || (throwable instanceof IOException
-            && throwable.getMessage() != null
-            && throwable.getMessage().contains("Broken pipe"))) {
+        } else if (isAnticipatedClientException(throwable)) {
             LOG.atDebug()
                 .setMessage(INBOUND_CONNECTION_CLOSED)
                 .addArgument(request::method)
@@ -100,6 +95,15 @@ public class ExceptionHandler {
             return response.sendString(justOrEmpty(json(webException)));
         }
         return empty();
+    }
+
+    private static boolean isAnticipatedClientException(Throwable throwable) {
+        return throwable instanceof ClosedChannelException
+            || throwable instanceof AbortedException
+            || throwable instanceof CancellationException
+            || (throwable instanceof IOException
+            && throwable.getMessage() != null
+            && throwable.getMessage().contains("Broken pipe"));
     }
 
     private String json(WebException webException) {
