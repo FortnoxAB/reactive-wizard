@@ -5,10 +5,10 @@ import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
 
 import java.net.InetSocketAddress;
-import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_LENGTH;
 
 /**
@@ -17,7 +17,6 @@ import static javax.ws.rs.core.HttpHeaders.CONTENT_LENGTH;
  * calls.
  */
 public class RequestBuilder {
-    private static final Charset charset = Charset.forName("UTF-8");
 
     private final HttpMethod          method;
     private final String              key;
@@ -73,7 +72,7 @@ public class RequestBuilder {
     }
 
     public String getFullUrl() {
-        return serverInfo.getHostName() + ":" + serverInfo.getPort() + uri;
+        return serverInfo.getHostString() + ":" + serverInfo.getPort() + uri;
     }
 
     @Override
@@ -109,7 +108,7 @@ public class RequestBuilder {
     }
 
     public void setContent(String content) {
-        setContent(content.getBytes(charset));
+        setContent(content.getBytes(UTF_8));
     }
 
     public void setContent(byte[] content) {

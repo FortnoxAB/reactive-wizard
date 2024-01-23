@@ -94,6 +94,7 @@ import static java.lang.String.format;
 import static java.util.Collections.EMPTY_SET;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.IntStream.range;
+import static org.apache.logging.log4j.Level.INFO;
 import static org.apache.logging.log4j.Level.WARN;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
@@ -106,6 +107,7 @@ import static org.mockito.Mockito.when;
 import static reactor.core.publisher.Flux.defer;
 import static reactor.core.publisher.Flux.empty;
 import static reactor.core.publisher.Flux.just;
+import static se.fortnox.reactivewizard.client.HttpClient.getFullResponse;
 import static se.fortnox.reactivewizard.test.TestUtil.matches;
 import static se.fortnox.reactivewizard.util.FluxRxConverter.observableToFlux;
 
@@ -113,16 +115,19 @@ import static se.fortnox.reactivewizard.util.FluxRxConverter.observableToFlux;
 class HttpClientTest {
 
     private HealthRecorder healthRecorder = new HealthRecorder();
-    private RequestLogger requestLogger;
+    private RequestLogger  requestLogger;
     LoggingVerifier loggingVerifier = new LoggingVerifier(HttpClient.class);
 
     DisposableServer server;
+
+    HttpClient client;
 
     @AfterEach
     void dispose() {
         ofNullable(server)
             .ifPresent(DisposableServer::disposeNow);
         server = null;
+        client = null;
     }
 
     @Test
@@ -187,7 +192,7 @@ class HttpClientTest {
 
     private TestResource getHttpProxy(HttpClientConfig config) {
         requestLogger = new RequestLogger();
-        HttpClient client = new HttpClient(config, new ReactorRxClientProvider(config, healthRecorder), new ObjectMapper(), new RequestParameterSerializers(
+        client = new HttpClient(config, new ReactorRxClientProvider(config, healthRecorder), new ObjectMapper(), new RequestParameterSerializers(
             Set.of(new SessionParameterSerializer())), Collections.emptySet(), requestLogger);
         return client.create(TestResource.class);
     }
@@ -201,7 +206,7 @@ class HttpClientTest {
             Assertions.fail("Could not create httpClientConfig: " + e);
         }
 
-        HttpClient client = new HttpClient(config, new ReactorRxClientProvider(config, healthRecorder),
+        client = new HttpClient(config, new ReactorRxClientProvider(config, healthRecorder),
             new ObjectMapper(), new RequestParameterSerializers(), Collections.emptySet(), new RequestLogger());
         return client.create(TestResource.class);
     }
@@ -514,9 +519,9 @@ class HttpClientTest {
     @Test
     void shouldSerializeList() throws Exception {
         HttpClient client = new HttpClient(new HttpClientConfig("localhost"));
-        assertThat(client.serialize(new Long[]{})).isEqualTo("");
+        assertThat(client.serialize(new Long[]{})).isEmpty();
         assertThat(client.serialize(new Long[]{5L, 78L, 1005L})).isEqualTo("5,78,1005");
-        assertThat(client.serialize(new ArrayList<>())).isEqualTo("");
+        assertThat(client.serialize(new ArrayList<>())).isEmpty();
         assertThat(client.serialize(Arrays.asList(5L, 78L, 1005L))).isEqualTo("5,78,1005");
     }
 
@@ -595,14 +600,16 @@ class HttpClientTest {
         server = startServer(OK, "\"OK\"");
 
         TestResource resource = getHttpProxy(server.port());
-        resource.getSingle().toBlocking().value();
+        assertThat(resource.getSingle().toBlocking().value())
+            .isNotNull();
     }
 
     @Test
     void shouldHandleLargeResponses() {
         server = startServer(OK, generateLargeString(10));
         TestResource resource = getHttpProxy(server.port());
-        resource.getHello().toBlocking().single();
+        assertThat(resource.getHello().toBlocking().single())
+            .isNotNull();
     }
 
     @Test
@@ -866,7 +873,8 @@ class HttpClientTest {
         server = startServer(HttpResponseStatus.CREATED, "");
 
         TestResource resource = getHttpProxy(server.port());
-        resource.getVoid().toBlocking().singleOrDefault(null);
+        assertThat(resource.getVoid().toBlocking().singleOrDefault(null))
+            .isNull();
     }
 
     @Test
@@ -1240,8 +1248,9 @@ class HttpClientTest {
 
         var responseRecord = resource.postRecord(requestRecord).toBlocking().singleOrDefault(null);
 
-        assertThat(responseRecord).isNotNull();
-        assertThat(responseRecord).isEqualTo(requestRecord);
+        assertThat(responseRecord)
+            .isNotNull()
+            .isEqualTo(requestRecord);
     }
 
     @Test
@@ -1561,6 +1570,59 @@ class HttpClientTest {
             .verifyComplete();
     }
 
+    @Test
+    void shouldNotDoReverseLookupOfHost() throws URISyntaxException {
+        server = startServer(OK, "\"OK\"");
+        String host = "127.0.0.1";
+        HttpClientConfig config = new HttpClientConfig("%s:%s".formatted(host, server.port()));
+        TestResource testResource = getHttpProxy(config);
+
+        StepVerifier.create(getFullResponse(testResource.getHelloMono()))
+            .consumeNextWith(response ->
+                assertThat(response.getResourceUrl())
+                    .isEqualTo("http://%s:%s/hello".formatted(host, server.port())))
+            .verifyComplete();
+    }
+
+    @Test
+    void shouldNotResolveHostName() throws URISyntaxException {
+        server = startServer(OK, "\"OK\"");
+        String host = "localhost";
+        HttpClientConfig config = new HttpClientConfig("%s:%s".formatted(host, server.port()));
+        HttpClient client = new HttpClient(config);
+        assertThat(client.serverInfo.isUnresolved())
+            .isTrue();
+    }
+
+    @Test
+    void shouldLogConfiguredIpAddressOnFailedRequest() throws URISyntaxException {
+        server = startServer(NOT_FOUND, "\"Braap!\"");
+        String host = "127.0.0.1";
+        HttpClientConfig config = new HttpClientConfig("%s:%s".formatted(host, server.port()));
+        TestResource testResource = getHttpProxy(config);
+
+        StepVerifier.create(getFullResponse(testResource.getHelloMono()))
+            .verifyErrorSatisfies(throwable ->
+                assertThat(throwable)
+                    .isInstanceOf(WebException.class)
+                    .cause().cause()
+                    .satisfies(exception -> assertThat(exception)
+                        .hasMessageContaining("URL: %s:%s/hello", host, server.port())));
+        loggingVerifier.verify(WARN, "Failed request. Url: %1$s:%2$s/hello, headers: [Host=%1$s]".formatted(host, server.port()));
+    }
+
+    @Test
+    void shouldLogConfiguredIpAddressOnRetry() throws URISyntaxException {
+        server = startServer(INTERNAL_SERVER_ERROR, "\"Braap!\"");
+        String host = "127.0.0.1";
+        HttpClientConfig config = new HttpClientConfig("%s:%s".formatted(host, server.port()));
+        TestResource testResource = getHttpProxy(config);
+
+        StepVerifier.create(getFullResponse(testResource.getHelloMono()))
+            .verifyError(WebException.class);
+        loggingVerifier.verify(INFO, "Will retry because an error occurred. %1$s:%2$s/hello, headers: [Host=%1$s]".formatted(host, server.port()));
+    }
+
     @Path("/hello")
     public interface TestResource {
 
@@ -1647,9 +1709,9 @@ class HttpClientTest {
 
         @POST
         Observable<String> postForm(@FormParam("paramA") String a,
-                                    @FormParam("paramB") String b,
-                                    @HeaderParam("myheader") String header,
-                                    @CookieParam("cookie_key") String cookie
+            @FormParam("paramB") String b,
+            @HeaderParam("myheader") String header,
+            @CookieParam("cookie_key") String cookie
         );
 
         @POST

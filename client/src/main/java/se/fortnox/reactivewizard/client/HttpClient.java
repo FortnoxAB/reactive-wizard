@@ -127,7 +127,7 @@ public class HttpClient implements InvocationHandler {
             .setStreamReadConstraints(constraints);
         this.requestParameterSerializers = requestParameterSerializers;
 
-        serverInfo = new InetSocketAddress(config.getHost(), config.getPort());
+        serverInfo = InetSocketAddress.createUnresolved(config.getHost(), config.getPort());
         collector = new ByteBufCollector(config.getMaxResponseSize());
         this.preRequestHooks = preRequestHooks;
         this.retryDuration = Duration.ofMillis(config.getRetryDelayMs());
