@@ -14,6 +14,7 @@ import se.fortnox.reactivewizard.test.LoggingMockUtil;
 import se.fortnox.reactivewizard.test.LoggingVerifier;
 import se.fortnox.reactivewizard.test.LoggingVerifierExtension;
 
+import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.file.FileSystemException;
 import java.nio.file.NoSuchFileException;
@@ -146,6 +147,62 @@ class ExceptionHandlerTest {
                 DEBUG,
                 "Inbound connection has been closed: GET /path",
                 cancellationException
+            );
+        } finally {
+            LoggingMockUtil.setLevel(ExceptionHandler.class, originalLevel);
+        }
+    }
+
+    @Test
+    void shouldLogBrokenPipeExceptionAtDebugLevel() {
+        Level originalLevel = LoggingMockUtil.setLevel(ExceptionHandler.class, DEBUG);
+        IOException brokenPipeException = new IOException("writevAddresses(..) failed: Broken pipe");
+        try {
+            assertLog(new MockHttpServerRequest("/path"),
+                brokenPipeException,
+                DEBUG,
+                "Inbound connection has been closed: GET /path",
+                brokenPipeException
+            );
+        } finally {
+            LoggingMockUtil.setLevel(ExceptionHandler.class, originalLevel);
+        }
+    }
+
+    @Test
+    void shouldTreatNullMessageIOExceptionAsUnknown() {
+        Level originalLevel = LoggingMockUtil.setLevel(ExceptionHandler.class, DEBUG);
+        String expectedLog = """
+                500 Internal Server Error
+                \tCause: null
+                \tResponse: {"id":"*","error":"internal"}
+                \tRequest: GET /path headers:\s""";
+
+        try {
+            assertLog(new MockHttpServerRequest("/path"),
+                new IOException(),
+                ERROR,
+                expectedLog
+            );
+        } finally {
+            LoggingMockUtil.setLevel(ExceptionHandler.class, originalLevel);
+        }
+    }
+
+    @Test
+    void shouldTreatOtherThanBrokenPipeIOExceptionsAsUnknown() {
+        Level originalLevel = LoggingMockUtil.setLevel(ExceptionHandler.class, DEBUG);
+        String expectedLog = """
+                500 Internal Server Error
+                \tCause: Some random cause
+                \tResponse: {"id":"*","error":"internal"}
+                \tRequest: GET /path headers:\s""";
+
+        try {
+            assertLog(new MockHttpServerRequest("/path"),
+                new IOException("Some random cause"),
+                ERROR,
+                expectedLog
             );
         } finally {
             LoggingMockUtil.setLevel(ExceptionHandler.class, originalLevel);
