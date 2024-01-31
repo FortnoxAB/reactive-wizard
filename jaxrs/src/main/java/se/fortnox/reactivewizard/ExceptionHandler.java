@@ -63,7 +63,7 @@ public class ExceptionHandler {
 
         if (isMultiple(throwable)) {
             List<Throwable> exceptions = unwrapMultiple(throwable);
-            throwable = exceptions.get(exceptions.size() - 1);
+            throwable = exceptions.getLast();
         }
 
         WebException webException;

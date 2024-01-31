@@ -405,7 +405,7 @@ class DbResultSetDeserializerTest {
         when(rs.wasNull()).thenReturn(false);
         DbTestObj myTestObj = (DbTestObj)des.deserialize(rs);
         assertThat(myTestObj.getListOfStrings()).isNotNull().hasSize(2);
-        assertThat(myTestObj.getListOfStrings().get(0)).isEqualTo("one");
+        assertThat(myTestObj.getListOfStrings().getFirst()).isEqualTo("one");
         assertThat(myTestObj.getListOfStrings().get(1)).isEqualTo("two");
     }
 
@@ -419,7 +419,7 @@ class DbResultSetDeserializerTest {
         when(rs.wasNull()).thenReturn(false);
         DbTestObjRecord myTestObj = (DbTestObjRecord)des.deserialize(rs);
         assertThat(myTestObj.listOfStrings()).isNotNull().hasSize(2);
-        assertThat(myTestObj.listOfStrings().get(0)).isEqualTo("one");
+        assertThat(myTestObj.listOfStrings().getFirst()).isEqualTo("one");
         assertThat(myTestObj.listOfStrings().get(1)).isEqualTo("two");
     }
 
@@ -435,7 +435,7 @@ class DbResultSetDeserializerTest {
         when(rs.wasNull()).thenReturn(false);
         DbTestObj myTestObj = (DbTestObj)des.deserialize(rs);
         assertThat(myTestObj.getListOfStrings()).isNotNull().hasSize(2);
-        assertThat(myTestObj.getListOfStrings().get(0)).isEqualTo("one");
+        assertThat(myTestObj.getListOfStrings().getFirst()).isEqualTo("one");
         assertThat(myTestObj.getListOfStrings().get(1)).isEqualTo("two");
     }
 
@@ -451,7 +451,7 @@ class DbResultSetDeserializerTest {
         when(rs.wasNull()).thenReturn(false);
         DbTestObjRecord myTestObj = (DbTestObjRecord)des.deserialize(rs);
         assertThat(myTestObj.listOfStrings()).isNotNull().hasSize(2);
-        assertThat(myTestObj.listOfStrings().get(0)).isEqualTo("one");
+        assertThat(myTestObj.listOfStrings().getFirst()).isEqualTo("one");
         assertThat(myTestObj.listOfStrings().get(1)).isEqualTo("two");
     }
 
@@ -466,7 +466,7 @@ class DbResultSetDeserializerTest {
         DbResultSetDeserializer des = new DbResultSetDeserializer(DbTestObj.class);
         DbTestObj myTestObj = (DbTestObj)des.deserialize(rs);
         assertThat(myTestObj.getListOfEnums()).hasSize(2);
-        assertThat(myTestObj.getListOfEnums().get(0)).isInstanceOf(TestEnum.class);
+        assertThat(myTestObj.getListOfEnums().getFirst()).isInstanceOf(TestEnum.class);
     }
 
     @Test
@@ -480,7 +480,7 @@ class DbResultSetDeserializerTest {
         DbResultSetDeserializer des = new DbResultSetDeserializer(DbTestObjRecord.class);
         DbTestObjRecord myTestObj = (DbTestObjRecord)des.deserialize(rs);
         assertThat(myTestObj.listOfEnums()).hasSize(2);
-        assertThat(myTestObj.listOfEnums().get(0)).isInstanceOf(TestEnum.class);
+        assertThat(myTestObj.listOfEnums().getFirst()).isInstanceOf(TestEnum.class);
     }
 
     @Test
@@ -494,7 +494,7 @@ class DbResultSetDeserializerTest {
         DbResultSetDeserializer des = new DbResultSetDeserializer(DbTestObj.class);
         DbTestObj myTestObj = (DbTestObj)des.deserialize(rs);
         assertThat(myTestObj.getListOfObjects()).hasSize(2);
-        assertThat(myTestObj.getListOfObjects().get(0)).isInstanceOf(DbTestObj.class);
+        assertThat(myTestObj.getListOfObjects().getFirst()).isInstanceOf(DbTestObj.class);
         assertThat(myTestObj.getListOfObjects().get(1)).isInstanceOf(DbTestObj.class);
     }
 
@@ -509,7 +509,7 @@ class DbResultSetDeserializerTest {
         DbResultSetDeserializer des = new DbResultSetDeserializer(DbTestObjRecord.class);
         DbTestObjRecord myTestObj = (DbTestObjRecord)des.deserialize(rs);
         assertThat(myTestObj.listOfObjects()).hasSize(2);
-        assertThat(myTestObj.listOfObjects().get(0)).isInstanceOf(DbTestObjRecord.class);
+        assertThat(myTestObj.listOfObjects().getFirst()).isInstanceOf(DbTestObjRecord.class);
         assertThat(myTestObj.listOfObjects().get(1)).isInstanceOf(DbTestObjRecord.class);
     }
 

@@ -40,7 +40,7 @@ class TimeoutLockServiceTest {
         verify(executor, timeout(1000).atLeast(2)).update(argument.capture());
 
         // There should be a lock
-        assertThat(argument.getAllValues().get(0)).isInstanceOf(LockDatabaseChangeLogStatement.class);
+        assertThat(argument.getAllValues().getFirst()).isInstanceOf(LockDatabaseChangeLogStatement.class);
 
         // And then there should be a renewal
         assertThat(argument.getAllValues().get(1)).isInstanceOf(UpdateStatement.class);
