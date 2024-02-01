@@ -48,7 +48,7 @@ public class JaxRsTestUtil {
     public static MockHttpServerResponse getWithHeaders(Object service, String uri, Map<String, List<String>> headers) {
         MockHttpServerRequest request = new MockHttpServerRequest(uri);
         for (Map.Entry<String, List<String>> header : headers.entrySet()) {
-            request.requestHeaders().add(header.getKey(), header.getValue().get(0));
+            request.requestHeaders().add(header.getKey(), header.getValue().getFirst());
         }
         return processRequest(service, request);
     }

@@ -194,17 +194,17 @@ class ReflectionUtilTest {
         Method resourceGet = TestResource.class.getMethod("resourceGet", String.class, String.class);
         List<List<Annotation>> parameterAnnotations = ReflectionUtil.getParameterAnnotations(resourceGet);
         assertThat(parameterAnnotations).hasSize(2);
-        assertThat(parameterAnnotations.get(0)).hasSize(1);
-        assertThat(parameterAnnotations.get(0).get(0)).isInstanceOf(QueryParam.class);
-        assertThat(parameterAnnotations.get(1).get(0)).isInstanceOf(HeaderParam.class);
+        assertThat(parameterAnnotations.getFirst()).hasSize(1);
+        assertThat(parameterAnnotations.getFirst().getFirst()).isInstanceOf(QueryParam.class);
+        assertThat(parameterAnnotations.get(1).getFirst()).isInstanceOf(HeaderParam.class);
 
 
         Method instanceMethod = TestResourceImpl.class.getMethod("resourceGet", String.class, String.class);
         parameterAnnotations = ReflectionUtil.getParameterAnnotations(instanceMethod);
         assertThat(parameterAnnotations).hasSize(2);
-        assertThat(parameterAnnotations.get(0)).hasSize(1);
-        assertThat(parameterAnnotations.get(0).get(0)).isInstanceOf(QueryParam.class);
-        assertThat(parameterAnnotations.get(1).get(0)).isInstanceOf(HeaderParam.class);
+        assertThat(parameterAnnotations.getFirst()).hasSize(1);
+        assertThat(parameterAnnotations.getFirst().getFirst()).isInstanceOf(QueryParam.class);
+        assertThat(parameterAnnotations.get(1).getFirst()).isInstanceOf(HeaderParam.class);
     }
 
     @MethodSource("useLambdasParameters")
@@ -214,12 +214,12 @@ class ReflectionUtilTest {
         Method resourceGet = TestResource.class.getMethod("resourceGet", String.class, String.class);
         List<Annotation> parameterAnnotations = ReflectionUtil.getParameterAnnotations(resourceGet.getParameters()[0]);
         assertThat(parameterAnnotations).hasSize(1);
-        assertThat(parameterAnnotations.get(0)).isInstanceOf(QueryParam.class);
+        assertThat(parameterAnnotations.getFirst()).isInstanceOf(QueryParam.class);
 
         Method instanceMethod = TestResourceImpl.class.getMethod("resourceGet", String.class, String.class);
         parameterAnnotations = ReflectionUtil.getParameterAnnotations(instanceMethod.getParameters()[0]);
         assertThat(parameterAnnotations).hasSize(1);
-        assertThat(parameterAnnotations.get(0)).isInstanceOf(QueryParam.class);
+        assertThat(parameterAnnotations.getFirst()).isInstanceOf(QueryParam.class);
     }
 
     @MethodSource("useLambdasParameters")
@@ -229,12 +229,12 @@ class ReflectionUtilTest {
         Method resourceGet = TestResource.class.getMethod("resourceGet", String.class, String.class);
         List<Annotation> methodAnnotations = ReflectionUtil.getAnnotations(resourceGet);
         assertThat(methodAnnotations).hasSize(1);
-        assertThat(methodAnnotations.get(0)).isInstanceOf(GET.class);
+        assertThat(methodAnnotations.getFirst()).isInstanceOf(GET.class);
 
         Method instanceMethod = TestResourceImpl.class.getMethod("resourceGet", String.class, String.class);
         methodAnnotations = ReflectionUtil.getAnnotations(instanceMethod);
         assertThat(methodAnnotations).hasSize(1);
-        assertThat(methodAnnotations.get(0)).isInstanceOf(GET.class);
+        assertThat(methodAnnotations.getFirst()).isInstanceOf(GET.class);
     }
 
     @MethodSource("useLambdasParameters")

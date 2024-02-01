@@ -166,7 +166,7 @@ class JsonDeserializerFactoryTest {
         Function<String, List<String>> serializeList = deserializerFactory.createDeserializer(type);
         List<String> result = serializeList.apply("[\"a\",\"b\"]");
         assertThat(result).hasSize(2);
-        assertThat(result.get(0)).isEqualTo("a");
+        assertThat(result.getFirst()).isEqualTo("a");
         assertThat(result.get(1)).isEqualTo("b");
     }
 

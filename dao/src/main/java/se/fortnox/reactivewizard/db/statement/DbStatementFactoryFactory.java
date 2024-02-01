@@ -30,12 +30,10 @@ public class DbStatementFactoryFactory {
         Type     returnType = ReflectionUtil.getTypeOfFluxOrMono(method);
         Class<?> cls        = ReflectionUtil.getRawType(returnType);
         for (Annotation annotation : method.getAnnotations()) {
-            if (annotation instanceof Query) {
-                Query queryAnnotation = (Query)annotation;
+            if (annotation instanceof Query queryAnnotation) {
                 return new SelectStatementFactory(createParameterizedQuery(queryAnnotation.value(), method), cls);
 
-            } else if (annotation instanceof Update) {
-                Update             updateAnnotation   = (Update)annotation;
+            } else if (annotation instanceof Update updateAnnotation) {
                 ParameterizedQuery parameterizedQuery = createParameterizedQuery(updateAnnotation.value(), method);
 
                 if (GeneratedKey.class.isAssignableFrom(cls)) {

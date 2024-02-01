@@ -123,7 +123,7 @@ class FluxRxConverterTest {
         Mono<String> conversionResult = FluxRxConverter.observableToMono(observable);
 
         StepVerifier.create(conversionResult)
-            .expectNext(values.get(0))
+            .expectNext(values.getFirst())
             .verifyComplete();
     }
 

@@ -203,8 +203,8 @@ class ConfigReaderTest {
         setEnv(env);
 
         TestConfigNewLine testConfig = ConfigReader.fromFile("src/test/resources/testconfig-newline.yml", TestConfigNewLine.class);
-        assertThat(testConfig.getClients().get("client1").get(0)).isEqualTo("key41");
+        assertThat(testConfig.getClients().get("client1").getFirst()).isEqualTo("key41");
         assertThat(testConfig.getClients().get("client1").get(1)).isEqualTo("key24");
-        assertThat(testConfig.getClients().get("client2").get(0)).isEqualTo("key55");
+        assertThat(testConfig.getClients().get("client2").getFirst()).isEqualTo("key55");
     }
 }
