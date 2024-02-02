@@ -70,11 +70,10 @@ public abstract class AbstractDbStatementFactory implements DbStatementFactory {
 
         @Override
         public void batchExecuted(int count) throws SQLException {
-            if (fluxSink != null) {
-                AbstractDbStatementFactory.this.batchExecuted(count, fluxSink);
-            }
             if (monoSink != null) {
                 AbstractDbStatementFactory.this.batchExecuted(count, monoSink);
+            } else {
+                AbstractDbStatementFactory.this.batchExecuted(count, fluxSink);
             }
         }
 

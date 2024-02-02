@@ -268,6 +268,30 @@ class DaoTransactionsTest {
     }
 
     @Test
+    void shouldFailAllQueriesIfOneUpdateHasNotReachedMinimumUpdatesInTheBatch() throws SQLException {
+        when(db.getPreparedStatement().executeBatch())
+            .thenReturn(new int[] { 1, 0 });
+
+        try {
+            daoTransactions.executeTransaction(
+                dao.updateFail(),
+                dao.updateFail()
+            ).block();
+            fail("expected exception");
+        } catch (Exception e) {
+            assertThat(e.getCause()).isInstanceOf(MinimumAffectedRowsException.class);
+            assertThat(e.getCause().getMessage()).contains("Minimum affected rows not reached");
+            assertThat(e.getCause().getMessage()).contains("Minimum: 1 actual: 0");
+        }
+
+        Connection conn = db.getConnection();
+        verify(conn).setAutoCommit(false);
+        verify(conn).rollback();
+        verify(conn, never()).commit();
+        verify(conn).close();
+    }
+
+    @Test
     void shouldBatchWhenSameQuery() throws SQLException {
         when(db.getPreparedStatement().executeBatch())
                 .thenReturn(new int[]{1, 1});
