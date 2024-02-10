@@ -6,14 +6,11 @@ import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import se.fortnox.reactivewizard.db.config.DatabaseConfig;
 import se.fortnox.reactivewizard.db.paging.PagingOutput;
-import se.fortnox.reactivewizard.db.statement.DbStatementFactory;
 import se.fortnox.reactivewizard.db.statement.DbStatementFactoryFactory;
-import se.fortnox.reactivewizard.db.transactions.ConnectionScheduler;
 import se.fortnox.reactivewizard.metrics.Metrics;
 import se.fortnox.reactivewizard.util.DebugUtil;
 import se.fortnox.reactivewizard.util.ReflectionUtil;
 
-import javax.annotation.Nullable;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
@@ -26,56 +23,35 @@ import static java.text.MessageFormat.format;
 public class DbProxy implements InvocationHandler {
 
     private final DbStatementFactoryFactory dbStatementFactoryFactory;
-    private final Scheduler scheduler;
-    protected final Map<Method, ReactiveStatementFactory> statementFactories;
-    private final ConnectionScheduler connectionScheduler;
-    private final DatabaseConfig databaseConfig;
+    protected final Map<Method, DaoMethodHandler> handlers;
+    private final ReactiveStatementFactory reactiveStatementFactory;
 
     @Inject
-    public DbProxy(DatabaseConfig databaseConfig,
-                   @Nullable ConnectionProvider connectionProvider,
-                   DbStatementFactoryFactory dbStatementFactoryFactory
-    ) {
-        this(databaseConfig,
-                threadPool(databaseConfig.getPoolSize()),
-                connectionProvider,
-                dbStatementFactoryFactory);
+    public DbProxy(ReactiveStatementFactory reactiveStatementFactory,
+        DbStatementFactoryFactory dbStatementFactoryFactory) {
+        this(reactiveStatementFactory, dbStatementFactoryFactory, new ConcurrentHashMap<>());
     }
 
-    public DbProxy(DatabaseConfig databaseConfig,
-                   Scheduler scheduler,
-                   ConnectionProvider connectionProvider,
-                   DbStatementFactoryFactory dbStatementFactoryFactory
-    ) {
-        this(databaseConfig, scheduler, connectionProvider, dbStatementFactoryFactory,
-                new ConcurrentHashMap<>());
+    public DbProxy(DatabaseConfig databaseConfig, ConnectionProvider connectionProvider,
+        DbStatementFactoryFactory dbStatementFactoryFactory) {
+        this(new ReactiveStatementFactory(databaseConfig, connectionProvider), dbStatementFactoryFactory, new ConcurrentHashMap<>());
     }
 
     public DbProxy(DatabaseConfig databaseConfig, ConnectionProvider connectionProvider) {
-        this(databaseConfig,
-                Schedulers.boundedElastic(),
-                connectionProvider,
-                new DbStatementFactoryFactory());
+        this(databaseConfig, Schedulers.boundedElastic(), connectionProvider, new DbStatementFactoryFactory());
     }
 
-    protected DbProxy(DatabaseConfig databaseConfig,
-                      Scheduler scheduler,
-                      ConnectionProvider connectionProvider,
-                      DbStatementFactoryFactory dbStatementFactoryFactory,
-                      Map<Method, ReactiveStatementFactory> statementFactories
-    ) {
-        this.scheduler = scheduler;
+    public DbProxy(DatabaseConfig databaseConfig, Scheduler scheduler, ConnectionProvider connectionProvider,
+        DbStatementFactoryFactory dbStatementFactoryFactory) {
+        this(new ReactiveStatementFactory(databaseConfig, scheduler, connectionProvider), dbStatementFactoryFactory);
+    }
+
+    protected DbProxy(ReactiveStatementFactory reactiveStatementFactory,
+        DbStatementFactoryFactory dbStatementFactoryFactory,
+        Map<Method, DaoMethodHandler> handlers) {
         this.dbStatementFactoryFactory = dbStatementFactoryFactory;
-        this.databaseConfig = databaseConfig;
-        this.statementFactories = statementFactories;
-        this.connectionScheduler = new ConnectionScheduler(connectionProvider, scheduler);
-    }
-
-    private static Scheduler threadPool(int poolSize) {
-        if (poolSize == -1) {
-            return Schedulers.boundedElastic();
-        }
-        return Schedulers.newBoundedElastic(10, Integer.MAX_VALUE, "DbProxy");
+        this.reactiveStatementFactory = reactiveStatementFactory;
+        this.handlers = handlers;
     }
 
     /**
@@ -87,55 +63,53 @@ public class DbProxy implements InvocationHandler {
      */
     public <T> T create(Class<T> daoInterface) {
         return (T) Proxy.newProxyInstance(daoInterface.getClassLoader(),
-                new Class[]{daoInterface},
-                this);
+            new Class[]{daoInterface},
+            this);
     }
 
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-        ReactiveStatementFactory reactiveStatementFactory = statementFactories.get(method);
-        if (reactiveStatementFactory == null || DebugUtil.IS_DEBUG) {
+        var handler = handlers.get(method);
+        if (handler == null || DebugUtil.IS_DEBUG) {
             if (DebugUtil.IS_DEBUG) {
                 // Need to get the actual interface method in order to get updated annotations
                 method = ReflectionUtil.getRedefinedMethod(method);
             }
 
-            DbStatementFactory statementFactory = dbStatementFactoryFactory.createStatementFactory(method);
-            PagingOutput pagingOutput = new PagingOutput(method);
-            reactiveStatementFactory = new ReactiveStatementFactory(
-                    statementFactory,
-                    pagingOutput,
-                    createMetrics(method),
-                    databaseConfig,
-                    method);
-            statementFactories.put(method, reactiveStatementFactory);
+            handler = new DaoMethodHandler(
+                method,
+                dbStatementFactoryFactory.createStatementFactory(method),
+                new PagingOutput(method),
+                createMetrics(method)
+            );
+            handlers.put(method, handler);
         }
 
-        return reactiveStatementFactory.create(args, connectionScheduler);
+        return handler.run(args, reactiveStatementFactory);
     }
 
     private Metrics createMetrics(Method method) {
         String type = method.isAnnotationPresent(Query.class) ? "query" : "update";
         String metricsName = format(
-                "DAO_type:{0}_method:{1}.{2}_{3}",
-                type, method.getDeclaringClass().getName(), method.getName(), method.getParameterCount());
+            "DAO_type:{0}_method:{1}.{2}_{3}",
+            type, method.getDeclaringClass().getName(), method.getName(), method.getParameterCount());
         return Metrics.get(metricsName);
     }
 
     public DbProxy usingConnectionProvider(ConnectionProvider connectionProvider) {
-        return new DbProxy(databaseConfig, scheduler, connectionProvider, dbStatementFactoryFactory, statementFactories);
+        return new DbProxy(reactiveStatementFactory.usingConnectionProvider(connectionProvider), dbStatementFactoryFactory, handlers);
     }
 
     public DbProxy usingConnectionProvider(ConnectionProvider connectionProvider, DatabaseConfig databaseConfig) {
-        return new DbProxy(databaseConfig, scheduler, connectionProvider, dbStatementFactoryFactory, statementFactories);
+        return new DbProxy(reactiveStatementFactory.usingConnectionProvider(connectionProvider, databaseConfig), dbStatementFactoryFactory, handlers);
     }
 
     public DbProxy usingConnectionProvider(ConnectionProvider newConnectionProvider, Scheduler newScheduler) {
-        return new DbProxy(databaseConfig, newScheduler, newConnectionProvider, dbStatementFactoryFactory, statementFactories);
+        return new DbProxy(reactiveStatementFactory.usingConnectionProvider(newConnectionProvider, newScheduler), dbStatementFactoryFactory, handlers);
     }
 
     public DatabaseConfig getDatabaseConfig() {
-        return databaseConfig;
+        return reactiveStatementFactory.getDatabaseConfig();
     }
 
 }
