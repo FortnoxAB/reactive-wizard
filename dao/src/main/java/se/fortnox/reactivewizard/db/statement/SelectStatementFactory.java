@@ -2,7 +2,7 @@ package se.fortnox.reactivewizard.db.statement;
 
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.MonoSink;
-import se.fortnox.reactivewizard.db.deserializing.DbResultSetDeserializer;
+import se.fortnox.reactivewizard.db.deserializing.DbResultSetDeserializerImpl;
 import se.fortnox.reactivewizard.db.query.ParameterizedQuery;
 
 import java.sql.Connection;
@@ -24,13 +24,13 @@ public class SelectStatementFactory extends AbstractDbStatementFactory {
         """;
     private static final String QUERY_PLACEHOLDER = "{{sqlQuery}}";
     private static final String MONO_NEXT_ERROR = "%s returning a Mono received more than one result from the database";
-    private final DbResultSetDeserializer deserializer;
+    private final DbResultSetDeserializerImpl deserializer;
 
     private final String methodName;
 
     public SelectStatementFactory(ParameterizedQuery parameterizedQuery, Class<?> returnType) {
         super(parameterizedQuery);
-        this.deserializer = new DbResultSetDeserializer(returnType);
+        this.deserializer = new DbResultSetDeserializerImpl(returnType);
         this.methodName = parameterizedQuery.getMethodName();
     }
 

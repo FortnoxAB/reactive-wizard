@@ -1,10 +1,9 @@
 package se.fortnox.reactivewizard.db.statement;
 
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.MonoSink;
 import se.fortnox.reactivewizard.db.GeneratedKey;
-import se.fortnox.reactivewizard.db.deserializing.DbResultSetDeserializer;
+import se.fortnox.reactivewizard.db.deserializing.DbResultSetDeserializerImpl;
 import se.fortnox.reactivewizard.db.query.ParameterizedQuery;
 
 import java.sql.Connection;
@@ -16,13 +15,13 @@ import static java.sql.Statement.RETURN_GENERATED_KEYS;
 
 public class UpdateStatementReturningGeneratedKeyFactory extends AbstractUpdateStatementFactory {
 
-    private final DbResultSetDeserializer deserializer;
+    private final DbResultSetDeserializerImpl deserializer;
 
     public UpdateStatementReturningGeneratedKeyFactory(ParameterizedQuery parameterizedQuery,
                                                        Class<?> keyType, int minimumAffected
     ) {
         super(minimumAffected, parameterizedQuery);
-        this.deserializer = new DbResultSetDeserializer(keyType);
+        this.deserializer = new DbResultSetDeserializerImpl(keyType);
     }
 
     @Override

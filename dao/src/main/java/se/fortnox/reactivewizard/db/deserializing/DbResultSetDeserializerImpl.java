@@ -6,11 +6,11 @@ import java.sql.SQLException;
 
 import static se.fortnox.reactivewizard.db.deserializing.MutabilityDetector.isImmutable;
 
-public class DbResultSetDeserializer {
+public class DbResultSetDeserializerImpl {
     private final Class<?>     cls;
     private       Deserializer deserializer;
 
-    public DbResultSetDeserializer(Class<?> cls) {
+    public DbResultSetDeserializerImpl(Class<?> cls) {
         this.cls = cls;
     }
 

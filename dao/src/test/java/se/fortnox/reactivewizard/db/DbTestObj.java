@@ -1,6 +1,6 @@
 package se.fortnox.reactivewizard.db;
 
-import se.fortnox.reactivewizard.db.DbResultSetDeserializerTest.TestEnum;
+import se.fortnox.reactivewizard.db.DbResultSetDeserializerImplTest.TestEnum;
 
 import java.util.List;
 
