@@ -2,12 +2,12 @@ package se.fortnox.reactivewizard.db.query.parts;
 
 import se.fortnox.reactivewizard.CollectionOptions;
 import se.fortnox.reactivewizard.db.Query;
-import se.fortnox.reactivewizard.db.query.PreparedStatementParameters;
+import se.fortnox.reactivewizard.db.query.ParamSetter;
 import se.fortnox.reactivewizard.util.CamelSnakeConverter;
 import se.fortnox.reactivewizard.util.FluxRxConverter;
 
 import java.lang.reflect.Method;
-import java.sql.SQLException;
+import java.util.List;
 
 import static com.google.common.collect.Iterables.indexOf;
 import static java.util.Arrays.asList;
@@ -100,6 +100,6 @@ public class CollectionOptionsQueryPart implements QueryPart {
     }
 
     @Override
-    public void addParams(PreparedStatementParameters preparedStatement, Object[] args) throws SQLException {
+    public void addParamSetter(List<ParamSetter> paramSetters, Object[] args) {
     }
 }

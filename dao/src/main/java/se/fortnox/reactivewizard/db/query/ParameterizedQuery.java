@@ -9,8 +9,6 @@ import se.fortnox.reactivewizard.db.query.parts.StaticQueryPart;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.Type;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -93,46 +91,32 @@ public class ParameterizedQuery {
         return queryPart;
     }
 
-    public PreparedStatement createStatement(Connection connection, Object[] arguments) throws SQLException {
-        return createStatement(connection, arguments, null);
-    }
-
     /**
-     * Create prepared statement.
-     * @param connection the connection
+     * Builds prepared statement sql.
+     *
      * @param arguments the arguments
-     * @param options the options
-     * @return the prepared statement
-     * @throws SQLException on error
+     * @return sql
      */
-    public PreparedStatement createStatement(Connection connection, Object[] arguments, Integer options)
-        throws SQLException {
+    public String buildSql(Object[] arguments) {
         StringBuilder sql = new StringBuilder();
         for (QueryPart part : queryParts) {
             part.visit(sql, arguments);
         }
-
-        return createPreparedStatement(connection, options, sql.toString());
+        return sql.toString();
     }
 
     /**
-     * Add parameters from prepared statement.
+     * Builds prepared statement parameter setters.
+     *
      * @param args the arguments
-     * @param preparedStatement the prepared statement
-     * @throws SQLException on error
+     * @return parameters
      */
-    public void addParameters(Object[] args, PreparedStatement preparedStatement) throws SQLException {
-        PreparedStatementParameters parameters = new PreparedStatementParameters(preparedStatement);
+    public List<ParamSetter> buildParamSetters(Object[] args) {
+        var list = new ArrayList<ParamSetter>();
         for (QueryPart part : queryParts) {
-            part.addParams(parameters, args);
+            part.addParamSetter(list, args);
         }
-    }
-
-    private PreparedStatement createPreparedStatement(Connection connection, Integer options, String sql) throws SQLException {
-        if (options == null) {
-            return connection.prepareStatement(sql);
-        }
-        return connection.prepareStatement(sql, options);
+        return list;
     }
 
     protected String sqlPreProcess(String sqlInp) {

@@ -1,12 +1,12 @@
 package se.fortnox.reactivewizard.db.query.parts;
 
-import se.fortnox.reactivewizard.db.query.PreparedStatementParameters;
+import se.fortnox.reactivewizard.db.query.ParamSetter;
 
-import java.sql.SQLException;
+import java.util.List;
 
 public interface QueryPart {
 
     void visit(StringBuilder sql, Object[] args);
 
-    void addParams(PreparedStatementParameters preparedStatement, Object[] args) throws SQLException;
+    void addParamSetter(List<ParamSetter> paramSetters, Object[] args);
 }

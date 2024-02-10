@@ -1,6 +1,8 @@
 package se.fortnox.reactivewizard.db.query.parts;
 
-import se.fortnox.reactivewizard.db.query.PreparedStatementParameters;
+import se.fortnox.reactivewizard.db.query.ParamSetter;
+
+import java.util.List;
 
 public class StaticQueryPart implements QueryPart {
 
@@ -16,7 +18,6 @@ public class StaticQueryPart implements QueryPart {
     }
 
     @Override
-    public void addParams(PreparedStatementParameters preparedStatement, Object[] args) {
-
+    public void addParamSetter(List<ParamSetter> paramSetters, Object[] args) {
     }
 }
