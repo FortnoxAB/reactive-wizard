@@ -25,16 +25,16 @@ public class SimpleObjectDeserializer {
      * @return the deserializer
      * @throws SQLException on error
      */
-    public static <I> Deserializer create(Class<I> cls, ResultSetMetaData metaData) throws SQLException {
+    public static <I> Deserializer<I> create(Class<I> cls, ResultSetMetaData metaData) throws SQLException {
         Map<String[], PropertyDeserializer> deserializers = DeserializerUtil.createPropertyDeserializers(
-                cls,
-                metaData,
-                SimpleObjectDeserializer::createRecordPropertyDeserializer);
+            cls,
+            metaData,
+            SimpleObjectDeserializer::createRecordPropertyDeserializer);
 
         Supplier<I> instantiator = ReflectionUtil.instantiator(cls);
 
         return (rs) -> {
-            Object object = instantiator.get();
+            I object = instantiator.get();
             for (PropertyDeserializer propertyDeserializer : deserializers.values()) {
                 propertyDeserializer.deserialize(rs, object);
             }
@@ -43,8 +43,8 @@ public class SimpleObjectDeserializer {
     }
 
     private static <I,T> PropertyDeserializer<I> createRecordPropertyDeserializer(
-            PropertyResolver<I,T> propertyResolver,
-            Deserializer<T> deserializer) {
+        PropertyResolver<I,T> propertyResolver,
+        Deserializer<T> deserializer) {
         BiConsumer<I, T> setter = propertyResolver.setter();
         return (rs, obj) -> setter.accept(obj, deserializer.deserialize(rs).orElse(null));
     }

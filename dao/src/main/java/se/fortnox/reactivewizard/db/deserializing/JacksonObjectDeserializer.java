@@ -18,27 +18,27 @@ import java.util.Optional;
  * The values from the ResultSet is put into a property map (instead of for example JSON) which is then used to create
  * the POJO.
  */
-public class JacksonObjectDeserializer implements Deserializer {
+public class JacksonObjectDeserializer<T> implements Deserializer<T> {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
         .findAndRegisterModules()
         .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
         .setDateFormat(new StdDateFormat());
 
-    private final Class<?>                    targetClass;
-    private final Map<String[], Deserializer> propertyDeserializers;
+    private final Class<T>                    targetClass;
+    private final Map<String[], Deserializer<?>> propertyDeserializers;
 
-    private JacksonObjectDeserializer(Class<?> targetClass, Map<String[], Deserializer> propertyDeserializers) {
+    private JacksonObjectDeserializer(Class<T> targetClass, Map<String[], Deserializer<?>> propertyDeserializers) {
         this.targetClass = targetClass;
         this.propertyDeserializers = propertyDeserializers;
     }
 
-    public static Deserializer create(Class<?> cls, ResultSetMetaData metaData) throws SQLException {
-        return new JacksonObjectDeserializer(cls,
+    public static <T> Deserializer<T> create(Class<T> cls, ResultSetMetaData metaData) throws SQLException {
+        return new JacksonObjectDeserializer<T>(cls,
             DeserializerUtil.createPropertyDeserializers(cls, metaData, (propertyResolver, deserializer) -> deserializer));
     }
 
     @Override
-    public Optional<?> deserialize(ResultSet rs)
+    public Optional<T> deserialize(ResultSet rs)
         throws SQLException, InvocationTargetException, IllegalAccessException, InstantiationException {
 
         Map<String, Object> propertyMap = createPropertyMap(rs);
@@ -50,7 +50,7 @@ public class JacksonObjectDeserializer implements Deserializer {
         throws SQLException, InvocationTargetException, IllegalAccessException, InstantiationException {
         Map<String, Object> root = new HashMap<>();
 
-        for (Map.Entry<String[], Deserializer> entry : propertyDeserializers.entrySet()) {
+        for (Map.Entry<String[], Deserializer<?>> entry : propertyDeserializers.entrySet()) {
             String[]     path         = entry.getKey();
             Deserializer deserializer = entry.getValue();
 

@@ -6,11 +6,11 @@ import java.sql.SQLException;
 
 import static se.fortnox.reactivewizard.db.deserializing.MutabilityDetector.isImmutable;
 
-public class DbResultSetDeserializerImpl {
-    private final Class<?>     cls;
-    private       Deserializer deserializer;
+public class DbResultSetDeserializerImpl<T> implements DbResultSetDeserializer<T> {
+    private final Class<T>     cls;
+    private       Deserializer<T> deserializer;
 
-    public DbResultSetDeserializerImpl(Class<?> cls) {
+    public DbResultSetDeserializerImpl(Class<T> cls) {
         this.cls = cls;
     }
 
@@ -19,7 +19,7 @@ public class DbResultSetDeserializerImpl {
      * @param rs the ResultSet
      * @return the result
      */
-    public Object deserialize(ResultSet rs) {
+    public T deserialize(ResultSet rs) {
         try {
             if (deserializer == null) {
                 deserializer = createDeserializer(cls, rs);
@@ -30,7 +30,7 @@ public class DbResultSetDeserializerImpl {
         }
     }
 
-    private Deserializer createDeserializer(Class<?> cls, ResultSet recordSet) throws SQLException {
+    private Deserializer<T> createDeserializer(Class<T> cls, ResultSet recordSet) throws SQLException {
         ResultSetMetaData metaData = recordSet.getMetaData();
         if (deserializer == null) {
             deserializer = ColumnDeserializerFactory.getColumnDeserializer(cls, recordSet.getMetaData().getColumnType(1), 1);
@@ -41,7 +41,7 @@ public class DbResultSetDeserializerImpl {
         return deserializer;
     }
 
-    private Deserializer createDeserializer(Class<?> cls, ResultSetMetaData metaData) throws SQLException {
+    private Deserializer<T> createDeserializer(Class<T> cls, ResultSetMetaData metaData) throws SQLException {
         return isImmutable(cls) ?
             JacksonObjectDeserializer.create(cls, metaData) :
             SimpleObjectDeserializer.create(cls, metaData);
