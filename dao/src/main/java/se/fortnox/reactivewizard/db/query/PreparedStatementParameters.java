@@ -6,16 +6,46 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.YearMonth;
 import java.util.Calendar;
 import java.sql.Date;
 import java.util.List;
+import java.util.function.Function;
 
 public class PreparedStatementParameters {
-    private PreparedStatement preparedStatement;
-    private int               parameterIndex = 1;
+
+    private final PreparedStatement preparedStatement;
+    private int parameterIndex = 1;
 
     public PreparedStatementParameters(PreparedStatement preparedStatement) {
         this.preparedStatement = preparedStatement;
+    }
+
+    public void addLocalDate(LocalDate ld) throws SQLException {
+        addDate(Date.valueOf(ld));
+    }
+
+    public void addLocalTime(LocalTime lt) throws SQLException {
+        addTime(Time.valueOf(lt));
+    }
+
+    public void addLocalDateTime(LocalDateTime ldt) throws SQLException {
+        addTimestamp(Timestamp.valueOf(ldt));
+    }
+
+    public void addYearMonth(YearMonth ym) throws SQLException {
+        addObject(ym.getYear() * 100 + ym.getMonthValue());
+    }
+
+    public void addEnum(Enum<?> en) throws SQLException {
+        addObject(en.name());
+    }
+
+    public <T> void addSerializable(T value, Function<T, String> jsonSerializer) throws SQLException {
+        addObject(jsonSerializer.apply(value));
     }
 
     public void addNull() throws SQLException {
