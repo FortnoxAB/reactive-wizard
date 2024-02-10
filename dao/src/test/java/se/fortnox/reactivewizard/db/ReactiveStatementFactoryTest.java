@@ -100,7 +100,7 @@ class ReactiveStatementFactoryTest {
 
         });
 
-        statementFactory = new ReactiveStatementFactory(dbStatementFactory, pagingOutput, Metrics.get("test"), databaseConfig, o -> o, getRequiredMethod(TestDao.class, "select"));
+        statementFactory = new ReactiveStatementFactory(dbStatementFactory, pagingOutput, Metrics.get("test"), databaseConfig, getRequiredMethod(TestDao.class, "select"));
     }
 
     @Test

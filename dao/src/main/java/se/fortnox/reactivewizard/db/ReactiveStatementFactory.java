@@ -1,6 +1,5 @@
 package se.fortnox.reactivewizard.db;
 
-import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
@@ -18,7 +17,6 @@ import se.fortnox.reactivewizard.util.DebugUtil;
 import java.lang.reflect.Method;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.function.Function;
 
 import static java.lang.String.format;
 import static se.fortnox.reactivewizard.util.ReactiveDecorator.decorated;
@@ -30,25 +28,22 @@ public class ReactiveStatementFactory {
     private static final String QUERY_FAILED = "Query failed";
     private final DbStatementFactory statementFactory;
     private final PagingOutput pagingOutput;
-    private final Function<Publisher, Object> resultConverter;
+    private final Method method;
     private final Metrics metrics;
 
     private final DatabaseConfig config;
-    private final boolean isReturnTypeMono;
 
     public ReactiveStatementFactory(
             DbStatementFactory statementFactory,
             PagingOutput pagingOutput,
             Metrics metrics,
             DatabaseConfig config,
-            Function<Publisher, Object> resultConverter,
             Method method) {
         this.statementFactory = statementFactory;
         this.pagingOutput = pagingOutput;
         this.metrics = metrics;
         this.config = config;
-        this.resultConverter = resultConverter;
-        isReturnTypeMono = Mono.class.isAssignableFrom(method.getReturnType());
+        this.method = method;
     }
 
 
@@ -101,7 +96,7 @@ public class ReactiveStatementFactory {
      */
     public Object create(Object[] args, ConnectionScheduler connectionScheduler) {
         StatementContext statementContext = new StatementContext(() -> statementFactory.create(args), connectionScheduler);
-        if (isReturnTypeMono) {
+        if (Mono.class.isAssignableFrom(method.getReturnType())) {
             Mono<Object> resultMono = getResultMono(statementContext);
             if (shouldAddDebugErrorHandling()) {
                 Exception queryFailure = new RuntimeException(QUERY_FAILED);
@@ -111,8 +106,8 @@ public class ReactiveStatementFactory {
                 });
             }
             resultMono = Mono.from(metrics.measure(resultMono, this::logSlowQuery));
-            return decorated(resultConverter.apply(resultMono), statementContext);
-        } else {
+            return decorated(resultMono, statementContext);
+        } else if (Flux.class.isAssignableFrom(method.getReturnType())) {
             Flux<Object> resultFlux = getResultFlux(statementContext);
             if (shouldAddDebugErrorHandling()) {
                 Exception queryFailure = new RuntimeException(QUERY_FAILED);
@@ -124,7 +119,12 @@ public class ReactiveStatementFactory {
             resultFlux = pagingOutput.apply(resultFlux, args);
             resultFlux = Flux.from(metrics.measure(resultFlux, this::logSlowQuery));
             resultFlux = resultFlux.onBackpressureBuffer(RECORD_BUFFER_SIZE);
-            return decorated(resultConverter.apply(resultFlux), statementContext);
+            return decorated(resultFlux, statementContext);
+        } else {
+            throw new IllegalArgumentException(String.format("DAO method %s::%s must return a Flux or Mono. Found %s",
+                method.getDeclaringClass().getName(),
+                method.getName(),
+                method.getReturnType().getName()));
         }
     }
 
