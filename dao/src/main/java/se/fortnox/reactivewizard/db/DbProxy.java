@@ -1,6 +1,5 @@
 package se.fortnox.reactivewizard.db;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import reactor.core.scheduler.Scheduler;
@@ -10,7 +9,6 @@ import se.fortnox.reactivewizard.db.paging.PagingOutput;
 import se.fortnox.reactivewizard.db.statement.DbStatementFactory;
 import se.fortnox.reactivewizard.db.statement.DbStatementFactoryFactory;
 import se.fortnox.reactivewizard.db.transactions.ConnectionScheduler;
-import se.fortnox.reactivewizard.json.JsonSerializerFactory;
 import se.fortnox.reactivewizard.metrics.Metrics;
 import se.fortnox.reactivewizard.util.DebugUtil;
 import se.fortnox.reactivewizard.util.ReflectionUtil;
@@ -21,43 +19,35 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
 
 import static java.text.MessageFormat.format;
 
 @Singleton
 public class DbProxy implements InvocationHandler {
 
-    private static final TypeReference<Object[]> OBJECT_ARRAY_TYPE_REFERENCE = new TypeReference<>() {
-    };
     private final DbStatementFactoryFactory dbStatementFactoryFactory;
     private final Scheduler scheduler;
     protected final Map<Method, ReactiveStatementFactory> statementFactories;
     private final ConnectionScheduler connectionScheduler;
-    protected final Function<Object[], String> paramSerializer;
     private final DatabaseConfig databaseConfig;
 
     @Inject
     public DbProxy(DatabaseConfig databaseConfig,
                    @Nullable ConnectionProvider connectionProvider,
-                   DbStatementFactoryFactory dbStatementFactoryFactory,
-                   JsonSerializerFactory jsonSerializerFactory
+                   DbStatementFactoryFactory dbStatementFactoryFactory
     ) {
         this(databaseConfig,
                 threadPool(databaseConfig.getPoolSize()),
                 connectionProvider,
-                dbStatementFactoryFactory,
-                jsonSerializerFactory);
+                dbStatementFactoryFactory);
     }
 
     public DbProxy(DatabaseConfig databaseConfig,
                    Scheduler scheduler,
                    ConnectionProvider connectionProvider,
-                   DbStatementFactoryFactory dbStatementFactoryFactory,
-                   JsonSerializerFactory jsonSerializerFactory
+                   DbStatementFactoryFactory dbStatementFactoryFactory
     ) {
         this(databaseConfig, scheduler, connectionProvider, dbStatementFactoryFactory,
-                jsonSerializerFactory.createStringSerializer(OBJECT_ARRAY_TYPE_REFERENCE),
                 new ConcurrentHashMap<>());
     }
 
@@ -65,20 +55,17 @@ public class DbProxy implements InvocationHandler {
         this(databaseConfig,
                 Schedulers.boundedElastic(),
                 connectionProvider,
-                new DbStatementFactoryFactory(),
-                new JsonSerializerFactory());
+                new DbStatementFactoryFactory());
     }
 
     protected DbProxy(DatabaseConfig databaseConfig,
                       Scheduler scheduler,
                       ConnectionProvider connectionProvider,
                       DbStatementFactoryFactory dbStatementFactoryFactory,
-                      Function<Object[], String> paramSerializer,
                       Map<Method, ReactiveStatementFactory> statementFactories
     ) {
         this.scheduler = scheduler;
         this.dbStatementFactoryFactory = dbStatementFactoryFactory;
-        this.paramSerializer = paramSerializer;
         this.databaseConfig = databaseConfig;
         this.statementFactories = statementFactories;
         this.connectionScheduler = new ConnectionScheduler(connectionProvider, scheduler);
@@ -136,15 +123,15 @@ public class DbProxy implements InvocationHandler {
     }
 
     public DbProxy usingConnectionProvider(ConnectionProvider connectionProvider) {
-        return new DbProxy(databaseConfig, scheduler, connectionProvider, dbStatementFactoryFactory, paramSerializer, statementFactories);
+        return new DbProxy(databaseConfig, scheduler, connectionProvider, dbStatementFactoryFactory, statementFactories);
     }
 
     public DbProxy usingConnectionProvider(ConnectionProvider connectionProvider, DatabaseConfig databaseConfig) {
-        return new DbProxy(databaseConfig, scheduler, connectionProvider, dbStatementFactoryFactory, paramSerializer, statementFactories);
+        return new DbProxy(databaseConfig, scheduler, connectionProvider, dbStatementFactoryFactory, statementFactories);
     }
 
     public DbProxy usingConnectionProvider(ConnectionProvider newConnectionProvider, Scheduler newScheduler) {
-        return new DbProxy(databaseConfig, newScheduler, newConnectionProvider, dbStatementFactoryFactory, paramSerializer, statementFactories);
+        return new DbProxy(databaseConfig, newScheduler, newConnectionProvider, dbStatementFactoryFactory, statementFactories);
     }
 
     public DatabaseConfig getDatabaseConfig() {
