@@ -14,11 +14,11 @@ import se.fortnox.reactivewizard.db.config.DatabaseConfig;
 import se.fortnox.reactivewizard.db.paging.PagingOutput;
 import se.fortnox.reactivewizard.db.statement.DbStatementFactory;
 import se.fortnox.reactivewizard.db.statement.Statement;
-import se.fortnox.reactivewizard.db.transactions.ConnectionScheduler;
 import se.fortnox.reactivewizard.metrics.Metrics;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.SQLException;
 
 import static org.junit.platform.commons.util.ReflectionUtils.getRequiredMethod;
 import static org.mockito.ArgumentMatchers.any;
@@ -27,7 +27,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class ReactiveStatementFactoryTest {
+class DaoMethodHandlerTest {
     @Mock
     private PagingOutput pagingOutput;
 
@@ -43,10 +43,12 @@ class ReactiveStatementFactoryTest {
     @Mock
     private Scheduler.Worker worker;
 
-    private ReactiveStatementFactory statementFactory;
+    private ReactiveStatementFactory reactiveStatementFactory;
+
+    private DaoMethodHandler daoMethodHandler;
 
     @BeforeEach
-    public void setUp() {
+    public void setUp() throws SQLException {
         when(pagingOutput.apply(any(), any())).then(invocationOnMock -> invocationOnMock.getArgument(0,
             Flux.class));
         when(scheduler.createWorker()).thenReturn(worker);
@@ -100,12 +102,24 @@ class ReactiveStatementFactoryTest {
 
         });
 
-        statementFactory = new ReactiveStatementFactory(dbStatementFactory, pagingOutput, Metrics.get("test"), databaseConfig, getRequiredMethod(TestDao.class, "select"));
+        reactiveStatementFactory = new ReactiveStatementFactory(
+            databaseConfig,
+            scheduler,
+            () -> mock(Connection.class)
+        );
+
+        var method = getRequiredMethod(TestDao.class, "select");
+        daoMethodHandler = new DaoMethodHandler(
+            method,
+            dbStatementFactory,
+            pagingOutput,
+            Metrics.get("test")
+        );
     }
 
     @Test
     void shouldReleaseSchedulerWorkers() {
-        Flux<Object> stmt = (Flux<Object>) statementFactory.create(new Object[0], new ConnectionScheduler(() -> mock(Connection.class), scheduler));
+        Flux<Object> stmt = (Flux<Object>) daoMethodHandler.run(new Object[0], reactiveStatementFactory);
         stmt.blockFirst();
         verify(scheduler).createWorker();
         verify(worker).dispose();

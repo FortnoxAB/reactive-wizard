@@ -1,22 +1,24 @@
 package se.fortnox.reactivewizard.db;
 
+import jakarta.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
 import se.fortnox.reactivewizard.db.config.DatabaseConfig;
-import se.fortnox.reactivewizard.db.paging.PagingOutput;
-import se.fortnox.reactivewizard.db.statement.DbStatementFactory;
 import se.fortnox.reactivewizard.db.statement.Statement;
 import se.fortnox.reactivewizard.db.transactions.ConnectionScheduler;
 import se.fortnox.reactivewizard.db.transactions.StatementContext;
 import se.fortnox.reactivewizard.metrics.Metrics;
 import se.fortnox.reactivewizard.util.DebugUtil;
 
-import java.lang.reflect.Method;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static java.lang.String.format;
 import static se.fortnox.reactivewizard.util.ReactiveDecorator.decorated;
@@ -24,28 +26,28 @@ import static se.fortnox.reactivewizard.util.ReactiveDecorator.decorated;
 public class ReactiveStatementFactory {
 
     private static final int RECORD_BUFFER_SIZE = 100000;
+
     private static final Logger LOG = LoggerFactory.getLogger("Dao");
+
     private static final String QUERY_FAILED = "Query failed";
-    private final DbStatementFactory statementFactory;
-    private final PagingOutput pagingOutput;
-    private final Method method;
-    private final Metrics metrics;
 
     private final DatabaseConfig config;
 
-    public ReactiveStatementFactory(
-            DbStatementFactory statementFactory,
-            PagingOutput pagingOutput,
-            Metrics metrics,
-            DatabaseConfig config,
-            Method method) {
-        this.statementFactory = statementFactory;
-        this.pagingOutput = pagingOutput;
-        this.metrics = metrics;
-        this.config = config;
-        this.method = method;
+    private final Scheduler scheduler;
+
+    private final ConnectionScheduler connectionScheduler;
+
+    @Inject
+    public ReactiveStatementFactory(DatabaseConfig config, ConnectionProvider connectionProvider) {
+        this(config, threadPool(config.getPoolSize()), connectionProvider);
     }
 
+    protected ReactiveStatementFactory(DatabaseConfig config, Scheduler scheduler,
+        ConnectionProvider connectionProvider) {
+        this.config = config;
+        this.scheduler = scheduler;
+        this.connectionScheduler = new ConnectionScheduler(connectionProvider, scheduler);
+    }
 
     private static void closeSilently(Connection connection) {
         try {
@@ -55,7 +57,7 @@ public class ReactiveStatementFactory {
         }
     }
 
-    private Flux<Object> getResultFlux(StatementContext statementContext) {
+    private <T> Flux<T> getResultFlux(StatementContext statementContext) {
         return Flux.create(fluxSink -> {
             try {
                 statementContext.getConnectionScheduler()
@@ -72,7 +74,7 @@ public class ReactiveStatementFactory {
         }, FluxSink.OverflowStrategy.ERROR);
     }
 
-    private Mono<Object> getResultMono(StatementContext statementContext) {
+    private <T> Mono<T> getResultMono(StatementContext statementContext) {
         return Mono.create(monoSink -> monoSink.onRequest(unusedRequestedAmount -> {
             try {
                 statementContext.getConnectionScheduler()
@@ -87,50 +89,54 @@ public class ReactiveStatementFactory {
         }));
     }
 
-    /**
-     * Create Flux statement.
-     *
-     * @param args                the arguments
-     * @param connectionScheduler the scheduler
-     * @return the Flux statement
-     */
-    public Object create(Object[] args, ConnectionScheduler connectionScheduler) {
-        StatementContext statementContext = new StatementContext(() -> statementFactory.create(args), connectionScheduler);
-        if (Mono.class.isAssignableFrom(method.getReturnType())) {
-            Mono<Object> resultMono = getResultMono(statementContext);
-            if (shouldAddDebugErrorHandling()) {
-                Exception queryFailure = new RuntimeException(QUERY_FAILED);
-                resultMono = resultMono.onErrorResume(thrown -> {
-                    queryFailure.initCause(thrown);
-                    return Mono.error(queryFailure);
-                });
-            }
-            resultMono = Mono.from(metrics.measure(resultMono, this::logSlowQuery));
-            return decorated(resultMono, statementContext);
-        } else if (Flux.class.isAssignableFrom(method.getReturnType())) {
-            Flux<Object> resultFlux = getResultFlux(statementContext);
-            if (shouldAddDebugErrorHandling()) {
-                Exception queryFailure = new RuntimeException(QUERY_FAILED);
-                resultFlux = resultFlux.onErrorResume(thrown -> {
-                    queryFailure.initCause(thrown);
-                    return Flux.error(queryFailure);
-                });
-            }
-            resultFlux = pagingOutput.apply(resultFlux, args);
-            resultFlux = Flux.from(metrics.measure(resultFlux, this::logSlowQuery));
-            resultFlux = resultFlux.onBackpressureBuffer(RECORD_BUFFER_SIZE);
-            return decorated(resultFlux, statementContext);
-        } else {
-            throw new IllegalArgumentException(String.format("DAO method %s::%s must return a Flux or Mono. Found %s",
-                method.getDeclaringClass().getName(),
-                method.getName(),
-                method.getReturnType().getName()));
+    public <T> Mono<T> createMono(
+        Metrics metrics,
+        String rawSql,
+        Supplier<Statement> statementSupplier
+    ) {
+        var statementContext = new StatementContext(statementSupplier, connectionScheduler);
+        Mono<T> resultMono = getResultMono(statementContext);
+        if (shouldAddDebugErrorHandling()) {
+            resultMono = resultMono.onErrorResume(thrown ->
+                Mono.error(new RuntimeException(QUERY_FAILED, thrown))
+            );
         }
+        resultMono = Mono.from(metrics.measure(resultMono, (time) -> logIfSlowQuery(time, rawSql)));
+        return decorated(resultMono, statementContext);
     }
 
-    private void logSlowQuery(long time) {
+    public <T> Flux<T> createFlux(
+        Metrics metrics,
+        String rawSql,
+        Supplier<Statement> statementSupplier,
+        Function<Flux<T>, Flux<T>> fluxMapper
+    ) {
+        var statementContext = new StatementContext(statementSupplier, connectionScheduler);
+        Flux<T> resultFlux = getResultFlux(statementContext);
+        if (shouldAddDebugErrorHandling()) {
+            resultFlux = resultFlux.onErrorResume(thrown ->
+                Flux.error(new RuntimeException(QUERY_FAILED, thrown))
+            );
+        }
+        if (fluxMapper != null) {
+            resultFlux = fluxMapper.apply(resultFlux);
+        }
+        resultFlux = Flux.from(metrics.measure(resultFlux, (time) -> logIfSlowQuery(time, rawSql)));
+        resultFlux = resultFlux.onBackpressureBuffer(RECORD_BUFFER_SIZE);
+        return decorated(resultFlux, statementContext);
+    }
+
+    public <T> Flux<T> createFlux(
+        Metrics metrics,
+        String rawSql,
+        Supplier<Statement> statementSupplier
+    ) {
+        return createFlux(metrics, rawSql, statementSupplier, null);
+    }
+
+    private void logIfSlowQuery(long time, String rawSql) {
         if (time > config.getSlowQueryLogThreshold()) {
-            LOG.warn(format("Slow query: %s%ntime: %d", statementFactory, time));
+            LOG.warn(format("Slow query: %s%ntime: %d", rawSql, time));
         }
     }
 
@@ -148,5 +154,28 @@ public class ReactiveStatementFactory {
 
     private static boolean shouldAddDebugErrorHandling() {
         return DebugUtil.IS_DEBUG || LOG.isDebugEnabled();
+    }
+
+    private static Scheduler threadPool(int poolSize) {
+        if (poolSize == -1) {
+            return Schedulers.boundedElastic();
+        }
+        return Schedulers.newBoundedElastic(10, Integer.MAX_VALUE, "DbProxy");
+    }
+
+    public ReactiveStatementFactory usingConnectionProvider(ConnectionProvider connectionProvider) {
+        return new ReactiveStatementFactory(config, scheduler, connectionProvider);
+    }
+
+    public ReactiveStatementFactory usingConnectionProvider(ConnectionProvider connectionProvider, DatabaseConfig databaseConfig) {
+        return new ReactiveStatementFactory(databaseConfig, scheduler, connectionProvider);
+    }
+
+    public ReactiveStatementFactory usingConnectionProvider(ConnectionProvider newConnectionProvider, Scheduler newScheduler) {
+        return new ReactiveStatementFactory(config, newScheduler, newConnectionProvider);
+    }
+
+    public DatabaseConfig getDatabaseConfig() {
+        return config;
     }
 }
