@@ -57,7 +57,7 @@ class AbortedRequestHandlingTest {
 
         } catch (Exception e) {
             verify(mockedLogAppender, timeout(10000)).append(matches(event -> {
-                assertThat(event.getMessage().toString()).contains("Inbound connection has been closed: GET /");
+                assertThat(event.getMessage().getFormattedMessage()).contains("Inbound connection has been closed: GET /");
             }));
 
             final boolean await = countSuccessfulServerHandlings.await(10, TimeUnit.SECONDS);
