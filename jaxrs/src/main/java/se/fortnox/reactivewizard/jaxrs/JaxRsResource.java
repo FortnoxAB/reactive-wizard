@@ -166,7 +166,9 @@ public class JaxRsResource<T> implements Comparable<JaxRsResource> {
         return format("%1$s\t%2$s (%3$s.%4$s)",
             meta.getHttpMethod(),
             meta.getFullPath(),
-            method.getDeclaringClass().getName(),
+            JaxRsMeta.getJaxRsClass(method.getDeclaringClass())
+                .map(Class::getName)
+                .orElseGet(() -> method.getDeclaringClass().getName()),
             method.getName());
     }
 
