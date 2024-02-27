@@ -26,8 +26,8 @@ class JaxRsMetaTest {
     @MethodSource("classesAndInterfaces")
     void shouldFindJaxRsClass(Class<?> implementation, Class<?> jaxRsClassOrInterface) {
         Optional<Class<?>> jaxRsClass = JaxRsMeta.getJaxRsClass(implementation);
-        assertThat(jaxRsClass.isPresent()).isTrue();
-        assertThat(jaxRsClass.get()).isEqualTo(jaxRsClassOrInterface);
+        assertThat(jaxRsClass)
+            .contains(jaxRsClassOrInterface);
     }
 
     private static Stream<Arguments> classesAndInterfaces() {
@@ -39,7 +39,7 @@ class JaxRsMetaTest {
 
     @ParameterizedTest
     @MethodSource("resourceMethods")
-    void producesAnnotation(String methodName, boolean isAnnotationPresent, String annotationValue) throws NoSuchMethodException {
+    void shouldSetProducesAnnotation(String methodName, boolean isAnnotationPresent, String annotationValue) throws NoSuchMethodException {
         // On the interface of the resource
         JaxRsMeta jaxRsMeta = new JaxRsMeta(ResourceInterface.class.getMethod(methodName));
         assertThat(jaxRsMeta.isProducesAnnotationPresent()).isEqualTo(isAnnotationPresent);
@@ -63,12 +63,12 @@ class JaxRsMetaTest {
     @Test
     void shouldNotReturnJaxRsClassFromInterface() {
         Optional<Class<?>> jaxRsClass = JaxRsMeta.getJaxRsClass(ResourceInterface.class);
-        assertThat(jaxRsClass.isPresent()).isFalse();
+        assertThat(jaxRsClass).isNotPresent();
     }
 
     @ParameterizedTest
     @MethodSource("pathChecks")
-    void assertFullPath(Class<?> resource, String methodName, String expectedPath) throws NoSuchMethodException {
+    void shouldSetFullPath(Class<?> resource, String methodName, String expectedPath) throws NoSuchMethodException {
         JaxRsMeta jaxRsMeta = new JaxRsMeta(resource.getMethod(methodName));
         assertThat(jaxRsMeta.getFullPath()).isEqualTo(expectedPath);
     }
@@ -81,12 +81,45 @@ class JaxRsMetaTest {
         );
     }
 
+    @Test
+    void shouldGetDeprecationFromMethodOnInterface() throws NoSuchMethodException {
+        JaxRsMeta jaxRsMeta = new JaxRsMeta(ResourceInterface.class.getMethod("deprecated"));
+        assertThat(jaxRsMeta.isDeprecated()).isTrue();
+    }
+
+    @Test
+    void shouldGetDeprecationFromMethodOnImplementation() throws NoSuchMethodException {
+        JaxRsMeta jaxRsMeta = new JaxRsMeta(ResourceImplementation.class.getMethod("deprecated"));
+        assertThat(jaxRsMeta.isDeprecated()).isTrue();
+    }
+
+    @Test
+    void shouldGetDeprecationFromImplementingClass() throws NoSuchMethodException {
+        JaxRsMeta jaxRsMeta = new JaxRsMeta(DeprecatedResource.class.getMethod("deprecated"));
+        assertThat(jaxRsMeta.isDeprecated()).isTrue();
+    }
+
+    @Test
+    void shouldNotSetDeprecatedUnlessAnnotated() throws NoSuchMethodException {
+        JaxRsMeta jaxRsMeta = new JaxRsMeta(ResourceImplementation.class.getMethod("hello"));
+        assertThat(jaxRsMeta.isDeprecated()).isFalse();
+
+        jaxRsMeta = new JaxRsMeta(ResourceInterface.class.getMethod("hello"));
+        assertThat(jaxRsMeta.isDeprecated()).isFalse();
+    }
+
     @Path("/test")
     interface ResourceInterface {
 
         @Path("hello")
         @GET
         Mono<String> hello();
+
+        @SuppressWarnings("DeprecatedIsStillUsed")
+        @Path("deprecated")
+        @GET
+        @Deprecated
+        Mono<String> deprecated();
 
         @GET
         @Produces(TEXT_HTML)
@@ -105,6 +138,11 @@ class JaxRsMetaTest {
 
         @Override
         public Mono<String> hello() {
+            return null;
+        }
+
+        @Override
+        public Mono<String> deprecated() {
             return null;
         }
 
@@ -128,6 +166,13 @@ class JaxRsMetaTest {
     static class ResourceImplementation {
         @GET
         public Mono<String> hello() {
+            return null;
+        }
+
+        @SuppressWarnings("DeprecatedIsStillUsed")
+        @GET
+        @Deprecated
+        public Mono<String> deprecated() {
             return null;
         }
 
@@ -158,5 +203,26 @@ class JaxRsMetaTest {
         @Path("/leadingSlash")
         @GET
         Mono<Void> methodWithLeadingSlash();
+    }
+
+    @Deprecated
+    interface DeprecatedResource {
+        @Path("deprecated")
+        @GET
+        Mono<String> deprecated();
+    }
+
+    interface DeprecatedImplementingResource {
+        @Path("deprecated")
+        @GET
+        Mono<String> deprecated();
+    }
+
+    @Deprecated
+    static class DeprecatedImplementingResourceImpl implements DeprecatedImplementingResource {
+        @Override
+        public Mono<String> deprecated() {
+            return null;
+        }
     }
 }

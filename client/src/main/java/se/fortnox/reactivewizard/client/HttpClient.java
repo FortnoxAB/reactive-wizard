@@ -213,7 +213,9 @@ public class HttpClient implements InvocationHandler {
             body = body.onErrorResume(e -> convertError(request, e));
             return Mono.just(new Response<>(response.getHttpClientResponse(), body));
         });
-        return withRetry(request, measure(request, result).timeout(Duration.of(timeout, timeoutUnit)))
+
+        JaxRsMeta meta = getJaxRsMeta(method);
+        return withRetry(request, measure(request, result, meta).timeout(Duration.of(timeout, timeoutUnit)))
             .onErrorResume(e -> convertError(request, e));
     }
 
@@ -357,8 +359,23 @@ public class HttpClient implements InvocationHandler {
         return "Basic " + new String(encodedAuth);
     }
 
-    protected <T> Mono<T> measure(RequestBuilder fullRequest, Mono<T> output) {
-        return Metrics.get("OUT_res:" + fullRequest.getKey()).measure(output);
+    /**
+     * Record outgoing call metrics. If the endpoint method has been annotated with {@link Deprecated}, the metric will
+     * be marked with an extra label called deprecated with value true. Endpoints that are not deprecated will not get
+     * the deprecated label at all.
+     *
+     * @param request The request that is being made
+     * @param output The call to measure
+     * @param meta Endpoint meta data
+     */
+    protected <T> Mono<T> measure(RequestBuilder request, Mono<T> output, JaxRsMeta meta) {
+        String metricName = "OUT_res:" + request.getKey();
+
+        if (meta.isDeprecated()) {
+            metricName += "_deprecated:true";
+        }
+
+        return Metrics.get(metricName).measure(output);
     }
 
     protected Mono<Response<Flux<?>>> withRetry(RequestBuilder fullReq, Mono<Response<Flux<?>>> responseMono) {
@@ -514,7 +531,6 @@ public class HttpClient implements InvocationHandler {
     }
 
     protected RequestBuilder createRequest(Method method, Object[] arguments) {
-
         JaxRsMeta meta = getJaxRsMeta(method);
 
         RequestBuilder request = new RequestBuilder(serverInfo, meta.getHttpMethod(), meta.getFullPath());
