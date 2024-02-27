@@ -2,7 +2,7 @@ name: Automatic deploy on release
 run-name: Deploy of ${{ github.ref }} on release
 on:
   release:
-    types: [ created ]
+    types: [ published ]
 
 jobs:
   get_tag:
