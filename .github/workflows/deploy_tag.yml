@@ -1,60 +1,58 @@
 name: Build and deploy tag
 run-name: Build and deploy ${{ github.event.inputs.release_tag }}
 on:
-    workflow_call:
-        inputs:
-            tag:
-                description: 'Tag to deploy'
-                required: true
-                type: string
-        secrets:
-            OSSRH_USERNAME:
-                required: true
-            OSSRH_TOKEN:
-                required: true
-            PASSPHRASE:
-                required: true
-            GPG_PRIVATE_KEY:
-                required: true
+  workflow_call:
+    inputs:
+      tag:
+        description: 'Tag to deploy'
+        required: true
+        type: string
+    secrets:
+      OSSRH_USERNAME:
+        required: true
+      OSSRH_TOKEN:
+        required: true
+      PASSPHRASE:
+        required: true
+      GPG_PRIVATE_KEY:
+        required: true
 
 jobs:
-    publish:
-        runs-on: ubuntu-latest
-        steps:
-            -   name: Checkout
-                uses: actions/checkout@v4
-                with:
-                    ref: ${{ inputs.tag }}
-            -   name: 'Download latest JDK 21'
-                run: |
-                    wget \
-                     --no-verbose \
-                     --directory-prefix $RUNNER_TEMP \
-                     https://download.oracle.com/java/21/latest/jdk-21_linux-x64_bin.tar.gz
-            -   name: 'Set up JDK'
-                uses: actions/setup-java@v3
-                with:
-                    java-version: 21
-                    distribution: jdkfile
-                    jdkFile: ${{ runner.temp }}/jdk-21_linux-x64_bin.tar.gz
-            -   name: Set up Java for publishing to Maven Central Repository
-                uses: actions/setup-java@v3
-                with:
-                    java-version: 21
-                    distribution: jdkfile
-                    jdkFile: ${{ runner.temp }}/jdk-21_linux-x64_bin.tar.gz
-                    server-id: ossrh
-                    server-username: USER_NAME
-                    server-password: PASSWORD
-                    gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
-                    gpg-passphrase: GPG_PASS
-            -   name: set version
-                run: mvn versions:set -DnewVersion=${{ inputs.tag }}
-            -   name: Publish to the Maven Central Repository
-                run: mvn clean deploy -Prelease
-                env:
-                    USER_NAME: ${{ secrets.OSSRH_USERNAME }}
-                    PASSWORD: ${{ secrets.OSSRH_TOKEN }}
-                    GPG_PASS: ${{ secrets.PASSPHRASE }}
-                    MAVEN_OPTS: "--add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.text=ALL-UNNAMED --add-opens=java.desktop/java.awt.font=ALL-UNNAMED"
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
+
+      - name: 'Set up JDK'
+        uses: actions/setup-java@v3
+        with:
+          java-version: 21
+          distribution: 'corretto'
+          cache: 'maven'
+
+      - name: Set up Java for publishing to Maven Central Repository
+        uses: actions/setup-java@v3
+        with:
+          java-version: 21
+          distribution: 'corretto'
+          cache: 'maven'
+          server-id: ossrh
+          server-username: USER_NAME
+          server-password: PASSWORD
+          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
+          gpg-passphrase: GPG_PASS
+
+      - name: set version
+        run: mvn versions:set -DnewVersion=${{ inputs.tag }}
+
+      - name: Publish to the Maven Central Repository
+        run: mvn clean deploy -Prelease
+        env:
+          USER_NAME: ${{ secrets.OSSRH_USERNAME }}
+          PASSWORD: ${{ secrets.OSSRH_TOKEN }}
+          GPG_PASS: ${{ secrets.PASSPHRASE }}
+          MAVEN_OPTS: "--add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.text=ALL-UNNAMED --add-opens=java.desktop/java.awt.font=ALL-UNNAMED"
 
