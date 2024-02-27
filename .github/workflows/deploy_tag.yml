@@ -46,10 +46,10 @@ jobs:
           gpg-passphrase: GPG_PASS
 
       - name: set version
-        run: mvn versions:set -DnewVersion=${{ inputs.tag }}
+        run: mvn versions:set -DnewVersion=${{ inputs.tag }} --batch-mode
 
       - name: Publish to the Maven Central Repository
-        run: mvn clean deploy -Prelease
+        run: mvn clean deploy -Prelease --batch-mode
         env:
           USER_NAME: ${{ secrets.OSSRH_USERNAME }}
           PASSWORD: ${{ secrets.OSSRH_TOKEN }}
