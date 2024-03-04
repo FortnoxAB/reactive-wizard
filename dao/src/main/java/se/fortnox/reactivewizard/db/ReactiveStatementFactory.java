@@ -137,7 +137,7 @@ public class ReactiveStatementFactory {
     private <T> Publisher<T> measure(Publisher<T> publisher, Metrics metrics) {
         return metrics.measure(publisher, time -> {
             if (time > config.getSlowQueryLogThreshold()) {
-                LOG.warn("Slow query: {} time: {}", metrics.getName(), time);
+                LOG.warn("Slow execution: {} time: {}", metrics.getName(), time);
             }
         });
     }
