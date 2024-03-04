@@ -19,11 +19,9 @@ import se.fortnox.reactivewizard.util.DebugUtil;
 import javax.annotation.Nullable;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
-import static java.lang.String.format;
 import static se.fortnox.reactivewizard.util.ReactiveDecorator.decorated;
 
 public class ReactiveStatementFactory {
