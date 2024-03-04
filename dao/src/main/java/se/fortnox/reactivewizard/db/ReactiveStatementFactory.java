@@ -1,6 +1,7 @@
 package se.fortnox.reactivewizard.db;
 
 import jakarta.inject.Inject;
+import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
@@ -20,6 +21,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 
 import static java.lang.String.format;
 import static se.fortnox.reactivewizard.util.ReactiveDecorator.decorated;
@@ -101,14 +103,14 @@ public class ReactiveStatementFactory {
                 Mono.error(new RuntimeException(QUERY_FAILED, thrown))
             );
         }
-        resultMono = Mono.from(metrics.measure(resultMono, (time) -> logIfSlowQuery(time, metrics)));
+        resultMono = Mono.from(measure(resultMono, metrics));
         return decorated(resultMono, statementContext);
     }
 
     public <T> Flux<T> createFlux(
         Metrics metrics,
         Supplier<Statement> statementSupplier,
-        Function<Flux<T>, Flux<T>> fluxMapper
+        UnaryOperator<Flux<T>> fluxMapper
     ) {
         var statementContext = new StatementContext(statementSupplier, connectionScheduler);
         Flux<T> resultFlux = getResultFlux(statementContext);
@@ -120,7 +122,7 @@ public class ReactiveStatementFactory {
         if (fluxMapper != null) {
             resultFlux = fluxMapper.apply(resultFlux);
         }
-        resultFlux = Flux.from(metrics.measure(resultFlux, (time) -> logIfSlowQuery(time, metrics)));
+        resultFlux = Flux.from(measure(resultFlux, metrics));
         resultFlux = resultFlux.onBackpressureBuffer(RECORD_BUFFER_SIZE);
         return decorated(resultFlux, statementContext);
     }
@@ -132,10 +134,12 @@ public class ReactiveStatementFactory {
         return createFlux(metrics, statementSupplier, null);
     }
 
-    private void logIfSlowQuery(long time, Metrics metrics) {
-        if (time > config.getSlowQueryLogThreshold()) {
-            LOG.warn(format("Slow query: %s time: %d", metrics.getName(), time));
-        }
+    private <T> Publisher<T> measure(Publisher<T> publisher, Metrics metrics) {
+        return metrics.measure(publisher, time -> {
+            if (time > config.getSlowQueryLogThreshold()) {
+                LOG.warn("Slow query: {} time: {}", metrics.getName(), time);
+            }
+        });
     }
 
     private void executeStatement(Statement dbStatement, Connection connection) {
