@@ -481,18 +481,12 @@ class DaoTransactionsTest {
     }
 
     @Test
-    void shouldNotAllowDecoratedNonDaoCalls() throws SQLException {
-        Flux<String> find1 = dao.find();
-        Flux<String> find2 = dao.find();
-
+    void shouldNotAllowDecoratedNonDaoCalls() {
         // This is a decorated non-dao-call.
-        Mono<Void> decoratedExecutedTransaction = ReactiveDecorator.decorated(daoTransactions.executeTransaction(find1, find2), "Hello world!");
-
-        db.verifyConnectionsUsed(0);
-        verify(db.getConnection(), times(0)).prepareStatement(any());
+        Mono<String> decoratedPublisher = ReactiveDecorator.decorated(Mono.just("This publisher is not a dao call."), "This is a string, not a StatementContext.");
 
         assertThatExceptionOfType(RuntimeException.class)
-            .isThrownBy(() -> daoTransactions.executeTransaction(decoratedExecutedTransaction))
+            .isThrownBy(() -> daoTransactions.executeTransaction(decoratedPublisher))
             .withMessageStartingWith("All parameters to createTransaction needs to be Publishers coming from a Dao-class, i.e. decorated. Statement was");
     }
 
