@@ -480,6 +480,16 @@ class DaoTransactionsTest {
                 .withMessage("No Publisher with a valid connection provider was found");
     }
 
+    @Test
+    void shouldNotAllowDecoratedNonDaoCalls() {
+        // This is a decorated non-dao-call.
+        Mono<String> decoratedPublisher = ReactiveDecorator.decorated(Mono.just("This publisher is not a dao call."), "This is a string, not a StatementContext.");
+
+        assertThatExceptionOfType(RuntimeException.class)
+            .isThrownBy(() -> daoTransactions.executeTransaction(decoratedPublisher))
+            .withMessageStartingWith("All parameters to createTransaction needs to be Publishers coming from a Dao-class, i.e. decorated. Statement was");
+    }
+
     interface TestDao {
         @Query("select * from test")
         Flux<String> find();

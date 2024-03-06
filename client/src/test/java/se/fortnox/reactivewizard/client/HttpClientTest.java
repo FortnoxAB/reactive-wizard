@@ -1,5 +1,6 @@
 package se.fortnox.reactivewizard.client;
 
+import com.codahale.metrics.Timer;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
@@ -34,6 +35,7 @@ import se.fortnox.reactivewizard.jaxrs.PATCH;
 import se.fortnox.reactivewizard.jaxrs.RequestLogger;
 import se.fortnox.reactivewizard.jaxrs.WebException;
 import se.fortnox.reactivewizard.metrics.HealthRecorder;
+import se.fortnox.reactivewizard.metrics.Metrics;
 import se.fortnox.reactivewizard.server.ServerConfig;
 import se.fortnox.reactivewizard.test.LoggingMockUtil;
 import se.fortnox.reactivewizard.test.LoggingVerifier;
@@ -75,6 +77,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedMap;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -1623,6 +1626,35 @@ class HttpClientTest {
         loggingVerifier.verify(INFO, "Will retry because an error occurred. %1$s:%2$s/hello, headers: [Host=%1$s]".formatted(host, server.port()));
     }
 
+    @Test
+    void shouldRecordMetricsForOutgoingCalls() {
+        server = startServer(CREATED, Mono.empty(), s -> {});
+        getHttpProxy(server.port());
+        TestResource resource = getHttpProxyWithClientReturningEmpty(server);
+
+        Metrics.registry().remove("OUT_res:POST /hello");
+        resource.postHello().toBlocking().singleOrDefault(null);
+
+        SortedMap<String, Timer> timers = Metrics.registry().getTimers();
+        assertThat(timers).hasEntrySatisfying("OUT_res:POST /hello", timer -> {
+           assertThat(timer.getCount()).isOne();
+        });
+    }
+
+    @Test
+    void shouldMarkOutgoingCallMetricsAsDeprecated() {
+        server = startServer(CREATED, Mono.empty(), s -> {});
+
+        getHttpProxy(server.port());
+        TestResource resource = getHttpProxyWithClientReturningEmpty(server);
+        resource.postDeprecated().toBlocking().singleOrDefault(null);
+
+        SortedMap<String, Timer> timers = Metrics.registry().getTimers();
+        assertThat(timers).hasEntrySatisfying("OUT_res:POST /hello_deprecated:true", timer -> {
+            assertThat(timer.getCount()).isOne();
+        });
+    }
+
     @Path("/hello")
     public interface TestResource {
 
@@ -1667,6 +1699,10 @@ class HttpClientTest {
 
         @POST
         Observable<String> postHello();
+
+        @POST
+        @Deprecated
+        Observable<String> postDeprecated();
 
         @GET
         @Path("/with-path-param/{myParam}")

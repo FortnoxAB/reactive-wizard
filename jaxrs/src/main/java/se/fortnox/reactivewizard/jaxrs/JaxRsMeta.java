@@ -21,6 +21,7 @@ public class JaxRsMeta {
     private boolean isProducesAnnotationPresent = false;
     private Consumes consumes = null;
     private final String fullPath;
+    private boolean isDeprecated;
 
     private Stream.Type streamType;
 
@@ -53,31 +54,61 @@ public class JaxRsMeta {
                 methodPath = (Path) annotation;
             } else if (annotation instanceof Stream annotationStream) {
                 this.streamType = annotationStream.value();
+            } else if (annotation instanceof Deprecated) {
+                this.isDeprecated = true;
             }
         }
+
+        // If the method was not deprecated, check for class level deprecation too
+        if (!this.isDeprecated) {
+            this.isDeprecated = isDeprecatedClass(method.getDeclaringClass());
+        }
+
         if (classPath == null) {
             classPath = getPath(method.getDeclaringClass());
         }
-        fullPath = concatPaths(classPath, methodPath);
+        this.fullPath = concatPaths(classPath, methodPath);
     }
 
     /**
-     * Return the path.
+     * Get {@link Path} annotation from class or its interfaces.
      *
      * @param cls the class
-     * @return the path
+     * @return The path annotation of the class or any of its interfaces
      */
-    public static Path getPath(Class<? extends Object> cls) {
+    public static Path getPath(Class<?> cls) {
         Path path = cls.getAnnotation(Path.class);
-        if (path == null) {
-            for (Class<?> i : cls.getInterfaces()) {
-                path = i.getAnnotation(Path.class);
-                if (path != null) {
-                    return path;
-                }
+        if (path != null) {
+            return path;
+        }
+
+        for (Class<?> iface : cls.getInterfaces()) {
+            path = iface.getAnnotation(Path.class);
+            if (path != null) {
+                return path;
             }
         }
-        return path;
+
+        return null;
+    }
+
+    /**
+     * Get {@link Deprecated} annotation from class or its interfaces.
+     *
+     * @param cls the class
+     * @return If the class or any of its interfaces are deprecated
+     */
+    private static boolean isDeprecatedClass(Class<?> cls) {
+        if (cls.getAnnotation(Deprecated.class) != null) {
+            return true;
+        }
+
+        for (Class<?> iface : cls.getInterfaces()) {
+            if (iface.getAnnotation(Deprecated.class) != null) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -110,11 +141,11 @@ public class JaxRsMeta {
     }
 
     public HttpMethod getHttpMethod() {
-        return method;
+        return this.method;
     }
 
     public Stream.Type getStreamType() {
-        return streamType;
+        return this.streamType;
     }
 
     public void setMethod(HttpMethod method) {
@@ -122,15 +153,15 @@ public class JaxRsMeta {
     }
 
     public String getProduces() {
-        return produces;
+        return this.produces;
     }
 
     public Consumes getConsumes() {
-        return consumes;
+        return this.consumes;
     }
 
     public String getFullPath() {
-        return fullPath;
+        return this.fullPath;
     }
 
     /**
@@ -155,6 +186,13 @@ public class JaxRsMeta {
     }
 
     public boolean isProducesAnnotationPresent() {
-        return isProducesAnnotationPresent;
+        return this.isProducesAnnotationPresent;
+    }
+
+    /**
+     * @return If the endpoint has been annotated with {@link Deprecated}
+     */
+    public boolean isDeprecated() {
+        return isDeprecated;
     }
 }

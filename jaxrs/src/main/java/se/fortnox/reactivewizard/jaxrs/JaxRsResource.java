@@ -102,7 +102,6 @@ public class JaxRsResource<T> implements Comparable<JaxRsResource> {
         return resultFactory.create(output, args);
     }
 
-    @SuppressWarnings("unchecked")
     private Function<Object[], Flux<T>> createMethodCaller(Method method, Object resourceInstance) {
         Class<?> returnType = method.getReturnType();
         Function<Object, Flux<T>> fluxConverter = FluxRxConverter.converterToFlux(returnType);
@@ -210,5 +209,12 @@ public class JaxRsResource<T> implements Comparable<JaxRsResource> {
 
     public String getPath() {
         return meta.getFullPath();
+    }
+
+    /**
+     * @return If the method defining the resource has been annotated with {@link Deprecated}
+     */
+    public boolean isDeprecated() {
+        return meta.isDeprecated();
     }
 }
