@@ -1,6 +1,5 @@
 # This workflow will build a Java project with Maven
 # For more information see: https://help.github.com/actions/language-and-framework-guides/building-and-testing-java-with-maven
-
 name: build
 
 on:
@@ -11,25 +10,20 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
-    - name: 'Download latest JDK 21'
-      run: |
-          wget \
-            --no-verbose \
-            --directory-prefix $RUNNER_TEMP \
-            https://download.oracle.com/java/21/latest/jdk-21_linux-x64_bin.tar.gz
-    - name: 'Set up JDK'
-      uses: actions/setup-java@v3
-      with:
+      - uses: actions/checkout@v4
+
+      - name: 'Set up JDK'
+        uses: actions/setup-java@v3
+        with:
           java-version: 21
-          distribution: jdkfile
-          jdkFile: ${{ runner.temp }}/jdk-21_linux-x64_bin.tar.gz
-    - name: Build with Maven
-      run: mvn install sonar:sonar -Dsonar.organization=fortnoxab -Dsonar.login=$SONAR_TOKEN --batch-mode
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          distribution: 'corretto'
+          cache: 'maven'
+
+      - name: Build with Maven
+        run: mvn install sonar:sonar -Dsonar.organization=fortnoxab -Dsonar.login=$SONAR_TOKEN --batch-mode
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
