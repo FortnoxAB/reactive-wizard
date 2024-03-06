@@ -52,16 +52,18 @@ class TransactionExecutor {
      *
      * @return a list of statement contexts.
      */
-    <T> List<StatementContext> getStatementContexts(Iterable<T> daoCalls, Function<T, Optional<StatementContext>> getDecoration) {
+    <T> List<StatementContext> getStatementContexts(Iterable<T> daoCalls, Function<T, Optional<?>> getDecoration) {
         List<StatementContext> daoStatementContexts = new ArrayList<>();
 
         for (T statement : daoCalls) {
-            Optional<StatementContext> statementContext = getDecoration.apply(statement);
-            if (statementContext.isEmpty()) {
+            Optional<?> decoration = getDecoration.apply(statement);
+
+            if (decoration.isEmpty() || !(decoration.get() instanceof StatementContext statementContext)) {
                 String statementString = statement == null ? "null" : statement.getClass().toString();
                 throw new TransactionExecutionException(String.format(WRONG_TYPE_ERROR, statementString));
             }
-            daoStatementContexts.add(statementContext.get());
+
+            daoStatementContexts.add(statementContext);
         }
 
         return daoStatementContexts;
