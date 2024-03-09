@@ -90,6 +90,13 @@ public class ReactiveStatementFactory {
         }));
     }
 
+    /**
+     * Creates Mono that executes provided statement.
+     *
+     * @param metrics the metric that measures statement execution
+     * @param statementSupplier the supplier of a statement to execute
+     * @return Mono that executes the statement
+     */
     public <T> Mono<T> createMono(
         Metrics metrics,
         Supplier<Statement> statementSupplier
@@ -105,6 +112,14 @@ public class ReactiveStatementFactory {
         return decorated(resultMono, statementContext);
     }
 
+    /**
+     * Creates Flux that executes provided statement.
+     *
+     * @param metrics the metric that measures statement execution
+     * @param statementSupplier the supplier of a statement to execute
+     * @param fluxMapper the function to be executed on the resulting Flux
+     * @return Flux that executes the statement
+     */
     public <T> Flux<T> createFlux(
         Metrics metrics,
         Supplier<Statement> statementSupplier,
@@ -117,19 +132,10 @@ public class ReactiveStatementFactory {
                 Flux.error(new RuntimeException(QUERY_FAILED, thrown))
             );
         }
-        if (fluxMapper != null) {
-            resultFlux = fluxMapper.apply(resultFlux);
-        }
+        resultFlux = fluxMapper.apply(resultFlux);
         resultFlux = Flux.from(measure(resultFlux, metrics));
         resultFlux = resultFlux.onBackpressureBuffer(RECORD_BUFFER_SIZE);
         return decorated(resultFlux, statementContext);
-    }
-
-    public <T> Flux<T> createFlux(
-        Metrics metrics,
-        Supplier<Statement> statementSupplier
-    ) {
-        return createFlux(metrics, statementSupplier, null);
     }
 
     private <T> Publisher<T> measure(Publisher<T> publisher, Metrics metrics) {

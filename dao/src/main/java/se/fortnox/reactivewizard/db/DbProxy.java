@@ -69,7 +69,7 @@ public class DbProxy implements InvocationHandler {
 
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-        var handler = handlers.get(method);
+        DaoMethodHandler handler = handlers.get(method);
         if (handler == null || DebugUtil.IS_DEBUG) {
             if (DebugUtil.IS_DEBUG) {
                 // Need to get the actual interface method in order to get updated annotations
@@ -85,7 +85,7 @@ public class DbProxy implements InvocationHandler {
             handlers.put(method, handler);
         }
 
-        return handler.run(args, reactiveStatementFactory);
+        return handler.create(args, reactiveStatementFactory);
     }
 
     private Metrics createMetrics(Method method) {

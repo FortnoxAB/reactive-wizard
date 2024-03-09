@@ -9,6 +9,11 @@ import se.fortnox.reactivewizard.metrics.Metrics;
 
 import java.lang.reflect.Method;
 
+/**
+ * When the dao method is called for the first time some pre-calculations are done.
+ * For example, sql text is parsed into ParameterizedQuery and StatementFactory is created based on it.
+ * These pre-calculations are stored in this class and reused each time dao method is called.
+ */
 public class DaoMethodHandler {
 
     private final Method method;
@@ -24,7 +29,14 @@ public class DaoMethodHandler {
         this.metrics = metrics;
     }
 
-    public Publisher<Object> run(Object[] args, ReactiveStatementFactory reactiveStatementFactory) {
+    /**
+     * Creates dao method handler.
+     *
+     * @param args the dao method arguments
+     * @param reactiveStatementFactory the instance of ReactiveStatementFactory
+     * @return the dao method handler
+     */
+    public Publisher<Object> create(Object[] args, ReactiveStatementFactory reactiveStatementFactory) {
         if (Mono.class.isAssignableFrom(method.getReturnType())) {
             return reactiveStatementFactory.createMono(
                 metrics,
