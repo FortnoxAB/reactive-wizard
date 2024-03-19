@@ -103,7 +103,7 @@
         <maven-gpg-plugin.version>3.2.1</maven-gpg-plugin.version>
         <surefire.version>3.2.5</surefire.version>
         <nexus-staging-maven-plugin.version>1.6.13</nexus-staging-maven-plugin.version>
-        <maven-compiler-plugin.version>3.12.1</maven-compiler-plugin.version>
+        <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
         <maven-enforcer-plugin.version>3.4.1</maven-enforcer-plugin.version>
         <maven-source-plugin.version>3.3.0</maven-source-plugin.version>
         <maven-jxr-plugin.version>3.3.2</maven-jxr-plugin.version>
