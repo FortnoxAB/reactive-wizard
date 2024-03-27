@@ -16,7 +16,6 @@ import se.fortnox.reactivewizard.db.statement.MinimumAffectedRowsException;
 import se.fortnox.reactivewizard.db.transactions.DaoTransactions;
 import se.fortnox.reactivewizard.db.transactions.DaoTransactionsImpl;
 import se.fortnox.reactivewizard.db.transactions.StatementContext;
-import se.fortnox.reactivewizard.json.JsonSerializerFactory;
 import se.fortnox.reactivewizard.util.ReactiveDecorator;
 
 import java.sql.Connection;
@@ -432,7 +431,7 @@ class DaoTransactionsTest {
         VirtualTimeScheduler otherScheduler = VirtualTimeScheduler.create();
         DbProxy otherDbProxy = new DbProxy(
             new DatabaseConfig(), otherScheduler,
-            null, new DbStatementFactoryFactory(), new JsonSerializerFactory());
+            null, new DbStatementFactoryFactory());
         otherDbProxy = otherDbProxy.usingConnectionProvider(otherConnectionProvider);
 
         when(otherDb.getPreparedStatement().executeBatch())
@@ -461,7 +460,7 @@ class DaoTransactionsTest {
         ConnectionProvider otherConnectionProvider = secondDb.getConnectionProvider();
 
         DbProxy dbProxyWithoutConnectionProvider = new DbProxy(
-                new DatabaseConfig(), Schedulers.boundedElastic(), null, new DbStatementFactoryFactory(), new JsonSerializerFactory());
+                new DatabaseConfig(), Schedulers.boundedElastic(), null, new DbStatementFactoryFactory());
         DbProxy dbProxyWithConnectionProvider = dbProxyWithoutConnectionProvider.usingConnectionProvider(otherConnectionProvider);
 
         when(secondDb.getPreparedStatement().executeBatch())

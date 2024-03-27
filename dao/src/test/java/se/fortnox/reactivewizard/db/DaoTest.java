@@ -8,7 +8,6 @@ import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import se.fortnox.reactivewizard.db.config.DatabaseConfig;
 import se.fortnox.reactivewizard.db.statement.DbStatementFactoryFactory;
-import se.fortnox.reactivewizard.json.JsonSerializerFactory;
 
 import java.sql.SQLException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -34,8 +33,8 @@ class DaoTest {
             new DatabaseConfig(),
             Schedulers.newBoundedElastic(1, Integer.MAX_VALUE, "DaoTestDbProxy"),
             db.getConnectionProvider(),
-            new DbStatementFactoryFactory(),
-            new JsonSerializerFactory()).create(DaoTransactionsTest.TestDao.class);
+            new DbStatementFactoryFactory()
+        ).create(DaoTransactionsTest.TestDao.class);
     }
 
     @Test

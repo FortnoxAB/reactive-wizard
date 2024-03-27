@@ -20,8 +20,10 @@ public class Metrics {
     };
 
     private final Timer timer;
+    private final String name;
 
     private Metrics(String name) {
+        this.name = name;
         this.timer = REGISTRY.timer(name);
     }
 
@@ -76,5 +78,9 @@ public class Metrics {
 
     private long getElapsedTime(Timer.Context context) {
         return context.stop() / NANOSECONDS_PER_MILLISECOND;
+    }
+
+    public String getName() {
+        return name;
     }
 }
