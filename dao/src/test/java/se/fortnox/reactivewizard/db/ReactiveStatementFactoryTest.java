@@ -11,16 +11,13 @@ import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.MonoSink;
 import reactor.core.scheduler.Scheduler;
 import se.fortnox.reactivewizard.db.config.DatabaseConfig;
-import se.fortnox.reactivewizard.db.paging.PagingOutput;
-import se.fortnox.reactivewizard.db.statement.DbStatementFactory;
 import se.fortnox.reactivewizard.db.statement.Statement;
-import se.fortnox.reactivewizard.db.transactions.ConnectionScheduler;
 import se.fortnox.reactivewizard.metrics.Metrics;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.util.function.UnaryOperator;
 
-import static org.junit.platform.commons.util.ReflectionUtils.getRequiredMethod;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -28,12 +25,6 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class ReactiveStatementFactoryTest {
-    @Mock
-    private PagingOutput pagingOutput;
-
-    @Mock
-    private DbStatementFactory dbStatementFactory;
-
     @Mock
     private DatabaseConfig databaseConfig;
 
@@ -43,18 +34,18 @@ class ReactiveStatementFactoryTest {
     @Mock
     private Scheduler.Worker worker;
 
+    private Statement statement;
+
     private ReactiveStatementFactory statementFactory;
 
     @BeforeEach
     public void setUp() {
-        when(pagingOutput.apply(any(), any())).then(invocationOnMock -> invocationOnMock.getArgument(0,
-            Flux.class));
         when(scheduler.createWorker()).thenReturn(worker);
         when(worker.schedule(any())).then(invocationOnMock -> {
             invocationOnMock.getArgument(0, Runnable.class).run();
             return mock(Disposable.class);
         });
-        when(dbStatementFactory.create(any())).then(invocationOnMock -> new Statement() {
+        statement = new Statement() {
             private MonoSink monoSink;
             private FluxSink fluxSink;
 
@@ -98,14 +89,13 @@ class ReactiveStatementFactoryTest {
                 this.monoSink = monoSink;
             }
 
-        });
-
-        statementFactory = new ReactiveStatementFactory(dbStatementFactory, pagingOutput, Metrics.get("test"), databaseConfig, o -> o, getRequiredMethod(TestDao.class, "select"));
+        };
+        statementFactory = new ReactiveStatementFactory(databaseConfig, scheduler, () -> mock(Connection.class));
     }
 
     @Test
     void shouldReleaseSchedulerWorkers() {
-        Flux<Object> stmt = (Flux<Object>) statementFactory.create(new Object[0], new ConnectionScheduler(() -> mock(Connection.class), scheduler));
+        Flux<Object> stmt = statementFactory.createFlux(Metrics.get("test"), () -> statement, UnaryOperator.identity());
         stmt.blockFirst();
         verify(scheduler).createWorker();
         verify(worker).dispose();
