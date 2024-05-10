@@ -12,6 +12,7 @@ import se.fortnox.reactivewizard.binding.AutoBindModules;
 import se.fortnox.reactivewizard.config.ConfigFactory;
 import se.fortnox.reactivewizard.config.TestInjector;
 import se.fortnox.reactivewizard.json.JsonConfig;
+import se.fortnox.reactivewizard.logging.LoggingShutdownHandler;
 import se.fortnox.reactivewizard.server.ServerConfig;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -157,6 +158,7 @@ class LiquibaseAutoBindModuleTest {
                     .toInstance(arg);
 
                 bind(LiquibaseMigrateProvider.class).toInstance(liquibaseMigrateProvider);
+                bind(LoggingShutdownHandler.class).toInstance(mock(LoggingShutdownHandler.class));
             }
         };
         LiquibaseAutoBindModule liquibaseAutoBindModule = new LiquibaseAutoBindModule(arg, liquibaseMigrateProvider);
