@@ -122,7 +122,7 @@
         <byte-buddy.version>1.14.15</byte-buddy.version>
         <jakarta.inject-api.version>2.0.1</jakarta.inject-api.version>
         <bcpkix-jdk18on.version>1.78.1</bcpkix-jdk18on.version>
-        <swagger-annotations.version>2.2.21</swagger-annotations.version>
+        <swagger-annotations.version>2.2.22</swagger-annotations.version>
 
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         <sonar.organization>fortnoxab</sonar.organization>
