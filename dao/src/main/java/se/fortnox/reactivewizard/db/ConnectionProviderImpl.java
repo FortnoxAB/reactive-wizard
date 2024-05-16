@@ -31,6 +31,9 @@ public class ConnectionProviderImpl implements ConnectionProvider {
         connectionPool.setMetricRegistry(Metrics.registry());
 
         connectionPool.addDataSourceProperty("socketTimeout", databaseConfig.getSocketTimeout());
+        if (databaseConfig.getTimeZone() != null) {
+            connectionPool.addDataSourceProperty("TimeZone", databaseConfig.getTimeZone());
+        }
 
         DbDriver.loadDriver(databaseConfig.getUrl());
 

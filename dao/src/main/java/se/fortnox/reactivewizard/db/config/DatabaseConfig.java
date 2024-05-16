@@ -38,6 +38,8 @@ public class DatabaseConfig {
     private long   slowQueryLogThreshold = 5000;
     private long   socketTimeout         = 300;
 
+    private String timeZone;
+
     public String getSchema() {
         return schema;
     }
@@ -132,5 +134,13 @@ public class DatabaseConfig {
 
     public void setSocketTimeout(long socketTimeout) {
         this.socketTimeout = socketTimeout;
+    }
+
+    public String getTimeZone() {
+        return timeZone;
+    }
+
+    public void setTimeZone(String timeZone) {
+        this.timeZone = timeZone;
     }
 }
