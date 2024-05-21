@@ -1,5 +1,6 @@
 package se.fortnox.reactivewizard.dbmigrate;
 
+import com.google.common.base.Strings;
 import jakarta.inject.Inject;
 import liquibase.CatalogAndSchema;
 import liquibase.Contexts;
@@ -17,6 +18,8 @@ import liquibase.ext.TimeoutLockService;
 import liquibase.lockservice.LockServiceFactory;
 import liquibase.resource.ClassLoaderResourceAccessor;
 import liquibase.resource.InputStreamList;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import se.fortnox.reactivewizard.db.DbDriver;
 
 import java.io.IOException;
@@ -37,11 +40,20 @@ import java.util.List;
  */
 public class LiquibaseMigrate {
 
+    private static final Logger LOG = LoggerFactory.getLogger(LiquibaseMigrate.class);
+
     private final List<Liquibase> liquibaseList;
 
     @Inject
     public LiquibaseMigrate(LiquibaseConfig liquibaseConfig) throws LiquibaseException, IOException {
         JdbcConnection conn = new JdbcConnection(getConnection(liquibaseConfig));
+        if (!Strings.isNullOrEmpty(liquibaseConfig.getTimeZone())) {
+            try {
+                conn.createStatement().execute("SET TIME ZONE '%s'".formatted(liquibaseConfig.getTimeZone()));
+            } catch (SQLException e) {
+                LOG.error("Failed to set time zone " + liquibaseConfig.getTimeZone(), e);
+            }
+        }
 
         Enumeration<URL> resources = this.getClass()
                 .getClassLoader()

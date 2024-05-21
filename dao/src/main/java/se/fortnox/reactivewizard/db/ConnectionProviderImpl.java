@@ -1,5 +1,6 @@
 package se.fortnox.reactivewizard.db;
 
+import com.google.common.base.Strings;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import jakarta.inject.Inject;
@@ -31,8 +32,10 @@ public class ConnectionProviderImpl implements ConnectionProvider {
         connectionPool.setMetricRegistry(Metrics.registry());
 
         connectionPool.addDataSourceProperty("socketTimeout", databaseConfig.getSocketTimeout());
-        if (databaseConfig.getTimeZone() != null) {
-            connectionPool.addDataSourceProperty("TimeZone", databaseConfig.getTimeZone());
+        if (!Strings.isNullOrEmpty(databaseConfig.getTimeZone())) {
+            // The statement SET TIME ZONE is not a real table operation;
+            // rather, it is a configuration statement that sets the time zone for the session.
+            connectionPool.setConnectionInitSql("SET TIME ZONE '%s'".formatted(databaseConfig.getTimeZone()));
         }
 
         DbDriver.loadDriver(databaseConfig.getUrl());

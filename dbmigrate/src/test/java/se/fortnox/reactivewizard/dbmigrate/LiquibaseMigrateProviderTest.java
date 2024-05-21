@@ -18,6 +18,7 @@ class LiquibaseMigrateProviderTest {
         when(liquibaseConfig.getUrl()).thenReturn("jdbc:h2:mem:test");
         when(liquibaseConfig.getMigrationsFile()).thenReturn("migrations.xml");
         when(liquibaseConfig.getSchema()).thenReturn(null);
+        when(liquibaseConfig.getTimeZone()).thenReturn("UTC");
 
         ConfigFactory configFactory = mock(ConfigFactory.class);
         when(configFactory.get(LiquibaseConfig.class)).thenReturn(liquibaseConfig);
