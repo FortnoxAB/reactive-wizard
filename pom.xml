@@ -88,7 +88,7 @@
         <h2.version>2.2.224</h2.version>
         <snakeyaml.version>2.2</snakeyaml.version>
         <hibernate-validator.version>8.0.1.Final</hibernate-validator.version>
-        <jakarta.validation-api.version>3.0.2</jakarta.validation-api.version>
+        <jakarta.validation-api.version>3.1.0</jakarta.validation-api.version>
         <log4j.version>2.23.1</log4j.version>
 
         <guice.version>7.0.0</guice.version>
