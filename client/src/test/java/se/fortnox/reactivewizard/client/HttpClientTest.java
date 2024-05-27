@@ -309,6 +309,23 @@ class HttpClientTest {
     }
 
     @Test
+    void shouldAddRootToRequestUri() throws URISyntaxException, NoSuchMethodException {
+
+        assertAddedRoot("localhost", "/hello");
+        assertAddedRoot("localhost/", "/hello");
+        assertAddedRoot("localhost/root", "/root/hello");
+        assertAddedRoot("localhost/root/", "/root/hello");
+    }
+
+    private void assertAddedRoot(String url, String expected) throws URISyntaxException, NoSuchMethodException {
+        HttpClient httpClient = new HttpClient(new HttpClientConfig(url));
+
+        Method getHello = TestResource.class.getMethod("getHello");
+
+        assertThat(httpClient.createRequest(getHello, new Object[0]).getUri()).isEqualTo(expected);
+    }
+
+    @Test
     void shouldRetryIfEmptyReturnedOnGet() {
 
         AtomicInteger callCount = new AtomicInteger();
