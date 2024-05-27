@@ -7,6 +7,7 @@ import reactor.core.scheduler.Schedulers;
 import se.fortnox.reactivewizard.db.config.DatabaseConfig;
 import se.fortnox.reactivewizard.db.paging.PagingOutput;
 import se.fortnox.reactivewizard.db.statement.DbStatementFactoryFactory;
+import se.fortnox.reactivewizard.json.JsonSerializerFactory;
 import se.fortnox.reactivewizard.metrics.Metrics;
 import se.fortnox.reactivewizard.util.DebugUtil;
 import se.fortnox.reactivewizard.util.ReflectionUtil;
@@ -52,6 +53,20 @@ public class DbProxy implements InvocationHandler {
         this.dbStatementFactoryFactory = dbStatementFactoryFactory;
         this.reactiveStatementFactory = reactiveStatementFactory;
         this.handlers = handlers;
+    }
+
+    /**
+     * @deprecated The JsonSerializerFactory is no longer needed, use {@link #DbProxy(DatabaseConfig, ConnectionProvider, DbStatementFactoryFactory)} instead
+     */
+    @Deprecated(forRemoval = true)
+    public DbProxy(DatabaseConfig databaseConfig,
+                   ConnectionProvider connectionProvider,
+                   DbStatementFactoryFactory dbStatementFactoryFactory,
+                   JsonSerializerFactory unused
+    ) {
+        this(databaseConfig,
+            connectionProvider,
+            dbStatementFactoryFactory);
     }
 
     /**
