@@ -13,6 +13,7 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.netty.DisposableServer;
 import reactor.netty.http.server.HttpServer;
+import se.fortnox.reactivewizard.logging.LoggingShutdownHandler;
 import se.fortnox.reactivewizard.test.LoggingMockUtil;
 
 import java.util.Set;
@@ -43,6 +44,9 @@ class RwServerTest {
     @Mock
     CompositeRequestHandler compositeRequestHandler;
 
+    @Mock
+    private LoggingShutdownHandler loggingShutdownHandler;
+
     ArgumentCaptor<LogEvent> logCaptor;
 
     Appender mockAppender;
@@ -65,7 +69,7 @@ class RwServerTest {
         serverConfig.setEnabled(false);
         serverConfig.setPort(0);
 
-        RwServer rwServer = new RwServer(serverConfig, compositeRequestHandler, connectionCounter);
+        RwServer rwServer = new RwServer(serverConfig, compositeRequestHandler, connectionCounter, loggingShutdownHandler);
         rwServer.join();
 
         assertNull(rwServer.getServer());
@@ -79,7 +83,7 @@ class RwServerTest {
 
         RwServer rwServer = null;
         try {
-            rwServer = new RwServer(serverConfig, compositeRequestHandler, connectionCounter) {
+            rwServer = new RwServer(serverConfig, compositeRequestHandler, connectionCounter, loggingShutdownHandler) {
                 @Override
                 public void start() {
                     startInvokedNumberOfTimes.incrementAndGet();
@@ -102,7 +106,8 @@ class RwServerTest {
 
         DisposableServer disposableServer = Mockito.mock(DisposableServer.class);
         when(disposableServer.onDispose()).thenReturn(empty());
-        RwServer rwServer = new RwServer(serverConfig, connectionCounter, HttpServer.create(), compositeRequestHandler, disposableServer);
+        RwServer rwServer = new RwServer(serverConfig, connectionCounter, HttpServer.create(), compositeRequestHandler,
+            disposableServer, loggingShutdownHandler);
         rwServer.join();
 
         verify(disposableServer).onDispose();
@@ -115,8 +120,8 @@ class RwServerTest {
             final ServerConfig config = new ServerConfig();
             config.setPort(0);
             config.setShutdownDelaySeconds(3);
-            rwServer = new RwServer(config, compositeRequestHandler, connectionCounter);
-            RwServer.shutdownHook(config, rwServer.getServer(), connectionCounter);
+            rwServer = new RwServer(config, compositeRequestHandler, connectionCounter, loggingShutdownHandler);
+            RwServer.shutdownHook(config, rwServer.getServer(), connectionCounter, loggingShutdownHandler);
 
             verify(mockAppender, atLeastOnce()).append(logCaptor.capture());
 
@@ -125,7 +130,7 @@ class RwServerTest {
                 .extracting(Message::getFormattedMessage)
                 .contains("Shutdown requested. Waiting 3 seconds before commencing.")
                 .contains("Shutdown commencing. Will wait up to 20 seconds for ongoing requests to complete.")
-                .contains("Shutdown complete");
+                .contains("Server shutdown complete");
         } finally {
             if (rwServer != null) {
                 rwServer.getServer().disposeNow();
@@ -137,7 +142,7 @@ class RwServerTest {
     void shouldCallServerShutDownWhenShutdownHookIsInvoked() {
         DisposableServer disposableServer = mock(DisposableServer.class);
 
-        RwServer.shutdownHook(new ServerConfig(), disposableServer, connectionCounter);
+        RwServer.shutdownHook(new ServerConfig(), disposableServer, connectionCounter, loggingShutdownHandler);
 
         verify(disposableServer).disposeNow(any());
     }
@@ -150,8 +155,8 @@ class RwServerTest {
         try {
             final ServerConfig config = new ServerConfig();
             config.setPort(0);
-            rwServer = new RwServer(config, compositeRequestHandler, connectionCounter);
-            RwServer.shutdownHook(config, rwServer.getServer(), connectionCounter);
+            rwServer = new RwServer(config, compositeRequestHandler, connectionCounter, loggingShutdownHandler);
+            RwServer.shutdownHook(config, rwServer.getServer(), connectionCounter, loggingShutdownHandler);
 
             verify(mockAppender, atLeastOnce()).append(logCaptor.capture());
 
@@ -205,6 +210,24 @@ class RwServerTest {
     }
 
     @Test
+    void shouldSkipAwaitingLoggingShutdownIfNotSet() {
+        RwServer.executeLoggingShutdown(null);
+        verify(mockAppender, never()).append(any());
+        verify(loggingShutdownHandler, never()).shutdown();
+    }
+
+    @Test
+    void shouldAwaitShutdownLogging() {
+        RwServer.executeLoggingShutdown(loggingShutdownHandler);
+
+        verify(mockAppender).append(matches(log ->
+            assertThat(log.getMessage().getFormattedMessage()).matches("Logging is shutting down")
+        ));
+
+        verify(loggingShutdownHandler).shutdown();
+    }
+
+    @Test
     void shouldUseServerConfigurersInPrioOrder() {
         RwServer rwServer = null;
 
@@ -221,7 +244,8 @@ class RwServerTest {
                 assertThat(firstCalledFirst.get()).isTrue();
             });
 
-            rwServer = new RwServer(config, compositeRequestHandler, connectionCounter, Set.of(configurer2, configurer));
+            rwServer = new RwServer(config, compositeRequestHandler, connectionCounter,
+                Set.of(configurer2, configurer), loggingShutdownHandler);
         } finally {
             rwServer.getServer().disposeNow();
         }

@@ -3,12 +3,14 @@ package se.fortnox.reactivewizard.server;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Mono;
 import reactor.netty.http.client.HttpClient;
 import se.fortnox.reactivewizard.ExceptionHandler;
 import se.fortnox.reactivewizard.RequestHandler;
 import se.fortnox.reactivewizard.jaxrs.RequestLogger;
+import se.fortnox.reactivewizard.logging.LoggingShutdownHandler;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -23,6 +25,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @ExtendWith(MockitoExtension.class)
 class RwServerGzipTest {
+    @Mock
+    private LoggingShutdownHandler loggingShutdownHandler;
+
     private RwServer rwServer;
 
     @Test
@@ -70,7 +75,7 @@ class RwServerGzipTest {
         ConnectionCounter connectionCounter = new ConnectionCounter();
         RequestLogger requestLogger = new RequestLogger();
         CompositeRequestHandler handlers = new CompositeRequestHandler(Collections.singleton(handler), new ExceptionHandler(new ObjectMapper(), requestLogger), connectionCounter, requestLogger);
-        return new RwServer(config, handlers, connectionCounter);
+        return new RwServer(config, handlers, connectionCounter, loggingShutdownHandler);
     }
 
     private void assertCompressionForContentType(boolean serverUsesCompression, String contentType, boolean compressionExpected) {

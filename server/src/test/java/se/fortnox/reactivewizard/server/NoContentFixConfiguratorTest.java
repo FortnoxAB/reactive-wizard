@@ -3,18 +3,23 @@ package se.fortnox.reactivewizard.server;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 import reactor.core.publisher.Flux;
 import reactor.netty.http.client.HttpClient;
 import reactor.netty.http.client.HttpClientResponse;
 import se.fortnox.reactivewizard.ExceptionHandler;
 import se.fortnox.reactivewizard.RequestHandler;
 import se.fortnox.reactivewizard.jaxrs.RequestLogger;
+import se.fortnox.reactivewizard.logging.LoggingShutdownHandler;
 
 import java.util.Collections;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class NoContentFixConfiguratorTest {
+
+    @Mock
+    private LoggingShutdownHandler loggingShutdownHandler;
 
     @Test
     void shouldOnlyRemoveHeaderContentLengthIfNoBody() {
@@ -59,7 +64,7 @@ class NoContentFixConfiguratorTest {
         config.setPort(0);
         ConnectionCounter connectionCounter = new ConnectionCounter();
         CompositeRequestHandler handlers = new CompositeRequestHandler(Collections.singleton(handler), new ExceptionHandler(new ObjectMapper(), new RequestLogger()), connectionCounter, new RequestLogger());
-        return new RwServer(config, handlers, connectionCounter);
+        return new RwServer(config, handlers, connectionCounter, loggingShutdownHandler);
     }
 
 }

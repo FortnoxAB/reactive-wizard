@@ -7,12 +7,14 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.name.Names;
 import se.fortnox.reactivewizard.binding.AutoBindModules;
+import se.fortnox.reactivewizard.logging.LoggingShutdownHandler;
 
 import javax.annotation.Nullable;
 import java.util.function.Consumer;
 
 import static java.util.stream.Stream.concat;
 import static java.util.stream.Stream.of;
+import static org.mockito.Mockito.mock;
 
 public class TestInjector {
 
@@ -44,6 +46,8 @@ public class TestInjector {
                     String[] argsWithConfig = concat(of(args), of(configFile)).toArray(String[]::new);
                     bind(String[].class).annotatedWith(Names.named("args")).toInstance(argsWithConfig);
                 }
+
+                bind(LoggingShutdownHandler.class).toInstance(mock(LoggingShutdownHandler.class));
 
                 binderConsumer.accept(binder());
             }

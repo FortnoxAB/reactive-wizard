@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.Appender;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 import reactor.core.publisher.Flux;
 import reactor.netty.http.client.HttpClient;
 import se.fortnox.reactivewizard.ExceptionHandler;
@@ -11,6 +12,7 @@ import se.fortnox.reactivewizard.RequestHandler;
 import se.fortnox.reactivewizard.jaxrs.JaxRsRequestHandler;
 import se.fortnox.reactivewizard.jaxrs.JaxRsResourceFactory;
 import se.fortnox.reactivewizard.jaxrs.RequestLogger;
+import se.fortnox.reactivewizard.logging.LoggingShutdownHandler;
 import se.fortnox.reactivewizard.test.LoggingMockUtil;
 
 import javax.ws.rs.GET;
@@ -30,6 +32,9 @@ import static se.fortnox.reactivewizard.test.TestUtil.matches;
  * When client aborts the connection the server should still finish gracefully with only a debug-log as the result.
  */
 class AbortedRequestHandlingTest {
+    @Mock
+    private LoggingShutdownHandler loggingShutdownHandler;
+
     @Test
     void shouldHandleAbortedRequestGracefully() throws InterruptedException {
         LoggingMockUtil.setLevel(ExceptionHandler.class, Level.DEBUG);
@@ -76,7 +81,7 @@ class AbortedRequestHandlingTest {
         ConnectionCounter connectionCounter = new ConnectionCounter();
         RequestLogger requestLogger = new RequestLogger();
         CompositeRequestHandler handlers = new CompositeRequestHandler(Collections.singleton(handler), new ExceptionHandler(new ObjectMapper(), requestLogger), connectionCounter, requestLogger);
-        return new RwServer(config, handlers, connectionCounter);
+        return new RwServer(config, handlers, connectionCounter, loggingShutdownHandler);
     }
 
     @Path("/")

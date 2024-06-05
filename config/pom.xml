@@ -37,6 +37,11 @@
 
         <dependency>
             <groupId>se.fortnox.reactivewizard</groupId>
+            <artifactId>reactivewizard-logging-api</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>se.fortnox.reactivewizard</groupId>
             <artifactId>reactivewizard-test</artifactId>
             <scope>test</scope>
         </dependency>

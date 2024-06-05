@@ -68,6 +68,7 @@
         <module>validation</module>
         <module>dbmigrate</module>
         <module>coverage</module>
+        <module>logging-api</module>
     </modules>
 
     <properties>
@@ -302,6 +303,11 @@
                 <artifactId>reactivewizard-jaxrs</artifactId>
                 <version>${project.version}</version>
                 <classifier>tests</classifier>
+            </dependency>
+            <dependency>
+                <groupId>se.fortnox.reactivewizard</groupId>
+                <artifactId>reactivewizard-logging-api</artifactId>
+                <version>${project.version}</version>
             </dependency>
 
             <!-- external libs -->
