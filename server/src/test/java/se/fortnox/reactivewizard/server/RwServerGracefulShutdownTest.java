@@ -3,12 +3,14 @@ package se.fortnox.reactivewizard.server;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 import reactor.core.publisher.Mono;
 import reactor.netty.DisposableServer;
 import reactor.netty.http.client.HttpClient;
 import se.fortnox.reactivewizard.ExceptionHandler;
 import se.fortnox.reactivewizard.RequestHandler;
 import se.fortnox.reactivewizard.jaxrs.RequestLogger;
+import se.fortnox.reactivewizard.logging.LoggingShutdownHandler;
 
 import java.time.Duration;
 import java.util.Collections;
@@ -23,6 +25,9 @@ class RwServerGracefulShutdownTest {
     private ServerConfig serverConfig;
     private AtomicLong requests;
     private AtomicLong responses;
+    @Mock
+    private LoggingShutdownHandler loggingShutdownHandler;
+
 
     @BeforeEach
     public void before() {
@@ -52,14 +57,14 @@ class RwServerGracefulShutdownTest {
 
         assertThatExceptionOfType(IllegalStateException.class)
             .describedAs("server should throw an exception that graceful shutdown could not be done. The connection was cut.")
-            .isThrownBy(() -> RwServer.shutdownHook(serverConfig, server, connectionCounter))
+            .isThrownBy(() -> RwServer.shutdownHook(serverConfig, server, connectionCounter, loggingShutdownHandler))
             .withMessage("Socket couldn't be stopped within 1000ms");
     }
 
     @Test
     void shouldWaitFiveSecondsAsDefaultBeforeDisposingServer() {
         RwServer rwServer = server(withEndpoint(Duration.ofSeconds(1)));
-        Thread shutdown = new Thread(() -> RwServer.shutdownHook(serverConfig, rwServer.getServer(), new ConnectionCounter()));
+        Thread shutdown = new Thread(() -> RwServer.shutdownHook(serverConfig, rwServer.getServer(), new ConnectionCounter(), loggingShutdownHandler));
         shutdown.start();
         await("Server should not be disposed until after five seconds")
             .atLeast(5, SECONDS)
@@ -70,7 +75,7 @@ class RwServerGracefulShutdownTest {
     void shouldWaitSpecifiedNumberOfSecondsBeforeDisposingServer() {
         serverConfig.setShutdownDelaySeconds(1);
         RwServer rwServer = server(withEndpoint(Duration.ofSeconds(1)));
-        Thread shutdown = new Thread(() -> RwServer.shutdownHook(serverConfig, rwServer.getServer(), new ConnectionCounter()));
+        Thread shutdown = new Thread(() -> RwServer.shutdownHook(serverConfig, rwServer.getServer(), new ConnectionCounter(), loggingShutdownHandler));
         shutdown.start();
         await("Server should be disposed in two seconds")
             .atMost(2, SECONDS)
@@ -104,7 +109,7 @@ class RwServerGracefulShutdownTest {
         ConnectionCounter connectionCounter = new ConnectionCounter();
         RequestLogger requestLogger = new RequestLogger();
         CompositeRequestHandler handlers = new CompositeRequestHandler(Collections.singleton(handler), new ExceptionHandler(new ObjectMapper(), requestLogger), connectionCounter, requestLogger);
-        return new RwServer(serverConfig, handlers, connectionCounter) {
+        return new RwServer(serverConfig, handlers, connectionCounter, loggingShutdownHandler) {
             @Override
             void registerShutdownHook() {
                 // NOOP implementation , so that we dont do a shutdown twice.

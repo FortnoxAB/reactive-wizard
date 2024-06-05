@@ -13,6 +13,7 @@ import reactor.netty.http.server.HttpServer;
 import reactor.netty.http.server.HttpServerRequest;
 import reactor.netty.http.server.HttpServerResponse;
 import se.fortnox.reactivewizard.RequestHandler;
+import se.fortnox.reactivewizard.logging.LoggingShutdownHandler;
 import se.fortnox.reactivewizard.server.modifiers.NoContentFixConfigurer;
 import se.fortnox.reactivewizard.server.modifiers.RequestSizesConfigurer;
 
@@ -47,28 +48,32 @@ public class RwServer extends Thread {
     private final ServerConfig config;
     private final ConnectionCounter connectionCounter;
     private final DisposableServer server;
+    private final LoggingShutdownHandler loggingShutdownHandler;
     private static Runnable blockShutdownUntil;
 
     @Inject
     public RwServer(ServerConfig config, CompositeRequestHandler compositeRequestHandler, ConnectionCounter connectionCounter,
-        Set<ReactorServerConfigurer> serverConfigurers) {
-        this(config, connectionCounter, createHttpServer(config, serverConfigurers), compositeRequestHandler);
+        Set<ReactorServerConfigurer> serverConfigurers, LoggingShutdownHandler loggingShutdownHandler) {
+        this(config, connectionCounter, createHttpServer(config, serverConfigurers), compositeRequestHandler, loggingShutdownHandler);
     }
 
-    public RwServer(ServerConfig config, CompositeRequestHandler compositeRequestHandler, ConnectionCounter connectionCounter) {
-        this(config, compositeRequestHandler, connectionCounter, Set.of(new NoContentFixConfigurer(), new RequestSizesConfigurer(config)));
+    public RwServer(ServerConfig config, CompositeRequestHandler compositeRequestHandler,
+                    ConnectionCounter connectionCounter, LoggingShutdownHandler loggingShutdownHandler) {
+        this(config, compositeRequestHandler, connectionCounter,
+            Set.of(new NoContentFixConfigurer(), new RequestSizesConfigurer(config)), loggingShutdownHandler);
     }
 
     RwServer(ServerConfig config, ConnectionCounter connectionCounter, HttpServer httpServer,
-             CompositeRequestHandler compositeRequestHandler) {
-        this(config, connectionCounter, httpServer, compositeRequestHandler, null);
+             CompositeRequestHandler compositeRequestHandler, LoggingShutdownHandler loggingShutdownHandler) {
+        this(config, connectionCounter, httpServer, compositeRequestHandler, null, loggingShutdownHandler);
     }
 
     RwServer(ServerConfig config, ConnectionCounter connectionCounter, HttpServer httpServer, CompositeRequestHandler compositeRequestHandler,
-        DisposableServer disposableServer) {
+        DisposableServer disposableServer, LoggingShutdownHandler loggingShutdownHandler) {
         super("RwServerMain");
         this.config = config;
         this.connectionCounter = connectionCounter;
+        this.loggingShutdownHandler = loggingShutdownHandler;
 
         if (config.isEnabled()) {
             if (disposableServer != null) {
@@ -141,7 +146,8 @@ public class RwServer extends Thread {
     }
 
     void registerShutdownHook() {
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> shutdownHook(config, server, connectionCounter)));
+        Runtime.getRuntime().addShutdownHook(new Thread(() ->
+            shutdownHook(config, server, connectionCounter, loggingShutdownHandler)));
     }
 
     /**
@@ -155,7 +161,8 @@ public class RwServer extends Thread {
         RwServer.blockShutdownUntil = blockShutdownUntil;
     }
 
-    static void shutdownHook(ServerConfig config, DisposableServer server, ConnectionCounter connectionCounter) {
+    static void shutdownHook(ServerConfig config, DisposableServer server, ConnectionCounter connectionCounter,
+                             LoggingShutdownHandler loggingShutdownHandler) {
         LOG.info("Shutdown requested. Waiting {} seconds before commencing.", config.getShutdownDelaySeconds());
         try {
             Thread.sleep(config.getShutdownDelaySeconds() * 1000);
@@ -173,7 +180,9 @@ public class RwServer extends Thread {
         }
 
         server.disposeNow(Duration.ofSeconds(config.getShutdownTimeoutSeconds()));
-        LOG.info("Shutdown complete");
+        LOG.info("Server shutdown complete");
+
+        executeLoggingShutdown(loggingShutdownHandler);
     }
 
     static void awaitShutdownDependency(int shutdownTimeoutSeconds) {
@@ -191,6 +200,18 @@ public class RwServer extends Thread {
             Thread.currentThread().interrupt();
         }
         LOG.info("Shutdown dependency completed, continue...");
+    }
+
+    static void executeLoggingShutdown(LoggingShutdownHandler loggingShutdownHandler) {
+        if (loggingShutdownHandler == null) {
+            return;
+        }
+
+        LOG.info("Logging is shutting down");
+
+        loggingShutdownHandler.shutdown();
+
+        System.out.println("Logging shutdown complete");
     }
 
     static int measureElapsedSeconds(Runnable function) {
