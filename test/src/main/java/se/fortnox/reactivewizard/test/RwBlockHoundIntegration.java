@@ -13,6 +13,7 @@ public abstract class RwBlockHoundIntegration implements BlockHoundIntegration {
     public void applyTo(BlockHound.Builder builder) {
         builder
             .allowBlockingCallsInside("se.fortnox.reactivewizard.jaxrs.WebException", "createUUID")
-            .allowBlockingCallsInside("com.fasterxml.jackson.databind.cfg.MapperBuilder", "findAndAddModules");
+            .allowBlockingCallsInside("com.fasterxml.jackson.databind.cfg.MapperBuilder", "findAndAddModules")
+            .allowBlockingCallsInside("com.fasterxml.jackson.databind.deser.DeserializerCache", "_createAndCacheValueDeserializer");
     }
 }
