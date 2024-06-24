@@ -75,7 +75,7 @@ public class ReactorRxClientProvider {
             .doOnError((httpClientRequest, throwable) -> {
                 healthRecorder.logStatus(connectionProvider, errorCount.incrementAndGet() <= config.getNumberOfConnectionFailuresAllowed());
             }, (httpClientResponse, throwable) -> { })
-            .followRedirect(false);
+            .followRedirect(config.isFollowRedirect());
 
         if (config.isHttps()) {
             return setupSsl(client, config.isValidateCertificates());
