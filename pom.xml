@@ -78,7 +78,7 @@
         </sonar.coverage.jacoco.xmlReportPaths>
 
         <reactor-bom.version>2023.0.7</reactor-bom.version>
-        <netty.version>4.1.110.Final</netty.version>
+        <netty.version>4.1.111.Final</netty.version>
         <jackson-bom.version>2.17.1</jackson-bom.version>
         <guava.version>33.2.1-jre</guava.version>
         <rxjava.version>1.3.8</rxjava.version>
