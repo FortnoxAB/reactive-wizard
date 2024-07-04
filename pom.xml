@@ -77,15 +77,15 @@
             ${project.basedir}/../coverage/target/site/jacoco-aggregate/jacoco.xml
         </sonar.coverage.jacoco.xmlReportPaths>
 
-        <reactor-bom.version>2023.0.6</reactor-bom.version>
+        <reactor-bom.version>2023.0.7</reactor-bom.version>
         <netty.version>4.1.110.Final</netty.version>
-        <jackson-bom.version>2.16.2</jackson-bom.version>
+        <jackson-bom.version>2.17.1</jackson-bom.version>
         <guava.version>33.2.1-jre</guava.version>
         <rxjava.version>1.3.8</rxjava.version>
         <hikaricp.version>5.1.0</hikaricp.version>
         <slf4j.version>2.0.13</slf4j.version>
         <junit.version>4.13.2</junit.version>
-        <junit5.version>5.10.2</junit5.version>
+        <junit5.version>5.10.3</junit5.version>
         <h2.version>2.2.224</h2.version>
         <snakeyaml.version>2.2</snakeyaml.version>
         <hibernate-validator.version>8.0.1.Final</hibernate-validator.version>
@@ -98,23 +98,23 @@
         <mockito.version>5.12.0</mockito.version>
         <jacoco.version>0.8.12</jacoco.version>
         <reactiversecontexts.version>1.0.1</reactiversecontexts.version>
-        <classgraph.version>4.8.172</classgraph.version>
+        <classgraph.version>4.8.174</classgraph.version>
         <blockhound.version>1.0.9.RELEASE</blockhound.version>
 
         <maven-gpg-plugin.version>3.2.4</maven-gpg-plugin.version>
-        <surefire.version>3.2.5</surefire.version>
+        <surefire.version>3.3.0</surefire.version>
         <nexus-staging-maven-plugin.version>1.7.0</nexus-staging-maven-plugin.version>
         <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
         <maven-enforcer-plugin.version>3.5.0</maven-enforcer-plugin.version>
         <maven-source-plugin.version>3.3.1</maven-source-plugin.version>
-        <maven-jxr-plugin.version>3.3.2</maven-jxr-plugin.version>
-        <maven-javadoc-plugin.version>3.6.3</maven-javadoc-plugin.version>
-        <maven-checkstyle-plugin.version>3.3.1</maven-checkstyle-plugin.version>
-        <maven-jar-plugin.version>3.4.1</maven-jar-plugin.version>
+        <maven-jxr-plugin.version>3.4.0</maven-jxr-plugin.version>
+        <maven-javadoc-plugin.version>3.7.0</maven-javadoc-plugin.version>
+        <maven-checkstyle-plugin.version>3.4.0</maven-checkstyle-plugin.version>
+        <maven-jar-plugin.version>3.4.2</maven-jar-plugin.version>
         <checkstyle.version>10.14.0</checkstyle.version>
         <liquibase-core.version>4.16.1</liquibase-core.version>
         <liquibase-slf4j.version>5.0.0</liquibase-slf4j.version>
-        <metrics-core.version>4.2.25</metrics-core.version>
+        <metrics-core.version>4.2.26</metrics-core.version>
         <awaitility.version>4.2.1</awaitility.version>
         <rxjava-reactive-streams.version>1.2.1</rxjava-reactive-streams.version>
         <jakarta.el.version>4.0.2</jakarta.el.version>
