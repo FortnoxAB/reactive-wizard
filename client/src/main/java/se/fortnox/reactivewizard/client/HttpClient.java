@@ -79,6 +79,7 @@ import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static reactor.core.Exceptions.isRetryExhausted;
 import static reactor.core.publisher.Mono.just;
+import static se.fortnox.reactivewizard.client.HttpClientConfig.DEFAULT_TIMEOUT_MS;
 
 public class HttpClient implements InvocationHandler {
     private static final Logger LOG = LoggerFactory.getLogger(HttpClient.class);
@@ -103,8 +104,8 @@ public class HttpClient implements InvocationHandler {
     private final RequestLogger requestLogger;
     private final Map<Class<?>, List<HttpClient.BeanParamProperty>> beanParamCache = new ConcurrentHashMap<>();
     private final Map<Method, JaxRsMeta> jaxRsMetaMap = new ConcurrentHashMap<>();
-    private int timeout = 10;
-    private TemporalUnit timeoutUnit = ChronoUnit.SECONDS;
+    private int timeout = DEFAULT_TIMEOUT_MS;
+    private TemporalUnit timeoutUnit = ChronoUnit.MILLIS;
     private final Duration retryDuration;
 
     @Inject
@@ -131,6 +132,7 @@ public class HttpClient implements InvocationHandler {
         collector = new ByteBufCollector(config.getMaxResponseSize());
         this.preRequestHooks = preRequestHooks;
         this.retryDuration = Duration.ofMillis(config.getRetryDelayMs());
+        setTimeout(config.getTimeoutMs(), ChronoUnit.MILLIS);
     }
 
     public HttpClient(HttpClientConfig config) {
@@ -534,7 +536,22 @@ public class HttpClient implements InvocationHandler {
         JaxRsMeta meta = getJaxRsMeta(method);
 
         RequestBuilder request = new RequestBuilder(serverInfo, meta.getHttpMethod(), meta.getFullPath());
-        request.setUri(getPath(method, arguments, meta));
+
+        String root = config.getRoot();
+        String path = getPath(method, arguments, meta);
+        if (root == null || root.isEmpty()) {
+            request.setUri(path);
+        } else {
+            if (root.endsWith("/")) {
+                root = root.substring(0, root.length() - 1);
+            }
+            if (path.startsWith("/")) {
+                request.setUri(root + path);
+            } else {
+                request.setUri(root + "/" + path);
+            }
+        }
+
         setHeaderParams(request, method, arguments);
         addCustomParams(request, method, arguments);
 
