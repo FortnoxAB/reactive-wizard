@@ -77,7 +77,7 @@
             ${project.basedir}/../coverage/target/site/jacoco-aggregate/jacoco.xml
         </sonar.coverage.jacoco.xmlReportPaths>
 
-        <reactor-bom.version>2023.0.7</reactor-bom.version>
+        <reactor-bom.version>2023.0.8</reactor-bom.version>
         <netty.version>4.1.111.Final</netty.version>
         <jackson-bom.version>2.17.2</jackson-bom.version>
         <guava.version>33.2.1-jre</guava.version>
