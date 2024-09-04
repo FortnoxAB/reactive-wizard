@@ -77,16 +77,16 @@
             ${project.basedir}/../coverage/target/site/jacoco-aggregate/jacoco.xml
         </sonar.coverage.jacoco.xmlReportPaths>
 
-        <reactor-bom.version>2023.0.7</reactor-bom.version>
-        <netty.version>4.1.110.Final</netty.version>
-        <jackson-bom.version>2.17.1</jackson-bom.version>
+        <reactor-bom.version>2023.0.8</reactor-bom.version>
+        <netty.version>4.1.111.Final</netty.version>
+        <jackson-bom.version>2.17.2</jackson-bom.version>
         <guava.version>33.2.1-jre</guava.version>
         <rxjava.version>1.3.8</rxjava.version>
         <hikaricp.version>5.1.0</hikaricp.version>
         <slf4j.version>2.0.13</slf4j.version>
         <junit.version>4.13.2</junit.version>
         <junit5.version>5.10.3</junit5.version>
-        <h2.version>2.2.224</h2.version>
+        <h2.version>2.3.232</h2.version>
         <snakeyaml.version>2.2</snakeyaml.version>
         <hibernate-validator.version>8.0.1.Final</hibernate-validator.version>
         <jakarta.validation-api.version>3.1.0</jakarta.validation-api.version>
@@ -102,7 +102,7 @@
         <blockhound.version>1.0.9.RELEASE</blockhound.version>
 
         <maven-gpg-plugin.version>3.2.4</maven-gpg-plugin.version>
-        <surefire.version>3.3.0</surefire.version>
+        <surefire.version>3.5.0</surefire.version>
         <nexus-staging-maven-plugin.version>1.7.0</nexus-staging-maven-plugin.version>
         <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
         <maven-enforcer-plugin.version>3.5.0</maven-enforcer-plugin.version>
@@ -120,7 +120,7 @@
         <jakarta.el.version>4.0.2</jakarta.el.version>
         <javax.ws.rs-api.version>2.1.1</javax.ws.rs-api.version>
         <maven-deploy-plugin.version>3.1.2</maven-deploy-plugin.version>
-        <byte-buddy.version>1.14.17</byte-buddy.version>
+        <byte-buddy.version>1.14.18</byte-buddy.version>
         <jakarta.inject-api.version>2.0.1</jakarta.inject-api.version>
         <bcpkix-jdk18on.version>1.78.1</bcpkix-jdk18on.version>
         <swagger-annotations.version>2.2.22</swagger-annotations.version>
