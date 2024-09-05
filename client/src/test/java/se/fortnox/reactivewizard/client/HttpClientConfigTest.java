@@ -32,11 +32,14 @@ class HttpClientConfigTest {
         assertThat(config.getRetryCount()).isEqualTo(15);
         assertThat(config.getRetryDelayMs()).isEqualTo(200);
         assertThat(config.getMaxResponseSize()).isEqualTo(512);
+        assertThat(config.getTimeoutMs()).isEqualTo(60 * 1000);
+        assertThat(config.isFollowRedirect()).isTrue();
 
         assertThat(config.getDevCookie()).isEqualTo("TEST=123");
         assertThat(config.getDevServerInfo().getHostString()).isEqualTo("mymachine");
         assertThat(config.getDevServerInfo().getPort()).isEqualTo(9090);
         assertThat(config.getDevHeaders()).contains(entry("Host", "localhost"));
+
     }
 
     @Test
@@ -84,6 +87,14 @@ class HttpClientConfigTest {
     }
 
     @Test
+    void shouldSetRoot() throws URISyntaxException {
+        assertThat(new HttpClientConfig("http://localhost:8080").getRoot()).isEqualTo("");
+        assertThat(new HttpClientConfig("http://localhost:8080/").getRoot()).isEqualTo("/");
+        assertThat(new HttpClientConfig("http://localhost:8080/root/path").getRoot()).isEqualTo("/root/path");
+        assertThat(new HttpClientConfig("http://localhost:8080/root/path/").getRoot()).isEqualTo("/root/path/");
+    }
+
+    @Test
     void shouldSetHttpsFromProtocolEvenIfPortIsSupplied() throws URISyntaxException {
         HttpClientConfig config = new HttpClientConfig("https://localhost:8080");
 
@@ -120,5 +131,17 @@ class HttpClientConfigTest {
         HttpClientConfig httpClientConfig = new HttpClientConfig("https://example.com");
         assertThat(httpClientConfig.isHttps()).isTrue();
         assertThat(httpClientConfig.isValidateCertificates()).isTrue();
+    }
+
+    @Test
+    void shouldNotFollowRedirectByDefault() throws URISyntaxException {
+        HttpClientConfig httpClientConfig = new HttpClientConfig("http://example.com");
+        assertThat(httpClientConfig.isFollowRedirect()).isFalse();
+    }
+
+    @Test
+    void shouldDefaultToTenSecondTimeout() throws URISyntaxException {
+        HttpClientConfig httpClientConfig = new HttpClientConfig("http://example.com");
+        assertThat(httpClientConfig.getTimeoutMs()).isEqualTo(10 * 1000);
     }
 }

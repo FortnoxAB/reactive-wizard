@@ -19,6 +19,8 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 @Config("httpClient")
 public class HttpClientConfig {
 
+    public static final int DEFAULT_TIMEOUT_MS = 10_000;
+
     @Valid
     @JsonProperty("port")
     private int port = 80;
@@ -33,6 +35,7 @@ public class HttpClientConfig {
     private int maxConnections = 1000;
 
     private String            url;
+    private String root;
     private InetSocketAddress devServerInfo;
     @Size(min = 1)
     private String            devCookie;
@@ -44,10 +47,12 @@ public class HttpClientConfig {
     private boolean isHttps;
     private int     retryCount             = 3;
     private int     retryDelayMs           = 1000;
+    private int     timeoutMs              = DEFAULT_TIMEOUT_MS;
     private int     readTimeoutMs          = 10000;
     private int     poolAcquireTimeoutMs   = 10000;
     @JsonProperty("validateCertificates")
     private boolean isValidateCertificates = true;
+    private boolean followRedirect         = false;
 
     private long connectionMaxIdleTimeInMs         = TimeUnit.MILLISECONDS.convert(10, MINUTES);
     private int  numberOfConnectionFailuresAllowed = 10;
@@ -88,6 +93,7 @@ public class HttpClientConfig {
         }
         URI uri = new URI(this.url);
         setHost(uri.getHost());
+        setRoot(uri.getPath());
 
         isHttps = "https".equals(uri.getScheme());
         port = uri.getPort();
@@ -98,6 +104,14 @@ public class HttpClientConfig {
                 port = 80;
             }
         }
+    }
+
+    public void setRoot(String root) {
+        this.root = root;
+    }
+
+    public String getRoot() {
+        return root;
     }
 
     public InetSocketAddress getDevServerInfo() {
@@ -161,6 +175,14 @@ public class HttpClientConfig {
         }
     }
 
+    public int getTimeoutMs() {
+        return timeoutMs;
+    }
+
+    public void setTimeoutMs(int timeoutMs) {
+        this.timeoutMs = timeoutMs;
+    }
+
     public int getReadTimeoutMs() {
         return readTimeoutMs;
     }
@@ -175,6 +197,14 @@ public class HttpClientConfig {
 
     public void setValidateCertificates(boolean value) {
         isValidateCertificates = value;
+    }
+
+    public boolean isFollowRedirect() {
+        return followRedirect;
+    }
+
+    public void setFollowRedirect(boolean value) {
+        followRedirect = value;
     }
 
     public BasicAuthConfig getBasicAuth() {
