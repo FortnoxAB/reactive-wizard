@@ -261,7 +261,7 @@ public class HttpClient implements InvocationHandler {
 
     private <T> Mono<T> convertError(RequestBuilder fullReq, Throwable throwable) {
         String request = format("%s, headers: %s", fullReq.getFullUrl(), requestLogger.getHeaderValuesOrRedactClient(fullReq.getHeaders()));
-        LOG.warn("Failed request. Url: {}", request, throwable);
+        logFailedRequest(throwable, request);
 
         if (isRetryExhausted(throwable)) {
             throwable = throwable.getCause();
@@ -275,6 +275,19 @@ public class HttpClient implements InvocationHandler {
             return Mono.error(new WebException(INTERNAL_SERVER_ERROR, new JustMessageException(message, throwable), false));
         }
         return Mono.error(throwable);
+    }
+
+    private static void logFailedRequest(Throwable throwable, String request) {
+        var logAsInfo = throwable instanceof WebException webException &&
+            webException.getStatus().code() == HttpResponseStatus.NOT_FOUND.code() &&
+            !"resource.not.found".equals(webException.getError());
+
+        String message = "Failed request. Url: {}";
+        if (logAsInfo) {
+            LOG.info(message, request, throwable);
+        } else {
+            LOG.warn(message, request, throwable);
+        }
     }
 
     protected Flux<Object> parseResponseSingle(Method method, RwHttpClientResponse response) {

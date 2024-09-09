@@ -703,6 +703,49 @@ class HttpClientTest {
     }
 
     @Test
+    void shouldLogWarnOnErrorResponse() throws Exception {
+        server = startServer(BAD_REQUEST, "");
+        HttpClientConfig config = new HttpClientConfig("localhost:" + server.port());
+        TestResource resource = getHttpProxy(config);
+
+        assertThatExceptionOfType(WebException.class)
+            .isThrownBy(() -> resource.getHello()
+                .toBlocking()
+                .single());
+
+        loggingVerifier.verify(WARN, "Failed request. Url: localhost:" + server.port() + "/hello, headers: [Host=localhost]");
+    }
+
+    @Test
+    void shouldLogInfoOnNotFoundResponse() throws Exception {
+        server = startServer(NOT_FOUND, "");
+        HttpClientConfig config = new HttpClientConfig("localhost:" + server.port());
+        TestResource resource = getHttpProxy(config);
+
+        assertThatExceptionOfType(WebException.class)
+            .isThrownBy(() -> resource.getHello()
+                .toBlocking()
+                .single());
+
+        loggingVerifier.verify(INFO, "Failed request. Url: localhost:" + server.port() + "/hello, headers: [Host=localhost]");
+    }
+
+    @Test
+    void shouldLogWarnOnNotFoundResource() throws Exception {
+        server = startServer(NOT_FOUND, "{\"error\":\"resource.not.found\"}");
+        HttpClientConfig config = new HttpClientConfig("localhost:" + server.port());
+        TestResource resource = getHttpProxy(config);
+
+        assertThatExceptionOfType(WebException.class)
+            .isThrownBy(() -> resource.getHello()
+                .toBlocking()
+                .single());
+
+        loggingVerifier.verify(WARN, "Failed request. Url: localhost:" + server.port() + "/hello, headers: [Host=localhost]");
+    }
+
+
+    @Test
     void shouldRedactSensitiveHeaderInLogsAndExceptionMessage() throws Exception {
         server = startServer(BAD_REQUEST, "someError");
         HttpClientConfig config = new HttpClientConfig("localhost:" + server.port());
