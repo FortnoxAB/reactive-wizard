@@ -16,6 +16,7 @@ import jakarta.inject.Inject;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.event.Level;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
@@ -278,16 +279,12 @@ public class HttpClient implements InvocationHandler {
     }
 
     private static void logFailedRequest(Throwable throwable, String request) {
-        var logAsInfo = throwable instanceof WebException webException &&
+        var isExpectedError = throwable instanceof WebException webException &&
             webException.getStatus().code() == HttpResponseStatus.NOT_FOUND.code() &&
             !"resource.not.found".equals(webException.getError());
 
-        String message = "Failed request. Url: {}";
-        if (logAsInfo) {
-            LOG.info(message, request, throwable);
-        } else {
-            LOG.warn(message, request, throwable);
-        }
+        var level = isExpectedError ? Level.INFO : Level.WARN;
+        LOG.atLevel(level).log("Failed request. Url: {}", request, throwable);
     }
 
     protected Flux<Object> parseResponseSingle(Method method, RwHttpClientResponse response) {

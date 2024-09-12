@@ -1671,7 +1671,7 @@ class HttpClientTest {
                     .cause().cause()
                     .satisfies(exception -> assertThat(exception)
                         .hasMessageContaining("URL: %s:%s/hello", host, server.port())));
-        loggingVerifier.verify(WARN, "Failed request. Url: %1$s:%2$s/hello, headers: [Host=%1$s]".formatted(host, server.port()));
+        loggingVerifier.verify(INFO, "Failed request. Url: %1$s:%2$s/hello, headers: [Host=%1$s]".formatted(host, server.port()));
     }
 
     @Test
