@@ -284,7 +284,7 @@ public class HttpClient implements InvocationHandler {
             !"resource.not.found".equals(webException.getError());
 
         var level = isExpectedError ? Level.INFO : Level.WARN;
-        LOG.atLevel(level).log("Failed request. Url: {}", request, throwable);
+        LOG.atLevel(level).setCause(throwable).log("Failed request. Url: {}", request);
     }
 
     protected Flux<Object> parseResponseSingle(Method method, RwHttpClientResponse response) {
