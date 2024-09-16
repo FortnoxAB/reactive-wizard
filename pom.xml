@@ -101,7 +101,7 @@
         <classgraph.version>4.8.174</classgraph.version>
         <blockhound.version>1.0.9.RELEASE</blockhound.version>
 
-        <maven-gpg-plugin.version>3.2.4</maven-gpg-plugin.version>
+        <maven-gpg-plugin.version>3.2.6</maven-gpg-plugin.version>
         <surefire.version>3.5.0</surefire.version>
         <nexus-staging-maven-plugin.version>1.7.0</nexus-staging-maven-plugin.version>
         <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
