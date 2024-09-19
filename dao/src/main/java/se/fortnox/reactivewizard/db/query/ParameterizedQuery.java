@@ -41,10 +41,6 @@ public class ParameterizedQuery {
 
         sqlInput = sqlPreProcess(sqlInput);
 
-        if (sqlInput.indexOf('?') != -1) {
-            throw new RuntimeException("Unnamed parameters are not supported: " + sqlInput);
-        }
-
         int     pos     = 0;
         Matcher matcher = NAMED_PARAMETER_PATTERN.matcher(sqlInput);
         if (matcher.find()) {

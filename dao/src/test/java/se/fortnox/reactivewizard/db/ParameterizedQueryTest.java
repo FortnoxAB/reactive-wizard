@@ -14,8 +14,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -23,7 +23,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class ParameterizedQueryTest {
-
     MockDb  db      = new MockDb();
     DbProxy dbProxy = new DbProxy(new DatabaseConfig(), db.getConnectionProvider());
     TestDao dao     = dbProxy.create(TestDao.class);
@@ -65,25 +64,21 @@ class ParameterizedQueryTest {
     }
 
     @Test
-    void shouldThrowExceptionIfUnnamedParamsUsedInQuery() {
-        try {
-            dao.unnamedParameters("myid", "myname").blockLast();
-            fail("Exptected exception");
-        } catch (Exception e) {
-            assertThat(e.getMessage())
-                .isEqualTo("Unnamed parameters are not supported: SELECT * FROM foo WHERE id=? AND name=?");
-        }
+    void shouldNotThrowExceptionIfUnnamedParamsUsedInQuery() {
+        assertThatNoException()
+            .isThrownBy(() -> dao.unnamedParameters("myid", "myname").blockLast());
+    }
+
+    @Test
+    void shouldAllowJsonOperators() {
+        assertThatNoException().isThrownBy(() -> dao.jsonOperators().blockLast());
     }
 
     @Test
     void shouldThrowExceptionIfNotAllParametersAreFound() {
-        try {
-            dao.missingParamName("myid", "myname").blockLast();
-            fail("Exptected exception");
-        } catch (Exception e) {
-            assertThat(e.getMessage()).isEqualTo(
-                "Query contains placeholder \"name\" but method noes not have such argument");
-        }
+        assertThatExceptionOfType(RuntimeException.class)
+            .isThrownBy(() -> dao.missingParamName("myid", "myname").blockLast())
+            .withMessage("Query contains placeholder \"name\" but method noes not have such argument");
     }
 
     @Test
@@ -323,10 +318,11 @@ class ParameterizedQueryTest {
         @Query("SELECT x FROM y WHERE z IN (:param)")
         Flux<String> inClauseUuid(List<UUID> param);
 
-        @Query("SELECT x FROM y WHERE z IN (:param)")
-        Flux<String> unsupportedArrayType(List<Boolean> param);
+        @Query("SELECT * FROM message_projections WHERE message_json->'categories' ?| array['newsletter', 'spam']")
+        Flux<String> jsonOperators();
     }
 
+    @SuppressWarnings("unused")
     public class TestObject {
         TestEnum            myEnum;
         boolean             finished;
