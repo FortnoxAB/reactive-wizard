@@ -24,14 +24,12 @@ public class ValidationModule implements AutoBindModule {
 
     @Override
     public void configure(Binder binder) {
-        binder.bind(Validator.class).toProvider(() -> {
-            return Validation
-                    .byDefaultProvider()
-                    .configure()
-                    .parameterNameProvider(new JaxRsParameterNameResolver())
-                    .buildValidatorFactory()
-                    .getValidator();
-        }).in(Scopes.SINGLETON);
+        binder.bind(Validator.class).toProvider(() -> Validation
+                .byDefaultProvider()
+                .configure()
+                .parameterNameProvider(new JaxRsParameterNameResolver())
+                .buildValidatorFactory()
+                .getValidator()).in(Scopes.SINGLETON);
 
 
         // Validate config
@@ -55,5 +53,11 @@ public class ValidationModule implements AutoBindModule {
 
     private <T> Provider<T> validatingProvider(Class<T> iface, Provider<T> wrappedProvider, Provider<ValidatorUtil> validatorUtilProvider) {
         return () -> ValidatingProxy.create(iface, wrappedProvider.get(), validatorUtilProvider.get());
+    }
+
+    @Override
+    public Integer getPrio() {
+        // We want this module to override the default binding of ConfigFactory
+        return 110;
     }
 }
