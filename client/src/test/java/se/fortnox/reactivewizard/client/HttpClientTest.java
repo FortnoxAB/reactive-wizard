@@ -309,6 +309,23 @@ class HttpClientTest {
     }
 
     @Test
+    void shouldAddRootToRequestUri() throws URISyntaxException, NoSuchMethodException {
+
+        assertAddedRoot("localhost", "/hello");
+        assertAddedRoot("localhost/", "/hello");
+        assertAddedRoot("localhost/root", "/root/hello");
+        assertAddedRoot("localhost/root/", "/root/hello");
+    }
+
+    private void assertAddedRoot(String url, String expected) throws URISyntaxException, NoSuchMethodException {
+        HttpClient httpClient = new HttpClient(new HttpClientConfig(url));
+
+        Method getHello = TestResource.class.getMethod("getHello");
+
+        assertThat(httpClient.createRequest(getHello, new Object[0]).getUri()).isEqualTo(expected);
+    }
+
+    @Test
     void shouldRetryIfEmptyReturnedOnGet() {
 
         AtomicInteger callCount = new AtomicInteger();
@@ -684,6 +701,49 @@ class HttpClientTest {
 
         loggingVerifier.verify(WARN, "Failed request. Url: localhost:" + server.port() + "/hello, headers: [Host=localhost, someHeader=ABCD]");
     }
+
+    @Test
+    void shouldLogWarnOnErrorResponse() throws Exception {
+        server = startServer(BAD_REQUEST, "");
+        HttpClientConfig config = new HttpClientConfig("localhost:" + server.port());
+        TestResource resource = getHttpProxy(config);
+
+        assertThatExceptionOfType(WebException.class)
+            .isThrownBy(() -> resource.getHello()
+                .toBlocking()
+                .single());
+
+        loggingVerifier.verify(WARN, "Failed request. Url: localhost:" + server.port() + "/hello, headers: [Host=localhost]");
+    }
+
+    @Test
+    void shouldLogInfoOnNotFoundResponse() throws Exception {
+        server = startServer(NOT_FOUND, "");
+        HttpClientConfig config = new HttpClientConfig("localhost:" + server.port());
+        TestResource resource = getHttpProxy(config);
+
+        assertThatExceptionOfType(WebException.class)
+            .isThrownBy(() -> resource.getHello()
+                .toBlocking()
+                .single());
+
+        loggingVerifier.verify(INFO, "Failed request. Url: localhost:" + server.port() + "/hello, headers: [Host=localhost]");
+    }
+
+    @Test
+    void shouldLogWarnOnNotFoundResource() throws Exception {
+        server = startServer(NOT_FOUND, "{\"error\":\"resource.not.found\"}");
+        HttpClientConfig config = new HttpClientConfig("localhost:" + server.port());
+        TestResource resource = getHttpProxy(config);
+
+        assertThatExceptionOfType(WebException.class)
+            .isThrownBy(() -> resource.getHello()
+                .toBlocking()
+                .single());
+
+        loggingVerifier.verify(WARN, "Failed request. Url: localhost:" + server.port() + "/hello, headers: [Host=localhost]");
+    }
+
 
     @Test
     void shouldRedactSensitiveHeaderInLogsAndExceptionMessage() throws Exception {
@@ -1611,7 +1671,7 @@ class HttpClientTest {
                     .cause().cause()
                     .satisfies(exception -> assertThat(exception)
                         .hasMessageContaining("URL: %s:%s/hello", host, server.port())));
-        loggingVerifier.verify(WARN, "Failed request. Url: %1$s:%2$s/hello, headers: [Host=%1$s]".formatted(host, server.port()));
+        loggingVerifier.verify(INFO, "Failed request. Url: %1$s:%2$s/hello, headers: [Host=%1$s]".formatted(host, server.port()));
     }
 
     @Test

@@ -9,3 +9,5 @@ httpClient:
   retryCount: 15
   retryDelayMs: 200
   maxResponseSize: 512
+  timeoutMs: 60000
+  followRedirect: true

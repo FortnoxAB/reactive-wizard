@@ -16,6 +16,7 @@ import jakarta.inject.Inject;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.event.Level;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
@@ -79,6 +80,7 @@ import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static reactor.core.Exceptions.isRetryExhausted;
 import static reactor.core.publisher.Mono.just;
+import static se.fortnox.reactivewizard.client.HttpClientConfig.DEFAULT_TIMEOUT_MS;
 
 public class HttpClient implements InvocationHandler {
     private static final Logger LOG = LoggerFactory.getLogger(HttpClient.class);
@@ -103,8 +105,8 @@ public class HttpClient implements InvocationHandler {
     private final RequestLogger requestLogger;
     private final Map<Class<?>, List<HttpClient.BeanParamProperty>> beanParamCache = new ConcurrentHashMap<>();
     private final Map<Method, JaxRsMeta> jaxRsMetaMap = new ConcurrentHashMap<>();
-    private int timeout = 10;
-    private TemporalUnit timeoutUnit = ChronoUnit.SECONDS;
+    private int timeout = DEFAULT_TIMEOUT_MS;
+    private TemporalUnit timeoutUnit = ChronoUnit.MILLIS;
     private final Duration retryDuration;
 
     @Inject
@@ -131,6 +133,7 @@ public class HttpClient implements InvocationHandler {
         collector = new ByteBufCollector(config.getMaxResponseSize());
         this.preRequestHooks = preRequestHooks;
         this.retryDuration = Duration.ofMillis(config.getRetryDelayMs());
+        setTimeout(config.getTimeoutMs(), ChronoUnit.MILLIS);
     }
 
     public HttpClient(HttpClientConfig config) {
@@ -259,7 +262,7 @@ public class HttpClient implements InvocationHandler {
 
     private <T> Mono<T> convertError(RequestBuilder fullReq, Throwable throwable) {
         String request = format("%s, headers: %s", fullReq.getFullUrl(), requestLogger.getHeaderValuesOrRedactClient(fullReq.getHeaders()));
-        LOG.warn("Failed request. Url: {}", request, throwable);
+        logFailedRequest(throwable, request);
 
         if (isRetryExhausted(throwable)) {
             throwable = throwable.getCause();
@@ -273,6 +276,15 @@ public class HttpClient implements InvocationHandler {
             return Mono.error(new WebException(INTERNAL_SERVER_ERROR, new JustMessageException(message, throwable), false));
         }
         return Mono.error(throwable);
+    }
+
+    private static void logFailedRequest(Throwable throwable, String request) {
+        var isExpectedError = throwable instanceof WebException webException &&
+            webException.getStatus().code() == HttpResponseStatus.NOT_FOUND.code() &&
+            !"resource.not.found".equals(webException.getError());
+
+        var level = isExpectedError ? Level.INFO : Level.WARN;
+        LOG.atLevel(level).setCause(throwable).log("Failed request. Url: {}", request);
     }
 
     protected Flux<Object> parseResponseSingle(Method method, RwHttpClientResponse response) {
@@ -534,7 +546,22 @@ public class HttpClient implements InvocationHandler {
         JaxRsMeta meta = getJaxRsMeta(method);
 
         RequestBuilder request = new RequestBuilder(serverInfo, meta.getHttpMethod(), meta.getFullPath());
-        request.setUri(getPath(method, arguments, meta));
+
+        String root = config.getRoot();
+        String path = getPath(method, arguments, meta);
+        if (root == null || root.isEmpty()) {
+            request.setUri(path);
+        } else {
+            if (root.endsWith("/")) {
+                root = root.substring(0, root.length() - 1);
+            }
+            if (path.startsWith("/")) {
+                request.setUri(root + path);
+            } else {
+                request.setUri(root + "/" + path);
+            }
+        }
+
         setHeaderParams(request, method, arguments);
         addCustomParams(request, method, arguments);
 
