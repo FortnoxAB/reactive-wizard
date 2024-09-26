@@ -8,6 +8,10 @@ import se.fortnox.reactivewizard.util.FluxRxConverter;
 
 import java.lang.reflect.Method;
 import java.sql.SQLException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static com.google.common.collect.Iterables.indexOf;
 import static java.util.Arrays.asList;
@@ -17,6 +21,7 @@ public class CollectionOptionsQueryPart implements QueryPart {
     private final        int    collectionOptionsArgIndex;
     private final        Query  queryAnnotation;
     private final        boolean isMono;
+    private static final Pattern SORT_BY_PART = Pattern.compile("(?<sortby>[a-zåäö0-9_]+)(\\s+(?<order>asc|desc))?");
 
     public CollectionOptionsQueryPart(Method method) {
         collectionOptionsArgIndex = indexOf(asList(method.getParameterTypes()), CollectionOptions.class::isAssignableFrom);
@@ -36,11 +41,33 @@ public class CollectionOptionsQueryPart implements QueryPart {
             if (collectionOptions != null) {
                 if (collectionOptions.getSortBy() != null) {
                     String sortBy = CamelSnakeConverter.camelToSnake(collectionOptions.getSortBy());
-                    for (String allowed : queryAnnotation.allowedSortColumns()) {
-                        if (allowed.equals(sortBy)) {
-                            collectionOptionsHasOrderBy = true;
-                            addOrderBy(sql, buildOrderBy(collectionOptions.getOrder(), allowed));
-                            break;
+                    var sortByParts = sortBy.split(",");
+                    if (sortByParts.length == 1) {
+                        for (String allowed : queryAnnotation.allowedSortColumns()) {
+                            if (allowed.equals(sortBy)) {
+                                collectionOptionsHasOrderBy = true;
+                                addOrderBy(sql, buildOrderBy(collectionOptions.getOrder(), allowed));
+                                break;
+                            }
+                        }
+                    } else {
+                        Collections.reverse(Arrays.asList(sortByParts));
+                        for (var sortByPart: sortByParts) {
+                            Matcher matcher = SORT_BY_PART.matcher(sortByPart);
+                            if (matcher.find()) {
+                                var sortByColumn = matcher.group("sortby");
+                                if (sortByColumn != null) {
+                                    var order = matcher.group("order");
+                                    for (String allowed : queryAnnotation.allowedSortColumns()) {
+                                        if (allowed.equals(sortByColumn)) {
+                                            collectionOptionsHasOrderBy = true;
+                                            var sortOrder = order != null ? CollectionOptions.SortOrder.valueOf(order.toUpperCase()) : collectionOptions.getOrder();
+                                            addOrderBy(sql, buildOrderBy(sortOrder, allowed));
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }

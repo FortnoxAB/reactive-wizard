@@ -171,6 +171,20 @@ class CollectionOptionsTest {
     }
 
     @Test
+    void shouldAddMultipleSort() throws SQLException {
+        CollectionOptions collectionOptions = new CollectionOptions("name asc, id desc", CollectionOptions.SortOrder.ASC);
+        collectionOptionsDao.selectWithDefaultSortingAllowMultiple(collectionOptions).blockFirst();
+        mockDb.verifySelect("select * from table order by name ASC, id DESC, id LIMIT 101");
+    }
+
+    @Test
+    void shouldFallbackToCollectionOptionSortOrderMultipleSort() throws SQLException {
+        CollectionOptions collectionOptions = new CollectionOptions("name, id", CollectionOptions.SortOrder.DESC);
+        collectionOptionsDao.selectWithDefaultSortingAllowMultiple(collectionOptions).blockFirst();
+        mockDb.verifySelect("select * from table order by name DESC, id DESC, id LIMIT 101");
+    }
+
+    @Test
     void shouldAddOrderByBeforeQueryOrderByWithoutDefaultSort() throws Exception {
         CollectionOptions collectionOptions = new CollectionOptions("name", CollectionOptions.SortOrder.ASC);
         collectionOptionsDao.selectWithDefaultSortingInQueryAndOptions(collectionOptions).blockFirst();
@@ -200,6 +214,9 @@ class CollectionOptionsTest {
 
         @Query(value = "select * from table order by id", allowedSortColumns = {"name"})
         Flux<String> selectWithDefaultSorting(CollectionOptions collectionOptions);
+
+        @Query(value = "select * from table order by id", allowedSortColumns = {"name","id"})
+        Flux<String> selectWithDefaultSortingAllowMultiple(CollectionOptions collectionOptions);
 
         @Query(value = "select * from table order by id", allowedSortColumns = {"name"}, defaultSort = "text desc")
         Flux<String> selectWithDefaultSortingInQueryAndOptions(CollectionOptions collectionOptions);
