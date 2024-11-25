@@ -1,3 +1,6 @@
+> [!NOTE]
+> ⚠️ This public version of Reactive Wizard has been archived and is no longer maintained.
+
 ## Reactive Wizard
 The Reactive Wizard project makes it easy to build performant and scalable web applications that harness the power of Project Reactor and Netty.
 
