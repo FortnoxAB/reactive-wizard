@@ -1,3 +1,6 @@
+> [!NOTE]
+> ⚠️ This public version of Reactive Wizard has been archived and is no longer maintained. Fortnox developers can reach us through internal help channels for more information.
+
 ## Reactive Wizard
 The Reactive Wizard project makes it easy to build performant and scalable web applications that harness the power of Project Reactor and Netty.
 
